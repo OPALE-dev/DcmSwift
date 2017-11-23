@@ -43,11 +43,86 @@ public class DataTag : DicomObject {
     
     
     
+    public func data(withByteOrder:DicomSpec.ByteOrder) -> Data {
+        var data = Data()
+        
+        if withByteOrder == .BigEndian {
+            let groupIndex = self.group.index(self.group.startIndex, offsetBy:2)
+            let group1 = String(self.group[..<groupIndex])
+            let group2 = String(self.group[groupIndex...])
+            
+            if let subdata = group1.hexData() {
+                data.append(subdata)
+            }
+            if let subdata = group2.hexData() {
+                data.append(subdata)
+            }
+            
+            let elementIndex = self.element.index(self.element.startIndex, offsetBy:2)
+            let element1 = String(self.element[..<elementIndex])
+            let element2 = String(self.element[elementIndex...])
+            
+            if let subdata = element1.hexData() {
+                data.append(subdata)
+            }
+            if let subdata = element2.hexData() {
+                data.append(subdata)
+            }
+            
+        } else {
+            let groupIndex = self.group.index(self.group.startIndex, offsetBy:2)
+            let group1 = String(self.group[..<groupIndex])
+            let group2 = String(self.group[groupIndex...])
+            
+            if let subdata = group2.hexData() {
+                data.append(subdata)
+            }
+            if let subdata = group1.hexData() {
+                data.append(subdata)
+            }
+            
+            let elementIndex = self.element.index(self.element.startIndex, offsetBy:2)
+            let element1 = String(self.element[..<elementIndex])
+            let element2 = String(self.element[elementIndex...])
+            
+            if let subdata = element2.hexData() {
+                data.append(subdata)
+            }
+            if let subdata = element1.hexData() {
+                data.append(subdata)
+            }
+        }
+        
+        return data
+    }
+    
+    
     private func writeData(withByteOrder:DicomSpec.ByteOrder) {
         self.data = Data()
         
         if withByteOrder == .BigEndian {
-            print("Big Endian Tag not implemented yet !!!")
+            let groupIndex = self.group.index(self.group.startIndex, offsetBy:2)
+            let group1 = String(self.group[..<groupIndex])
+            let group2 = String(self.group[groupIndex...])
+            
+            if let subdata = group1.hexData() {
+                self.data.append(subdata)
+            }
+            if let subdata = group2.hexData() {
+                self.data.append(subdata)
+            }
+            
+            let elementIndex = self.element.index(self.element.startIndex, offsetBy:2)
+            let element1 = String(self.element[..<elementIndex])
+            let element2 = String(self.element[elementIndex...])
+            
+            if let subdata = element1.hexData() {
+                self.data.append(subdata)
+            }
+            if let subdata = element2.hexData() {
+                self.data.append(subdata)
+            }
+            
         } else {
             let groupIndex = self.group.index(self.group.startIndex, offsetBy:2)
             let group1 = String(self.group[..<groupIndex])
