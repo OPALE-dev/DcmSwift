@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3223171D7ABEA677B0369AB0 /* Pods_DcmSwiftTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A6FDC8A8E1C033F519D7018F /* Pods_DcmSwiftTests.framework */; };
+		4C00FB541FC621BB00E76466 /* Bridge-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 4C00FB521FC6205500E76466 /* Bridge-Header.h */; };
 		4C38D7741FA0817D00633A5D /* MainSplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7731FA0817D00633A5D /* MainSplitViewController.swift */; };
 		4C38D7761FA0922300633A5D /* InspectorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7751FA0922300633A5D /* InspectorViewController.swift */; };
 		4C38D7791FA0B9B200633A5D /* FileViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7771FA0B9B200633A5D /* FileViewController.swift */; };
@@ -115,6 +117,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		4C00FB521FC6205500E76466 /* Bridge-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Bridge-Header.h"; sourceTree = "<group>"; };
 		4C38D7731FA0817D00633A5D /* MainSplitViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainSplitViewController.swift; sourceTree = "<group>"; };
 		4C38D7751FA0922300633A5D /* InspectorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorViewController.swift; sourceTree = "<group>"; };
 		4C38D7771FA0B9B200633A5D /* FileViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileViewController.swift; sourceTree = "<group>"; };
@@ -167,6 +170,9 @@
 		4CCF6B2E1F9FB285000579C7 /* WindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowController.swift; sourceTree = "<group>"; };
 		4CFF02581F960F0700E31D74 /* DICOM Test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "DICOM Test"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CFF025B1F960F0800E31D74 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		511F9F32D85B022E67692872 /* Pods-DcmSwiftTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DcmSwiftTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-DcmSwiftTests/Pods-DcmSwiftTests.release.xcconfig"; sourceTree = "<group>"; };
+		A6FDC8A8E1C033F519D7018F /* Pods_DcmSwiftTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DcmSwiftTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		B6206135CE3905F8C7A73DFF /* Pods-DcmSwiftTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DcmSwiftTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-DcmSwiftTests/Pods-DcmSwiftTests.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -182,6 +188,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4CA405231FA67DF3006F8053 /* DcmSwift.framework in Frameworks */,
+				3223171D7ABEA677B0369AB0 /* Pods_DcmSwiftTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -203,6 +210,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		34F27224DD1DD32B5C5A74A5 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				B6206135CE3905F8C7A73DFF /* Pods-DcmSwiftTests.debug.xcconfig */,
+				511F9F32D85B022E67692872 /* Pods-DcmSwiftTests.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
 		4C8D798F1F989EB1008300E3 /* DcmSwift */ = {
 			isa = PBXGroup;
 			children = (
@@ -216,6 +232,7 @@
 			isa = PBXGroup;
 			children = (
 				4C9979991FA78EF800C90494 /* AppKit.framework */,
+				A6FDC8A8E1C033F519D7018F /* Pods_DcmSwiftTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -266,6 +283,7 @@
 			isa = PBXGroup;
 			children = (
 				4CA4052D1FA67FF3006F8053 /* Test Files */,
+				4C00FB521FC6205500E76466 /* Bridge-Header.h */,
 				4CA405201FA67DF3006F8053 /* DcmSwiftTests.swift */,
 				4CA405221FA67DF3006F8053 /* Info.plist */,
 			);
@@ -277,11 +295,11 @@
 			children = (
 				4CA4052C1FA67FF1006F8053 /* CT-MONO2-16 (Little Endian Explicit VR).dcm */,
 				4CA405291FA67FF0006F8053 /* CT-MONO2-16-chest (JPEG (70)).dcm */,
-				4CA405301FA67FF4006F8053 /* US-RGB-8-esopecho (Little Endian Explicit VR).dcm */,
-				4CA4052A1FA67FF0006F8053 /* US-RGB-8-epicard (Big Endian Explicit VR).dcm */,
+				4CA4052F1FA67FF4006F8053 /* MG-MONO2-16 (Little Endian Explicit VR).dcm */,
 				4CA405311FA67FF5006F8053 /* MR-MONO2-8-16x-heart (Multiframe Explicit Little).dcm */,
 				4CA4052B1FA67FF1006F8053 /* MR-MONO2-16-knee (Little Endian Implicit VR).dcm */,
-				4CA4052F1FA67FF4006F8053 /* MG-MONO2-16 (Little Endian Explicit VR).dcm */,
+				4CA405301FA67FF4006F8053 /* US-RGB-8-esopecho (Little Endian Explicit VR).dcm */,
+				4CA4052A1FA67FF0006F8053 /* US-RGB-8-epicard (Big Endian Explicit VR).dcm */,
 			);
 			path = "Test Files";
 			sourceTree = "<group>";
@@ -335,6 +353,7 @@
 				4CA4051F1FA67DF3006F8053 /* DcmSwiftTests */,
 				4CFF02591F960F0700E31D74 /* Products */,
 				4C8D799E1F989EF4008300E3 /* Frameworks */,
+				34F27224DD1DD32B5C5A74A5 /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -360,6 +379,14 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
+		4C00FB531FC621AF00E76466 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C00FB541FC621BB00E76466 /* Bridge-Header.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4C8D798B1F989EB1008300E3 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -393,9 +420,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4CA405281FA67DF3006F8053 /* Build configuration list for PBXNativeTarget "DcmSwiftTests" */;
 			buildPhases = (
+				6734C4E67C12E395FFC01B82 /* [CP] Check Pods Manifest.lock */,
 				4CA4051A1FA67DF3006F8053 /* Sources */,
 				4CA4051B1FA67DF3006F8053 /* Frameworks */,
+				4C00FB531FC621AF00E76466 /* Headers */,
 				4CA4051C1FA67DF3006F8053 /* Resources */,
+				E453ED0609DCD0288E3CAE36 /* [CP] Embed Pods Frameworks */,
+				6B21A683005630732600A85D /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -524,6 +555,54 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		6734C4E67C12E395FFC01B82 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		6B21A683005630732600A85D /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-DcmSwiftTests/Pods-DcmSwiftTests-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		E453ED0609DCD0288E3CAE36 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-DcmSwiftTests/Pods-DcmSwiftTests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		4C8D79891F989EB1008300E3 /* Sources */ = {
@@ -688,6 +767,7 @@
 		};
 		4CA405261FA67DF3006F8053 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = B6206135CE3905F8C7A73DFF /* Pods-DcmSwiftTests.debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -702,6 +782,7 @@
 		};
 		4CA405271FA67DF3006F8053 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 511F9F32D85B022E67692872 /* Pods-DcmSwiftTests.release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;

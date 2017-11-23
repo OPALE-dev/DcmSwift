@@ -43,9 +43,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "4C8D798D1F989EB1008300E3"
-            BuildableName = "DcmSwift.framework"
-            BlueprintName = "DcmSwift"
+            BlueprintIdentifier = "4CFF02571F960F0700E31D74"
+            BuildableName = "DICOM Test"
+            BlueprintName = "DICOM Test"
             ReferencedContainer = "container:DcmSwift.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -63,15 +63,16 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <MacroExpansion>
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "4C8D798D1F989EB1008300E3"
-            BuildableName = "DcmSwift.framework"
-            BlueprintName = "DcmSwift"
+            BlueprintIdentifier = "4CFF02571F960F0700E31D74"
+            BuildableName = "DICOM Test"
+            BlueprintName = "DICOM Test"
             ReferencedContainer = "container:DcmSwift.xcodeproj">
          </BuildableReference>
-      </MacroExpansion>
+      </BuildableProductRunnable>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>

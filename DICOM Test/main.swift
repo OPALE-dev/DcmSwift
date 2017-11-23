@@ -20,7 +20,7 @@ var dicomFile:DicomFile!
 
 
 
-path            = "/Users/nark/Desktop/MR-MONO2-16-knee (Little Endian Implicit VR).dcm"
+path            = "/Users/nark/Desktop/test1.dcm"
 dicomFile       = DicomFile(forPath: path)
 
 
@@ -32,9 +32,9 @@ Swift.print("\(dicomFile?.dataset.description ?? "")")
 
 
 // TEST WRITE FILE
-if dicomFile.dataset.write(atPath: "/Users/nark/Desktop/MR-MONO2-16-knee (Little Endian Implicit VR)-saved.dcm") {
-    Swift.print("Write file succeeded")
-} 
+//if dicomFile.dataset.write(atPath: "/Users/nark/Desktop/MG-MONO2-16 (Little Endian Explicit VR)-saved.dcm") {
+//    Swift.print("Write file succeeded")
+//} 
 
 
 

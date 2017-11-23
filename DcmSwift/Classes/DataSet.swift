@@ -364,7 +364,7 @@ public class DataSet: DicomObject {
         }
         
         // MISSING VR FOR IMPLICIT ELEMENT
-        // TODO: if VR is implicit, we need to use the correpsondign tag VR ?
+        // TODO: if VR is implicit, we need to use the correpsonding tag VR ?
         
         element.dataOffset = os
         
@@ -419,6 +419,7 @@ public class DataSet: DicomObject {
         
         element.length = Int(length)
         
+                
         if element.vr != .SQ {
             //element.value = value
         }
@@ -450,7 +451,7 @@ public class DataSet: DicomObject {
                 bytesRead       += 4
                 os              += 4
                 
-                let itemLength   = data.subdata(in: os..<os+4).toInt16(byteOrder: byteOrder)
+                let itemLength   = data.subdata(in: os..<os+4).toInt32(byteOrder: byteOrder)
                 bytesRead       += 4
                 os              += 4
                 
@@ -464,11 +465,13 @@ public class DataSet: DicomObject {
                 var itemBytesRead = 0
                 while(itemLength > itemBytesRead) {
                     let (newElement, elementOffset) = self.readDataElement(offset: os)
-                    itemBytesRead += newElement.length + 8
-                    bytesRead += newElement.length + 8
-                    os = elementOffset
                     
                     item.elements.append(newElement)
+                    
+                    itemBytesRead += elementOffset - os
+                    bytesRead += elementOffset - os
+                    
+                    os = elementOffset                    
                 }
                 item.endOffset = os
             }
@@ -511,12 +514,12 @@ public class DataSet: DicomObject {
                         }
                     }
                     
-                    tag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
-                    os += 4
-                    
                     if tag.code == "fffee0dd" {
                         os += 4
                     }
+                    
+                    tag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
+                    os += 4
                 }
                 // Length defined data elements
                 else {
@@ -526,11 +529,13 @@ public class DataSet: DicomObject {
                     var itemBytesRead = 0
                     while(itemLength > itemBytesRead) {
                         let (newElement, elementOffset) = self.readDataElement(offset: os)
-                        itemBytesRead += newElement.length + 8
-                        bytesRead += newElement.length + 8
-                        os = elementOffset
                         
                         item.elements.append(newElement)
+                        
+                        itemBytesRead += elementOffset - os
+                        bytesRead += elementOffset - os
+                        
+                        os = elementOffset
                     }
                     
                     tag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
@@ -616,12 +621,13 @@ public class DataSet: DicomObject {
         }
         
         // write tag code
-        data.append(element.tag.data)
+        data.append(element.tag.data(withByteOrder: order))
 
         // write VR (only explicit)
         if localVRMethod == .Explicit  {
             let vrString = "\(element.vr)"
             data.append(vrString.data(using: .utf8)!)
+            
             if element.vr == .SQ {
                 data.append(Data(repeating: 0x00, count: 2))
             }
@@ -663,9 +669,14 @@ public class DataSet: DicomObject {
         }
         else {
             if localVRMethod == .Explicit {
-                var intLength = UInt32(element.length)
-                let lengthData = Data(bytes: &intLength, count: 2)
-                data.append(lengthData)
+                // we only take care of endianneess with Explicit
+                let intLength = UInt16(element.length)
+                var convertedNumber = order == .LittleEndian ?
+                    intLength.littleEndian : intLength.bigEndian
+                
+                withUnsafePointer(to: &convertedNumber) {
+                    data.append(UnsafeRawPointer($0).assumingMemoryBound(to: UInt8.self), count: 2)
+                }
             }
             else if localVRMethod == .Implicit {
                 var intLength = UInt32(element.length)
@@ -680,9 +691,13 @@ public class DataSet: DicomObject {
             data.append(element.data)
         }
         else if element.vr == .OB {
-            Swift.print(element)
-            Swift.print(element.data)
-            data.append(element.data)
+            if let pixelSequence = element as? PixelSequence {
+                data.append(self.write(pixelSequence: pixelSequence))
+            } else {
+                if element.data != nil {
+                    data.append(element.data)
+                }
+            }
         }
         else if element.vr == .OW {
             if let pixelSequence = element as? PixelSequence {
@@ -709,7 +724,9 @@ public class DataSet: DicomObject {
             data.append(element.data)
         }
         else if element.vr == .US {
-            data.append(element.data) 
+            if element.data != nil {
+                data.append(element.data)
+            }
         }
         else if element.vr == .SQ {
             if let sequence = element as? DataSequence {
@@ -731,6 +748,8 @@ public class DataSet: DicomObject {
                     element.vr == .PN ||
                     element.vr == .DA ||
                     element.vr == .DT ||
+                    element.vr == .UN ||
+                    element.vr == .AT ||
                     element.vr == .TM  {
             if element.data != nil {
                 data.append(element.data)
@@ -780,7 +799,6 @@ public class DataSet: DicomObject {
                         
             // write item length
             if item.vrMethod == .Explicit && item.length != -1 {
-                // Swift.print(item.length)
                 var intLength = UInt32(item.length)
                 let lengthData = Data(bytes: &intLength, count: 4)
                 data.append(lengthData)
