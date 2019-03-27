@@ -77,11 +77,14 @@ class FileViewController: NSViewController {
         self.createdAtTextField.stringValue         = df.string(from: self.creationDate(forPath: self.dicomFile.filepath))
         self.updatedAtTextField.stringValue         = df.string(from: self.updateDate(forPath: self.dicomFile.filepath))
         
-        let mediaStorageSOPClassUID                 = self.dicomFile.dataset.string(forTag: "MediaStorageSOPClassUID")
-        self.sopTextField.stringValue               = DicomSpec.shared.nameForUID(withUID:mediaStorageSOPClassUID!)
+        if let mediaStorageSOPClassUID = self.dicomFile.dataset.string(forTag: "MediaStorageSOPClassUID") {
+            self.sopTextField.stringValue           = DicomSpec.shared.nameForUID(withUID:mediaStorageSOPClassUID)
+        }
         
-        let transferSyntaxUID                       = self.dicomFile.dataset.string(forTag: "TransferSyntaxUID")
-        self.tsTextField.stringValue                = DicomSpec.shared.nameForUID(withUID:transferSyntaxUID!)
+        if let transferSyntaxUID = self.dicomFile.dataset.string(forTag: "TransferSyntaxUID") {
+            self.tsTextField.stringValue            = DicomSpec.shared.nameForUID(withUID:transferSyntaxUID)
+        }
+        
         self.byteOrderTextField.stringValue         = "\(self.dicomFile.dataset.byteOrder)"
         self.representationTextField.stringValue    = "\(self.dicomFile.dataset.vrMethod)"
         

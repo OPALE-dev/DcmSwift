@@ -20,7 +20,7 @@ class ConsoleSplitViewController: NSSplitViewController {
         didSet {
             // Update the view, if already loaded.
             if let _ = representedObject as? DicomDocument {
-                for vc in self.childViewControllers {
+                for vc in self.children {
                     vc.representedObject = representedObject
                 }
             }
@@ -31,27 +31,27 @@ class ConsoleSplitViewController: NSSplitViewController {
     
     
     @IBAction func expandAll(_ sender: Any) {
-        if let vc:DatasetViewController = self.childViewControllers[0] as? DatasetViewController {
+        if let vc:DatasetViewController = self.children[0] as? DatasetViewController {
             vc.expandAll(sender)
         }
     }
     
     
     @IBAction func collapseAll(_ sender: Any) {
-        if let vc:DatasetViewController = self.childViewControllers[0] as? DatasetViewController {
+        if let vc:DatasetViewController = self.children[0] as? DatasetViewController {
             vc.collapseAll(sender)
         }
     }
     
     @IBAction func removeElement(_ sender: Any) {
-        if let vc:DatasetViewController = self.childViewControllers[0] as? DatasetViewController {
+        if let vc:DatasetViewController = self.children[0] as? DatasetViewController {
             vc.removeElement(sender)
         }
     }
     
     
     @IBAction func toggleHexData(_ sender: Any) {
-        if let vc:DatasetViewController = self.childViewControllers[0] as? DatasetViewController {
+        if let vc:DatasetViewController = self.children[0] as? DatasetViewController {
             vc.toggleHexData(sender)
         }
     }
@@ -78,7 +78,7 @@ class ConsoleSplitViewController: NSSplitViewController {
     
     
     @IBAction func search(_ sender: Any) {
-        if let vc:DatasetViewController = self.childViewControllers[0] as? DatasetViewController {
+        if let vc:DatasetViewController = self.children[0] as? DatasetViewController {
             vc.search(sender)
         }
     }

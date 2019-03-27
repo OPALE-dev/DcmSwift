@@ -34,3 +34,15 @@ Builds/
 Pods/
 !Podfile
 !Podfile.lock
+
+# Ignore Xcode user-related files
+xcuserdata/
+
+# Ignore AppCode user-related files
+.idea/
+
+# Ignore CocoaPods installed files
+Pods/
+
+# Ignore Carthage installed files
+Carthage/

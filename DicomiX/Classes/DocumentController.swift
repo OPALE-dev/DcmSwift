@@ -9,5 +9,7 @@
 import Cocoa
 
 class DocumentController: NSDocumentController {
-
+    override func newDocument(_ sender: Any?) {
+        
+    }
 }

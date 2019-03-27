@@ -19,7 +19,7 @@ class WindowController: NSWindowController, NSToolbarDelegate {
     override func windowDidLoad() {
         super.windowDidLoad()
         
-        self.splitViewController = self.contentViewController as! MainSplitViewController
+        self.splitViewController = self.contentViewController as? MainSplitViewController
         
         // Observe splitviews state
         NotificationCenter.default.addObserver(self, selector: #selector(inspectorSplitViewCollapsed(notification:)), name: NSNotification.Name(rawValue: "inspectorSplitViewCollapsed"), object: nil)
@@ -34,6 +34,7 @@ class WindowController: NSWindowController, NSToolbarDelegate {
             name: .elementSelectionDidChange,
             object: nil)
     }
+    
     
     
     
@@ -56,8 +57,7 @@ class WindowController: NSWindowController, NSToolbarDelegate {
     
     
     @objc func elementSelectionDidChange(notification:Notification) {
-        if let el = notification.object as? DataElement {
-            Swift.print(el)
+        if let array = notification.object as? Array<Any> {
             addRemoveSegmentedControl.setEnabled(true, forSegment: 1)
         }
         else {
@@ -84,7 +84,7 @@ class WindowController: NSWindowController, NSToolbarDelegate {
         if let sc = sender as? NSSegmentedControl {
             if sc.selectedSegment == 0 {
                 // Add
-                self.performSegue(withIdentifier: NSStoryboardSegue.Identifier(rawValue: "ShowAddElement"), sender: self)
+                self.performSegue(withIdentifier: "ShowAddElement", sender: self)
             }
             else if sc.selectedSegment == 1 {
                 // Remove
@@ -112,10 +112,6 @@ class WindowController: NSWindowController, NSToolbarDelegate {
         
     }
     
-    @IBAction func validate(_ sender: Any) {
-        self.splitViewController.validate(sender)
-    }
-    
     @IBAction func search(_ sender: Any) {
         self.splitViewController.search(sender)
     }
@@ -140,6 +136,7 @@ class WindowController: NSWindowController, NSToolbarDelegate {
                     // hide inspector pane
                     Swift.print("hide inspector")
                     self.splitViewController.hideInspector(sender)
+                    viewsSegmentedControl.setSelected(false, forSegment: 1)
                 }
                 else {
                     // shwo inspector pane
@@ -154,10 +151,20 @@ class WindowController: NSWindowController, NSToolbarDelegate {
     
     
     
-    override func validateToolbarItem(_ item: NSToolbarItem) -> Bool {
+    func validateToolbarItem(_ item: NSToolbarItem) -> Bool {
         if item.itemIdentifier.rawValue == "Save" {
             return (self.document?.hasUnautosavedChanges)!
         }
         return true
+    }
+    
+    
+    
+    override func prepare(for segue: NSStoryboardSegue, sender: Any?) {
+        if(segue.identifier == "ShowAddElement") {
+            if let c = segue.destinationController as? AddElementController {
+                c.representedObject = self.document
+            }
+        }
     }
 }

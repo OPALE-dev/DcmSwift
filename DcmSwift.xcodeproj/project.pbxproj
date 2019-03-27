@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3223171D7ABEA677B0369AB0 /* Pods_DcmSwiftTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A6FDC8A8E1C033F519D7018F /* Pods_DcmSwiftTests.framework */; };
 		4C00FB541FC621BB00E76466 /* Bridge-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 4C00FB521FC6205500E76466 /* Bridge-Header.h */; };
 		4C38D7741FA0817D00633A5D /* MainSplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7731FA0817D00633A5D /* MainSplitViewController.swift */; };
 		4C38D7761FA0922300633A5D /* InspectorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7751FA0922300633A5D /* InspectorViewController.swift */; };
@@ -15,7 +14,6 @@
 		4C38D77C1FA0DCFF00633A5D /* FlippedStackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D77B1FA0DCFF00633A5D /* FlippedStackView.swift */; };
 		4C38D77E1FA11A7400633A5D /* ElementViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D77D1FA11A7400633A5D /* ElementViewController.swift */; };
 		4C38D7801FA12B1B00633A5D /* ConsoleSplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D77F1FA12B1B00633A5D /* ConsoleSplitViewController.swift */; };
-		4C38D7821FA1311400633A5D /* dciodvfy in Resources */ = {isa = PBXBuildFile; fileRef = 4C38D7811FA1311300633A5D /* dciodvfy */; };
 		4C38D7841FA1333200633A5D /* ConsoleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7831FA1333200633A5D /* ConsoleViewController.swift */; };
 		4C52EEF11FA8876E001A05DF /* PictureViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C52EEF01FA8876E001A05DF /* PictureViewController.swift */; };
 		4C5792FB1FB71994003B1279 /* DocumentController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5792FA1FB71994003B1279 /* DocumentController.swift */; };
@@ -37,6 +35,40 @@
 		4C5BF0911FABB4730051F4FE /* DicomString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5BF0901FABB4730051F4FE /* DicomString.swift */; };
 		4C5BF0921FABB4730051F4FE /* DicomString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5BF0901FABB4730051F4FE /* DicomString.swift */; };
 		4C5BF0931FABB4730051F4FE /* DicomString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5BF0901FABB4730051F4FE /* DicomString.swift */; };
+		4C5F9B382248DC5E0076DA82 /* Socket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; };
+		4C5F9B3A2248E1E30076DA82 /* Socket.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4C5F9B3C2248E3870076DA82 /* EntitiesPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B3B2248E3870076DA82 /* EntitiesPrefViewController.swift */; };
+		4C5F9B3E224911E30076DA82 /* GeneralPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B3D224911E30076DA82 /* GeneralPrefViewController.swift */; };
+		4C5F9B40224913A10076DA82 /* NetworkPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B3F224913A10076DA82 /* NetworkPrefViewController.swift */; };
+		4C5F9B42224913C00076DA82 /* DicomPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B41224913C00076DA82 /* DicomPrefViewController.swift */; };
+		4C5F9B44224935530076DA82 /* SendViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B43224935530076DA82 /* SendViewController.swift */; };
+		4C5F9B4B224A4C920076DA82 /* SwiftyBeaver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; };
+		4C5F9B4C224A4CA50076DA82 /* SwiftyBeaver.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4C76A9E722480F5E0057350E /* DicomConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE7224401670024C357 /* DicomConstants.swift */; };
+		4C76A9E822480F5E0057350E /* DicomConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE7224401670024C357 /* DicomConstants.swift */; };
+		4C76AA00224814F60057350E /* CR-MONO1-10-chest in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9E9224814F30057350E /* CR-MONO1-10-chest */; };
+		4C76AA01224814F60057350E /* MR-MONO2-16-knee in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9EA224814F30057350E /* MR-MONO2-16-knee */; };
+		4C76AA02224814F60057350E /* NM-MONO2-16-13x-heart in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9EB224814F30057350E /* NM-MONO2-16-13x-heart */; };
+		4C76AA03224814F60057350E /* CT-MONO2-16-ort in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9EC224814F30057350E /* CT-MONO2-16-ort */; };
+		4C76AA04224814F60057350E /* MR-MONO2-12-angio-an1 in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9ED224814F30057350E /* MR-MONO2-12-angio-an1 */; };
+		4C76AA05224814F60057350E /* OT-MONO2-8-hip in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9EE224814F30057350E /* OT-MONO2-8-hip */; };
+		4C76AA06224814F60057350E /* OT-PAL-8-face in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9EF224814F30057350E /* OT-PAL-8-face */; };
+		4C76AA07224814F60057350E /* US-PAL-8-10x-echo in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F0224814F40057350E /* US-PAL-8-10x-echo */; };
+		4C76AA08224814F60057350E /* OT-MONO2-8-colon in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F1224814F40057350E /* OT-MONO2-8-colon */; };
+		4C76AA09224814F60057350E /* US-RGB-8-epicard in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F2224814F40057350E /* US-RGB-8-epicard */; };
+		4C76AA0A224814F60057350E /* MR-MONO2-12-an2 in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F3224814F40057350E /* MR-MONO2-12-an2 */; };
+		4C76AA0B224814F60057350E /* CT-MONO2-16-chest in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F4224814F40057350E /* CT-MONO2-16-chest */; };
+		4C76AA0C224814F60057350E /* CT-MONO2-12-lomb-an2 in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F5224814F40057350E /* CT-MONO2-12-lomb-an2 */; };
+		4C76AA0D224814F60057350E /* US-MONO2-8-8x-execho in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F6224814F50057350E /* US-MONO2-8-8x-execho */; };
+		4C76AA0E224814F60057350E /* CT-MONO2-16-brain in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F7224814F50057350E /* CT-MONO2-16-brain */; };
+		4C76AA0F224814F60057350E /* US-RGB-8-esopecho in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F8224814F50057350E /* US-RGB-8-esopecho */; };
+		4C76AA10224814F60057350E /* MR-MONO2-8-16x-heart in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F9224814F50057350E /* MR-MONO2-8-16x-heart */; };
+		4C76AA11224814F60057350E /* OT-MONO2-8-a7 in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9FA224814F50057350E /* OT-MONO2-8-a7 */; };
+		4C76AA12224814F60057350E /* MR-MONO2-16-head in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9FB224814F50057350E /* MR-MONO2-16-head */; };
+		4C76AA13224814F60057350E /* XA-MONO2-8-12x-catheter in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9FC224814F50057350E /* XA-MONO2-8-12x-catheter */; };
+		4C76AA14224814F60057350E /* CT-MONO2-8-abdo in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9FD224814F60057350E /* CT-MONO2-8-abdo */; };
+		4C76AA15224814F60057350E /* MR-MONO2-12-shoulder in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9FE224814F60057350E /* MR-MONO2-12-shoulder */; };
+		4C76AA16224814F60057350E /* CT-MONO2-16-ankle in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9FF224814F60057350E /* CT-MONO2-16-ankle */; };
 		4C7B78D11FA1485B005BB2A2 /* DicomDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7B78D01FA1485B005BB2A2 /* DicomDate.swift */; };
 		4C7B78D31FA1EC08005BB2A2 /* DicomDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7B78D01FA1485B005BB2A2 /* DicomDate.swift */; };
 		4C7B78D61FA28002005BB2A2 /* DataTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7B78D41FA23FAC005BB2A2 /* DataTag.swift */; };
@@ -56,13 +88,6 @@
 		4C8D79A61F98A2AE008300E3 /* DicomData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C783E6A1F969DC500E46F30 /* DicomData.swift */; };
 		4C8D79AA1F98AB0D008300E3 /* DicomSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8D79A71F98A69B008300E3 /* DicomSpec.swift */; };
 		4C8D79AB1F98AB0E008300E3 /* DicomSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8D79A71F98A69B008300E3 /* DicomSpec.swift */; };
-		4C9979641FA684F100C90494 /* CT-MONO2-16 (Little Endian Explicit VR).dcm in Resources */ = {isa = PBXBuildFile; fileRef = 4CA4052C1FA67FF1006F8053 /* CT-MONO2-16 (Little Endian Explicit VR).dcm */; };
-		4C9979651FA684F100C90494 /* CT-MONO2-16-chest (JPEG (70)).dcm in Resources */ = {isa = PBXBuildFile; fileRef = 4CA405291FA67FF0006F8053 /* CT-MONO2-16-chest (JPEG (70)).dcm */; };
-		4C9979661FA684F100C90494 /* MG-MONO2-16 (Little Endian Explicit VR).dcm in Resources */ = {isa = PBXBuildFile; fileRef = 4CA4052F1FA67FF4006F8053 /* MG-MONO2-16 (Little Endian Explicit VR).dcm */; };
-		4C9979671FA684F100C90494 /* MR-MONO2-8-16x-heart (Multiframe Explicit Little).dcm in Resources */ = {isa = PBXBuildFile; fileRef = 4CA405311FA67FF5006F8053 /* MR-MONO2-8-16x-heart (Multiframe Explicit Little).dcm */; };
-		4C9979681FA684F100C90494 /* MR-MONO2-16-knee (Little Endian Implicit VR).dcm in Resources */ = {isa = PBXBuildFile; fileRef = 4CA4052B1FA67FF1006F8053 /* MR-MONO2-16-knee (Little Endian Implicit VR).dcm */; };
-		4C99796A1FA684F100C90494 /* US-RGB-8-epicard (Big Endian Explicit VR).dcm in Resources */ = {isa = PBXBuildFile; fileRef = 4CA4052A1FA67FF0006F8053 /* US-RGB-8-epicard (Big Endian Explicit VR).dcm */; };
-		4C99796B1FA684F100C90494 /* US-RGB-8-esopecho (Little Endian Explicit VR).dcm in Resources */ = {isa = PBXBuildFile; fileRef = 4CA405301FA67FF4006F8053 /* US-RGB-8-esopecho (Little Endian Explicit VR).dcm */; };
 		4C99796F1FA71DEF00C90494 /* PixelSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99796E1FA71DEF00C90494 /* PixelSequence.swift */; };
 		4C9979701FA71DEF00C90494 /* PixelSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99796E1FA71DEF00C90494 /* PixelSequence.swift */; };
 		4C9979901FA75B3600C90494 /* DicomObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99798F1FA75B3600C90494 /* DicomObject.swift */; };
@@ -80,6 +105,19 @@
 		4CCF6B2B1F9FABC7000579C7 /* DcmSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8D798E1F989EB1008300E3 /* DcmSwift.framework */; };
 		4CCF6B2D1F9FABDF000579C7 /* DcmSwift.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8D798E1F989EB1008300E3 /* DcmSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4CCF6B2F1F9FB285000579C7 /* WindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCF6B2E1F9FB285000579C7 /* WindowController.swift */; };
+		4CCF8FA0224AAAE60032325C /* ExportDICOMViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCF8F9F224AAAE60032325C /* ExportDICOMViewController.swift */; };
+		4CCF8FA1224AB0B20032325C /* SwiftyBeaver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; };
+		4CCF8FA2224AB0B20032325C /* Socket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; };
+		4CCF8FA4224AB1440032325C /* SwiftyBeaver.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4CCF8FA5224AB1440032325C /* Socket.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4CD0BEE122417CBF0024C357 /* DcmSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8D798E1F989EB1008300E3 /* DcmSwift.framework */; };
+		4CD0BEE42242A63A0024C357 /* DicomAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE32242A63A0024C357 /* DicomAssociation.swift */; };
+		4CD0BEE62242B15B0024C357 /* DicomEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE52242B15B0024C357 /* DicomEntity.swift */; };
+		4CD0BEE8224401670024C357 /* DicomConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE7224401670024C357 /* DicomConstants.swift */; };
+		4CECD64B2240F3440087AF0D /* DocumentsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64A2240F3440087AF0D /* DocumentsViewController.swift */; };
+		4CECD64D22415EE90087AF0D /* DicomClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64C22415EE90087AF0D /* DicomClient.swift */; };
+		4CECD64F22415F5A0087AF0D /* DicomService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64E22415F5A0087AF0D /* DicomService.swift */; };
+		4CECD65122415F780087AF0D /* DicomServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD65022415F780087AF0D /* DicomServer.swift */; };
 		4CFF025C1F960F0800E31D74 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFF025B1F960F0800E31D74 /* main.swift */; };
 /* End PBXBuildFile section */
 
@@ -91,9 +129,28 @@
 			remoteGlobalIDString = 4C8D798D1F989EB1008300E3;
 			remoteInfo = DcmSwift;
 		};
+		4CD0BEDF22417CB80024C357 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4CFF02501F960F0700E31D74 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4C8D798D1F989EB1008300E3;
+			remoteInfo = DcmSwift;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		4C5F9B392248E1D80076DA82 /* Copy Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				4C5F9B4C224A4CA50076DA82 /* SwiftyBeaver.framework in Copy Frameworks */,
+				4C5F9B3A2248E1E30076DA82 /* Socket.framework in Copy Frameworks */,
+			);
+			name = "Copy Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4CCF6B2C1F9FABCF000579C7 /* Copy Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -103,6 +160,17 @@
 				4CCF6B2D1F9FABDF000579C7 /* DcmSwift.framework in Copy Frameworks */,
 			);
 			name = "Copy Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CCF8FA3224AB13B0032325C /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				4CCF8FA4224AB1440032325C /* SwiftyBeaver.framework in CopyFiles */,
+				4CCF8FA5224AB1440032325C /* Socket.framework in CopyFiles */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		4CFF02561F960F0700E31D74 /* CopyFiles */ = {
@@ -124,7 +192,6 @@
 		4C38D77B1FA0DCFF00633A5D /* FlippedStackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlippedStackView.swift; sourceTree = "<group>"; };
 		4C38D77D1FA11A7400633A5D /* ElementViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElementViewController.swift; sourceTree = "<group>"; };
 		4C38D77F1FA12B1B00633A5D /* ConsoleSplitViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleSplitViewController.swift; sourceTree = "<group>"; };
-		4C38D7811FA1311300633A5D /* dciodvfy */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = dciodvfy; sourceTree = "<group>"; };
 		4C38D7831FA1333200633A5D /* ConsoleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleViewController.swift; sourceTree = "<group>"; };
 		4C3CD4781F9697DC00323E8A /* DicomFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomFile.swift; sourceTree = "<group>"; };
 		4C3CD47A1F96981300323E8A /* DataSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSet.swift; sourceTree = "<group>"; };
@@ -135,14 +202,45 @@
 		4C5792FE1FB8A8A2003B1279 /* PreferencesWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesWindowController.swift; sourceTree = "<group>"; };
 		4C5793001FB8AA65003B1279 /* PreferencesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesViewController.swift; sourceTree = "<group>"; };
 		4C5BF0901FABB4730051F4FE /* DicomString.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomString.swift; sourceTree = "<group>"; };
+		4C5F9B362248DBCD0076DA82 /* Cartfile */ = {isa = PBXFileReference; lastKnownFileType = text; path = Cartfile; sourceTree = "<group>"; };
+		4C5F9B372248DC5E0076DA82 /* Socket.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Socket.framework; path = Carthage/Build/Mac/Socket.framework; sourceTree = "<group>"; };
+		4C5F9B3B2248E3870076DA82 /* EntitiesPrefViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitiesPrefViewController.swift; sourceTree = "<group>"; };
+		4C5F9B3D224911E30076DA82 /* GeneralPrefViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralPrefViewController.swift; sourceTree = "<group>"; };
+		4C5F9B3F224913A10076DA82 /* NetworkPrefViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkPrefViewController.swift; sourceTree = "<group>"; };
+		4C5F9B41224913C00076DA82 /* DicomPrefViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomPrefViewController.swift; sourceTree = "<group>"; };
+		4C5F9B43224935530076DA82 /* SendViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendViewController.swift; sourceTree = "<group>"; };
+		4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftyBeaver.framework; path = Carthage/Build/Mac/SwiftyBeaver.framework; sourceTree = "<group>"; };
+		4C76A9E9224814F30057350E /* CR-MONO1-10-chest */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CR-MONO1-10-chest"; sourceTree = "<group>"; };
+		4C76A9EA224814F30057350E /* MR-MONO2-16-knee */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-16-knee"; sourceTree = "<group>"; };
+		4C76A9EB224814F30057350E /* NM-MONO2-16-13x-heart */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NM-MONO2-16-13x-heart"; sourceTree = "<group>"; };
+		4C76A9EC224814F30057350E /* CT-MONO2-16-ort */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-16-ort"; sourceTree = "<group>"; };
+		4C76A9ED224814F30057350E /* MR-MONO2-12-angio-an1 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-12-angio-an1"; sourceTree = "<group>"; };
+		4C76A9EE224814F30057350E /* OT-MONO2-8-hip */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OT-MONO2-8-hip"; sourceTree = "<group>"; };
+		4C76A9EF224814F30057350E /* OT-PAL-8-face */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OT-PAL-8-face"; sourceTree = "<group>"; };
+		4C76A9F0224814F40057350E /* US-PAL-8-10x-echo */ = {isa = PBXFileReference; lastKnownFileType = file; path = "US-PAL-8-10x-echo"; sourceTree = "<group>"; };
+		4C76A9F1224814F40057350E /* OT-MONO2-8-colon */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OT-MONO2-8-colon"; sourceTree = "<group>"; };
+		4C76A9F2224814F40057350E /* US-RGB-8-epicard */ = {isa = PBXFileReference; lastKnownFileType = file; path = "US-RGB-8-epicard"; sourceTree = "<group>"; };
+		4C76A9F3224814F40057350E /* MR-MONO2-12-an2 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-12-an2"; sourceTree = "<group>"; };
+		4C76A9F4224814F40057350E /* CT-MONO2-16-chest */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-16-chest"; sourceTree = "<group>"; };
+		4C76A9F5224814F40057350E /* CT-MONO2-12-lomb-an2 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-12-lomb-an2"; sourceTree = "<group>"; };
+		4C76A9F6224814F50057350E /* US-MONO2-8-8x-execho */ = {isa = PBXFileReference; lastKnownFileType = file; path = "US-MONO2-8-8x-execho"; sourceTree = "<group>"; };
+		4C76A9F7224814F50057350E /* CT-MONO2-16-brain */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-16-brain"; sourceTree = "<group>"; };
+		4C76A9F8224814F50057350E /* US-RGB-8-esopecho */ = {isa = PBXFileReference; lastKnownFileType = file; path = "US-RGB-8-esopecho"; sourceTree = "<group>"; };
+		4C76A9F9224814F50057350E /* MR-MONO2-8-16x-heart */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-8-16x-heart"; sourceTree = "<group>"; };
+		4C76A9FA224814F50057350E /* OT-MONO2-8-a7 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OT-MONO2-8-a7"; sourceTree = "<group>"; };
+		4C76A9FB224814F50057350E /* MR-MONO2-16-head */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-16-head"; sourceTree = "<group>"; };
+		4C76A9FC224814F50057350E /* XA-MONO2-8-12x-catheter */ = {isa = PBXFileReference; lastKnownFileType = file; path = "XA-MONO2-8-12x-catheter"; sourceTree = "<group>"; };
+		4C76A9FD224814F60057350E /* CT-MONO2-8-abdo */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-8-abdo"; sourceTree = "<group>"; };
+		4C76A9FE224814F60057350E /* MR-MONO2-12-shoulder */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-12-shoulder"; sourceTree = "<group>"; };
+		4C76A9FF224814F60057350E /* CT-MONO2-16-ankle */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-16-ankle"; sourceTree = "<group>"; };
 		4C783E6A1F969DC500E46F30 /* DicomData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomData.swift; sourceTree = "<group>"; };
 		4C7B78D01FA1485B005BB2A2 /* DicomDate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomDate.swift; sourceTree = "<group>"; };
 		4C7B78D41FA23FAC005BB2A2 /* DataTag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataTag.swift; sourceTree = "<group>"; };
 		4C8D79851F97D84A008300E3 /* DataSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSequence.swift; sourceTree = "<group>"; };
-		4C8D79871F97D859008300E3 /* DataItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataItem.swift; sourceTree = "<group>"; };
+		4C8D79871F97D859008300E3 /* DataItem.swift */ = {isa = PBXFileReference; indentWidth = 4; lastKnownFileType = sourcecode.swift; path = DataItem.swift; sourceTree = "<group>"; };
 		4C8D798E1F989EB1008300E3 /* DcmSwift.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DcmSwift.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C8D79901F989EB1008300E3 /* DcmSwift.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DcmSwift.h; sourceTree = "<group>"; };
-		4C8D79911F989EB1008300E3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = DcmSwift/Info.plist; sourceTree = "<group>"; };
+		4C8D79911F989EB1008300E3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4C8D79A71F98A69B008300E3 /* DicomSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomSpec.swift; sourceTree = "<group>"; };
 		4C99796E1FA71DEF00C90494 /* PixelSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelSequence.swift; sourceTree = "<group>"; };
 		4C99798F1FA75B3600C90494 /* DicomObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomObject.swift; sourceTree = "<group>"; };
@@ -151,13 +249,6 @@
 		4CA4051E1FA67DF3006F8053 /* DcmSwiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DcmSwiftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CA405201FA67DF3006F8053 /* DcmSwiftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DcmSwiftTests.swift; sourceTree = "<group>"; };
 		4CA405221FA67DF3006F8053 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		4CA405291FA67FF0006F8053 /* CT-MONO2-16-chest (JPEG (70)).dcm */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-16-chest (JPEG (70)).dcm"; sourceTree = "<group>"; };
-		4CA4052A1FA67FF0006F8053 /* US-RGB-8-epicard (Big Endian Explicit VR).dcm */ = {isa = PBXFileReference; lastKnownFileType = file; path = "US-RGB-8-epicard (Big Endian Explicit VR).dcm"; sourceTree = "<group>"; };
-		4CA4052B1FA67FF1006F8053 /* MR-MONO2-16-knee (Little Endian Implicit VR).dcm */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-16-knee (Little Endian Implicit VR).dcm"; sourceTree = "<group>"; };
-		4CA4052C1FA67FF1006F8053 /* CT-MONO2-16 (Little Endian Explicit VR).dcm */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-16 (Little Endian Explicit VR).dcm"; sourceTree = "<group>"; };
-		4CA4052F1FA67FF4006F8053 /* MG-MONO2-16 (Little Endian Explicit VR).dcm */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MG-MONO2-16 (Little Endian Explicit VR).dcm"; sourceTree = "<group>"; };
-		4CA405301FA67FF4006F8053 /* US-RGB-8-esopecho (Little Endian Explicit VR).dcm */ = {isa = PBXFileReference; lastKnownFileType = file; path = "US-RGB-8-esopecho (Little Endian Explicit VR).dcm"; sourceTree = "<group>"; };
-		4CA405311FA67FF5006F8053 /* MR-MONO2-8-16x-heart (Multiframe Explicit Little).dcm */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-8-16x-heart (Multiframe Explicit Little).dcm"; sourceTree = "<group>"; };
 		4CB9C9A01FB248C000C5356B /* ExportViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportViewController.swift; sourceTree = "<group>"; };
 		4CCF6B171F9FABBA000579C7 /* DicomiX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DicomiX.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CCF6B191F9FABBA000579C7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -165,14 +256,19 @@
 		4CCF6B1D1F9FABBA000579C7 /* DicomDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomDocument.swift; sourceTree = "<group>"; };
 		4CCF6B1F1F9FABBA000579C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4CCF6B221F9FABBA000579C7 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
-		4CCF6B241F9FABBA000579C7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = DicomiX/Info.plist; sourceTree = "<group>"; };
+		4CCF6B241F9FABBA000579C7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4CCF6B251F9FABBA000579C7 /* DicomiX.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DicomiX.entitlements; sourceTree = "<group>"; };
 		4CCF6B2E1F9FB285000579C7 /* WindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowController.swift; sourceTree = "<group>"; };
+		4CCF8F9F224AAAE60032325C /* ExportDICOMViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportDICOMViewController.swift; sourceTree = "<group>"; };
+		4CD0BEE32242A63A0024C357 /* DicomAssociation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomAssociation.swift; sourceTree = "<group>"; };
+		4CD0BEE52242B15B0024C357 /* DicomEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomEntity.swift; sourceTree = "<group>"; };
+		4CD0BEE7224401670024C357 /* DicomConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomConstants.swift; sourceTree = "<group>"; };
+		4CECD64A2240F3440087AF0D /* DocumentsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentsViewController.swift; sourceTree = "<group>"; };
+		4CECD64C22415EE90087AF0D /* DicomClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomClient.swift; sourceTree = "<group>"; };
+		4CECD64E22415F5A0087AF0D /* DicomService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomService.swift; sourceTree = "<group>"; };
+		4CECD65022415F780087AF0D /* DicomServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomServer.swift; sourceTree = "<group>"; };
 		4CFF02581F960F0700E31D74 /* DICOM Test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "DICOM Test"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CFF025B1F960F0800E31D74 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
-		511F9F32D85B022E67692872 /* Pods-DcmSwiftTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DcmSwiftTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-DcmSwiftTests/Pods-DcmSwiftTests.release.xcconfig"; sourceTree = "<group>"; };
-		A6FDC8A8E1C033F519D7018F /* Pods_DcmSwiftTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DcmSwiftTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		B6206135CE3905F8C7A73DFF /* Pods-DcmSwiftTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DcmSwiftTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-DcmSwiftTests/Pods-DcmSwiftTests.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -180,6 +276,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C5F9B382248DC5E0076DA82 /* Socket.framework in Frameworks */,
+				4C5F9B4B224A4C920076DA82 /* SwiftyBeaver.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -188,7 +286,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				4CA405231FA67DF3006F8053 /* DcmSwift.framework in Frameworks */,
-				3223171D7ABEA677B0369AB0 /* Pods_DcmSwiftTests.framework in Frameworks */,
+				4CCF8FA1224AB0B20032325C /* SwiftyBeaver.framework in Frameworks */,
+				4CCF8FA2224AB0B20032325C /* Socket.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -204,26 +303,21 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4CD0BEE122417CBF0024C357 /* DcmSwift.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		34F27224DD1DD32B5C5A74A5 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				B6206135CE3905F8C7A73DFF /* Pods-DcmSwiftTests.debug.xcconfig */,
-				511F9F32D85B022E67692872 /* Pods-DcmSwiftTests.release.xcconfig */,
-			);
-			name = Pods;
-			sourceTree = "<group>";
-		};
 		4C8D798F1F989EB1008300E3 /* DcmSwift */ = {
 			isa = PBXGroup;
 			children = (
+				4C8D79911F989EB1008300E3 /* Info.plist */,
 				4CB832681FA2916100103A94 /* Header */,
-				4CB832691FA2917300103A94 /* Classes */,
+				4CECD652224165AC0087AF0D /* Foundation */,
+				4CB832691FA2917300103A94 /* Networking */,
+				4CECD653224165CF0087AF0D /* Graphics */,
 			);
 			path = DcmSwift;
 			sourceTree = "<group>";
@@ -231,8 +325,9 @@
 		4C8D799E1F989EF4008300E3 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */,
+				4C5F9B372248DC5E0076DA82 /* Socket.framework */,
 				4C9979991FA78EF800C90494 /* AppKit.framework */,
-				A6FDC8A8E1C033F519D7018F /* Pods_DcmSwiftTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -246,6 +341,7 @@
 				4CCF6B2E1F9FB285000579C7 /* WindowController.swift */,
 				4C38D7731FA0817D00633A5D /* MainSplitViewController.swift */,
 				4C38D77F1FA12B1B00633A5D /* ConsoleSplitViewController.swift */,
+				4CECD64A2240F3440087AF0D /* DocumentsViewController.swift */,
 				4CCF6B1B1F9FABBA000579C7 /* DatasetViewController.swift */,
 				4C38D7831FA1333200633A5D /* ConsoleViewController.swift */,
 				4C38D7751FA0922300633A5D /* InspectorViewController.swift */,
@@ -257,6 +353,12 @@
 				4C38D77B1FA0DCFF00633A5D /* FlippedStackView.swift */,
 				4C5792FE1FB8A8A2003B1279 /* PreferencesWindowController.swift */,
 				4C5793001FB8AA65003B1279 /* PreferencesViewController.swift */,
+				4C5F9B3D224911E30076DA82 /* GeneralPrefViewController.swift */,
+				4C5F9B3B2248E3870076DA82 /* EntitiesPrefViewController.swift */,
+				4C5F9B3F224913A10076DA82 /* NetworkPrefViewController.swift */,
+				4C5F9B41224913C00076DA82 /* DicomPrefViewController.swift */,
+				4C5F9B43224935530076DA82 /* SendViewController.swift */,
+				4CCF8F9F224AAAE60032325C /* ExportDICOMViewController.swift */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -274,7 +376,6 @@
 			children = (
 				4CCF6B1F1F9FABBA000579C7 /* Assets.xcassets */,
 				4CCF6B251F9FABBA000579C7 /* DicomiX.entitlements */,
-				4C38D7811FA1311300633A5D /* dciodvfy */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -293,13 +394,29 @@
 		4CA4052D1FA67FF3006F8053 /* Test Files */ = {
 			isa = PBXGroup;
 			children = (
-				4CA4052C1FA67FF1006F8053 /* CT-MONO2-16 (Little Endian Explicit VR).dcm */,
-				4CA405291FA67FF0006F8053 /* CT-MONO2-16-chest (JPEG (70)).dcm */,
-				4CA4052F1FA67FF4006F8053 /* MG-MONO2-16 (Little Endian Explicit VR).dcm */,
-				4CA405311FA67FF5006F8053 /* MR-MONO2-8-16x-heart (Multiframe Explicit Little).dcm */,
-				4CA4052B1FA67FF1006F8053 /* MR-MONO2-16-knee (Little Endian Implicit VR).dcm */,
-				4CA405301FA67FF4006F8053 /* US-RGB-8-esopecho (Little Endian Explicit VR).dcm */,
-				4CA4052A1FA67FF0006F8053 /* US-RGB-8-epicard (Big Endian Explicit VR).dcm */,
+				4C76A9E9224814F30057350E /* CR-MONO1-10-chest */,
+				4C76A9FD224814F60057350E /* CT-MONO2-8-abdo */,
+				4C76A9F5224814F40057350E /* CT-MONO2-12-lomb-an2 */,
+				4C76A9FF224814F60057350E /* CT-MONO2-16-ankle */,
+				4C76A9F7224814F50057350E /* CT-MONO2-16-brain */,
+				4C76A9F4224814F40057350E /* CT-MONO2-16-chest */,
+				4C76A9EC224814F30057350E /* CT-MONO2-16-ort */,
+				4C76A9F9224814F50057350E /* MR-MONO2-8-16x-heart */,
+				4C76A9F3224814F40057350E /* MR-MONO2-12-an2 */,
+				4C76A9ED224814F30057350E /* MR-MONO2-12-angio-an1 */,
+				4C76A9FE224814F60057350E /* MR-MONO2-12-shoulder */,
+				4C76A9FB224814F50057350E /* MR-MONO2-16-head */,
+				4C76A9EA224814F30057350E /* MR-MONO2-16-knee */,
+				4C76A9EB224814F30057350E /* NM-MONO2-16-13x-heart */,
+				4C76A9FA224814F50057350E /* OT-MONO2-8-a7 */,
+				4C76A9F1224814F40057350E /* OT-MONO2-8-colon */,
+				4C76A9EE224814F30057350E /* OT-MONO2-8-hip */,
+				4C76A9EF224814F30057350E /* OT-PAL-8-face */,
+				4C76A9F6224814F50057350E /* US-MONO2-8-8x-execho */,
+				4C76A9F0224814F40057350E /* US-PAL-8-10x-echo */,
+				4C76A9F2224814F40057350E /* US-RGB-8-epicard */,
+				4C76A9F8224814F50057350E /* US-RGB-8-esopecho */,
+				4C76A9FC224814F50057350E /* XA-MONO2-8-12x-catheter */,
 			);
 			path = "Test Files";
 			sourceTree = "<group>";
@@ -312,7 +429,30 @@
 			path = Header;
 			sourceTree = "<group>";
 		};
-		4CB832691FA2917300103A94 /* Classes */ = {
+		4CB832691FA2917300103A94 /* Networking */ = {
+			isa = PBXGroup;
+			children = (
+				4CECD64E22415F5A0087AF0D /* DicomService.swift */,
+				4CECD64C22415EE90087AF0D /* DicomClient.swift */,
+				4CECD65022415F780087AF0D /* DicomServer.swift */,
+				4CD0BEE32242A63A0024C357 /* DicomAssociation.swift */,
+				4CD0BEE52242B15B0024C357 /* DicomEntity.swift */,
+			);
+			path = Networking;
+			sourceTree = "<group>";
+		};
+		4CCF6B181F9FABBA000579C7 /* DicomiX */ = {
+			isa = PBXGroup;
+			children = (
+				4C9979931FA75C8300C90494 /* Classes */,
+				4C9979941FA75C8D00C90494 /* Storyboards */,
+				4C9979951FA75C9D00C90494 /* Resources */,
+				4CCF6B241F9FABBA000579C7 /* Info.plist */,
+			);
+			path = DicomiX;
+			sourceTree = "<group>";
+		};
+		4CECD652224165AC0087AF0D /* Foundation */ = {
 			isa = PBXGroup;
 			children = (
 				4C3CD47A1F96981300323E8A /* DataSet.swift */,
@@ -322,38 +462,34 @@
 				4C7B78D41FA23FAC005BB2A2 /* DataTag.swift */,
 				4C99796E1FA71DEF00C90494 /* PixelSequence.swift */,
 				4C3CD4781F9697DC00323E8A /* DicomFile.swift */,
-				4C9979961FA7720300C90494 /* DicomImage.swift */,
 				4C7B78D01FA1485B005BB2A2 /* DicomDate.swift */,
 				4C783E6A1F969DC500E46F30 /* DicomData.swift */,
 				4C5BF0901FABB4730051F4FE /* DicomString.swift */,
 				4C99798F1FA75B3600C90494 /* DicomObject.swift */,
 				4C8D79A71F98A69B008300E3 /* DicomSpec.swift */,
+				4CD0BEE7224401670024C357 /* DicomConstants.swift */,
 			);
-			path = Classes;
+			path = Foundation;
 			sourceTree = "<group>";
 		};
-		4CCF6B181F9FABBA000579C7 /* DicomiX */ = {
+		4CECD653224165CF0087AF0D /* Graphics */ = {
 			isa = PBXGroup;
 			children = (
-				4C9979931FA75C8300C90494 /* Classes */,
-				4C9979941FA75C8D00C90494 /* Storyboards */,
-				4C9979951FA75C9D00C90494 /* Resources */,
+				4C9979961FA7720300C90494 /* DicomImage.swift */,
 			);
-			path = DicomiX;
+			path = Graphics;
 			sourceTree = "<group>";
 		};
 		4CFF024F1F960F0700E31D74 = {
 			isa = PBXGroup;
 			children = (
 				4CCF6B181F9FABBA000579C7 /* DicomiX */,
-				4CCF6B241F9FABBA000579C7 /* Info.plist */,
 				4CFF025A1F960F0700E31D74 /* DICOM Test */,
 				4C8D798F1F989EB1008300E3 /* DcmSwift */,
-				4C8D79911F989EB1008300E3 /* Info.plist */,
 				4CA4051F1FA67DF3006F8053 /* DcmSwiftTests */,
 				4CFF02591F960F0700E31D74 /* Products */,
 				4C8D799E1F989EF4008300E3 /* Frameworks */,
-				34F27224DD1DD32B5C5A74A5 /* Pods */,
+				4C5F9B362248DBCD0076DA82 /* Cartfile */,
 			);
 			sourceTree = "<group>";
 		};
@@ -406,6 +542,7 @@
 				4C8D798A1F989EB1008300E3 /* Frameworks */,
 				4C8D798B1F989EB1008300E3 /* Headers */,
 				4C8D798C1F989EB1008300E3 /* Resources */,
+				4C5F9B392248E1D80076DA82 /* Copy Frameworks */,
 			);
 			buildRules = (
 			);
@@ -420,13 +557,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4CA405281FA67DF3006F8053 /* Build configuration list for PBXNativeTarget "DcmSwiftTests" */;
 			buildPhases = (
-				6734C4E67C12E395FFC01B82 /* [CP] Check Pods Manifest.lock */,
 				4CA4051A1FA67DF3006F8053 /* Sources */,
 				4CA4051B1FA67DF3006F8053 /* Frameworks */,
 				4C00FB531FC621AF00E76466 /* Headers */,
 				4CA4051C1FA67DF3006F8053 /* Resources */,
-				E453ED0609DCD0288E3CAE36 /* [CP] Embed Pods Frameworks */,
-				6B21A683005630732600A85D /* [CP] Copy Pods Resources */,
+				4CCF8FA3224AB13B0032325C /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -467,6 +602,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				4CD0BEE022417CB80024C357 /* PBXTargetDependency */,
 			);
 			name = "DICOM Test";
 			productName = "DICOM Test";
@@ -480,23 +616,32 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0900;
-				LastUpgradeCheck = 0900;
+				LastUpgradeCheck = 1010;
 				ORGANIZATIONNAME = "Read-Write.fr";
 				TargetAttributes = {
 					4C8D798D1F989EB1008300E3 = {
 						CreatedOnToolsVersion = 9.0.1;
+						LastSwiftMigration = 1010;
 						ProvisioningStyle = Automatic;
 					};
 					4CA4051D1FA67DF3006F8053 = {
 						CreatedOnToolsVersion = 9.0.1;
+						LastSwiftMigration = 1010;
 						ProvisioningStyle = Automatic;
 					};
 					4CCF6B161F9FABBA000579C7 = {
 						CreatedOnToolsVersion = 9.0.1;
+						LastSwiftMigration = 1010;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.Sandbox = {
+								enabled = 1;
+							};
+						};
 					};
 					4CFF02571F960F0700E31D74 = {
 						CreatedOnToolsVersion = 9.0;
+						LastSwiftMigration = 1010;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -534,13 +679,29 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4C9979641FA684F100C90494 /* CT-MONO2-16 (Little Endian Explicit VR).dcm in Resources */,
-				4C9979651FA684F100C90494 /* CT-MONO2-16-chest (JPEG (70)).dcm in Resources */,
-				4C9979661FA684F100C90494 /* MG-MONO2-16 (Little Endian Explicit VR).dcm in Resources */,
-				4C9979671FA684F100C90494 /* MR-MONO2-8-16x-heart (Multiframe Explicit Little).dcm in Resources */,
-				4C9979681FA684F100C90494 /* MR-MONO2-16-knee (Little Endian Implicit VR).dcm in Resources */,
-				4C99796A1FA684F100C90494 /* US-RGB-8-epicard (Big Endian Explicit VR).dcm in Resources */,
-				4C99796B1FA684F100C90494 /* US-RGB-8-esopecho (Little Endian Explicit VR).dcm in Resources */,
+				4C76AA11224814F60057350E /* OT-MONO2-8-a7 in Resources */,
+				4C76AA0B224814F60057350E /* CT-MONO2-16-chest in Resources */,
+				4C76AA05224814F60057350E /* OT-MONO2-8-hip in Resources */,
+				4C76AA08224814F60057350E /* OT-MONO2-8-colon in Resources */,
+				4C76AA04224814F60057350E /* MR-MONO2-12-angio-an1 in Resources */,
+				4C76AA07224814F60057350E /* US-PAL-8-10x-echo in Resources */,
+				4C76AA16224814F60057350E /* CT-MONO2-16-ankle in Resources */,
+				4C76AA10224814F60057350E /* MR-MONO2-8-16x-heart in Resources */,
+				4C76AA0A224814F60057350E /* MR-MONO2-12-an2 in Resources */,
+				4C76AA03224814F60057350E /* CT-MONO2-16-ort in Resources */,
+				4C76AA14224814F60057350E /* CT-MONO2-8-abdo in Resources */,
+				4C76AA12224814F60057350E /* MR-MONO2-16-head in Resources */,
+				4C76AA00224814F60057350E /* CR-MONO1-10-chest in Resources */,
+				4C76AA01224814F60057350E /* MR-MONO2-16-knee in Resources */,
+				4C76AA0F224814F60057350E /* US-RGB-8-esopecho in Resources */,
+				4C76AA06224814F60057350E /* OT-PAL-8-face in Resources */,
+				4C76AA13224814F60057350E /* XA-MONO2-8-12x-catheter in Resources */,
+				4C76AA15224814F60057350E /* MR-MONO2-12-shoulder in Resources */,
+				4C76AA09224814F60057350E /* US-RGB-8-epicard in Resources */,
+				4C76AA02224814F60057350E /* NM-MONO2-16-13x-heart in Resources */,
+				4C76AA0E224814F60057350E /* CT-MONO2-16-brain in Resources */,
+				4C76AA0C224814F60057350E /* CT-MONO2-12-lomb-an2 in Resources */,
+				4C76AA0D224814F60057350E /* US-MONO2-8-8x-execho in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -548,61 +709,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4C38D7821FA1311400633A5D /* dciodvfy in Resources */,
 				4CCF6B201F9FABBA000579C7 /* Assets.xcassets in Resources */,
 				4CCF6B231F9FABBA000579C7 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		6734C4E67C12E395FFC01B82 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
-			showEnvVarsInLog = 0;
-		};
-		6B21A683005630732600A85D /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-DcmSwiftTests/Pods-DcmSwiftTests-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		E453ED0609DCD0288E3CAE36 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-DcmSwiftTests/Pods-DcmSwiftTests-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		4C8D79891F989EB1008300E3 /* Sources */ = {
@@ -612,6 +724,8 @@
 				4C8D799B1F989EDD008300E3 /* DataSequence.swift in Sources */,
 				4C8D79971F989EDD008300E3 /* DicomFile.swift in Sources */,
 				4C8D799A1F989EDD008300E3 /* DataSet.swift in Sources */,
+				4CECD64D22415EE90087AF0D /* DicomClient.swift in Sources */,
+				4CECD64F22415F5A0087AF0D /* DicomService.swift in Sources */,
 				4C8D79981F989EDD008300E3 /* DataElement.swift in Sources */,
 				4C7B78D11FA1485B005BB2A2 /* DicomDate.swift in Sources */,
 				4C8D79991F989EDD008300E3 /* DicomData.swift in Sources */,
@@ -619,9 +733,13 @@
 				4C5BF0911FABB4730051F4FE /* DicomString.swift in Sources */,
 				4C9979901FA75B3600C90494 /* DicomObject.swift in Sources */,
 				4C7B78D61FA28002005BB2A2 /* DataTag.swift in Sources */,
+				4CD0BEE42242A63A0024C357 /* DicomAssociation.swift in Sources */,
 				4C99796F1FA71DEF00C90494 /* PixelSequence.swift in Sources */,
 				4C9979971FA7720300C90494 /* DicomImage.swift in Sources */,
+				4CD0BEE8224401670024C357 /* DicomConstants.swift in Sources */,
 				4C8D79AA1F98AB0D008300E3 /* DicomSpec.swift in Sources */,
+				4CECD65122415F780087AF0D /* DicomServer.swift in Sources */,
+				4CD0BEE62242B15B0024C357 /* DicomEntity.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -641,6 +759,7 @@
 				4C5BF08C1FABA5E80051F4FE /* DicomDate.swift in Sources */,
 				4C5BF08D1FABA5E80051F4FE /* DicomData.swift in Sources */,
 				4C5BF0921FABB4730051F4FE /* DicomString.swift in Sources */,
+				4C76A9E722480F5E0057350E /* DicomConstants.swift in Sources */,
 				4C5BF08E1FABA5E80051F4FE /* DicomObject.swift in Sources */,
 				4C5BF08F1FABA5E80051F4FE /* DicomSpec.swift in Sources */,
 			);
@@ -654,6 +773,8 @@
 				4C52EEF11FA8876E001A05DF /* PictureViewController.swift in Sources */,
 				4C5793011FB8AA65003B1279 /* PreferencesViewController.swift in Sources */,
 				4C5792FB1FB71994003B1279 /* DocumentController.swift in Sources */,
+				4C5F9B42224913C00076DA82 /* DicomPrefViewController.swift in Sources */,
+				4C5F9B44224935530076DA82 /* SendViewController.swift in Sources */,
 				4CCF6B1C1F9FABBA000579C7 /* DatasetViewController.swift in Sources */,
 				4C38D7841FA1333200633A5D /* ConsoleViewController.swift in Sources */,
 				4C5792FD1FB8709D003B1279 /* AddElementController.swift in Sources */,
@@ -662,11 +783,16 @@
 				4CB9C9A11FB248C000C5356B /* ExportViewController.swift in Sources */,
 				4C38D7761FA0922300633A5D /* InspectorViewController.swift in Sources */,
 				4C38D77E1FA11A7400633A5D /* ElementViewController.swift in Sources */,
+				4C5F9B3E224911E30076DA82 /* GeneralPrefViewController.swift in Sources */,
+				4CCF8FA0224AAAE60032325C /* ExportDICOMViewController.swift in Sources */,
+				4C5F9B40224913A10076DA82 /* NetworkPrefViewController.swift in Sources */,
 				4CCF6B1E1F9FABBA000579C7 /* DicomDocument.swift in Sources */,
 				4C5792FF1FB8A8A2003B1279 /* PreferencesWindowController.swift in Sources */,
 				4C38D7791FA0B9B200633A5D /* FileViewController.swift in Sources */,
+				4CECD64B2240F3440087AF0D /* DocumentsViewController.swift in Sources */,
 				4C38D7801FA12B1B00633A5D /* ConsoleSplitViewController.swift in Sources */,
 				4C38D77C1FA0DCFF00633A5D /* FlippedStackView.swift in Sources */,
+				4C5F9B3C2248E3870076DA82 /* EntitiesPrefViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -686,6 +812,7 @@
 				4C9979701FA71DEF00C90494 /* PixelSequence.swift in Sources */,
 				4C7B78D71FA28030005BB2A2 /* DataTag.swift in Sources */,
 				4C5BF0931FABB4730051F4FE /* DicomString.swift in Sources */,
+				4C76A9E822480F5E0057350E /* DicomConstants.swift in Sources */,
 				4CFF025C1F960F0800E31D74 /* main.swift in Sources */,
 				4C9979981FA7720300C90494 /* DicomImage.swift in Sources */,
 			);
@@ -698,6 +825,11 @@
 			isa = PBXTargetDependency;
 			target = 4C8D798D1F989EB1008300E3 /* DcmSwift */;
 			targetProxy = 4CCF6B291F9FABC3000579C7 /* PBXContainerItemProxy */;
+		};
+		4CD0BEE022417CB80024C357 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4C8D798D1F989EB1008300E3 /* DcmSwift */;
+			targetProxy = 4CD0BEDF22417CB80024C357 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -716,7 +848,7 @@
 		4C8D79941F989EB1008300E3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_IDENTITY = "Mac Developer";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -725,6 +857,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/Mac",
+				);
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = DcmSwift/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -732,8 +868,9 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.read-write.DcmSwift";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 4.2;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
@@ -751,6 +888,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/Mac",
+				);
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = DcmSwift/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -758,8 +899,9 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.read-write.DcmSwift";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 4.2;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
@@ -767,31 +909,37 @@
 		};
 		4CA405261FA67DF3006F8053 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B6206135CE3905F8C7A73DFF /* Pods-DcmSwiftTests.debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = JSVJHJ78QE;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/Mac",
+				);
 				INFOPLIST_FILE = DcmSwiftTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.read-write.DcmSwiftTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 4.2;
 			};
 			name = Debug;
 		};
 		4CA405271FA67DF3006F8053 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 511F9F32D85B022E67692872 /* Pods-DcmSwiftTests.release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = JSVJHJ78QE;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/Mac",
+				);
 				INFOPLIST_FILE = DcmSwiftTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.read-write.DcmSwiftTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 4.2;
 			};
 			name = Release;
 		};
@@ -799,6 +947,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = DicomiX/Resources/DicomiX.entitlements;
+				CODE_SIGN_IDENTITY = "Mac Developer";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = JSVJHJ78QE;
@@ -807,7 +957,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.read-write.DicomiX";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 4.0;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 4.2;
 			};
 			name = Debug;
 		};
@@ -815,6 +966,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = DicomiX/Resources/DicomiX.entitlements;
+				CODE_SIGN_IDENTITY = "Mac Developer";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = JSVJHJ78QE;
@@ -823,7 +976,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.read-write.DicomiX";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 4.0;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 4.2;
 			};
 			name = Release;
 		};
@@ -841,6 +995,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -848,6 +1003,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
@@ -898,6 +1054,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -905,6 +1062,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
@@ -939,7 +1097,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = JSVJHJ78QE;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 4.2;
 			};
 			name = Debug;
 		};
@@ -949,7 +1107,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = JSVJHJ78QE;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 4.2;
 			};
 			name = Release;
 		};

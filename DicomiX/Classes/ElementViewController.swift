@@ -9,6 +9,10 @@
 import Cocoa
 import DcmSwift
 
+extension Notification.Name {
+    static let didUpdateDcmElement = Notification.Name("didUpdateDcmElement")
+}
+
 class ElementViewController: NSViewController, NSControlTextEditingDelegate {
     @IBOutlet weak var nameTextField: NSTextField!
     @IBOutlet weak var tagGroupTextField: NSTextField!
@@ -20,6 +24,7 @@ class ElementViewController: NSViewController, NSControlTextEditingDelegate {
     @IBOutlet weak var lengthTextField: NSTextField!
     @IBOutlet weak var dataOffsetTextField: NSTextField!
     @IBOutlet weak var valueTextField: NSTextField!
+    @IBOutlet weak var editableTextField: NSTextField!
     
     private var element:DataElement!
     
@@ -52,9 +57,20 @@ class ElementViewController: NSViewController, NSControlTextEditingDelegate {
     
     
     // MARK: - NSControlTextEditingDelegate
-    override func controlTextDidEndEditing(_ obj: Notification) {
+    func controlTextDidEndEditing(_ obj: Notification) {
         if self.element != nil {
-            
+            if let textField = obj.object as? NSTextField {
+                if (self.element.dataset?.set(value: textField.stringValue, toElement: self.element))! {
+                    
+                    if let document = representedObject as? DicomDocument {
+                        document.updateChangeCount(NSDocument.ChangeType.changeDone)
+                    }
+                    
+                    NotificationCenter.default.post(name: .didUpdateDcmElement, object: nil)
+                } else {
+                    // show error
+                }
+            }
         }
     }
     
@@ -81,17 +97,8 @@ class ElementViewController: NSViewController, NSControlTextEditingDelegate {
                     self.valueTextField.objectValue = self.element.value
                 }
                 
-                
-                if  self.element.vr == .OB ||
-                    self.element.vr == .OW ||
-                    self.element.vr == .SQ ||
-                    self.element.vr == .UN ||
-                    self.element.vr == .OW {
-                    self.valueTextField.isEditable = false
-                }
-                else {
-                    self.valueTextField.isEditable = true
-                }
+                self.valueTextField.isEditable  = self.element.isEditable
+                self.editableTextField.isHidden = self.element.isEditable
             }
         }
     }
@@ -111,9 +118,14 @@ class ElementViewController: NSViewController, NSControlTextEditingDelegate {
     
     
     @objc private func elementSelectionDidChange(_ notification:Notification) {
-        if let el = notification.object as? DataElement {
-            self.element = el
-            self.updateUI()
+        if let array = notification.object as? Array<Any> {
+            let el  = array[0] as? DataElement
+            let doc = array[1] as? DicomDocument
+            
+            if doc == self.representedObject as? DicomDocument {
+                self.element = el
+                self.updateUI()
+            }
         }
     }
 }

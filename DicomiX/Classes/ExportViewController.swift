@@ -18,13 +18,13 @@ class ExportViewController: NSViewController {
     var tabViewDelegate: NSTabViewController?
     
     
+    
     // MARK: - View methods
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         buttons = (myStackView.arrangedSubviews as! [NSButton])
     }
-    
     
     
     
@@ -44,5 +44,9 @@ class ExportViewController: NSViewController {
         sender.state = .on
         
         oldSelection = newSelection
+    }
+    
+    @IBAction func export(_ sender: Any) {
+        
     }
 }
