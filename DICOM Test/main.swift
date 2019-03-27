@@ -8,25 +8,30 @@
 
 import Foundation
 import DcmSwift
+//
+//
+//
+
+var client = DicomClient(localAET: "TEST", remoteAET: "OSIRIXRW", remoteHost: "localhost", remotePort: 4097)
 
 
 
-
-
-
-
-var path = ""
-var dicomFile:DicomFile!
-
-
-
-path            = "/Users/nark/Desktop/test1.dcm"
-dicomFile       = DicomFile(forPath: path)
-
-
-
-// TEST PRINT DATASET
-Swift.print("\(dicomFile?.dataset.description ?? "")")
+//var path = ""
+//var dicomFile:DicomFile!
+//
+//
+//
+//path            = "/Users/nark/Desktop/test2.dcm"
+//dicomFile       = DicomFile(forPath: path)
+//
+//
+//
+//// TEST PRINT DATASET
+//Swift.print("\(dicomFile?.dataset.description ?? "")")
+//
+//
+//// TEST PRINT JSON
+//Swift.print("\(dicomFile?.dataset.toJSON() ?? "")")
 
 
 
@@ -41,9 +46,10 @@ Swift.print("\(dicomFile?.dataset.description ?? "")")
 
 // TEST IMAGE
 //if let image = dicomFile.dataset.dicomImage?.cgImage() {
-//    Swift.print(writeCGImage(image, to: URL(fileURLWithPath: "/Users/nark/Desktop/US-RGB-8-epicard.pngrr")))
+//    Swift.print(writeCGImage(image, to: URL(fileURLWithPath: "/Users/nark/Desktop/test3.png")))
 //}
-//
+
+
 //// TEST READ TAG VALUES
 //if let patientName = dicomFile.dataset.string(forTag: "PatientName") {
 //    print(patientName)

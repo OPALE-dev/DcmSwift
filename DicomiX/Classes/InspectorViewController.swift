@@ -36,7 +36,7 @@ class InspectorViewController: NSViewController {
             if let document:DicomDocument = representedObject as? DicomDocument {
                 self.dicomFile = document.dicomFile
                 
-                for vc in (tabViewDelegate?.childViewControllers)! {
+                for vc in (tabViewDelegate?.children)! {
                     let _ = vc.view // needed to preload views and outlets !!!                    
                     vc.representedObject = document
                 }

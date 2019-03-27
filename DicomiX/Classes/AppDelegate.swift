@@ -7,15 +7,25 @@
 //
 
 import Cocoa
+import DcmSwift
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
 
-
-
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
-        NSDocumentController.shared.openDocument(self)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: {
+            if NSDocumentController.shared.currentDocument == nil {
+                NSDocumentController.shared.openDocument(self)
+            }
+        })
+        
+        
+        // Default preferences
+        UserDefaults.standard.register(defaults: [
+            "LocalAET": "DICOMIX",
+            "MaxPDU": 16384
+        ])
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {

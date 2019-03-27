@@ -31,6 +31,8 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         // Do any additional setup after loading the view.
         self.datasetOutlineView.delegate    = self
         self.datasetOutlineView.dataSource  = self
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(didUpdateDcmElement(_:)), name: .didUpdateDcmElement, object: nil)
     }
     
 
@@ -54,6 +56,18 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     
     
     
+    
+    // MARK: - Notifications
+    @objc func didUpdateDcmElement(_ notification: Notification) {
+        let selectedRow = self.datasetOutlineView.selectedRow
+        if let selectedItem = self.datasetOutlineView.item(atRow: selectedRow) {
+            self.datasetOutlineView.reloadData()
+            
+            NotificationCenter.default.post(name: .elementSelectionDidChange, object: [selectedItem, self.representedObject!])
+            
+            self.datasetOutlineView.selectRowIndexes(IndexSet(integer: selectedRow), byExtendingSelection: false)
+        }
+    }
     
     
     
@@ -229,13 +243,15 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         if let headerItem = item as? String {
             if (tableColumn?.identifier)!.rawValue == "ElementName" {
                 view                                    = outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
-                let attrs:[NSAttributedStringKey:Any]   = [NSAttributedStringKey(rawValue: NSAttributedStringKey.font.rawValue) : NSFont.boldSystemFont(ofSize: 12)]
+                let attrs:[NSAttributedString.Key:Any]   = [NSAttributedString.Key(rawValue: NSAttributedString.Key.font.rawValue) : NSFont.boldSystemFont(ofSize: 12)]
                 let attrString:NSAttributedString       = NSMutableAttributedString(string: headerItem, attributes:attrs)
                 view?.textField?.attributedStringValue  = attrString
                 
             }
         } else if let element = item as? DataElement {
             view = outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
+            
+            view?.textField?.stringValue = ""
             
             if (tableColumn?.identifier)!.rawValue == "StartOffset" {
                 view?.textField?.stringValue = "\(element.startOffset)"
@@ -267,6 +283,8 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
                     }
                 }
                
+            } else {
+                view?.textField?.stringValue = ""
             }
             
             if searchedElements.count > 0 {
@@ -287,6 +305,9 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             }
             else if (tableColumn?.identifier)!.rawValue == "ElementValue" {
                 view?.textField?.stringValue = value.value
+                
+            } else {
+                view?.textField?.stringValue = ""
             }
         }
         
@@ -301,11 +322,7 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     
     func outlineViewSelectionDidChange(_ notification: Notification) {
         if let selectedItem = self.datasetOutlineView.item(atRow: self.datasetOutlineView.selectedRow) {
-            //if let selectedElement = selectedItem as? DataElement {
-                NotificationCenter.default.post(name: .elementSelectionDidChange, object: selectedItem)
-            //}
-        } else {
-            NotificationCenter.default.post(name: .elementSelectionDidChange, object: nil)
+            NotificationCenter.default.post(name: .elementSelectionDidChange, object: [selectedItem, self.representedObject!])
         }
     }
 }
