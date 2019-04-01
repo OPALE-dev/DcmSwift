@@ -27,4 +27,8 @@ public class DataItem: DataElement {
         
         return val
     }
+    
+    override public var isEditable:Bool  {
+        return false
+    }
 }

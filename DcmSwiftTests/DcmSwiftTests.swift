@@ -46,7 +46,19 @@ class DcmSwiftTests: XCTestCase {
         paths.forEach { path in
             print(path)
             // Generate a test for our specific selector
-            let test = DcmSwiftTests(selector: #selector(performTest))
+            let test = DcmSwiftTests(selector: #selector(readWriteTest))
+            
+            // Each test will take the size argument and use the instance variable in the test
+            test.filePath = path
+            
+            // Add it to the suite, and the defaults handle the rest
+            suite.addTest(test)
+        }
+        
+        paths.forEach { path in
+            print(path)
+            // Generate a test for our specific selector
+            let test = DcmSwiftTests(selector: #selector(readUpdateWriteTest))
             
             // Each test will take the size argument and use the instance variable in the test
             test.filePath = path
@@ -58,9 +70,69 @@ class DcmSwiftTests: XCTestCase {
     }
     
     
-    public func performTest() {
+    public func readWriteTest() {
         print(self.filePath)
         XCTAssert(self.readWriteFile(withPath: self.filePath))
+    }
+    
+    
+    public func readUpdateWriteTest() {
+        print(self.filePath)
+        XCTAssert(self.readUpdateWriteFile(withPath: self.filePath))
+    }
+    
+    
+    
+    private func readUpdateWriteFile(withPath path:String, checksum:Bool = true) -> Bool {
+        let fileName = path.components(separatedBy: "/").last!.replacingOccurrences(of: ".dcm", with: "")
+        let writePath = "\(self.finderTestDir)/\(fileName)-rwu-test.dcm"
+        
+        Swift.print("#########################################################")
+        Swift.print("# UPDATE INTEGRITY TEST")
+        Swift.print("#")
+        Swift.print("# Source file : \(path)")
+        Swift.print("# Destination file : \(writePath)")
+        Swift.print("#")
+        
+        if let dicomFile = DicomFile(forPath: path) {
+            if printDatasets { Swift.print("\(dicomFile.dataset.description )") }
+            
+            Swift.print("# Read succeeded")
+            
+            if dicomFile.dataset.set(value: "Dicomix", forTagName: "PatientName") != nil {
+                Swift.print("# Update succeeded")
+            } else {
+                Swift.print("# Update failed")
+            }
+            
+            if (dicomFile.write(atPath: writePath)) {
+                Swift.print("# Write succeeded")
+                Swift.print("#")
+                
+                if DicomFile(forPath: writePath) != nil {
+                    Swift.print("# Re-read updated file read succeeded !!!")
+                    Swift.print("#")
+                } else {
+                    Swift.print("# Re-read updated file read failed…")
+                    Swift.print("#")
+                    Swift.print("#########################################################")
+                    return false
+                }
+            }
+            else {
+                Swift.print("# Error: while writing file: \(writePath)")
+                Swift.print("#")
+                Swift.print("#########################################################")
+                return false
+            }
+            
+            Swift.print("#")
+            Swift.print("#########################################################")
+            
+            return true
+        }
+        
+        return true
     }
     
 

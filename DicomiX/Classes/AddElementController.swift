@@ -15,6 +15,7 @@ class AddElementController: NSViewController, NSComboBoxDelegate, NSComboBoxData
     @IBOutlet var groupTextField: NSTextField!
     @IBOutlet var elementTextField: NSTextField!
     @IBOutlet var valueTextField: NSTextField!
+    @IBOutlet var errorTextField: NSTextField!
     
     var keys: [String] = []
     var filteredKeys: [String] = []
@@ -33,30 +34,68 @@ class AddElementController: NSViewController, NSComboBoxDelegate, NSComboBoxData
     
     @IBAction func add(_ sender: Any) {
         if self.comboBox.stringValue.count == 0 {
+            self.errorTextField.stringValue = "You must select a Tag"
             return
         }
         
         if self.groupTextField.stringValue.count != 4 {
+            self.errorTextField.stringValue = "Invalid Tag group"
             return
         }
         
         if self.elementTextField.stringValue.count != 4 {
+            self.errorTextField.stringValue = "Invalid Tag element"
             return
         }
         
         if self.valueTextField.stringValue.count == 0 {
+            self.errorTextField.stringValue = "Value cannot be empty"
             return
         }
         
+        self.errorTextField.stringValue = ""
+        
         if let dataset = (self.representedObject as? DicomDocument)?.dicomFile.dataset {
-            _ = dataset.set(value: self.valueTextField.stringValue, forTagName: self.comboBox.stringValue)
-            NotificationCenter.default.post(name: .didUpdateDcmElement, object: nil)
-            
-            if let document = representedObject as? DicomDocument {
-                document.updateChangeCount(NSDocument.ChangeType.changeDone)
-            }
-            
             self.dismiss(self)
+            
+            if dataset.hasElement(forTagName: self.comboBox.stringValue) {
+                let alert = NSAlert()
+                alert.messageText = "Tag already exists"
+                alert.informativeText = "An element with tag \(self.comboBox.stringValue) already exists in the dataset. Do you want to update it?"
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "Update")
+                alert.addButton(withTitle: "Cancel")
+                
+                alert.beginSheetModal(for: NSApp.keyWindow!) { (modalResponse: NSApplication.ModalResponse) in
+                   if(modalResponse == .alertFirstButtonReturn){
+                        _ = dataset.set(value: self.valueTextField.stringValue, forTagName: self.comboBox.stringValue)
+                        NotificationCenter.default.post(name: .didUpdateDcmElement, object: nil)
+                        
+                        if let document = self.representedObject as? DicomDocument {
+                            document.updateChangeCount(NSDocument.ChangeType.changeDone)
+                        }
+                        
+                    }
+                }
+                
+//                if alert.runModal() == .alertFirstButtonReturn {
+//                    _ = dataset.set(value: self.valueTextField.stringValue, forTagName: self.comboBox.stringValue)
+//                    NotificationCenter.default.post(name: .didUpdateDcmElement, object: nil)
+//
+//                    if let document = representedObject as? DicomDocument {
+//                        document.updateChangeCount(NSDocument.ChangeType.changeDone)
+//                    }
+//
+//                }
+                
+            } else {
+                _ = dataset.set(value: self.valueTextField.stringValue, forTagName: self.comboBox.stringValue)
+                NotificationCenter.default.post(name: .didUpdateDcmElement, object: nil)
+                
+                if let document = representedObject as? DicomDocument {
+                    document.updateChangeCount(NSDocument.ChangeType.changeDone)
+                }
+            }
         }
     }
     

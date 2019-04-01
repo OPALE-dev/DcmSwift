@@ -375,7 +375,11 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      */
     public func vrForTag(withCode code: String) -> VR {
         if tags.keys.contains(code) {
-            return DicomSpec.vr(for:tags[code]!["vr"]!)
+            if let t = tags[code] {
+                if let v = t["vr"] {
+                   return DicomSpec.vr(for:v)
+                }
+            }
         }
         
         return .UN
@@ -414,6 +418,8 @@ public class DicomSpec: NSObject, XMLParserDelegate {
        return false
     }
     
+
+    
     /**
      Check if the given SOP Class is supported
      by the spec
@@ -430,6 +436,40 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     }
     
     
+    public func isRetired(transferSyntax sc:String) -> Bool {
+        for tss in self.transferSyntaxes() {
+            if sc == tss["uid"] {
+                if tss["retired"] != nil {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+    
+    
+    
+    public func isRetired(sopClass sc:String) -> Bool {
+        for scs in self.sopClasses() {
+            if sc == scs["uid"] {
+                if scs["retired"] != nil {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+    
+    
+    
+    public func isRetired(tag dataTag:DataTag) -> Bool {
+        if let tag = self.tagsByName[dataTag.name] {
+            if tag["retired"] != nil {
+                return true
+            }
+        }
+        return false
+    }
     
     
     
@@ -455,10 +495,132 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     
     public func parserDidEndDocument(_ parser: XMLParser) {
         // print(tags)
+        // TODO: log spec loaded successfuly
     }
     
     
+    
+    
+    // MARK: - Private Methods
+    public func validate(file:DicomFile) -> [ValidationResult] {
+        var results:[ValidationResult] = []
+        
+        // TODO: more file/dataset level validation
+        if !file.hasPrefixHeader {
+            results.append(ValidationResult(file, message: "No prefix header was found", severity: .Notice))
+        }
+        
+        if file.dataset.string(forTag: "TransferSyntaxUID") == nil {
+            results.append(ValidationResult(file, message: "Undefined Transfer Syntax", severity: .Warning))
+        }
+        
+        for e in file.dataset.allElements {
+            results.append(contentsOf: validate(dataElement: e))
+        }
+        
+        results.append(contentsOf: file.dataset.internalValidations)
+        
+        return results
+    }
+    
+    public func validate(dataSet dataset:DataSet) -> [ValidationResult] {
+        var results:[ValidationResult] = []
+        
+        for e in dataset.allElements {
+            results.append(contentsOf: validate(dataElement: e))
+        }
+        
+        results.append(contentsOf: dataset.internalValidations)
+        
+        return results
+    }
+    
+    public func validate(dataElement element:DataElement) -> [ValidationResult] {
+        var results:[ValidationResult] = []
+        
+        // check individual tags
+        if element.name == "TransferSyntaxUID" {
+            if !self.isSupported(transferSyntax: element.value as! String) {
+                results.append(ValidationResult(element, message: "Transfer Syntax is not supported by this implementation [\(element.value)]", severity: .Warning))
+            }
+        }
+        else if element.name == "SOPClassUID" {
+            if !self.isSupported(sopClass: element.value as! String) {
+                results.append(ValidationResult(element, message: "Transfer Syntax is not supported by this implementation [\(element.value)]", severity: .Warning))
+            }
+        }
+
+        // check VR length
+        var desiredLength = DicomSpec.lengthOf(vr: element.vr)
+        if desiredLength != 0 && element.length > desiredLength {
+            results.append(ValidationResult(element, message: "Invalid VR length of \(element.vr) element [\(element.name)] (\(element.length) > \(desiredLength))", severity: .Error))
+        }
+        
+        // check max VR length
+        desiredLength = DicomSpec.maxLengthOf(vr: element.vr)
+        if desiredLength != 0 && element.length > desiredLength {
+            results.append(ValidationResult(element, message: "Invalid max VR length of \(element.vr) element [\(element.name)] (\(element.length) > \(desiredLength))", severity: .Warning))
+        }
+        
+        // check if tag is retired
+        if self.isRetired(tag: element.tag) {
+            results.append(ValidationResult(element, message: "Tag \(element.tag) \(element.name) is retired", severity: .Notice))
+        }
+        
+        // check if tag is known
+        if element.name == "Unknow" {
+            results.append(ValidationResult(element, message: "Unknow tag, may be private", severity: .Notice))
+        }
+        
+        // check if VR is respected
+        let neededVR = vrForTag(withCode: element.tagCode())
+        if element.name != "Unknow" && element.vr != neededVR {
+            results.append(ValidationResult(element, message: "Value Representation mismatch, \(neededVR) required", severity: .Error))
+        }
+        
+        return results
+    }
 }
+
+
+
+public class ValidationResult : CustomStringConvertible, Comparable {
+    public enum Severity:Int {
+        case Notice = 0
+        case Warning
+        case Error
+        case Fatal
+    }
+    
+    
+    public var object:Any?
+    public var severity:Severity = .Notice
+    public var message:String = ""
+    
+    
+    public init(_ object:Any, message:String, severity:Severity = .Notice) {
+        self.object         = object
+        self.message        = message
+        self.severity       = severity
+    }
+    
+    public static func ==(lhs: ValidationResult, rhs: ValidationResult) -> Bool {
+        return lhs.severity.rawValue == rhs.severity.rawValue
+    }
+    
+    public static func <(lhs: ValidationResult, rhs: ValidationResult) -> Bool {
+        return lhs.severity.rawValue > rhs.severity.rawValue
+    }
+    
+    /**
+     A string description of the DICOM object
+     */
+    public var description: String {
+        return "\(self.object!) -> [\(self.severity)] \(self.message)"
+    }
+}
+
+
 
 
 

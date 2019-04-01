@@ -72,14 +72,15 @@ public struct DicomConstants {
 
 public func initLogger() {
     let console = ConsoleDestination()
-    console.format = "$DHH:mm:ss$d $N:$l\t$L $M"
-//    console.levelString.verbose     = "💜"
-//    console.levelString.debug       = "🧡"
-//    console.levelString.info        = "💙"
-//    console.levelString.warning     = "💛"
-//    console.levelString.error       = "❤️"
+    let file = FileDestination()
+    
+    let format = "$Dyyyy-MM-dd HH:mm:ss$d $L $M"
+    
+    file.format     = format
+    console.format  = format
     
     if SwiftyBeaver.destinations.count == 0 {
         SwiftyBeaver.addDestination(console)
+        SwiftyBeaver.addDestination(file)
     }
 }

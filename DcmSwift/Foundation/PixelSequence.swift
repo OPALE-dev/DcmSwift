@@ -45,7 +45,7 @@ class PixelSequence: DataSequence {
             
             // write item value
             if intLength > 0 {
-                print(item.data)
+                //print(item.data)
                 data.append(item.data)
             }
         }
