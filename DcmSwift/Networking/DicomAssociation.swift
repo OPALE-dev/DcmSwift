@@ -10,20 +10,6 @@ import Foundation
 import SwiftyBeaver
 import Socket
 
-extension Array {
-    func chunked(into size: Int) -> [[Element]] {
-        return stride(from: 0, to: count, by: size).map {
-            Array(self[$0 ..< Swift.min($0 + size, count)])
-        }
-    }
-}
-
-extension String {
-    func separate(every stride: Int = 4, with separator: Character = " ") -> String {
-        return String(enumerated().map { $0 > 0 && $0 % stride == 0 ? [separator, $1] : [$1]}.joined())
-    }
-}
-
 
 public class DicomAssociation : NSObject {
     private static var lastContextID:UInt8 = 1
@@ -149,42 +135,42 @@ public class DicomAssociation : NSObject {
     
     public func write(_ data:Data) {
 //        var offset = 0
-//        
+//
 //        while offset <= data.count-1 && socket.isConnected {
 //            var allData = Data()
-//            
+//
 //            var itemData = Data()
 //            var itemLength = UInt32(self.remoteMaxPDULength).bigEndian
 //            var contextID = self.contextID.bigEndian
 //            print(data.count)
 //            print(offset+self.remoteMaxPDULength)
-//            
+//
 //            var limit = offset + self.remoteMaxPDULength
 //            if offset+self.remoteMaxPDULength > data.count-1 {
 //                limit = data.count - 1
 //            }
-//            
+//
 //            let dataFragment = data.subdata(in: offset..<limit)
 //            itemData.append(UnsafeBufferPointer(start: &itemLength, count: 1)) // Length
 //            itemData.append(UnsafeBufferPointer(start: &contextID, count: 1)) // Length
 //            itemData.append(Data(repeating: 0x00, count: 1)) // 00H
 //            itemData.append(dataFragment)
-//            
+//
 //            offset += self.remoteMaxPDULength
-//            
+//
 //            var length = Int32(self.remoteMaxPDULength).bigEndian
 //            allData.append(Data(repeating: 0x04, count: 1)) // 04H DATA
 //            allData.append(Data(repeating: 0x00, count: 1)) // 00H
 //            allData.append(UnsafeBufferPointer(start: &length, count: 1)) // Length
 //            allData.append(itemData)
-//            
+//
 //            do {
 //                // send P-Data-TF message
 //                try socket.write(from: allData)
-//                
+//
 //                // close the association
 //                self.close()
-//                
+//
 //            } catch let e {
 //                print(e)
 //            }

@@ -13,14 +13,6 @@ import DcmSwift
 class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
-        // Insert code here to initialize your application
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: {
-            if NSDocumentController.shared.currentDocument == nil {
-                NSDocumentController.shared.openDocument(self)
-            }
-        })
-        
-        
         // Default preferences
         UserDefaults.standard.register(defaults: [
             "LocalAET": "DICOMIX",
@@ -31,18 +23,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ aNotification: Notification) {
         // Insert code here to tear down your application
     }
+    
+    
+    func applicationDidBecomeActive(_ notification: Notification) {
+        if DocumentController.shared.documents.count == 0 {
+            NSDocumentController.shared.openDocument(self)
+        }
+    }
 
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         return false
     }
     
-//    func application(_ sender: NSApplication, openFile filename: String) -> Bool {
-//        return true
-//    }
     
     
-//    func application(_ sender: NSApplication, openFiles filenames: [String]) {
-//        Swift.print(filenames)
-//    }
+    @IBAction func showLogs(_ sender: Any) {
+        let appName = Bundle.main.infoDictionary![kCFBundleNameKey as String] as! String
+        let caches = (NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.cachesDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)[0])
+        let logFile = [caches, appName, "swiftybeaver.log"]
+        
+        NSWorkspace.shared.openFile(logFile.joined(separator: "/"))
+    }
 }
 

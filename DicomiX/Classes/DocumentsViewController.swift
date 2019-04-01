@@ -12,6 +12,7 @@ import Cocoa
 
 extension Notification.Name {
     static let documentSelectionDidChange = Notification.Name(rawValue: "documentSelectionDidChange")
+    static let documentDidSave = Notification.Name(rawValue: "documentDidSave")
 }
 
 
@@ -40,7 +41,7 @@ class DocumentsViewController: NSViewController, NSOutlineViewDelegate, NSOutlin
     @IBOutlet weak var documentsOutlineView: NSOutlineView!
     @IBOutlet weak var documentsMenu: NSMenu!
     
-    public var categories:[String] = ["OPEN DOCUMENTS", "RECENT DOCUMENTS"]
+    public var categories:[String] = ["OPEN FILES", "RECENT FILES"]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -86,11 +87,29 @@ class DocumentsViewController: NSViewController, NSOutlineViewDelegate, NSOutlin
     
     
     
+    
+    // MARK: - NSMenu
+    
     func menuNeedsUpdate(_ menu: NSMenu) {
         if menu == self.documentsMenu {
             menu.removeAllItems()
-            print("menuNeedsUpdate")
-            //menu.addItem(withTitle: "Reveal in Finder", action: nil, keyEquivalent: nil)
+            menu.addItem(withTitle: "Reveal in Finder", action: #selector(revealInFinder), keyEquivalent: "")
+        }
+    }
+    
+    
+    
+    @objc private func revealInFinder() {
+        if let selectedItem = self.documentsOutlineView.item(atRow: self.documentsOutlineView.clickedRow) {
+            
+            if let url = selectedItem as? URL {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
+            else if let doc = selectedItem as? DicomDocument {
+                if let url = doc.fileURL {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                }
+            }
         }
     }
     

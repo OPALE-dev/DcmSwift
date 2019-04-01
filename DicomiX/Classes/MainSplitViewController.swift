@@ -71,6 +71,7 @@ class MainSplitViewController: NSSplitViewController {
     }
     
     
+    
 
   
     @IBAction func search(_ sender: Any) {
@@ -118,10 +119,31 @@ class MainSplitViewController: NSSplitViewController {
     
     
     
+    @IBAction func showValidation(_ sender: Any) {
+        if let vc:ConsoleSplitViewController = self.children[1] as? ConsoleSplitViewController {
+            vc.showValidation(sender)
+        }
+    }
+    
+    @IBAction func hideValidation(_ sender: Any) {
+        if let vc:ConsoleSplitViewController = self.children[1] as? ConsoleSplitViewController {
+            vc.hideValidation(sender)
+        }
+    }
+    
+    
+    
     override func splitViewDidResizeSubviews(_ notification: Notification) {
-        let rightView = self.splitView.subviews[2]
+        let sidebarView = self.splitView.subviews[0]
+        let inspectorView = self.splitView.subviews[2]
         
-        if self.splitView.isSubviewCollapsed(rightView) {
+        if self.splitView.isSubviewCollapsed(sidebarView) {
+            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "sidebarSplitViewCollapsed"), object: self)
+        } else {
+            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "sidebarSplitViewExpanded"), object: self)
+        }
+        
+        if self.splitView.isSubviewCollapsed(inspectorView) {
             NotificationCenter.default.post(name: NSNotification.Name(rawValue: "inspectorSplitViewCollapsed"), object: self)
         } else {
             NotificationCenter.default.post(name: NSNotification.Name(rawValue: "inspectorSplitViewExpanded"), object: self)

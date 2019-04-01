@@ -11,7 +11,10 @@ import Foundation
 
 extension Data {
     public func toString() -> String {
-        return String(data: self, encoding: String.Encoding.utf8)!.trimmingCharacters(in: CharacterSet.init(charactersIn: "\0"))
+        if let string = String(data: self, encoding: String.Encoding.utf8) {
+             return string.trimmingCharacters(in: CharacterSet.init(charactersIn: "\0"))
+        }
+        return ""
     }
     
     
@@ -57,5 +60,14 @@ extension Data {
     public func toFloat64(byteOrder: DicomSpec.ByteOrder = .LittleEndian) -> Float64 {
         return byteOrder == .LittleEndian ? self.withUnsafeBytes { $0.pointee } :
             Float64(bitPattern: UInt64(bigEndian: self.withUnsafeBytes { $0.pointee } ))
+    }
+}
+
+
+extension Array {
+    public func chunked(into size: Int) -> [[Element]] {
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0 ..< Swift.min($0 + size, count)])
+        }
     }
 }

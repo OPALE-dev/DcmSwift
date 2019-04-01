@@ -19,11 +19,21 @@ class WindowController: NSWindowController, NSToolbarDelegate {
     override func windowDidLoad() {
         super.windowDidLoad()
         
+        window?.titleVisibility = .hidden
+        
         self.splitViewController = self.contentViewController as? MainSplitViewController
+        self.hideSidebar(self)
         
         // Observe splitviews state
+        NotificationCenter.default.addObserver(self, selector: #selector(sidebarSplitViewCollapsed(notification:)), name: NSNotification.Name(rawValue: "sidebarSplitViewCollapsed"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(sidebarSplitViewExpanded(notification:)), name: NSNotification.Name(rawValue: "sidebarSplitViewExpanded"), object: nil)
+        
         NotificationCenter.default.addObserver(self, selector: #selector(inspectorSplitViewCollapsed(notification:)), name: NSNotification.Name(rawValue: "inspectorSplitViewCollapsed"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(inspectorSplitViewExpanded(notification:)), name: NSNotification.Name(rawValue: "inspectorSplitViewExpanded"), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(validationSplitViewCollapsed(notification:)), name: NSNotification.Name(rawValue: "validationSplitViewCollapsed"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(validationSplitViewExpanded(notification:)), name: NSNotification.Name(rawValue: "validationSplitViewExpanded"), object: nil)
+        
         NotificationCenter.default.addObserver(self, selector: #selector(consoleSplitViewCollapsed(notification:)), name: NSNotification.Name(rawValue: "consoleSplitViewCollapsed"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(consoleSplitViewExpanded(notification:)), name: NSNotification.Name(rawValue: "consoleSplitViewExpanded"), object: nil)
         
@@ -35,32 +45,46 @@ class WindowController: NSWindowController, NSToolbarDelegate {
             object: nil)
     }
     
+
     
     
+    // MARK: - Notifications
+    @objc func sidebarSplitViewCollapsed(notification:Notification) {
+        viewsSegmentedControl.setSelected(false, forSegment: 0)
+    }
     
-    // MARK: - Notification Center
-    @objc func inspectorSplitViewCollapsed(notification:Notification) {
+    @objc func sidebarSplitViewExpanded(notification:Notification) {
+        viewsSegmentedControl.setSelected(true, forSegment: 0)
+    }
+    
+    @objc func validationSplitViewCollapsed(notification:Notification) {
         viewsSegmentedControl.setSelected(false, forSegment: 1)
     }
     
-    @objc func inspectorSplitViewExpanded(notification:Notification) {
+    @objc func validationSplitViewExpanded(notification:Notification) {
         viewsSegmentedControl.setSelected(true, forSegment: 1)
     }
     
     @objc func consoleSplitViewCollapsed(notification:Notification) {
-        viewsSegmentedControl.setSelected(false, forSegment: 0)
+        viewsSegmentedControl.setSelected(false, forSegment: 2)
     }
     
     @objc func consoleSplitViewExpanded(notification:Notification) {
-        viewsSegmentedControl.setSelected(true, forSegment: 0)
+        viewsSegmentedControl.setSelected(true, forSegment: 2)
     }
     
+    @objc func inspectorSplitViewCollapsed(notification:Notification) {
+        viewsSegmentedControl.setSelected(false, forSegment: 3)
+    }
+    
+    @objc func inspectorSplitViewExpanded(notification:Notification) {
+        viewsSegmentedControl.setSelected(true, forSegment: 3)
+    }
     
     @objc func elementSelectionDidChange(notification:Notification) {
-        if let array = notification.object as? Array<Any> {
+        if (notification.object as? Array<Any>) != nil {
             addRemoveSegmentedControl.setEnabled(true, forSegment: 1)
-        }
-        else {
+        } else {
             addRemoveSegmentedControl.setEnabled(false, forSegment: 1)
         }
     }
@@ -83,6 +107,7 @@ class WindowController: NSWindowController, NSToolbarDelegate {
     @IBAction func addRemove(_ sender: Any) {
         if let sc = sender as? NSSegmentedControl {
             if sc.selectedSegment == 0 {
+                print("add")
                 // Add
                 self.performSegue(withIdentifier: "ShowAddElement", sender: self)
             }
@@ -116,6 +141,13 @@ class WindowController: NSWindowController, NSToolbarDelegate {
         self.splitViewController.search(sender)
     }
     
+    @IBAction func showSidebar(_ sender: Any) {
+        self.splitViewController.splitView.setPosition(250, ofDividerAt: 0)
+    }
+    
+    @IBAction func hideSidebar(_ sender: Any) {
+        self.splitViewController.splitView.setPosition(0, ofDividerAt: 0)
+    }
     
     
 
@@ -123,25 +155,42 @@ class WindowController: NSWindowController, NSToolbarDelegate {
         if let sc = sender as? NSSegmentedControl {
             if sc.selectedSegment == 0 {
                 if !sc.isSelected(forSegment: sc.selectedSegment) {
-                    // hide console pane
-                    self.splitViewController.hideConsole(sender)
+                    self.splitViewController.splitView.setPosition(0, ofDividerAt: 0)
+                    //self.viewsSegmentedControl.setSelected(false, forSegment: 0)
                 }
                 else {
-                    // shwo console pane
-                    self.splitViewController.showConsole(sender)
+                    self.splitViewController.splitView.setPosition(250, ofDividerAt: 0)
+                   //self.viewsSegmentedControl.setSelected(true, forSegment: 0)
                 }
             }
             else if sc.selectedSegment == 1 {
                 if !sc.isSelected(forSegment: sc.selectedSegment) {
-                    // hide inspector pane
-                    Swift.print("hide inspector")
-                    self.splitViewController.hideInspector(sender)
-                    viewsSegmentedControl.setSelected(false, forSegment: 1)
+                    self.splitViewController.hideValidation(sender)
+                    //self.viewsSegmentedControl.setSelected(false, forSegment: 1)
                 }
                 else {
-                    // shwo inspector pane
-                    Swift.print("show inspector")
+                    self.splitViewController.showValidation(sender)
+                    //self.viewsSegmentedControl.setSelected(true, forSegment: 1)
+                }
+            }
+            else if sc.selectedSegment == 2 {
+                if !sc.isSelected(forSegment: sc.selectedSegment) {
+                    self.splitViewController.hideConsole(sender)
+                    //self.viewsSegmentedControl.setSelected(false, forSegment: 2)
+                }
+                else {
+                    self.splitViewController.showConsole(sender)
+                    //self.viewsSegmentedControl.setSelected(true, forSegment: 2)
+                }
+            }
+            else if sc.selectedSegment == 3 {
+                if !sc.isSelected(forSegment: sc.selectedSegment) {
+                    self.splitViewController.hideInspector(sender)
+                    self.viewsSegmentedControl.setSelected(false, forSegment: 3)
+                }
+                else {
                     self.splitViewController.showInspector(sender)
+                    self.viewsSegmentedControl.setSelected(true, forSegment: 3)
                 }
             }
         }
@@ -163,6 +212,11 @@ class WindowController: NSWindowController, NSToolbarDelegate {
     override func prepare(for segue: NSStoryboardSegue, sender: Any?) {
         if(segue.identifier == "ShowAddElement") {
             if let c = segue.destinationController as? AddElementController {
+                c.representedObject = self.document
+            }
+        }
+        else if(segue.identifier == "Export") {
+            if let c = segue.destinationController as? ExportViewController {
                 c.representedObject = self.document
             }
         }

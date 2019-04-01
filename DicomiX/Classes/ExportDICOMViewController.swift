@@ -23,11 +23,13 @@ class ExportDICOMViewController: NSViewController {
     private func loadSyntaxes() {
         syntaxesPopUpButton.removeAllItems()
         
-        syntaxesPopUpButton.addItem(withTitle: "As Original")
-        syntaxesPopUpButton.menu?.addItem(NSMenuItem.separator())
+//        syntaxesPopUpButton.addItem(withTitle: "As Original")
+//        syntaxesPopUpButton.menu?.addItem(NSMenuItem.separator())
         for ts in DicomConstants.transfersSyntaxes {
-            syntaxesPopUpButton.addItem(withTitle: "\(DicomSpec.shared.nameForUID(withUID: ts)) (\(ts))")
+            let title = "\(DicomSpec.shared.nameForUID(withUID: ts)) (\(ts))"
+            if let item = syntaxesPopUpButton.menu?.addItem(withTitle: title, action: nil, keyEquivalent: "") {
+                item.representedObject = ts
+            }
         }
     }
-    
 }

@@ -7,9 +7,19 @@
 //
 
 import Foundation
+import SwiftyBeaver
 
 
-
+extension Dictionary {
+    var jsonStringRepresentaiton: String? {
+        guard let theJSONData = try? JSONSerialization.data(withJSONObject: self,
+                                                            options: []) else {
+                                                                return nil
+        }
+        
+        return String(data: theJSONData, encoding: .utf8)
+    }
+}
 
 
 public class DataSet: DicomObject {
@@ -17,17 +27,21 @@ public class DataSet: DicomObject {
     public var transferSyntax:String                = "1.2.840.10008.1.2.1"
     public var vrMethod:DicomSpec.VRMethod          = .Explicit
     public var byteOrder:DicomSpec.ByteOrder        = .LittleEndian
-    private var readHeader:Bool                     = true
+    private var prefixHeader:Bool                   = true
+    internal var isCorrupted:Bool                   = false
     
     public var metaInformationHeaderElements:[DataElement]  = []
     public var datasetElements:[DataElement]                = []
     public var allElements:[DataElement]                    = []
     
+    public var internalValidations:[ValidationResult]       = []
+    
     private var data:Data!
     
     
-    
     public override init() {
+        self.prefixHeader = false
+        
         initLogger()
     }
     
@@ -35,8 +49,8 @@ public class DataSet: DicomObject {
     public init?(withData data:Data, readHeader:Bool = true) {
         initLogger()
         
-        self.data           = data
-        self.readHeader     = readHeader
+        self.data               = data
+        self.prefixHeader       = readHeader
     }
     
     
@@ -52,11 +66,15 @@ public class DataSet: DicomObject {
     
     
     // MARK: - Public methods
-    public func loadData() -> Bool {
+    public func loadData(_ withData:Data? = nil) -> Bool {
         var offset = 0
         
-        if self.readHeader {
+        if self.prefixHeader {
             offset = DicomConstants.dicomBytesOffset
+        }
+        
+        if withData != nil {
+            self.data = withData
         }
         
         // reset elements arrays
@@ -64,12 +82,8 @@ public class DataSet: DicomObject {
         self.datasetElements                = []
         self.allElements                    = []
         
-        while(offset < data.count) {
+        while(offset < data.count && !self.isCorrupted) {
             let (newElement, elementOffset) = self.readDataElement(offset: offset)
-            
-            if !self.validate(dataElement: newElement) {
-                return false
-            }
             
             if newElement.name == "FileMetaInformationGroupLength" {
                 self.fileMetaInformationGroupLength = newElement.value as! Int32
@@ -80,30 +94,34 @@ public class DataSet: DicomObject {
                 self.transferSyntax = newElement.value as! String
                 
                 if self.transferSyntax == DicomConstants.implicitVRLittleEndian {
-                    self.vrMethod = .Implicit
+                    self.vrMethod  = .Implicit
                     self.byteOrder = .LittleEndian
                 }
                 else if self.transferSyntax == DicomConstants.explicitVRBigEndian {
-                    self.vrMethod = .Explicit
+                    self.vrMethod  = .Explicit
                     self.byteOrder = .BigEndian
                 }
                 else {
-                    self.vrMethod = .Explicit
+                    self.vrMethod  = .Explicit
                     self.byteOrder = .LittleEndian
                 }
                 
             }
             
             // append to sub-datasets
-            if newElement.group != DicomConstants.metaInformationGroup {
-                self.datasetElements.append(newElement)
-            }
-            else {
-                self.metaInformationHeaderElements.append(newElement)
+            if !self.isCorrupted {
+                SwiftyBeaver.debug(newElement)
                 
+                if newElement.group != DicomConstants.metaInformationGroup {
+                    self.datasetElements.append(newElement)
+                }
+                else {
+                    self.metaInformationHeaderElements.append(newElement)
+                    
+                }
+                
+                self.allElements.append(newElement)
             }
-            
-            self.allElements.append(newElement)
             
             offset = elementOffset
         }
@@ -121,7 +139,7 @@ public class DataSet: DicomObject {
      public override func toData(vrMethod inVrMethod:DicomSpec.VRMethod = .Explicit, byteOrder inByteOrder:DicomSpec.ByteOrder = .LittleEndian) -> Data {
         var newData = Data()
         
-        if self.readHeader {
+        if self.prefixHeader {
             // write 128 bytes preamble
             newData.append(Data(repeating: 0x00, count: 128))
             
@@ -143,8 +161,25 @@ public class DataSet: DicomObject {
     
     
     
+    public override func toXML() -> String {
+        var xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        
+        xml += "<NativeDicomModel xml:space=\"preserve\">"
+        
+        for element in self.allElements {
+            xml += element.toXML()
+        }
+        
+        xml += "</NativeDicomModel>"
+        
+        return xml
+    }
+    
+    
     override public func toJSONArray() -> Any {
         var json:[String:[String:Any]] = [:]
+        
+        self.sortElements()
         
         for element in self.allElements {
             
@@ -238,11 +273,23 @@ public class DataSet: DicomObject {
     
     
     public func set(value:Any, toElement element:DataElement) -> Bool {
-        return element.setValue(value)
+        if self.isCorrupted {
+            return false
+        }
+        
+        let ret = element.setValue(value)
+        
+        self.recalculateOffsets()
+        
+        return ret
     }
     
     
     public func set(value:Any, forTagName name:String) -> DataElement? {
+        if self.isCorrupted {
+            return nil
+        }
+        
         // element already exists in dataset
         if let element = self.element(forTagName: name) {
             return self.set(value: value, toElement: element) ? element : nil
@@ -261,6 +308,7 @@ public class DataSet: DicomObject {
                 }
                 
                 self.sortElements()
+                self.recalculateOffsets()
                 
                 return element
             }
@@ -268,6 +316,13 @@ public class DataSet: DicomObject {
         
         return nil
     }
+    
+    
+    
+    public func hasElement(forTagName name:String) -> Bool {
+        return self.element(forTagName: name) != nil
+    }
+    
     
     
     public func element(forTagName name:String) -> DataElement? {
@@ -344,6 +399,26 @@ public class DataSet: DicomObject {
     
     // MARK: - Private methods
     
+    private func recalculateOffsets() {
+//        if let f = self.allElements.first {
+//            var offset = f.startOffset
+//
+//            for e in self.allElements {
+//                e.startOffset = offset
+//                e.dataOffset = offset + 4
+//
+//                if e.vr == .OB {
+//                    e.endOffset = offset + 10 + e.length
+//                } else {
+//                    e.endOffset = offset + 8 + e.length
+//                }
+//
+//                offset = e.endOffset
+//            }
+//        }
+    }
+    
+    
     
     
     private func sortElements() {
@@ -370,26 +445,6 @@ public class DataSet: DicomObject {
     }
     
     
-    private func validate(dataElement element:DataElement) -> Bool {
-        if DicomSpec.shared.validate {
-            if element.name == "TransferSyntaxUID" {
-                if !DicomSpec.shared.isSupported(transferSyntax: element.value as! String) {
-                    print("Validation error : this transfer syntax is not supported [\(element.value)]")
-                    return false
-                }
-            }
-            else if element.name == "SOPClassUID" {
-                if !DicomSpec.shared.isSupported(sopClass: element.value as! String) {
-                    print("Validation error : this SOP class is not supported [\(element.value)]")
-                    return false
-                }
-            }
-        }
-        
-        return true
-    }
-    
-    
     
     
     
@@ -401,15 +456,15 @@ public class DataSet: DicomObject {
         var os                                  = offset
 
         
-        // set local byte order to enforce Little Endian for Meta Information Header elements
+        // set local byte order to enforce Little Endian for Prefix Header elements
         if self.byteOrder == .BigEndian && os >= self.fileMetaInformationGroupLength+144 {
             order = .BigEndian
         } else {
             order = .LittleEndian
         }
 
-        if self.readHeader {
-            // set local VR Method to enforce Explicit for Meta Information Header elements
+        if self.prefixHeader {
+            // set local VR Method to enforce Explicit for Prefix Header elements
             if self.vrMethod == .Implicit && os >= self.fileMetaInformationGroupLength+144 {
                 localVRMethod = .Implicit
             } else {
@@ -419,6 +474,18 @@ public class DataSet: DicomObject {
             // force implicit if no header (truncated DICOM file, ACR-NEMA, etc)
             localVRMethod = .Implicit
         }
+        
+//        if os < 0 || os+4 > data.count {
+//            let msg = "Fatal, next tag is not readable: unknow offset error"
+//            let v = ValidationResult(self, message: msg, severity: .Fatal)
+//
+//            self.internalValidations.append(v)
+//            SwiftyBeaver.error(msg)
+//
+//            self.isCorrupted = true
+//
+//            return (nil, data.count)
+//        }
         
         // read tag
         let tagData = data.subdata(in: os..<os+4)
@@ -497,7 +564,16 @@ public class DataSet: DicomObject {
             length = Int(data.subdata(in: os..<os+4).toInt32(byteOrder: order))
             os += 4
         }
-        
+                
+        // CHECK FOR INVALID LENGTH
+        if length > data.count {
+            let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) overflows (\(length))"
+            return self.readError(forLength: Int(length), element: element, message: message)
+        }
+        if length < -1 {
+            let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) cannot be negative (\(length))"
+            return self.readError(forLength: Int(length), element: element, message: message)
+        }
         
         // MISSING VR FOR IMPLICIT ELEMENT
         // TODO: if VR is implicit, do we need to use the correpsonding tag VR ?
@@ -559,6 +635,19 @@ public class DataSet: DicomObject {
     
     
     
+    private func readError(forLength length:Int, element: DataElement, message:String) -> (DataElement, Int) {
+        let v = ValidationResult(element, message: message, severity: .Fatal)
+        
+        self.internalValidations.append(v)
+        self.isCorrupted = true
+        
+        SwiftyBeaver.error(message)
+        
+        return (element, data.count)
+    }
+    
+    
+    
     
     private func readDataSequence(tag:DataTag, offset:Int, length:Int, byteOrder:DicomSpec.ByteOrder) -> (DataSequence, Int) {
         let sequence:DataSequence = DataSequence(withTag:tag)
@@ -575,6 +664,16 @@ public class DataSet: DicomObject {
                 let itemLength   = data.subdata(in: os..<os+4).toInt32(byteOrder: byteOrder)
                 bytesRead       += 4
                 os              += 4
+                
+                // CHECK FOR INVALID LENGTH
+                if itemLength > data.count {
+                    let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) overflows (\(itemLength))"
+                    return self.readError(forLength: Int(itemLength), element: sequence, message: message) as! (DataSequence, Int)
+                }
+                if itemLength < -1 {
+                    let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) cannot be negative (\(itemLength))"
+                    return self.readError(forLength: Int(itemLength), element: sequence, message: message) as! (DataSequence, Int)
+                }
                 
                 let item         = DataItem(withTag:tag, parent: sequence)
                 item.length      = Int(itemLength)
@@ -706,6 +805,16 @@ public class DataSet: DicomObject {
             let itemLength = data.subdata(in: os..<os+4).toInt32(byteOrder: byteOrder)
             os += 4
             
+            // CHECK FOR INVALID LENGTH
+            if itemLength > data.count {
+                let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) overflows (\(itemLength))"
+                return self.readError(forLength: Int(itemLength), element: pixelSequence, message: message) as! (PixelSequence, Int)
+            }
+            if itemLength < -1 {
+                let message = "Fatal, cannot read length properly, decoded length cannot be negative (\(itemLength))"
+                return self.readError(forLength: Int(itemLength), element: pixelSequence, message: message) as! (PixelSequence, Int)
+            }
+            
             item.length = Int(itemLength)
             
             if itemLength > 0 {
@@ -732,13 +841,13 @@ public class DataSet: DicomObject {
         var localVRMethod:DicomSpec.VRMethod = .Explicit
         var order:DicomSpec.ByteOrder = .LittleEndian
         
-        // set local byte order to enforce Little Endian for Meta Information Header elements
+        // set local byte order to enforce Little Endian for Prefix Header elements
         if self.byteOrder == .BigEndian && element.endOffset > self.fileMetaInformationGroupLength+144 {
             order = .BigEndian
         }
         
-        if self.readHeader {
-            // set local VR Method to enforce Explicit for Meta Information Header elements
+        if self.prefixHeader {
+            // set local VR Method to enforce Explicit for Prefix Header elements
             if self.vrMethod == .Implicit && element.endOffset > self.fileMetaInformationGroupLength+144 {
                 localVRMethod = .Implicit
             }
@@ -752,7 +861,4 @@ public class DataSet: DicomObject {
         
         return data
     }
-    
-    
-    
 }

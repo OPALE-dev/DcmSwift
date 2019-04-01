@@ -22,6 +22,8 @@ class ConsoleSplitViewController: NSSplitViewController {
             if let _ = representedObject as? DicomDocument {
                 for vc in self.children {
                     vc.representedObject = representedObject
+                    
+                    self.hideConsole(self)
                 }
             }
         }
@@ -62,7 +64,7 @@ class ConsoleSplitViewController: NSSplitViewController {
         let rightView = self.splitView.subviews[1]
         
         if self.splitView.isSubviewCollapsed(rightView) {
-            self.splitView.setPosition(self.view.frame.size.height-200, ofDividerAt: 0)
+            self.splitView.setPosition(self.view.frame.size.width-436, ofDividerAt: 0)
             rightView.isHidden = false
         }
     }
@@ -71,8 +73,21 @@ class ConsoleSplitViewController: NSSplitViewController {
         let rightView = self.splitView.subviews[1]
         
         if !self.splitView.isSubviewCollapsed(rightView) {
-            self.splitView.setPosition(self.view.frame.size.height, ofDividerAt: 0)
+            self.splitView.setPosition(self.view.frame.size.width, ofDividerAt: 0)
             rightView.isHidden = true
+        }
+    }
+    
+    
+    @IBAction func showValidation(_ sender: Any) {
+        if let vc:DatasetViewController = self.children[0] as? DatasetViewController {
+            vc.showValidation(sender)
+        }
+    }
+    
+    @IBAction func hideValidation(_ sender: Any) {
+        if let vc:DatasetViewController = self.children[0] as? DatasetViewController {
+            vc.hideValidation(sender)
         }
     }
     
@@ -89,9 +104,9 @@ class ConsoleSplitViewController: NSSplitViewController {
     
     
     override func splitViewDidResizeSubviews(_ notification: Notification) {
-        let rightView = self.splitView.subviews[1]
+        let consoleView = self.splitView.subviews[1]
         
-        if self.splitView.isSubviewCollapsed(rightView) {
+        if self.splitView.isSubviewCollapsed(consoleView) {
             NotificationCenter.default.post(name: NSNotification.Name(rawValue: "consoleSplitViewCollapsed"), object: self)
         } else {
             NotificationCenter.default.post(name: NSNotification.Name(rawValue: "consoleSplitViewExpanded"), object: self)

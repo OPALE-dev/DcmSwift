@@ -117,21 +117,7 @@ public class DataElement : DicomObject {
         return ret
     }
     
-    
-    
-    private func recalculateParentsLength() {
-        var p = self.parent
-        
-        while p != nil {
-            if let item = p as? DataItem {
-                item.length = item.elements.map({$0.length}).reduce(0, +) + 16
-            }
-            else if let sequence = p as? DataSequence {
-                sequence.length = sequence.items.map({$0.length}).reduce(0, +) + 8
-            }
-            p = p?.parent
-        }
-    }
+
     
     
     
@@ -189,6 +175,16 @@ public class DataElement : DicomObject {
     
     
     public var isEditable:Bool  {
+        if let ds = self.dataset {
+            if ds.isCorrupted {
+                return false
+            }
+        }
+        
+        if self.element == "0000" {
+            return false
+        }
+        
         if self.tagCode() == "7fe00010" {
             return false
         }
@@ -226,6 +222,20 @@ public class DataElement : DicomObject {
             }
         }
         return self.dataValues
+    }
+    
+    
+    public override func toXML() -> String {
+        var xml = "<DicomAttribute Tag=\"\(self.tagCode())\" VR=\"\(self.vr)\" Keyword=\"\(self.name)\">"
+        if self.isMultiple {
+            for v in self.values {
+                xml += "<Value number=\"\(v.index+1)\">\(v.value)</Value>"
+            }
+        } else {
+            xml += "<Value number=\"\(1)\">\(self.value)</Value>"
+        }
+        xml += "</DicomAttribute>"
+        return xml
     }
     
     
@@ -424,5 +434,29 @@ public class DataElement : DicomObject {
         ]
         
         return json
+    }
+    
+    
+    
+    
+    
+    
+    
+    // MARK: - Private
+    
+    
+    
+    private func recalculateParentsLength() {
+        var p = self.parent
+        
+        while p != nil {
+            if let item = p as? DataItem {
+                item.length = item.elements.map({$0.length}).reduce(0, +) + 16
+            }
+            else if let sequence = p as? DataSequence {
+                sequence.length = sequence.items.map({$0.length}).reduce(0, +) + 8
+            }
+            p = p?.parent
+        }
     }
 }
