@@ -3,7 +3,7 @@
 //  DICOM Test
 //
 //  Created by Rafael Warnault on 17/10/2017.
-//  Copyright © 2017 Read-Write.fr. All rights reserved.
+//  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 
 import Foundation
@@ -110,7 +110,7 @@ public class DataSet: DicomObject {
             
             // append to sub-datasets
             if !self.isCorrupted {
-                SwiftyBeaver.debug(newElement)
+                //SwiftyBeaver.debug(newElement)
                 
                 if newElement.group != DicomConstants.metaInformationGroup {
                     self.datasetElements.append(newElement)
@@ -215,10 +215,19 @@ public class DataSet: DicomObject {
         return json
     }
     
-
     
     
-    public func string(forTag tag:String ) -> String! {
+    public func value(forTag tag:String ) -> Any? {
+        for el in self.allElements {
+            if el.name == tag {
+                return el.value
+            }
+        }
+        return nil
+    }
+    
+    
+    public func string(forTag tag:String ) -> String? {
         for el in self.allElements {
             if el.name == tag {
                 return el.value as? String
@@ -228,20 +237,24 @@ public class DataSet: DicomObject {
     }
     
     
-    public func integer32(forTag tag:String ) -> Int32 {
+    public func integer32(forTag tag:String ) -> Int32? {
         for el in self.allElements {
             if el.name == tag {
-                return el.value as! Int32
+                if let v = el.value as? Int32 {
+                    return v
+                }
             }
         }
-        return 0
+        return nil
     }
     
     
-    public func integer16(forTag tag:String ) -> Int16 {
+    public func integer16(forTag tag:String ) -> Int16? {
         for el in self.allElements {
             if el.name == tag {
-                return el.value as! Int16
+                if let v = el.value as? Int16 {
+                    return v
+                }
             }
         }
         return 0
@@ -349,16 +362,7 @@ public class DataSet: DicomObject {
         return element
     }
     
-    
 
-    public var dicomImage:DicomImage? {
-        get {
-            if let pixelDataElement = self.element(forTagName: "PixelData") {
-                return DicomImage(self, withPixelDataElement: pixelDataElement)
-            }
-            return nil
-        }
-    }
     
     
     

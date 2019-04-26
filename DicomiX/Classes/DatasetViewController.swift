@@ -3,7 +3,7 @@
 //  DicomiX
 //
 //  Created by Rafael Warnault on 24/10/2017.
-//  Copyright © 2017 Read-Write.fr. All rights reserved.
+//  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 
 import Cocoa
@@ -67,8 +67,8 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
                     }
                     
                     // Expand root items
-                    self.datasetOutlineView.expandItem(self.datasetOutlineView.item(atRow: 1), expandChildren: true)
-                    self.datasetOutlineView.expandItem(self.datasetOutlineView.item(atRow: 0), expandChildren: true)
+                    self.datasetOutlineView.expandItem(self.datasetOutlineView.item(atRow: 1), expandChildren: false)
+                    self.datasetOutlineView.expandItem(self.datasetOutlineView.item(atRow: 0), expandChildren: false)
                 }
             }
         }

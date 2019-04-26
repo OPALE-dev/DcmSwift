@@ -3,7 +3,7 @@
 //  DicomiX
 //
 //  Created by Rafael Warnault on 24/10/2017.
-//  Copyright © 2017 Read-Write.fr. All rights reserved.
+//  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 
 import Cocoa
@@ -48,7 +48,6 @@ class DicomDocument: NSDocument  {
     override var hasUnautosavedChanges: Bool {
         return false
     }
-
     
     override func makeWindowControllers() {
         // Returns the Storyboard that contains your Document window.

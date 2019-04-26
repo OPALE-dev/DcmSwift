@@ -3,7 +3,7 @@
 //  DICOM Test
 //
 //  Created by Rafael Warnault on 19/10/2017.
-//  Copyright © 2017 Read-Write.fr. All rights reserved.
+//  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 
 import Foundation
@@ -584,6 +584,10 @@ public class DicomSpec: NSObject, XMLParserDelegate {
 
 
 
+/**
+ ValidationResults are used by the validation process of the DicomSpec
+ to store results alongside severity level and informations message
+ */
 public class ValidationResult : CustomStringConvertible, Comparable {
     public enum Severity:Int {
         case Notice = 0

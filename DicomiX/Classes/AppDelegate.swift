@@ -3,7 +3,7 @@
 //  DicomiX
 //
 //  Created by Rafael Warnault on 24/10/2017.
-//  Copyright © 2017 Read-Write.fr. All rights reserved.
+//  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 
 import Cocoa
@@ -18,6 +18,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             "LocalAET": "DICOMIX",
             "MaxPDU": 16384
         ])
+        
+        DocumentController.canOpenUntitledDocument = true
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -26,7 +28,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     
     func applicationDidBecomeActive(_ notification: Notification) {
-        if DocumentController.shared.documents.count == 0 {
+        if NSApp.windows.count == 0 {
             NSDocumentController.shared.openDocument(self)
         }
     }
@@ -35,8 +37,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
     
-    
-    
+    // MARK: - Actions
     @IBAction func showLogs(_ sender: Any) {
         let appName = Bundle.main.infoDictionary![kCFBundleNameKey as String] as! String
         let caches = (NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.cachesDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)[0])

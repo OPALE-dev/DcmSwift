@@ -3,7 +3,7 @@
 //  DicomiX
 //
 //  Created by Rafael Warnault on 24/10/2017.
-//  Copyright © 2017 Read-Write.fr. All rights reserved.
+//  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 
 import Cocoa
@@ -51,35 +51,103 @@ class WindowController: NSWindowController, NSToolbarDelegate {
     // MARK: - Notifications
     @objc func sidebarSplitViewCollapsed(notification:Notification) {
         viewsSegmentedControl.setSelected(false, forSegment: 0)
+        
+        if let menu = NSApp.mainMenu?.items[4] {
+            if let item = menu.submenu?.item(withTag: 10) {
+                item.title = "Show Sidebar"
+                item.action = #selector(showSidebar(_:))
+            }
+        }
     }
     
     @objc func sidebarSplitViewExpanded(notification:Notification) {
         viewsSegmentedControl.setSelected(true, forSegment: 0)
+        
+        if let menu = NSApp.mainMenu?.items[4] {
+            if let item = menu.submenu?.item(withTag: 10) {
+                item.title = "Hide Sidebar"
+                item.action = #selector(hideSidebar(_:))
+            }
+        }
     }
+    
+    
+    
     
     @objc func validationSplitViewCollapsed(notification:Notification) {
         viewsSegmentedControl.setSelected(false, forSegment: 1)
+        
+        if let menu = NSApp.mainMenu?.items[4] {
+            if let item = menu.submenu?.item(withTag: 20) {
+                item.title = "Show Validation"
+                item.action = #selector(MainSplitViewController.showValidation(_:))
+            }
+        }
     }
     
     @objc func validationSplitViewExpanded(notification:Notification) {
         viewsSegmentedControl.setSelected(true, forSegment: 1)
+        
+        if let menu = NSApp.mainMenu?.items[4] {
+            if let item = menu.submenu?.item(withTag: 20) {
+                item.title = "Hide Validation"
+                item.action = #selector(MainSplitViewController.hideValidation(_:))
+            }
+        }
     }
+    
+    
+    
     
     @objc func consoleSplitViewCollapsed(notification:Notification) {
         viewsSegmentedControl.setSelected(false, forSegment: 2)
+        
+        if let menu = NSApp.mainMenu?.items[4] {
+            if let item = menu.submenu?.item(withTag: 30) {
+                item.title = "Show Hex View"
+                item.action = #selector(MainSplitViewController.showConsole(_:))
+            }
+        }
     }
     
     @objc func consoleSplitViewExpanded(notification:Notification) {
         viewsSegmentedControl.setSelected(true, forSegment: 2)
+        
+        if let menu = NSApp.mainMenu?.items[4] {
+            if let item = menu.submenu?.item(withTag: 30) {
+                item.title = "Hide Hex View"
+                item.action = #selector(MainSplitViewController.hideConsole(_:))
+            }
+        }
     }
+    
+    
+    
     
     @objc func inspectorSplitViewCollapsed(notification:Notification) {
         viewsSegmentedControl.setSelected(false, forSegment: 3)
+        
+        if let menu = NSApp.mainMenu?.items[4] {
+            if let item = menu.submenu?.item(withTag: 40) {
+                item.title = "Show Inspector"
+                item.action = #selector(MainSplitViewController.showInspector(_:))
+            }
+        }
     }
     
     @objc func inspectorSplitViewExpanded(notification:Notification) {
         viewsSegmentedControl.setSelected(true, forSegment: 3)
+        
+        if let menu = NSApp.mainMenu?.items[4] {
+            if let item = menu.submenu?.item(withTag: 40) {
+                item.title = "Hide Inspector"
+                item.action = #selector(MainSplitViewController.hideInspector(_:))
+            }
+        }
     }
+    
+    
+    
     
     @objc func elementSelectionDidChange(notification:Notification) {
         if (notification.object as? Array<Any>) != nil {
@@ -88,6 +156,7 @@ class WindowController: NSWindowController, NSToolbarDelegate {
             addRemoveSegmentedControl.setEnabled(false, forSegment: 1)
         }
     }
+
     
     
     
@@ -142,10 +211,20 @@ class WindowController: NSWindowController, NSToolbarDelegate {
     }
     
     @IBAction func showSidebar(_ sender: Any) {
+//        if let menuItem = sender as? NSMenuItem {
+//            menuItem.title = "Hide Sidebar"
+//            menuItem.target = self
+//            menuItem.action = #selector(hideSidebar(_:))
+//        }
         self.splitViewController.splitView.setPosition(250, ofDividerAt: 0)
     }
     
     @IBAction func hideSidebar(_ sender: Any) {
+//        if let menuItem = sender as? NSMenuItem {
+//            menuItem.title = "Show Sidebar"
+//            menuItem.target = self
+//            menuItem.action = #selector(showSidebar(_:))
+//        }
         self.splitViewController.splitView.setPosition(0, ofDividerAt: 0)
     }
     
@@ -186,17 +265,15 @@ class WindowController: NSWindowController, NSToolbarDelegate {
             else if sc.selectedSegment == 3 {
                 if !sc.isSelected(forSegment: sc.selectedSegment) {
                     self.splitViewController.hideInspector(sender)
-                    self.viewsSegmentedControl.setSelected(false, forSegment: 3)
+                    //self.viewsSegmentedControl.setSelected(false, forSegment: 3)
                 }
                 else {
                     self.splitViewController.showInspector(sender)
-                    self.viewsSegmentedControl.setSelected(true, forSegment: 3)
+                    //self.viewsSegmentedControl.setSelected(true, forSegment: 3)
                 }
             }
         }
     }
-    
-    
     
     
     

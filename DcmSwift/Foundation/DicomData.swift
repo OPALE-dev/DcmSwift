@@ -3,7 +3,7 @@
 //  DICOM Test
 //
 //  Created by Rafael Warnault on 17/10/2017.
-//  Copyright © 2017 Read-Write.fr. All rights reserved.
+//  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 
 import Foundation
@@ -60,6 +60,14 @@ extension Data {
     public func toFloat64(byteOrder: DicomSpec.ByteOrder = .LittleEndian) -> Float64 {
         return byteOrder == .LittleEndian ? self.withUnsafeBytes { $0.pointee } :
             Float64(bitPattern: UInt64(bigEndian: self.withUnsafeBytes { $0.pointee } ))
+    }
+    
+    public func toUnsigned8Array() -> [UInt8] {
+        return self.map { $0 }
+    }
+    
+    public func toSigned8Array() -> [Int8] {
+        return self.map { Int8(bitPattern: $0) }
     }
 }
 

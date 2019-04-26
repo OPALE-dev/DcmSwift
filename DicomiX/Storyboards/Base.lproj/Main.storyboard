@@ -924,6 +924,27 @@
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="hB3-LF-h0Y"/>
+                                        <menuItem title="Show Sidebar" tag="10" keyEquivalent="1" id="B5t-mA-pvN">
+                                            <connections>
+                                                <action selector="showSidebar:" target="Ady-hI-5gd" id="WGu-0M-EaA"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Show Validation" tag="20" keyEquivalent="2" id="yor-Ws-SLV">
+                                            <connections>
+                                                <action selector="showValidation:" target="Ady-hI-5gd" id="4hx-LK-FBZ"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Show Hex View" tag="30" keyEquivalent="3" id="boo-Ch-A3h">
+                                            <connections>
+                                                <action selector="showConsole:" target="Ady-hI-5gd" id="rzt-5b-lcr"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Show Inspector" tag="40" keyEquivalent="4" id="iQF-Cx-oFu">
+                                            <connections>
+                                                <action selector="showInspector:" target="Ady-hI-5gd" id="mf4-Ox-ecj"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="wJ5-mX-r6g"/>
                                         <menuItem title="Show Sidebar" keyEquivalent="s" id="kIP-vf-haE">
                                             <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                                             <connections>
@@ -1146,6 +1167,7 @@
                             </allowedToolbarItems>
                             <defaultToolbarItems>
                                 <toolbarItem reference="tRo-2a-FRi"/>
+                                <toolbarItem reference="2A3-aQ-OJq"/>
                                 <toolbarItem reference="vrS-vn-Gya"/>
                                 <toolbarItem reference="dyS-C8-zrf"/>
                                 <toolbarItem reference="6i7-A1-VzD"/>
@@ -3792,8 +3814,28 @@ DQ
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="mIT-bh-wrI" customClass="FlippedStackView" customModule="DicomiX" customModuleProvider="target">
-                                            <rect key="frame" x="0.0" y="0.0" width="280" height="127"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="280" height="407"/>
                                             <subviews>
+                                                <customView translatesAutoresizingMaskIntoConstraints="NO" id="EHB-aq-pcA">
+                                                    <rect key="frame" x="0.0" y="127" width="280" height="280"/>
+                                                    <subviews>
+                                                        <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="Ojd-lD-ncM">
+                                                            <rect key="frame" x="0.0" y="0.0" width="280" height="280"/>
+                                                            <constraints>
+                                                                <constraint firstAttribute="width" constant="280" id="CgN-7n-xCp"/>
+                                                                <constraint firstAttribute="height" constant="280" id="x6T-SP-8Bf"/>
+                                                            </constraints>
+                                                            <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="uci-xw-Bbs"/>
+                                                        </imageView>
+                                                    </subviews>
+                                                    <constraints>
+                                                        <constraint firstAttribute="bottom" secondItem="Ojd-lD-ncM" secondAttribute="bottom" id="05v-z7-MGW"/>
+                                                        <constraint firstAttribute="height" constant="280" id="4m2-9R-NDK"/>
+                                                        <constraint firstItem="Ojd-lD-ncM" firstAttribute="leading" secondItem="EHB-aq-pcA" secondAttribute="leading" id="83x-16-2lX"/>
+                                                        <constraint firstAttribute="trailing" secondItem="Ojd-lD-ncM" secondAttribute="trailing" id="AZb-fx-sjd"/>
+                                                        <constraint firstItem="Ojd-lD-ncM" firstAttribute="top" secondItem="EHB-aq-pcA" secondAttribute="top" id="YdN-Xw-nRZ"/>
+                                                    </constraints>
+                                                </customView>
                                                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="4SX-jq-382">
                                                     <rect key="frame" x="0.0" y="0.0" width="280" height="127"/>
                                                     <subviews>
@@ -3886,8 +3928,10 @@ DQ
                                             </subviews>
                                             <visibilityPriorities>
                                                 <integer value="1000"/>
+                                                <integer value="1000"/>
                                             </visibilityPriorities>
                                             <customSpacing>
+                                                <real value="3.4028234663852886e+38"/>
                                                 <real value="3.4028234663852886e+38"/>
                                             </customSpacing>
                                         </stackView>
@@ -3919,6 +3963,7 @@ DQ
                     <connections>
                         <outlet property="framesTextField" destination="SWi-gQ-ukf" id="wIA-ja-c8Q"/>
                         <outlet property="imageSizeTextField" destination="Zsd-q6-fKe" id="XQP-JP-xfF"/>
+                        <outlet property="imageView" destination="Ojd-lD-ncM" id="t9d-IU-URo"/>
                         <outlet property="photometricTextField" destination="Nnu-F9-XxQ" id="bFW-nC-iBp"/>
                         <outlet property="samplesTextField" destination="1sN-91-PkO" id="42Z-Lt-gmF"/>
                     </connections>
