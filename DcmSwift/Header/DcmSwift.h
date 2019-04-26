@@ -3,7 +3,7 @@
 //  DcmSwift
 //
 //  Created by Rafael Warnault on 19/10/2017.
-//  Copyright © 2017 Read-Write.fr. All rights reserved.
+//  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 
 #import <Cocoa/Cocoa.h>

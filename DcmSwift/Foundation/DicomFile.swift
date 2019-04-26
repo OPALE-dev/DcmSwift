@@ -3,7 +3,7 @@
 //  DICOM Test
 //
 //  Created by Rafael Warnault on 17/10/2017.
-//  Copyright © 2017 Read-Write.fr. All rights reserved.
+//  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 
 import Foundation
@@ -15,7 +15,7 @@ public class DicomFile {
     public var filepath:String!
     public var dataset:DataSet!
     public var hasPrefixHeader:Bool = true
-    
+    public var isEncapsulatedPDF = false
     
     
     
@@ -97,6 +97,31 @@ public class DicomFile {
     
     
     
+    public var dicomImage: DicomImage? {
+        get {
+            return DicomImage(self.dataset)
+        }
+    }
+    
+    
+    public func pdfData() -> Data? {
+        if self.isEncapsulatedPDF {
+            if let e = self.dataset.element(forTagName: "EncapsulatedDocument") {
+                if e.length > 0 && e.data != nil {
+                    return e.data
+                }
+            }
+        }
+        return nil
+    }
+    
+    public var encapsulatedPDF:Data? {
+        get {
+            return Data()
+        }
+    }
+    
+    
     // MARK: - Static methods
     
     /**
@@ -111,6 +136,7 @@ public class DicomFile {
         
         do {
             try data = Data(contentsOf: url)
+                        
             if data.count <= 128 {
                 SwiftyBeaver.error("Not enought data in preamble, not a valid DICOM file, not a reagular DICOM file.")
             }
@@ -122,10 +148,10 @@ public class DicomFile {
             if magic == "DICM" {
                 return true
             } else {
-                // maybe try to catch ACR-NEMA 2.0 file header
+                // maybe try to catch ACR-NEMA file header
                 let range:Range<Data.Index> = 0..<8
                 let subdata:Data = data.subdata(in: range)
-                // ACR-NEMA 2.0 magic bytes ?
+                // ACR-NEMA lol magic bytes ?
                 if subdata == Data([0x08, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00]) {
                     return true
                 }
@@ -133,7 +159,7 @@ public class DicomFile {
                 SwiftyBeaver.error("DICM magic word not found, not a reagular DICOM file. Try to read Dataset anyway.")
             }
         } catch {
-            SwiftyBeaver.error("Enable to load file dataset, not a valid DICOM file.")
+            SwiftyBeaver.error("Enable to load file dataset, not a valid DICOM file: \(error)")
             return false
         }
         return false
@@ -192,6 +218,13 @@ public class DicomFile {
             
             if !rez {
                SwiftyBeaver.error("Enable to load file dataset, abort!")
+            }
+            
+            if let s = self.dataset.string(forTag: "MIMETypeOfEncapsulatedDocument") {
+                if s.trimmingCharacters(in: .whitespaces) == "application/pdf " {
+                    SwiftyBeaver.debug("  -> MIMETypeOfEncapsulatedDocument : application/pdf")
+                    self.isEncapsulatedPDF = true
+                }
             }
             
             return rez

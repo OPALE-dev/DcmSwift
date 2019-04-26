@@ -3,7 +3,7 @@
 //  DicomiX
 //
 //  Created by Rafael Warnault on 31/10/2017.
-//  Copyright © 2017 Read-Write.fr. All rights reserved.
+//  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 
 import Cocoa
@@ -44,13 +44,16 @@ class PictureViewController: NSViewController {
     
     
     private func updateUI() {
+        self.imageView.wantsLayer = true
+        self.imageView.layer?.backgroundColor = NSColor.black.cgColor
+        
         self.photometricTextField.stringValue        = self.dicomFile.dataset.string(forTag: "PhotometricInterpretation") ?? ""
         self.samplesTextField.stringValue            = "\(self.dicomFile.dataset.integer16(forTag: "SamplesPerPixel"))"
         self.imageSizeTextField.stringValue          = "\(self.dicomFile.dataset.integer16(forTag: "Rows")) x \(self.dicomFile.dataset.integer16(forTag: "Columns"))"
         self.framesTextField.stringValue             = self.dicomFile.dataset.string(forTag: "NumberOfFrames")  ?? ""
         
-        if let dicomImage = self.dicomFile.dataset.dicomImage {
-            //self.imageView.image = dicomImage.image()
+        if let dicomImage = self.dicomFile.dicomImage {
+            self.imageView.image = dicomImage.image()
         }
     }
 }

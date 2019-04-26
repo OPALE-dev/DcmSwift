@@ -15,6 +15,15 @@
 		4C38D77E1FA11A7400633A5D /* ElementViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D77D1FA11A7400633A5D /* ElementViewController.swift */; };
 		4C38D7801FA12B1B00633A5D /* ConsoleSplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D77F1FA12B1B00633A5D /* ConsoleSplitViewController.swift */; };
 		4C38D7841FA1333200633A5D /* ConsoleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7831FA1333200633A5D /* ConsoleViewController.swift */; };
+		4C3EF244226E3AAC0062B5A3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF243226E3AAC0062B5A3 /* AppDelegate.swift */; };
+		4C3EF246226E3AAC0062B5A3 /* DataViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF245226E3AAC0062B5A3 /* DataViewController.swift */; };
+		4C3EF249226E3AAC0062B5A3 /* MagiX.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF247226E3AAC0062B5A3 /* MagiX.xcdatamodeld */; };
+		4C3EF24B226E3AAD0062B5A3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4C3EF24A226E3AAD0062B5A3 /* Assets.xcassets */; };
+		4C3EF24E226E3AAD0062B5A3 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4C3EF24C226E3AAD0062B5A3 /* Main.storyboard */; };
+		4C3EF256226E3AD70062B5A3 /* DcmSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8D798E1F989EB1008300E3 /* DcmSwift.framework */; };
+		4C3EF258226E3AE20062B5A3 /* DcmSwift.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4C8D798E1F989EB1008300E3 /* DcmSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4C3EF25A226E44D10062B5A3 /* DataController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF259226E44D10062B5A3 /* DataController.swift */; };
+		4C3EF25C226E5D650062B5A3 /* ImageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF25B226E5D650062B5A3 /* ImageViewController.swift */; };
 		4C52EEF11FA8876E001A05DF /* PictureViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C52EEF01FA8876E001A05DF /* PictureViewController.swift */; };
 		4C5792FB1FB71994003B1279 /* DocumentController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5792FA1FB71994003B1279 /* DocumentController.swift */; };
 		4C5792FD1FB8709D003B1279 /* AddElementController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5792FC1FB8709D003B1279 /* AddElementController.swift */; };
@@ -106,6 +115,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		4C3EF254226E3AD30062B5A3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4CFF02501F960F0700E31D74 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4C8D798D1F989EB1008300E3;
+			remoteInfo = DcmSwift;
+		};
 		4CCF6B291F9FABC3000579C7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 4CFF02501F960F0700E31D74 /* Project object */;
@@ -116,6 +132,16 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		4C3EF257226E3AD90062B5A3 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				4C3EF258226E3AE20062B5A3 /* DcmSwift.framework in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4C5F9B392248E1D80076DA82 /* Copy Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -164,6 +190,16 @@
 		4C3CD4781F9697DC00323E8A /* DicomFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomFile.swift; sourceTree = "<group>"; };
 		4C3CD47A1F96981300323E8A /* DataSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSet.swift; sourceTree = "<group>"; };
 		4C3CD47C1F96981D00323E8A /* DataElement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataElement.swift; sourceTree = "<group>"; };
+		4C3EF241226E3AAC0062B5A3 /* MagiX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MagiX.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4C3EF243226E3AAC0062B5A3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		4C3EF245226E3AAC0062B5A3 /* DataViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataViewController.swift; sourceTree = "<group>"; };
+		4C3EF248226E3AAC0062B5A3 /* MagiX.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = MagiX.xcdatamodel; sourceTree = "<group>"; };
+		4C3EF24A226E3AAD0062B5A3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		4C3EF24D226E3AAD0062B5A3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		4C3EF24F226E3AAD0062B5A3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		4C3EF250226E3AAD0062B5A3 /* MagiX.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MagiX.entitlements; sourceTree = "<group>"; };
+		4C3EF259226E44D10062B5A3 /* DataController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataController.swift; sourceTree = "<group>"; };
+		4C3EF25B226E5D650062B5A3 /* ImageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageViewController.swift; sourceTree = "<group>"; };
 		4C52EEF01FA8876E001A05DF /* PictureViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureViewController.swift; sourceTree = "<group>"; };
 		4C5792FA1FB71994003B1279 /* DocumentController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentController.swift; sourceTree = "<group>"; };
 		4C5792FC1FB8709D003B1279 /* AddElementController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddElementController.swift; sourceTree = "<group>"; };
@@ -214,6 +250,7 @@
 		4C99798F1FA75B3600C90494 /* DicomObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomObject.swift; sourceTree = "<group>"; };
 		4C9979961FA7720300C90494 /* DicomImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomImage.swift; sourceTree = "<group>"; };
 		4C9979991FA78EF800C90494 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		4CA36BFB2256922F0024313B /* MyPlayground.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = MyPlayground.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		4CA4051E1FA67DF3006F8053 /* DcmSwiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DcmSwiftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CA405201FA67DF3006F8053 /* DcmSwiftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DcmSwiftTests.swift; sourceTree = "<group>"; };
 		4CA405221FA67DF3006F8053 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -238,6 +275,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		4C3EF23E226E3AAC0062B5A3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C3EF256226E3AD70062B5A3 /* DcmSwift.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4C8D798A1F989EB1008300E3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -268,6 +313,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4C3EF242226E3AAC0062B5A3 /* MagiX */ = {
+			isa = PBXGroup;
+			children = (
+				4C3EF243226E3AAC0062B5A3 /* AppDelegate.swift */,
+				4C3EF245226E3AAC0062B5A3 /* DataViewController.swift */,
+				4C3EF25B226E5D650062B5A3 /* ImageViewController.swift */,
+				4C3EF259226E44D10062B5A3 /* DataController.swift */,
+				4C3EF24A226E3AAD0062B5A3 /* Assets.xcassets */,
+				4C3EF24C226E3AAD0062B5A3 /* Main.storyboard */,
+				4C3EF24F226E3AAD0062B5A3 /* Info.plist */,
+				4C3EF250226E3AAD0062B5A3 /* MagiX.entitlements */,
+				4C3EF247226E3AAC0062B5A3 /* MagiX.xcdatamodeld */,
+			);
+			path = MagiX;
+			sourceTree = "<group>";
+		};
 		4C8D798F1F989EB1008300E3 /* DcmSwift */ = {
 			isa = PBXGroup;
 			children = (
@@ -276,6 +337,7 @@
 				4CECD652224165AC0087AF0D /* Foundation */,
 				4CB832691FA2917300103A94 /* Networking */,
 				4CECD653224165CF0087AF0D /* Graphics */,
+				4CA36BFB2256922F0024313B /* MyPlayground.playground */,
 			);
 			path = DcmSwift;
 			sourceTree = "<group>";
@@ -442,6 +504,7 @@
 			isa = PBXGroup;
 			children = (
 				4CCF6B181F9FABBA000579C7 /* DicomiX */,
+				4C3EF242226E3AAC0062B5A3 /* MagiX */,
 				4C8D798F1F989EB1008300E3 /* DcmSwift */,
 				4CA4051F1FA67DF3006F8053 /* DcmSwiftTests */,
 				4CFF02591F960F0700E31D74 /* Products */,
@@ -456,6 +519,7 @@
 				4C8D798E1F989EB1008300E3 /* DcmSwift.framework */,
 				4CCF6B171F9FABBA000579C7 /* DicomiX.app */,
 				4CA4051E1FA67DF3006F8053 /* DcmSwiftTests.xctest */,
+				4C3EF241226E3AAC0062B5A3 /* MagiX.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -482,6 +546,25 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		4C3EF240226E3AAC0062B5A3 /* MagiX */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4C3EF251226E3AAD0062B5A3 /* Build configuration list for PBXNativeTarget "MagiX" */;
+			buildPhases = (
+				4C3EF23D226E3AAC0062B5A3 /* Sources */,
+				4C3EF23E226E3AAC0062B5A3 /* Frameworks */,
+				4C3EF23F226E3AAC0062B5A3 /* Resources */,
+				4C3EF257226E3AD90062B5A3 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4C3EF255226E3AD30062B5A3 /* PBXTargetDependency */,
+			);
+			name = MagiX;
+			productName = MagiX;
+			productReference = 4C3EF241226E3AAC0062B5A3 /* MagiX.app */;
+			productType = "com.apple.product-type.application";
+		};
 		4C8D798D1F989EB1008300E3 /* DcmSwift */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4C8D79931F989EB1008300E3 /* Build configuration list for PBXNativeTarget "DcmSwift" */;
@@ -545,10 +628,19 @@
 		4CFF02501F960F0700E31D74 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 0900;
+				LastSwiftUpdateCheck = 1010;
 				LastUpgradeCheck = 1010;
 				ORGANIZATIONNAME = "Read-Write.fr";
 				TargetAttributes = {
+					4C3EF240226E3AAC0062B5A3 = {
+						CreatedOnToolsVersion = 10.1;
+						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.Sandbox = {
+								enabled = 0;
+							};
+						};
+					};
 					4C8D798D1F989EB1008300E3 = {
 						CreatedOnToolsVersion = 9.0.1;
 						LastSwiftMigration = 1010;
@@ -587,11 +679,21 @@
 				4CCF6B161F9FABBA000579C7 /* DicomiX */,
 				4C8D798D1F989EB1008300E3 /* DcmSwift */,
 				4CA4051D1FA67DF3006F8053 /* DcmSwiftTests */,
+				4C3EF240226E3AAC0062B5A3 /* MagiX */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		4C3EF23F226E3AAC0062B5A3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C3EF24B226E3AAD0062B5A3 /* Assets.xcassets in Resources */,
+				4C3EF24E226E3AAD0062B5A3 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4C8D798C1F989EB1008300E3 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -641,6 +743,18 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		4C3EF23D226E3AAC0062B5A3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C3EF246226E3AAC0062B5A3 /* DataViewController.swift in Sources */,
+				4C3EF25A226E44D10062B5A3 /* DataController.swift in Sources */,
+				4C3EF25C226E5D650062B5A3 /* ImageViewController.swift in Sources */,
+				4C3EF244226E3AAC0062B5A3 /* AppDelegate.swift in Sources */,
+				4C3EF249226E3AAC0062B5A3 /* MagiX.xcdatamodeld in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4C8D79891F989EB1008300E3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -723,6 +837,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		4C3EF255226E3AD30062B5A3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4C8D798D1F989EB1008300E3 /* DcmSwift */;
+			targetProxy = 4C3EF254226E3AD30062B5A3 /* PBXContainerItemProxy */;
+		};
 		4CCF6B2A1F9FABC3000579C7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 4C8D798D1F989EB1008300E3 /* DcmSwift */;
@@ -731,6 +850,14 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		4C3EF24C226E3AAD0062B5A3 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				4C3EF24D226E3AAD0062B5A3 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
 		4CCF6B211F9FABBA000579C7 /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -742,6 +869,43 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		4C3EF252226E3AAD0062B5A3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = JSVJHJ78QE;
+				INFOPLIST_FILE = MagiX/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = pro.opale.MagiX;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 4.2;
+			};
+			name = Debug;
+		};
+		4C3EF253226E3AAD0062B5A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = JSVJHJ78QE;
+				INFOPLIST_FILE = MagiX/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = pro.opale.MagiX;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 4.2;
+			};
+			name = Release;
+		};
 		4C8D79941F989EB1008300E3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -991,6 +1155,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		4C3EF251226E3AAD0062B5A3 /* Build configuration list for PBXNativeTarget "MagiX" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C3EF252226E3AAD0062B5A3 /* Debug */,
+				4C3EF253226E3AAD0062B5A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		4C8D79931F989EB1008300E3 /* Build configuration list for PBXNativeTarget "DcmSwift" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1028,6 +1201,19 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		4C3EF247226E3AAC0062B5A3 /* MagiX.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				4C3EF248226E3AAC0062B5A3 /* MagiX.xcdatamodel */,
+			);
+			currentVersion = 4C3EF248226E3AAC0062B5A3 /* MagiX.xcdatamodel */;
+			path = MagiX.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = 4CFF02501F960F0700E31D74 /* Project object */;
 }
