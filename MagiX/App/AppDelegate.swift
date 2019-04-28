@@ -38,6 +38,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     
+    func application(_ application: NSApplication, open urls: [URL]) {
+        DataController.shared.load(fileURLs: urls)
+    }
+    
+    
     
 
     // MARK: - Core Data stack

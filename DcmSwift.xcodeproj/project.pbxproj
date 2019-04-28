@@ -25,6 +25,12 @@
 		4C3EF25A226E44D10062B5A3 /* DataController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF259226E44D10062B5A3 /* DataController.swift */; };
 		4C3EF25C226E5D650062B5A3 /* ImageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF25B226E5D650062B5A3 /* ImageViewController.swift */; };
 		4C52EEF11FA8876E001A05DF /* PictureViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C52EEF01FA8876E001A05DF /* PictureViewController.swift */; };
+		4C53D6BF2274C5190003724F /* CollectionViewItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6BD2274C5190003724F /* CollectionViewItem.swift */; };
+		4C53D6C02274C5190003724F /* CollectionViewItem.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4C53D6BE2274C5190003724F /* CollectionViewItem.xib */; };
+		4C53D6C22274E50D0003724F /* MetadataViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6C12274E50D0003724F /* MetadataViewController.swift */; };
+		4C53D6C92275A4EB0003724F /* LoadOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6C82275A4EB0003724F /* LoadOperation.swift */; };
+		4C53D6CB2275B3200003724F /* SidebarViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6CA2275B3200003724F /* SidebarViewController.swift */; };
+		4C53D6CD2275B4A90003724F /* OperationCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6CC2275B4A90003724F /* OperationCellView.swift */; };
 		4C5792FB1FB71994003B1279 /* DocumentController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5792FA1FB71994003B1279 /* DocumentController.swift */; };
 		4C5792FD1FB8709D003B1279 /* AddElementController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5792FC1FB8709D003B1279 /* AddElementController.swift */; };
 		4C5792FF1FB8A8A2003B1279 /* PreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5792FE1FB8A8A2003B1279 /* PreferencesWindowController.swift */; };
@@ -201,6 +207,12 @@
 		4C3EF259226E44D10062B5A3 /* DataController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataController.swift; sourceTree = "<group>"; };
 		4C3EF25B226E5D650062B5A3 /* ImageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageViewController.swift; sourceTree = "<group>"; };
 		4C52EEF01FA8876E001A05DF /* PictureViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureViewController.swift; sourceTree = "<group>"; };
+		4C53D6BD2274C5190003724F /* CollectionViewItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionViewItem.swift; sourceTree = "<group>"; };
+		4C53D6BE2274C5190003724F /* CollectionViewItem.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = CollectionViewItem.xib; sourceTree = "<group>"; };
+		4C53D6C12274E50D0003724F /* MetadataViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataViewController.swift; sourceTree = "<group>"; };
+		4C53D6C82275A4EB0003724F /* LoadOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadOperation.swift; sourceTree = "<group>"; };
+		4C53D6CA2275B3200003724F /* SidebarViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarViewController.swift; sourceTree = "<group>"; };
+		4C53D6CC2275B4A90003724F /* OperationCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationCellView.swift; sourceTree = "<group>"; };
 		4C5792FA1FB71994003B1279 /* DocumentController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentController.swift; sourceTree = "<group>"; };
 		4C5792FC1FB8709D003B1279 /* AddElementController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddElementController.swift; sourceTree = "<group>"; };
 		4C5792FE1FB8A8A2003B1279 /* PreferencesWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesWindowController.swift; sourceTree = "<group>"; };
@@ -316,17 +328,56 @@
 		4C3EF242226E3AAC0062B5A3 /* MagiX */ = {
 			isa = PBXGroup;
 			children = (
+				4C53D6C32274E5150003724F /* App */,
+				4C53D6C52274E5280003724F /* View Controllers */,
+				4C53D6C62274E5390003724F /* Core Data */,
+				4C53D6C72274E5470003724F /* Resources */,
+				4C3EF24F226E3AAD0062B5A3 /* Info.plist */,
+			);
+			path = MagiX;
+			sourceTree = "<group>";
+		};
+		4C53D6C32274E5150003724F /* App */ = {
+			isa = PBXGroup;
+			children = (
 				4C3EF243226E3AAC0062B5A3 /* AppDelegate.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		4C53D6C52274E5280003724F /* View Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				4C53D6CA2275B3200003724F /* SidebarViewController.swift */,
 				4C3EF245226E3AAC0062B5A3 /* DataViewController.swift */,
 				4C3EF25B226E5D650062B5A3 /* ImageViewController.swift */,
+				4C53D6C12274E50D0003724F /* MetadataViewController.swift */,
+				4C53D6BD2274C5190003724F /* CollectionViewItem.swift */,
+				4C53D6CC2275B4A90003724F /* OperationCellView.swift */,
+			);
+			name = "View Controllers";
+			path = "VIew Controllers";
+			sourceTree = "<group>";
+		};
+		4C53D6C62274E5390003724F /* Core Data */ = {
+			isa = PBXGroup;
+			children = (
 				4C3EF259226E44D10062B5A3 /* DataController.swift */,
+				4C53D6C82275A4EB0003724F /* LoadOperation.swift */,
+			);
+			path = "Core Data";
+			sourceTree = "<group>";
+		};
+		4C53D6C72274E5470003724F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
 				4C3EF24A226E3AAD0062B5A3 /* Assets.xcassets */,
 				4C3EF24C226E3AAD0062B5A3 /* Main.storyboard */,
-				4C3EF24F226E3AAD0062B5A3 /* Info.plist */,
+				4C53D6BE2274C5190003724F /* CollectionViewItem.xib */,
 				4C3EF250226E3AAD0062B5A3 /* MagiX.entitlements */,
 				4C3EF247226E3AAC0062B5A3 /* MagiX.xcdatamodeld */,
 			);
-			path = MagiX;
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		4C8D798F1F989EB1008300E3 /* DcmSwift */ = {
@@ -634,7 +685,7 @@
 				TargetAttributes = {
 					4C3EF240226E3AAC0062B5A3 = {
 						CreatedOnToolsVersion = 10.1;
-						ProvisioningStyle = Automatic;
+						ProvisioningStyle = Manual;
 						SystemCapabilities = {
 							com.apple.Sandbox = {
 								enabled = 0;
@@ -691,6 +742,7 @@
 			files = (
 				4C3EF24B226E3AAD0062B5A3 /* Assets.xcassets in Resources */,
 				4C3EF24E226E3AAD0062B5A3 /* Main.storyboard in Resources */,
+				4C53D6C02274C5190003724F /* CollectionViewItem.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -750,8 +802,13 @@
 				4C3EF246226E3AAC0062B5A3 /* DataViewController.swift in Sources */,
 				4C3EF25A226E44D10062B5A3 /* DataController.swift in Sources */,
 				4C3EF25C226E5D650062B5A3 /* ImageViewController.swift in Sources */,
+				4C53D6C22274E50D0003724F /* MetadataViewController.swift in Sources */,
 				4C3EF244226E3AAC0062B5A3 /* AppDelegate.swift in Sources */,
 				4C3EF249226E3AAC0062B5A3 /* MagiX.xcdatamodeld in Sources */,
+				4C53D6CD2275B4A90003724F /* OperationCellView.swift in Sources */,
+				4C53D6BF2274C5190003724F /* CollectionViewItem.swift in Sources */,
+				4C53D6CB2275B3200003724F /* SidebarViewController.swift in Sources */,
+				4C53D6C92275A4EB0003724F /* LoadOperation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -874,7 +931,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = JSVJHJ78QE;
 				INFOPLIST_FILE = MagiX/Info.plist;
@@ -884,6 +941,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = pro.opale.MagiX;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 4.2;
 			};
 			name = Debug;
@@ -893,7 +951,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = JSVJHJ78QE;
 				INFOPLIST_FILE = MagiX/Info.plist;
@@ -902,6 +960,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = pro.opale.MagiX;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 4.2;
 			};
 			name = Release;

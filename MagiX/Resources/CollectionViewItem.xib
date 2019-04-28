@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="14460.31" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14460.31"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="CollectionViewItem" customModule="MagiX" customModuleProvider="target">
+            <connections>
+                <outlet property="imageView" destination="NTK-2n-iRN" id="zkG-cE-qHn"/>
+                <outlet property="instancesCountLabel" destination="cpI-oz-hWt" id="pMZ-qa-Ufu"/>
+                <outlet property="modalityLabel" destination="XUm-Sh-YYI" id="Ikz-xK-5sW"/>
+                <outlet property="view" destination="Hz6-mo-xeY" id="0bl-1N-x8E"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <customView id="Hz6-mo-xeY">
+            <rect key="frame" x="0.0" y="0.0" width="100" height="100"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <subviews>
+                <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="NTK-2n-iRN">
+                    <rect key="frame" x="0.0" y="0.0" width="100" height="100"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="100" id="5Ay-zg-QdO"/>
+                        <constraint firstAttribute="width" constant="100" id="Hsf-qe-Ajj"/>
+                    </constraints>
+                    <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="oYc-b4-5oc"/>
+                </imageView>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="XUm-Sh-YYI">
+                    <rect key="frame" x="0.0" y="0.0" width="35" height="16"/>
+                    <autoresizingMask key="autoresizingMask"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" alignment="center" title="US" drawsBackground="YES" id="vfo-Wx-yHL">
+                        <font key="font" metaFont="system" size="12"/>
+                        <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <color key="backgroundColor" white="0.0" alpha="0.72233518835616439" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                    </textFieldCell>
+                </textField>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="cpI-oz-hWt">
+                    <rect key="frame" x="65" y="0.0" width="35" height="16"/>
+                    <autoresizingMask key="autoresizingMask"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" alignment="center" title="140" drawsBackground="YES" id="dAo-kk-zq9">
+                        <font key="font" metaFont="system" size="12"/>
+                        <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <color key="backgroundColor" white="0.0" alpha="0.72233518835616439" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                    </textFieldCell>
+                </textField>
+            </subviews>
+            <constraints>
+                <constraint firstItem="NTK-2n-iRN" firstAttribute="top" secondItem="Hz6-mo-xeY" secondAttribute="top" id="IAG-yU-Raj"/>
+                <constraint firstAttribute="bottom" secondItem="NTK-2n-iRN" secondAttribute="bottom" id="Voc-Za-I8u"/>
+                <constraint firstAttribute="trailing" secondItem="NTK-2n-iRN" secondAttribute="trailing" id="vfX-tb-k1l"/>
+                <constraint firstItem="NTK-2n-iRN" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" id="yNM-Oa-LeK"/>
+            </constraints>
+            <point key="canvasLocation" x="-136" y="154"/>
+        </customView>
+    </objects>
+</document>

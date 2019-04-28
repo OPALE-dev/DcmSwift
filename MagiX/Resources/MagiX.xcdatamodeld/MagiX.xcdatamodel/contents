@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="14460.32" systemVersion="17G65" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="Directory" representedClassName="Directory" parentEntity="Item" syncable="YES" codeGenerationType="class">
+        <attribute name="main" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES" syncable="YES"/>
+    </entity>
     <entity name="Instance" representedClassName="Instance" syncable="YES" codeGenerationType="class">
         <attribute name="acquisitionDate" optional="YES" attributeType="Date" usesScalarValueType="NO" syncable="YES"/>
         <attribute name="acquisitionNumber" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
@@ -8,37 +11,59 @@
         <attribute name="instanceNumber" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="patientOrientation" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="sopInstanceUID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="transferSyntaxUID" optional="YES" attributeType="String" syncable="YES"/>
         <relationship name="serie" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Serie" inverseName="instances" inverseEntity="Serie" syncable="YES"/>
+    </entity>
+    <entity name="Item" representedClassName="Item" isAbstract="YES" syncable="YES" codeGenerationType="class">
+        <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
     </entity>
     <entity name="Patient" representedClassName="Patient" syncable="YES" codeGenerationType="class">
         <attribute name="patientBirthdate" optional="YES" attributeType="Date" usesScalarValueType="NO" syncable="YES"/>
         <attribute name="patientID" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="patientName" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="patientSex" optional="YES" attributeType="String" syncable="YES"/>
-        <relationship name="studies" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Study" inverseName="patient" inverseEntity="Study" syncable="YES"/>
+        <relationship name="studies" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Study" inverseName="patient" inverseEntity="Study" syncable="YES"/>
+    </entity>
+    <entity name="PrivateDirectory" representedClassName="PrivateDirectory" parentEntity="Directory" syncable="YES" codeGenerationType="class">
+        <relationship name="studies" optional="YES" toMany="YES" deletionRule="Nullify" ordered="YES" destinationEntity="Study" inverseName="directories" inverseEntity="Study" syncable="YES"/>
+    </entity>
+    <entity name="Remote" representedClassName="Remote" parentEntity="Item" syncable="YES" codeGenerationType="class">
+        <attribute name="hostname" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="port" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
+        <attribute name="title" optional="YES" attributeType="String" syncable="YES"/>
     </entity>
     <entity name="Serie" representedClassName="Serie" syncable="YES" codeGenerationType="class">
+        <attribute name="imageProxy" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" syncable="YES"/>
         <attribute name="modality" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="numberOfInstances" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="seriesDate" optional="YES" attributeType="Date" usesScalarValueType="NO" syncable="YES"/>
         <attribute name="seriesDescription" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="seriesInstanceUID" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="seriesNumber" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
-        <relationship name="instances" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Instance" inverseName="serie" inverseEntity="Instance" syncable="YES"/>
+        <attribute name="transferSyntaxUID" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="instances" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Instance" inverseName="serie" inverseEntity="Instance" syncable="YES"/>
         <relationship name="study" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Study" inverseName="series" inverseEntity="Study" syncable="YES"/>
     </entity>
     <entity name="Study" representedClassName="Study" syncable="YES" codeGenerationType="class">
         <attribute name="accessionNumber" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="imageProxy" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" syncable="YES"/>
+        <attribute name="numberOfInstances" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="studyDate" optional="YES" attributeType="Date" usesScalarValueType="NO" syncable="YES"/>
         <attribute name="studyDescription" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="studyID" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="studyInstanceUID" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="directories" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="PrivateDirectory" inverseName="studies" inverseEntity="PrivateDirectory" syncable="YES"/>
         <relationship name="patient" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Patient" inverseName="studies" inverseEntity="Patient" syncable="YES"/>
-        <relationship name="series" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Serie" inverseName="study" inverseEntity="Serie" syncable="YES"/>
+        <relationship name="series" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Serie" inverseName="study" inverseEntity="Serie" syncable="YES"/>
     </entity>
     <elements>
+        <element name="Instance" positionX="-27" positionY="99" width="128" height="180"/>
         <element name="Patient" positionX="-63" positionY="-18" width="128" height="120"/>
-        <element name="Study" positionX="-54" positionY="18" width="128" height="150"/>
-        <element name="Serie" positionX="-36" positionY="63" width="128" height="150"/>
-        <element name="Instance" positionX="-27" positionY="99" width="128" height="30"/>
+        <element name="Serie" positionX="-36" positionY="63" width="128" height="195"/>
+        <element name="Study" positionX="-54" positionY="18" width="128" height="195"/>
+        <element name="Directory" positionX="-54" positionY="108" width="128" height="60"/>
+        <element name="PrivateDirectory" positionX="-45" positionY="126" width="128" height="60"/>
+        <element name="Item" positionX="-36" positionY="135" width="128" height="60"/>
+        <element name="Remote" positionX="-27" positionY="144" width="128" height="90"/>
     </elements>
 </model>
