@@ -258,24 +258,17 @@ public class DicomImage {
     
     private func imageFromPixels(size: NSSize, pixels: UnsafeRawPointer, width: Int, height: Int)-> CGImage? {
         var bitmapInfo:CGBitmapInfo = []
-        var __:UnsafeRawPointer = pixels
+        //var __:UnsafeRawPointer = pixels
         
         if self.isMonochrome {
             self.colorSpace = CGColorSpaceCreateDeviceGray()
             
+            //bitmapInfo = CGBitmapInfo.byteOrder16Host
+            
             if self.photoInter == .MONOCHROME1 {
-                bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue)
+
             } else if self.photoInter == .MONOCHROME2 {
-                bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue)
-                
-                if self.bitsAllocated == 16 {
-                    if let modality = self.dataset.string(forTag: "Modality") {
-                        if modality.starts(with: "CT") {
-                            print("CT 1666666666")
-                            //bitmapInfo = bitmapInfo.union(CGBitmapInfo.byteOrder16Host)
-                        }
-                    }
-                }
+
             }
         } else {
             if self.photoInter != .ARGB {

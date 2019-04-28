@@ -356,15 +356,20 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /**
      Return the name for a given UID
      - Parameter uid: DICOM SOP UID
-     - Returns: The corresponding name for the UID
+     - Parameter append: Return a string with both UID and corresponding name
+     - Returns: The corresponding name for the UID, or the UID if no name has been found
      */
-    public func nameForUID(withUID uid:String) -> String {
+    public func nameForUID(withUID uid:String, append:Bool = false) -> String {
         for (_, attrs) in self.uids {
             if attrs["uid"] == uid {
-                return attrs["keyword"]!
+                if let keyword = attrs["keyword"] {
+                    var str = keyword
+                    if append { str = "\(keyword) (\(uid))" }
+                    return str
+                }
             }
         }
-        return "Undefined"
+        return uid
     }
     
     
