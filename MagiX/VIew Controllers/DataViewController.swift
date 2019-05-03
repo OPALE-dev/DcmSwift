@@ -9,6 +9,9 @@
 import Cocoa
 
 
+let dataPastebaodrType = NSPasteboard.PasteboardType(rawValue: "pro.opale.MagiX.data.item")
+
+
 extension Notification.Name {
     static let dataSelectionDidChange = Notification.Name(rawValue: "dataSelectionDidChange")
 }
@@ -19,25 +22,48 @@ class DataViewController: NSViewController, NSOutlineViewDelegate, NSOutlineView
     @IBOutlet weak var dataOutlineView: NSOutlineView!
     
     var studies:[Study] = []
+    var draggedNode:AnyObject? = nil
+    
+    
     
      // MARK: - View Controller
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
         
         self.dataOutlineView.expandItem(self.dataOutlineView.item(atRow: 0), expandChildren: false)
         
-        NotificationCenter.default.addObserver(self, selector: #selector(didLoadData(n:)), name: .didLoadData, object: nil)
+        // drag and drop
+        // Register for the dropped object types we can accept.
+        self.dataOutlineView.registerForDraggedTypes([dataPastebaodrType])
         
-        self.studies = DataController.shared.fetchStudies()
-        self.dataOutlineView.reloadData()
+        // Disable dragging items from our view to other applications.
+        self.dataOutlineView.setDraggingSourceOperationMask(NSDragOperation(), forLocal: false)
+        
+        // Enable dragging items within and into our view.
+        self.dataOutlineView.setDraggingSourceOperationMask(NSDragOperation.every, forLocal: true)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(didLoadData(n:)), name: .didLoadData, object: nil)
     }
 
     override var representedObject: Any? {
         didSet {
-        // Update the view, if already loaded.
+            self.loadDirectory()
+            self.dataOutlineView.reloadData()
+        }
+    }
+    
+    
+    private func loadDirectory() {
+        if let directory = self.representedObject as? Directory {
+            if directory.main {
+                self.studies = DataController.shared.fetchStudies()
+            }
+            else {
+                if let privateDir = directory as? PrivateDirectory {
+                    self.studies = (privateDir.studies!.sortedArray(using: [NSSortDescriptor(key: "studyDate", ascending: true)]) as! [Study] as NSArray) as! [Study]
+                }
+            }
         }
     }
     
@@ -47,8 +73,7 @@ class DataViewController: NSViewController, NSOutlineViewDelegate, NSOutlineView
     // MARK: - Notification
     
     @objc func didLoadData(n:Notification) {
-        print("didLoadData")
-        self.studies = DataController.shared.fetchStudies()
+        self.loadDirectory()
         self.dataOutlineView.reloadData()
     }
 
@@ -187,5 +212,26 @@ class DataViewController: NSViewController, NSOutlineViewDelegate, NSOutlineView
             NotificationCenter.default.post(name: .dataSelectionDidChange, object: selectedItem)
         }
     }
+    
+    
+    
+    
+    
+    // MARK: NSOutlineView Drag & Drop
+    
+    func outlineView(_ outlineView: NSOutlineView, writeItems items: [Any], to pasteboard: NSPasteboard) -> Bool {
+        var objectIDs:[URL] = []
+
+        for item in items {
+            if let study = item as? Study {
+                objectIDs.append(study.objectID.uriRepresentation())
+            }
+        }
+        let data = NSKeyedArchiver.archivedData(withRootObject: objectIDs)
+        pasteboard.setData(data, forType: dataPastebaodrType)
+
+        return objectIDs.count > 0
+    }
+    
 }
 

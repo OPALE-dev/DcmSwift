@@ -171,8 +171,11 @@ class DataController : NSObject {
     public func removeDirectory(_ dir:Directory) {
         self.context.delete(dir)
         self.save()
-        
-        // NotificationCenter.default.post(name: .didLoadData, object: nil)
+    }
+    
+    public func removeRemote(_ remote:Remote) {
+        self.context.delete(remote)
+        self.save()
     }
     
     

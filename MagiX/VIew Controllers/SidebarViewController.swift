@@ -9,14 +9,21 @@
 import Cocoa
 import CoreData
 
-class SidebarViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSOutlineViewDelegate, NSOutlineViewDataSource {
+let directoryPastebaodrType = NSPasteboard.PasteboardType(rawValue: "pro.opale.MagiX.sidebar.directory")
+
+class SidebarViewController:    NSViewController,
+                                NSTableViewDataSource,
+                                NSTableViewDelegate,
+                                NSOutlineViewDelegate,
+                                NSOutlineViewDataSource {
+    
     @IBOutlet weak var directoriesOutlineView: NSOutlineView!
     @IBOutlet weak var operationsTableView: NSTableView!
     
     var categories:[String] = ["DIRECTORIES", "REMOTES"]
     var directories:[Directory] = []
     var remotes:[Remote] = []
-    
+    var draggedNode:AnyObject? = nil
     
     // MARK: - View Controller
     
@@ -28,9 +35,19 @@ class SidebarViewController: NSViewController, NSTableViewDataSource, NSTableVie
         NotificationCenter.default.addObserver(self, selector: #selector(loadOperationChanged(n:)), name: .loadOperationFinished, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(loadOperationChanged(n:)), name: .loadOperationCancelled, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(loadOperationChanged(n:)), name: .loadOperationUpdated, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(didUpdateRemote(n:)), name: .didUpdateRemote, object: nil)
         
         self.directories = DataController.shared.fetchDirectories()
         self.remotes = DataController.shared.fetchRemotes()
+        
+        // drag and drop
+        // Register for the dropped object types we can accept.
+        self.directoriesOutlineView.registerForDraggedTypes([directoryPastebaodrType, dataPastebaodrType])
+        
+        // Disable dragging items from our view to other applications.
+        //self.directoriesOutlineView.setDraggingSourceOperationMask(NSDragOperation(), forLocal: false)
+        // Enable dragging items within and into our view.
+        self.directoriesOutlineView.setDraggingSourceOperationMask(NSDragOperation.every, forLocal: true)
         
         self.directoriesOutlineView.reloadData()
         self.directoriesOutlineView.expandItem(self.directoriesOutlineView.item(atRow: 1), expandChildren: true)
@@ -52,6 +69,13 @@ class SidebarViewController: NSViewController, NSTableViewDataSource, NSTableVie
     
     
     
+    @objc func didUpdateRemote(n:Notification) {
+        self.remotes = DataController.shared.fetchRemotes()
+        self.directoriesOutlineView.reloadData()
+    }
+    
+    
+    
     // MARK: - IBAction
     
     @IBAction func newDirectory(_ sender: Any) {
@@ -64,14 +88,20 @@ class SidebarViewController: NSViewController, NSTableViewDataSource, NSTableVie
         self.directoriesOutlineView.reloadData()
     }
     
-    @IBAction func newRemote(_ sender: Any) {
-        let newRemote = Remote(context: DataController.shared.context)
-        newRemote.name = "New Remote \(remotes.count)"
+    @IBAction func newSmartDirectory(_ sender: Any) {
+        let newDirectory = SmartDirectory(context: DataController.shared.context)
+        newDirectory.name = "New Directory \(directories.count)"
         
         DataController.shared.save()
         
-        self.remotes.append(newRemote)
+        self.directories.append(newDirectory)
         self.directoriesOutlineView.reloadData()
+    }
+    
+    @IBAction func newRemote(_ sender: Any) {
+        if let remoteVC:NSViewController = NSStoryboard(name: "Main", bundle: nil).instantiateController(withIdentifier: "RemoteViewController") as? NSViewController {
+            self.presentAsSheet(remoteVC)
+        }
     }
     
     @IBAction func remove(_ sender: Any) {
@@ -82,6 +112,13 @@ class SidebarViewController: NSViewController, NSTableViewDataSource, NSTableVie
             
             if let index = self.directories.index(of:d) {
                 self.directories.remove(at: index)
+            }
+        }
+        else if let r = selectedItem as? Remote {
+            DataController.shared.removeRemote(r)
+            
+            if let index = self.remotes.index(of:r) {
+                self.remotes.remove(at: index)
             }
         }
         
@@ -146,6 +183,9 @@ class SidebarViewController: NSViewController, NSTableViewDataSource, NSTableVie
             view = outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "DataCell"), owner: self) as? NSTableCellView
 
             if item is PrivateDirectory {
+                view?.imageView?.image = NSImage(named: NSImage.Name("NSFolder"))
+            }
+            else if item is SmartDirectory {
                 view?.imageView?.image = NSImage(named: NSImage.Name("NSFolderSmart"))
             }
             view?.textField?.stringValue = directory.name ?? "NO NAME"
@@ -162,21 +202,68 @@ class SidebarViewController: NSViewController, NSTableViewDataSource, NSTableVie
     
     func outlineViewSelectionDidChange(_ notification: Notification) {
         if let selectedItem = self.directoriesOutlineView.item(atRow: self.directoriesOutlineView.selectedRow) {
+            // select appropriated tab
             if let tabViewController = (self.parent as? NSSplitViewController)?.splitViewItems[1].viewController as? NSTabViewController {
-                if let doc = selectedItem as? Directory {
+                if let directory = selectedItem as? Directory {
                     tabViewController.tabView.selectTabViewItem(at: 0)
+                                        
+                    if let svc = tabViewController.tabView.selectedTabViewItem?.viewController as? NSSplitViewController {
+                        if let svc2 = svc.children[0] as? NSSplitViewController {
+                            if let vc = svc2.children[0] as? DataViewController {
+                                vc.representedObject = directory
+                            }
+                        }
+                        
+                    }
                 }
-                else if let doc = selectedItem as? Remote {
+                else if let remote = selectedItem as? Remote {
                     tabViewController.tabView.selectTabViewItem(at: 1)
+                    
+                    if let remoteViewController = tabViewController.tabView.selectedTabViewItem?.viewController as? RemoteViewController {
+                        remoteViewController.representedObject = remote
+                    }
                 }
+                
             }
-            if let doc = selectedItem as? Directory {
-                // NotificationCenter.default.post(name: .documentSelectionDidChange, object: self.documentsOutlineView.selectedRow)
-            }
+            
         }
     }
     
     
+    // MARK: NSOutlineView Drag & Drop
+    func outlineView(_ outlineView: NSOutlineView, validateDrop info: NSDraggingInfo, proposedItem item: Any?, proposedChildIndex index: Int) -> NSDragOperation {
+        var retVal:NSDragOperation = NSDragOperation()
+        
+        if (item as? PrivateDirectory) != nil {
+            retVal = NSDragOperation.copy
+        }
+
+        return retVal
+    }
+    
+    
+    func outlineView(_ outlineView: NSOutlineView, acceptDrop info: NSDraggingInfo, item: Any?, childIndex index: Int) -> Bool {
+        var retVal:Bool = false
+        
+        if let data = info.draggingPasteboard.data(forType: dataPastebaodrType) {
+            if let objectIDs = NSKeyedUnarchiver.unarchiveObject(with: data) as? [URL] {
+                print(objectIDs)
+                for objectID in objectIDs {
+                    if let managedObjectID = DataController.shared.context.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: objectID) {
+                        if let study = DataController.shared.context.object(with: managedObjectID) as? Study {
+                            if let privateDirectory = item as? PrivateDirectory {
+                                privateDirectory.addToStudies(study)
+                                retVal = true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return retVal
+    }
+    
+
     
     // MARK: - Table View
     

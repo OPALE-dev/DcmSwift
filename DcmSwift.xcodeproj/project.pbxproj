@@ -31,6 +31,24 @@
 		4C53D6C92275A4EB0003724F /* LoadOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6C82275A4EB0003724F /* LoadOperation.swift */; };
 		4C53D6CB2275B3200003724F /* SidebarViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6CA2275B3200003724F /* SidebarViewController.swift */; };
 		4C53D6CD2275B4A90003724F /* OperationCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6CC2275B4A90003724F /* OperationCellView.swift */; };
+		4C53D6CF227760690003724F /* RemoteEditViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6CE227760690003724F /* RemoteEditViewController.swift */; };
+		4C53D6D22278F3AA0003724F /* RemoteViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6D02278F3AA0003724F /* RemoteViewController.swift */; };
+		4C53D6DE2278F5F90003724F /* Remote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6DC2278F5F90003724F /* Remote.swift */; };
+		4C53D6E2227B5BB50003724F /* ApplicationContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6E1227B5BB50003724F /* ApplicationContext.swift */; };
+		4C53D6E4227B61660003724F /* PDUMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6E3227B61660003724F /* PDUMessage.swift */; };
+		4C53D6E6227B69BB0003724F /* PresentationContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6E5227B69BB0003724F /* PresentationContext.swift */; };
+		4C53D6E8227B6D0D0003724F /* UserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6E7227B6D0D0003724F /* UserInfo.swift */; };
+		4C53D6ED227C42030003724F /* ItemType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6EC227C42030003724F /* ItemType.swift */; };
+		4C53D6EF227C8B940003724F /* CommandField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6EE227C8B940003724F /* CommandField.swift */; };
+		4C53D6F1227CAF310003724F /* PDUType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6F0227CAF310003724F /* PDUType.swift */; };
+		4C53D6F3227CAFB20003724F /* AssociationAC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6F2227CAFB20003724F /* AssociationAC.swift */; };
+		4C53D6F6227CB1100003724F /* AssociationRQ.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6F5227CB1100003724F /* AssociationRQ.swift */; };
+		4C53D6F8227CB34D0003724F /* ReleaseRQ.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6F7227CB34D0003724F /* ReleaseRQ.swift */; };
+		4C53D6FA227CB3900003724F /* AssociationRJ.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6F9227CB3900003724F /* AssociationRJ.swift */; };
+		4C53D6FC227CB3B00003724F /* ReleaseRP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6FB227CB3B00003724F /* ReleaseRP.swift */; };
+		4C53D6FE227CB4480003724F /* DataTF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6FD227CB4480003724F /* DataTF.swift */; };
+		4C53D700227CB4650003724F /* Abort.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6FF227CB4650003724F /* Abort.swift */; };
+		4C53D702227CB79C0003724F /* PDUDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D701227CB79C0003724F /* PDUDecoder.swift */; };
 		4C5792FB1FB71994003B1279 /* DocumentController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5792FA1FB71994003B1279 /* DocumentController.swift */; };
 		4C5792FD1FB8709D003B1279 /* AddElementController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5792FC1FB8709D003B1279 /* AddElementController.swift */; };
 		4C5792FF1FB8A8A2003B1279 /* PreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5792FE1FB8A8A2003B1279 /* PreferencesWindowController.swift */; };
@@ -213,6 +231,24 @@
 		4C53D6C82275A4EB0003724F /* LoadOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadOperation.swift; sourceTree = "<group>"; };
 		4C53D6CA2275B3200003724F /* SidebarViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarViewController.swift; sourceTree = "<group>"; };
 		4C53D6CC2275B4A90003724F /* OperationCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationCellView.swift; sourceTree = "<group>"; };
+		4C53D6CE227760690003724F /* RemoteEditViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteEditViewController.swift; sourceTree = "<group>"; };
+		4C53D6D02278F3AA0003724F /* RemoteViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteViewController.swift; sourceTree = "<group>"; };
+		4C53D6DC2278F5F90003724F /* Remote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Remote.swift; sourceTree = "<group>"; };
+		4C53D6E1227B5BB50003724F /* ApplicationContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationContext.swift; sourceTree = "<group>"; };
+		4C53D6E3227B61660003724F /* PDUMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDUMessage.swift; sourceTree = "<group>"; };
+		4C53D6E5227B69BB0003724F /* PresentationContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationContext.swift; sourceTree = "<group>"; };
+		4C53D6E7227B6D0D0003724F /* UserInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserInfo.swift; sourceTree = "<group>"; };
+		4C53D6EC227C42030003724F /* ItemType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemType.swift; sourceTree = "<group>"; };
+		4C53D6EE227C8B940003724F /* CommandField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandField.swift; sourceTree = "<group>"; };
+		4C53D6F0227CAF310003724F /* PDUType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDUType.swift; sourceTree = "<group>"; };
+		4C53D6F2227CAFB20003724F /* AssociationAC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssociationAC.swift; sourceTree = "<group>"; };
+		4C53D6F5227CB1100003724F /* AssociationRQ.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssociationRQ.swift; sourceTree = "<group>"; };
+		4C53D6F7227CB34D0003724F /* ReleaseRQ.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseRQ.swift; sourceTree = "<group>"; };
+		4C53D6F9227CB3900003724F /* AssociationRJ.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssociationRJ.swift; sourceTree = "<group>"; };
+		4C53D6FB227CB3B00003724F /* ReleaseRP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseRP.swift; sourceTree = "<group>"; };
+		4C53D6FD227CB4480003724F /* DataTF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataTF.swift; sourceTree = "<group>"; };
+		4C53D6FF227CB4650003724F /* Abort.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Abort.swift; sourceTree = "<group>"; };
+		4C53D701227CB79C0003724F /* PDUDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDUDecoder.swift; sourceTree = "<group>"; };
 		4C5792FA1FB71994003B1279 /* DocumentController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentController.swift; sourceTree = "<group>"; };
 		4C5792FC1FB8709D003B1279 /* AddElementController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddElementController.swift; sourceTree = "<group>"; };
 		4C5792FE1FB8A8A2003B1279 /* PreferencesWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesWindowController.swift; sourceTree = "<group>"; };
@@ -349,7 +385,9 @@
 			isa = PBXGroup;
 			children = (
 				4C53D6CA2275B3200003724F /* SidebarViewController.swift */,
+				4C53D6CE227760690003724F /* RemoteEditViewController.swift */,
 				4C3EF245226E3AAC0062B5A3 /* DataViewController.swift */,
+				4C53D6D02278F3AA0003724F /* RemoteViewController.swift */,
 				4C3EF25B226E5D650062B5A3 /* ImageViewController.swift */,
 				4C53D6C12274E50D0003724F /* MetadataViewController.swift */,
 				4C53D6BD2274C5190003724F /* CollectionViewItem.swift */,
@@ -364,6 +402,7 @@
 			children = (
 				4C3EF259226E44D10062B5A3 /* DataController.swift */,
 				4C53D6C82275A4EB0003724F /* LoadOperation.swift */,
+				4C53D6DC2278F5F90003724F /* Remote.swift */,
 			);
 			path = "Core Data";
 			sourceTree = "<group>";
@@ -380,11 +419,55 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		4C53D6E0227B5AC30003724F /* PDU */ = {
+			isa = PBXGroup;
+			children = (
+				4C53D6F0227CAF310003724F /* PDUType.swift */,
+				4C53D701227CB79C0003724F /* PDUDecoder.swift */,
+				4C53D6E3227B61660003724F /* PDUMessage.swift */,
+				4C53D6F5227CB1100003724F /* AssociationRQ.swift */,
+				4C53D6F2227CAFB20003724F /* AssociationAC.swift */,
+				4C53D6F9227CB3900003724F /* AssociationRJ.swift */,
+				4C53D6FD227CB4480003724F /* DataTF.swift */,
+				4C53D6F7227CB34D0003724F /* ReleaseRQ.swift */,
+				4C53D6FB227CB3B00003724F /* ReleaseRP.swift */,
+				4C53D6FF227CB4650003724F /* Abort.swift */,
+				4C53D6EE227C8B940003724F /* CommandField.swift */,
+				4C53D6EC227C42030003724F /* ItemType.swift */,
+				4C53D6F4227CAFCE0003724F /* Items */,
+			);
+			path = PDU;
+			sourceTree = "<group>";
+		};
+		4C53D6E9227B8FAE0003724F /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				4C3CD47A1F96981300323E8A /* DataSet.swift */,
+				4C3CD47C1F96981D00323E8A /* DataElement.swift */,
+				4C8D79851F97D84A008300E3 /* DataSequence.swift */,
+				4C8D79871F97D859008300E3 /* DataItem.swift */,
+				4C7B78D41FA23FAC005BB2A2 /* DataTag.swift */,
+				4C99796E1FA71DEF00C90494 /* PixelSequence.swift */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		4C53D6F4227CAFCE0003724F /* Items */ = {
+			isa = PBXGroup;
+			children = (
+				4C53D6E1227B5BB50003724F /* ApplicationContext.swift */,
+				4C53D6E5227B69BB0003724F /* PresentationContext.swift */,
+				4C53D6E7227B6D0D0003724F /* UserInfo.swift */,
+			);
+			path = Items;
+			sourceTree = "<group>";
+		};
 		4C8D798F1F989EB1008300E3 /* DcmSwift */ = {
 			isa = PBXGroup;
 			children = (
 				4C8D79911F989EB1008300E3 /* Info.plist */,
 				4CB832681FA2916100103A94 /* Header */,
+				4C53D6E9227B8FAE0003724F /* Data */,
 				4CECD652224165AC0087AF0D /* Foundation */,
 				4CB832691FA2917300103A94 /* Networking */,
 				4CECD653224165CF0087AF0D /* Graphics */,
@@ -503,6 +586,7 @@
 		4CB832691FA2917300103A94 /* Networking */ = {
 			isa = PBXGroup;
 			children = (
+				4C53D6E0227B5AC30003724F /* PDU */,
 				4CECD64E22415F5A0087AF0D /* DicomService.swift */,
 				4CECD64C22415EE90087AF0D /* DicomClient.swift */,
 				4CECD65022415F780087AF0D /* DicomServer.swift */,
@@ -526,12 +610,6 @@
 		4CECD652224165AC0087AF0D /* Foundation */ = {
 			isa = PBXGroup;
 			children = (
-				4C3CD47A1F96981300323E8A /* DataSet.swift */,
-				4C3CD47C1F96981D00323E8A /* DataElement.swift */,
-				4C8D79851F97D84A008300E3 /* DataSequence.swift */,
-				4C8D79871F97D859008300E3 /* DataItem.swift */,
-				4C7B78D41FA23FAC005BB2A2 /* DataTag.swift */,
-				4C99796E1FA71DEF00C90494 /* PixelSequence.swift */,
 				4C3CD4781F9697DC00323E8A /* DicomFile.swift */,
 				4C7B78D01FA1485B005BB2A2 /* DicomDate.swift */,
 				4C783E6A1F969DC500E46F30 /* DicomData.swift */,
@@ -728,9 +806,9 @@
 			projectRoot = "";
 			targets = (
 				4CCF6B161F9FABBA000579C7 /* DicomiX */,
+				4C3EF240226E3AAC0062B5A3 /* MagiX */,
 				4C8D798D1F989EB1008300E3 /* DcmSwift */,
 				4CA4051D1FA67DF3006F8053 /* DcmSwiftTests */,
-				4C3EF240226E3AAC0062B5A3 /* MagiX */,
 			);
 		};
 /* End PBXProject section */
@@ -799,16 +877,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C53D6DE2278F5F90003724F /* Remote.swift in Sources */,
 				4C3EF246226E3AAC0062B5A3 /* DataViewController.swift in Sources */,
 				4C3EF25A226E44D10062B5A3 /* DataController.swift in Sources */,
 				4C3EF25C226E5D650062B5A3 /* ImageViewController.swift in Sources */,
 				4C53D6C22274E50D0003724F /* MetadataViewController.swift in Sources */,
+				4C53D6D22278F3AA0003724F /* RemoteViewController.swift in Sources */,
 				4C3EF244226E3AAC0062B5A3 /* AppDelegate.swift in Sources */,
 				4C3EF249226E3AAC0062B5A3 /* MagiX.xcdatamodeld in Sources */,
 				4C53D6CD2275B4A90003724F /* OperationCellView.swift in Sources */,
 				4C53D6BF2274C5190003724F /* CollectionViewItem.swift in Sources */,
 				4C53D6CB2275B3200003724F /* SidebarViewController.swift in Sources */,
 				4C53D6C92275A4EB0003724F /* LoadOperation.swift in Sources */,
+				4C53D6CF227760690003724F /* RemoteEditViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -821,18 +902,33 @@
 				4C8D799A1F989EDD008300E3 /* DataSet.swift in Sources */,
 				4CECD64D22415EE90087AF0D /* DicomClient.swift in Sources */,
 				4CECD64F22415F5A0087AF0D /* DicomService.swift in Sources */,
+				4C53D6F1227CAF310003724F /* PDUType.swift in Sources */,
 				4C8D79981F989EDD008300E3 /* DataElement.swift in Sources */,
+				4C53D6F3227CAFB20003724F /* AssociationAC.swift in Sources */,
+				4C53D6E8227B6D0D0003724F /* UserInfo.swift in Sources */,
 				4C7B78D11FA1485B005BB2A2 /* DicomDate.swift in Sources */,
 				4C8D79991F989EDD008300E3 /* DicomData.swift in Sources */,
+				4C53D6EF227C8B940003724F /* CommandField.swift in Sources */,
 				4C8D79961F989EDD008300E3 /* DataItem.swift in Sources */,
 				4C5BF0911FABB4730051F4FE /* DicomString.swift in Sources */,
+				4C53D6FC227CB3B00003724F /* ReleaseRP.swift in Sources */,
 				4C9979901FA75B3600C90494 /* DicomObject.swift in Sources */,
+				4C53D6E4227B61660003724F /* PDUMessage.swift in Sources */,
 				4C7B78D61FA28002005BB2A2 /* DataTag.swift in Sources */,
 				4CD0BEE42242A63A0024C357 /* DicomAssociation.swift in Sources */,
+				4C53D6F6227CB1100003724F /* AssociationRQ.swift in Sources */,
+				4C53D702227CB79C0003724F /* PDUDecoder.swift in Sources */,
+				4C53D6F8227CB34D0003724F /* ReleaseRQ.swift in Sources */,
 				4C99796F1FA71DEF00C90494 /* PixelSequence.swift in Sources */,
+				4C53D6ED227C42030003724F /* ItemType.swift in Sources */,
 				4C9979971FA7720300C90494 /* DicomImage.swift in Sources */,
 				4CD0BEE8224401670024C357 /* DicomConstants.swift in Sources */,
+				4C53D6E6227B69BB0003724F /* PresentationContext.swift in Sources */,
+				4C53D6E2227B5BB50003724F /* ApplicationContext.swift in Sources */,
+				4C53D6FE227CB4480003724F /* DataTF.swift in Sources */,
+				4C53D700227CB4650003724F /* Abort.swift in Sources */,
 				4C8D79AA1F98AB0D008300E3 /* DicomSpec.swift in Sources */,
+				4C53D6FA227CB3900003724F /* AssociationRJ.swift in Sources */,
 				4CECD65122415F780087AF0D /* DicomServer.swift in Sources */,
 				4CD0BEE62242B15B0024C357 /* DicomEntity.swift in Sources */,
 			);

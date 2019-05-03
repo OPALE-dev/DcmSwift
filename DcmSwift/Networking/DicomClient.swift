@@ -68,8 +68,19 @@ public class DicomClient : DicomService, StreamDelegate {
         
         association.request(sop: DicomConstants.verificationSOP) { (accepted) in
             if accepted {
+                
+                let message = PDUMessage(pduType: PDUType.dataTF, association: association)
+                let data = message.echoRQ(association: association)
+                
+                print(data.toHex().separate(every: 2, with: " "))
+                
+                association.write(data)
+                
+                // read response
+                
+                // close association
+                
                 completion(accepted, nil)
-                association.close()
             }
             else {
                 completion(false, "Association failed")
@@ -88,25 +99,7 @@ public class DicomClient : DicomService, StreamDelegate {
         
         association.request(sop: DicomConstants.ultrasoundImageStorageSOP) { (accepted) in
             if accepted {
-                for file in files {
-                    // send C-STORE-RQ
-                    let v = file.dataset.string(forTag: "MediaStorageSOPInstanceUID")
-                    
-                    let dataset = DataSet()
-                    _ = dataset.set(value: DicomConstants.ultrasoundImageStorageSOP, forTagName: "AffectedSOPClassUID")
-                    _ = dataset.set(value: "C-STORE-RQ", forTagName: "CommandField")
-                    _ = dataset.set(value: "1", forTagName: "MessageID")
-                    _ = dataset.set(value: "2", forTagName: "Priority")
-                    _ = dataset.set(value: "2", forTagName: "CommandDataSetType")
-                    _ = dataset.set(value: v as Any, forTagName: "AffectedSOPInstanceUID")
-                    
-                    let length = dataset.toData().count
-                    _ = dataset.set(value: length, forTagName: "CommandGroupLength")
-                    
-                    print(dataset)
-                    
-                    //association.write(file.dataset.toData())
-                }
+
                 association.close()
             }
             else {
@@ -117,7 +110,33 @@ public class DicomClient : DicomService, StreamDelegate {
     }
     
     
-    public func find() -> Bool  {
+    public func find(_ queryDataset:DataSet, completion: (_ accepted:Bool, _ error:String?) -> Void)  {
+        if !self.isConnected {
+            completion(false, "Socket is not connected, please connect() first.")
+        }
+        
+        let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
+        
+        association.request(sop: "1.2.840.10008.5.1.4.1.2.2.1") { (accepted) in
+            if accepted {
+                print("accepted")
+                
+                let cFindRQMessage = PDUMessage(pduType: PDUType.dataTF, association: association)
+                let data = cFindRQMessage.cfindRQ(queryDataset: queryDataset)
+                
+                print(data.toHex().separate(every: 2, with: " "))
+                
+                association.write(data)
+            }
+            else {
+                completion(false, "Association failed")
+                association.close()
+            }
+        }
+    }
+    
+    
+    public func move() -> Bool  {
         return false
     }
     
