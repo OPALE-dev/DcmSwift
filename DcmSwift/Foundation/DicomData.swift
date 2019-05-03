@@ -69,6 +69,37 @@ extension Data {
     public func toSigned8Array() -> [Int8] {
         return self.map { Int8(bitPattern: $0) }
     }
+    
+
+    
+    mutating func append(byte data: Int8, count:Int = 1) {
+        var data = data
+        self.append(UnsafeBufferPointer(start: &data, count: count))
+    }
+    
+    
+    mutating func append(uint8 data: UInt8, bigEndian: Bool = true) {
+        var data = bigEndian ? data.bigEndian : data.littleEndian
+        self.append(UnsafeBufferPointer(start: &data, count: 1))
+    }
+    
+    
+    mutating func append(uint16 data: UInt16, bigEndian: Bool = true) {
+        var data = bigEndian ? data.bigEndian : data.littleEndian
+        self.append(UnsafeBufferPointer(start: &data, count: 1))
+    }
+    
+    
+    mutating func append(uint32 data: UInt32, bigEndian: Bool = true) {
+        var data = bigEndian ? data.bigEndian : data.littleEndian
+        self.append(UnsafeBufferPointer(start: &data, count: 1))
+    }
+    
+    
+    mutating func append(uint64 data: UInt64, bigEndian: Bool = true) {
+        var data = bigEndian ? data.bigEndian : data.littleEndian
+        self.append(UnsafeBufferPointer(start: &data, count: 1))
+    }
 }
 
 

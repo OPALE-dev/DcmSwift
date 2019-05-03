@@ -84,6 +84,7 @@ public class DataElement : DicomObject {
         if  self.vr == .AT ||
             self.vr == .OB ||
             self.vr == .OW {
+            // currently not implemented
             return ret
         }
         
@@ -106,10 +107,36 @@ public class DataElement : DicomObject {
             }
         } else {
             if let string = val as? String {
-                self.data   = string.data(using: .utf8)
+                print("string")
+                
+                self.data = string.data(using: .utf8)
+                self.length = self.data.count
+                
+                if string.count % 2 != 0 {
+                    self.data.append(byte: 0x00)
+                    self.length += 1
+                }
+                
+                print("count : \(self.data.count)")
+
+                ret = true
+            }
+            else if let v = val as? UInt16 {
+                self.data = Data()
+                self.data.append(uint16: v)
                 self.length = self.data.count
                 ret = true
             }
+            else if let v = val as? UInt32 {
+                self.data = Data()
+                self.data.append(uint32: v)
+                self.length = self.data.count
+                ret = true
+            }
+            else {
+                print("not string")
+            }
+            
         }
         
         self.recalculateParentsLength()

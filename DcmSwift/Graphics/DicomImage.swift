@@ -256,7 +256,7 @@ public class DicomImage {
     
     // MARK: - Private
     
-    private func imageFromPixels(size: NSSize, pixels: UnsafeRawPointer, width: Int, height: Int)-> CGImage? {
+    private func imageFromPixels(size: NSSize, pixels: UnsafeRawPointer, width: Int, height: Int) -> CGImage? {
         var bitmapInfo:CGBitmapInfo = []
         //var __:UnsafeRawPointer = pixels
         

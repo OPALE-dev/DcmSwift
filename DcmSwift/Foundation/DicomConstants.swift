@@ -41,6 +41,8 @@ public struct DicomConstants {
      Standard DICOM Application Context Name.
      */
     public static let applicationContextName        = "1.2.840.10008.3.1.1.1"
+    public static var implementationUID             = "1.2.276.0.808080.8080.1.2.3"
+    public static var implementationVersion         = "DCMSWIFT 1.0"
     
     /**
      Verification SOP Class
@@ -240,7 +242,7 @@ public func initLogger() {
     console.format  = format
     
     if SwiftyBeaver.destinations.count == 0 {
-//        SwiftyBeaver.addDestination(console)
-//        SwiftyBeaver.addDestination(file)
+        SwiftyBeaver.addDestination(console)
+        SwiftyBeaver.addDestination(file)
     }
 }

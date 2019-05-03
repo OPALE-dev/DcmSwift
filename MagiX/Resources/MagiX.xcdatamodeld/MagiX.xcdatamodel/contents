@@ -27,7 +27,7 @@
     <entity name="PrivateDirectory" representedClassName="PrivateDirectory" parentEntity="Directory" syncable="YES" codeGenerationType="class">
         <relationship name="studies" optional="YES" toMany="YES" deletionRule="Nullify" ordered="YES" destinationEntity="Study" inverseName="directories" inverseEntity="Study" syncable="YES"/>
     </entity>
-    <entity name="Remote" representedClassName="Remote" parentEntity="Item" syncable="YES" codeGenerationType="class">
+    <entity name="Remote" representedClassName=".Remote" parentEntity="Item" syncable="YES">
         <attribute name="hostname" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="port" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="title" optional="YES" attributeType="String" syncable="YES"/>
@@ -44,6 +44,7 @@
         <relationship name="instances" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Instance" inverseName="serie" inverseEntity="Instance" syncable="YES"/>
         <relationship name="study" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Study" inverseName="series" inverseEntity="Study" syncable="YES"/>
     </entity>
+    <entity name="SmartDirectory" representedClassName="SmartDirectory" parentEntity="Directory" syncable="YES" codeGenerationType="class"/>
     <entity name="Study" representedClassName="Study" syncable="YES" codeGenerationType="class">
         <attribute name="accessionNumber" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="imageProxy" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" syncable="YES"/>
@@ -65,5 +66,6 @@
         <element name="PrivateDirectory" positionX="-45" positionY="126" width="128" height="60"/>
         <element name="Item" positionX="-36" positionY="135" width="128" height="60"/>
         <element name="Remote" positionX="-27" positionY="144" width="128" height="90"/>
+        <element name="SmartDirectory" positionX="-18" positionY="153" width="128" height="45"/>
     </elements>
 </model>

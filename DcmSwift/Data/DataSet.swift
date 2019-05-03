@@ -24,7 +24,7 @@ extension Dictionary {
 
 public class DataSet: DicomObject {
     public var fileMetaInformationGroupLength:Int32 = 0
-    public var transferSyntax:String                = "1.2.840.10008.1.2.1"
+    public var transferSyntax:String                = DicomConstants.explicitVRLittleEndian
     public var vrMethod:DicomSpec.VRMethod          = .Explicit
     public var byteOrder:DicomSpec.ByteOrder        = .LittleEndian
     private var prefixHeader:Bool                   = true
@@ -57,6 +57,9 @@ public class DataSet: DicomObject {
     
     override public var description: String {
         var string = ""
+        
+        self.sortElements()
+        
         for e in self.allElements {
             string += e.description + "\n"
         }
@@ -158,7 +161,7 @@ public class DataSet: DicomObject {
         
         return newData
     }
-    
+
     
     
     public override func toXML() -> String {
@@ -310,6 +313,7 @@ public class DataSet: DicomObject {
         
         // element does not already exist in dataset
         if let element = DataElement(withTagName: name, dataset: self) {
+
             if element.setValue(value) {
                 self.allElements.append(element)
                 
@@ -428,9 +432,9 @@ public class DataSet: DicomObject {
     private func sortElements() {
         self.allElements = self.allElements.sorted(by: { (a, b) -> Bool in
             if a.group != b.group {
-                return a.group < b.group
+                return UInt16(a.group)! < UInt16(b.group)!
             }
-            return a.element < b.element
+            return UInt16(a.element)! < UInt16(b.element)!
         })
         
         self.metaInformationHeaderElements = self.metaInformationHeaderElements.sorted(by: { (a, b) -> Bool in
