@@ -8,6 +8,7 @@
 
 import Cocoa
 import CoreData
+import DcmSwift
 
 let directoryPastebaodrType = NSPasteboard.PasteboardType(rawValue: "pro.opale.MagiX.sidebar.directory")
 
@@ -40,6 +41,11 @@ class SidebarViewController:    NSViewController,
         self.directories = DataController.shared.fetchDirectories()
         self.remotes = DataController.shared.fetchRemotes()
         
+//        self.reloadRemotesStatus()
+//        _ = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { timer in
+//            self.reloadRemotesStatus()
+//        }
+        
         // drag and drop
         // Register for the dropped object types we can accept.
         self.directoriesOutlineView.registerForDraggedTypes([directoryPastebaodrType, dataPastebaodrType])
@@ -52,10 +58,10 @@ class SidebarViewController:    NSViewController,
         self.directoriesOutlineView.reloadData()
         self.directoriesOutlineView.expandItem(self.directoriesOutlineView.item(atRow: 1), expandChildren: true)
         self.directoriesOutlineView.expandItem(self.directoriesOutlineView.item(atRow: 0), expandChildren: true)
+        
+        self.directoriesOutlineView.target = self
+        self.directoriesOutlineView.doubleAction = #selector(directoriesOutlineViewDoubleClick(s:))
     }
-    
-    
-    
     
     
     
@@ -74,6 +80,16 @@ class SidebarViewController:    NSViewController,
         self.directoriesOutlineView.reloadData()
     }
     
+    
+    
+    @objc func directoriesOutlineViewDoubleClick(s:Any) {
+        if let selectedItem = self.directoriesOutlineView.item(atRow: self.directoriesOutlineView.clickedRow) as? Remote {
+            if let remoteVC:RemoteEditViewController = NSStoryboard(name: "Main", bundle: nil).instantiateController(withIdentifier: "RemoteEditViewController") as? RemoteEditViewController {
+                remoteVC.remote = selectedItem
+                self.presentAsSheet(remoteVC)
+            }
+        }
+    }
     
     
     // MARK: - IBAction
@@ -99,7 +115,7 @@ class SidebarViewController:    NSViewController,
     }
     
     @IBAction func newRemote(_ sender: Any) {
-        if let remoteVC:NSViewController = NSStoryboard(name: "Main", bundle: nil).instantiateController(withIdentifier: "RemoteViewController") as? NSViewController {
+        if let remoteVC:NSViewController = NSStoryboard(name: "Main", bundle: nil).instantiateController(withIdentifier: "RemoteEditViewController") as? RemoteEditViewController {
             self.presentAsSheet(remoteVC)
         }
     }
@@ -192,7 +208,15 @@ class SidebarViewController:    NSViewController,
         }
         else if let remote = item as? Remote {
             view = outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "DataCell"), owner: self) as? NSTableCellView
-            view?.imageView?.image = NSImage(named: NSImage.Name("NSNetwork"))
+            if remote.status == 0 {
+                view?.imageView?.image = NSImage(named: NSImage.Name("NSStatusNone"))
+            }
+            else if remote.status == 1 {
+                view?.imageView?.image = NSImage(named: NSImage.Name("NSStatusAvailable"))
+            }
+            else if remote.status == 2 {
+                view?.imageView?.image = NSImage(named: NSImage.Name("NSStatusUnavailable"))
+            }
             view?.textField?.stringValue = remote.name ?? "NO NAME"
         }
         
@@ -283,5 +307,41 @@ class SidebarViewController:    NSViewController,
         }
         
         return view
+    }
+    
+    
+    
+    
+    // MARK: - Private
+    
+    private func reloadRemotesStatus() {
+        for r in self.remotes {
+            let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
+            let callingAE = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
+            if let calledAE = r.dicomEntity {
+                let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
+                
+                client.connect { (ok, error) in
+                    if ok {
+                        client.echo() { (okEcho, receivedMessage, errorEcho) in
+                            if okEcho {
+                                r.status = 1
+                            } else {
+                                r.status = 2
+                            }
+                            DataController.shared.save()
+                            self.remotes = DataController.shared.fetchRemotes()
+                            self.directoriesOutlineView.reloadData()
+                        }
+                    } else {
+                        r.status = 2
+                        
+                        DataController.shared.save()
+                        self.remotes = DataController.shared.fetchRemotes()
+                        self.directoriesOutlineView.reloadData()
+                    }
+                }
+            }
+        }
     }
 }

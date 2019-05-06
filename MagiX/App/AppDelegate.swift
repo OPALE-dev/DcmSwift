@@ -10,15 +10,18 @@ import Cocoa
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
-
+    override init() {
+        // Default preferences
+        UserDefaults.standard.register(defaults: [
+            "LocalAET": "MAGIX",
+            "MaxPDU": 16384
+            ])
+        
+        UserDefaults.standard.synchronize()
+    }
 
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
-        // Default preferences
-        UserDefaults.standard.register(defaults: [
-            "LocalAET": "DICOMIX",
-            "MaxPDU": 16384
-            ])
         
     }
 

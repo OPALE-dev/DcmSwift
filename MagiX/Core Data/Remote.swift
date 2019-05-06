@@ -19,6 +19,7 @@ public class Remote: Item {
     @NSManaged public var title: String?
     @NSManaged public var hostname: String?
     @NSManaged public var port: Int32
+    @NSManaged public var status: Int32
     
     public var dicomEntity:DicomEntity? {
         return DicomEntity(title: self.title!, hostname: self.hostname!, port: Int(self.port))

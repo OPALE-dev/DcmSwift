@@ -783,7 +783,7 @@
         <!--Remote Edit View Controller-->
         <scene sceneID="Qnf-xX-pta">
             <objects>
-                <viewController storyboardIdentifier="RemoteViewController" id="5b3-Al-Ogc" customClass="RemoteEditViewController" customModule="MagiX" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="RemoteEditViewController" id="5b3-Al-Ogc" customClass="RemoteEditViewController" customModule="MagiX" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" id="ENO-sA-Te3">
                         <rect key="frame" x="0.0" y="0.0" width="480" height="226"/>
                         <autoresizingMask key="autoresizingMask"/>

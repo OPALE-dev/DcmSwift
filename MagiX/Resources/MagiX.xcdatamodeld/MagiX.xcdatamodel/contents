@@ -30,6 +30,7 @@
     <entity name="Remote" representedClassName=".Remote" parentEntity="Item" syncable="YES">
         <attribute name="hostname" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="port" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
+        <attribute name="status" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="title" optional="YES" attributeType="String" syncable="YES"/>
     </entity>
     <entity name="Serie" representedClassName="Serie" syncable="YES" codeGenerationType="class">
@@ -65,7 +66,7 @@
         <element name="Directory" positionX="-54" positionY="108" width="128" height="60"/>
         <element name="PrivateDirectory" positionX="-45" positionY="126" width="128" height="60"/>
         <element name="Item" positionX="-36" positionY="135" width="128" height="60"/>
-        <element name="Remote" positionX="-27" positionY="144" width="128" height="90"/>
+        <element name="Remote" positionX="-27" positionY="144" width="128" height="105"/>
         <element name="SmartDirectory" positionX="-18" positionY="153" width="128" height="45"/>
     </elements>
 </model>
