@@ -107,8 +107,6 @@ public class DataElement : DicomObject {
             }
         } else {
             if let string = val as? String {
-                print("string")
-                
                 self.data = string.data(using: .utf8)
                 self.length = self.data.count
                 
@@ -117,8 +115,6 @@ public class DataElement : DicomObject {
                     self.length += 1
                 }
                 
-                print("count : \(self.data.count)")
-
                 ret = true
             }
             else if let v = val as? UInt16 {
@@ -134,7 +130,7 @@ public class DataElement : DicomObject {
                 ret = true
             }
             else {
-                print("not string")
+                print("not supported yet")
             }
             
         }
@@ -288,7 +284,8 @@ public class DataElement : DicomObject {
         // write VR (only explicit)
         if inVrMethod == .Explicit  {
             let vrString = "\(self.vr)"
-            data.append(vrString.data(using: .utf8)!)
+            let vrData = vrString.data(using: .ascii)
+            data.append(vrData!)
             
             if self.vr == .SQ {
                 data.append(Data(repeating: 0x00, count: 2))

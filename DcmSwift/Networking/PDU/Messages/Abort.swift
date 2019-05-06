@@ -8,8 +8,8 @@
 
 import Foundation
 
-class Abort: PDUMessage {
-    override func data() -> Data {
+public class Abort: PDUMessage {
+    public override func data() -> Data {
         var data = Data()
         let length = UInt32(4)
         
@@ -21,7 +21,7 @@ class Abort: PDUMessage {
         return data
     }
     
-    override func decodeData(data: Data) -> Bool {
+    public override func decodeData(data: Data) -> Bool {
         return false
     }
 }

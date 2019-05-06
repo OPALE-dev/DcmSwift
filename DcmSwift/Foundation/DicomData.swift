@@ -31,11 +31,55 @@ extension Data {
     public func toHex() -> String {
         return self.reduce("") { $0 + String(format: "%02x", $1) }
     }
+    
+    
+    var uint8: UInt8 {
+        get {
+            var number: UInt8 = 0
+            self.copyBytes(to:&number, count: MemoryLayout<UInt8>.size)
+            return number
+        }
+    }
+    
+//    var uint16: UInt16 {
+//        get {
+//            let i16array = self.withUnsafeBytes {
+//                UnsafeBufferPointer<UInt16>(start: $0, count: self.count/2).map(UInt16.init(littleEndian:))
+//            }
+//            return i16array[0]
+//        }
+//    }
+    
+    var uint32: UInt32 {
+        get {
+            let i32array = self.withUnsafeBytes {
+                UnsafeBufferPointer<UInt32>(start: $0, count: self.count/2).map(UInt32.init(littleEndian:))
+            }
+            return i32array[0]
+        }
+    }
+    
 
     
     public func toInt8(byteOrder: DicomSpec.ByteOrder = .LittleEndian) -> Int8 {
         let i:Int8 = self.withUnsafeBytes { $0.pointee }
         return byteOrder == .LittleEndian ? i : i.bigEndian
+    }
+    
+    
+    public func toUInt16(byteOrder: DicomSpec.ByteOrder = .LittleEndian) -> UInt16 {
+        if (byteOrder == .LittleEndian) {
+            let i16array = self.withUnsafeBytes {
+                return UnsafeBufferPointer<UInt16>(start: $0, count: self.count/2).map(UInt16.init(littleEndian:))
+            }
+            return i16array[0]
+        } else {
+            let i16array = self.withUnsafeBytes {
+                return UnsafeBufferPointer<UInt16>(start: $0, count: self.count/2).map(UInt16.init(bigEndian:))
+                
+            }
+            return i16array[0]
+        }
     }
     
     

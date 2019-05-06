@@ -1,5 +1,5 @@
 //
-//  AssociationRJ.swift
+//  ReleaseRP.swift
 //  DcmSwift
 //
 //  Created by Rafael Warnault on 03/05/2019.
@@ -9,6 +9,6 @@
 import Foundation
 
 
-class AssociationRJ: PDUMessage {
+public class ReleaseRP: PDUMessage {
     
 }

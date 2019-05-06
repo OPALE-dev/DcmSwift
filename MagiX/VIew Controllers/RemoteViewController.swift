@@ -37,23 +37,33 @@ class RemoteViewController: NSViewController {
     private func query() {
         let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
         let callingAE = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
+        
         if let calledAE = self.remote.dicomEntity {
             let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
-            
+
             client.connect { (ok, error) in
                 if ok {
-//                    let dataset = DataSet()
-//                    _ = dataset.set(value: "cd*", forTagName: "PatientName")
-//                    
-                    client.echo() { (ok, error) in
-                        if ok {
+                    let dataset = DataSet()
+                    dataset.prefixHeader = false
+                    _ = dataset.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
+                    _ = dataset.set(value: "", forTagName: "PatientID")
+                    _ = dataset.set(value: "", forTagName: "ModalitiesInStudy")
+                    _ = dataset.set(value: "", forTagName: "StudyDescription")
+                    _ = dataset.set(value: "", forTagName: "StudyDate")
+                    
+                    print(dataset)
+                    
+                    client.find(dataset) { (okEcho, receivedMessage, errorEcho) in
+                        if okEcho {
                             print("Query OK")
                         } else {
-                            print("Query error")
+                            if let alert = errorEcho?.alert() {
+                                alert.runModal()
+                            }
                         }
                     }
                 } else {
-                    print("Connection error")
+                    print("Connection error: \(error)")
                 }
             }
         }

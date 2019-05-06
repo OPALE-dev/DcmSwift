@@ -27,7 +27,7 @@ public class DataSet: DicomObject {
     public var transferSyntax:String                = DicomConstants.explicitVRLittleEndian
     public var vrMethod:DicomSpec.VRMethod          = .Explicit
     public var byteOrder:DicomSpec.ByteOrder        = .LittleEndian
-    private var prefixHeader:Bool                   = true
+    public var prefixHeader:Bool                    = true
     internal var isCorrupted:Bool                   = false
     
     public var metaInformationHeaderElements:[DataElement]  = []
@@ -142,6 +142,16 @@ public class DataSet: DicomObject {
      public override func toData(vrMethod inVrMethod:DicomSpec.VRMethod = .Explicit, byteOrder inByteOrder:DicomSpec.ByteOrder = .LittleEndian) -> Data {
         var newData = Data()
         
+        var finalVR     = self.vrMethod
+        var finalOrder  = self.byteOrder
+        
+        if self.vrMethod != inVrMethod {
+            finalVR = inVrMethod
+        }
+        if self.byteOrder != inByteOrder {
+            finalOrder = inByteOrder
+        }
+        
         if self.prefixHeader {
             // write 128 bytes preamble
             newData.append(Data(repeating: 0x00, count: 128))
@@ -156,7 +166,7 @@ public class DataSet: DicomObject {
         // append meta header elements as binary data
         for element in self.allElements {
             //print(type(of: element))
-            newData.append(self.write(dataElement: element))
+            newData.append(self.write(dataElement: element, vrMethod:finalVR, byteOrder:finalOrder))
         }
         
         return newData
@@ -432,9 +442,9 @@ public class DataSet: DicomObject {
     private func sortElements() {
         self.allElements = self.allElements.sorted(by: { (a, b) -> Bool in
             if a.group != b.group {
-                return UInt16(a.group)! < UInt16(b.group)!
+                return a.group < b.group
             }
-            return UInt16(a.element)! < UInt16(b.element)!
+            return a.element < b.element
         })
         
         self.metaInformationHeaderElements = self.metaInformationHeaderElements.sorted(by: { (a, b) -> Bool in

@@ -14,10 +14,10 @@ import SwiftyBeaver
 
 class DcmSwiftTests: XCTestCase {
     // Configure the test suite
-    private static var testDicomDateAndTime     = false
-    private static var testDicomFileIO          = false
-    private static var testDicomDataSet         = false
-    private static var testDicomImage           = true
+    private static var testDicomDateAndTime     = true
+    private static var testDicomFileIO          = true
+    private static var testDicomDataSet         = true
+    private static var testDicomImage           = false
     
     public var filePath:String!
     

@@ -58,82 +58,73 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    
-    public func echo(completion: (_ accepted:Bool, _ error:String?) -> Void) {
+    public func echo(completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void) {
         if !self.isConnected {
-            completion(false, "Socket is not connected, please connect() first.")
+            completion(false, nil, DicomError(description: "Socket is not connected, please connect() first.", level: .error, real: .custom))
         }
         
         let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
         
-        association.request(sop: DicomConstants.verificationSOP) { (accepted) in
+        association.request(sop: DicomConstants.verificationSOP) { (accepted, receivedMessage, error) in
             if accepted {
-                
-                let message = PDUMessage(pduType: PDUType.dataTF, association: association)
-                let data = message.echoRQ(association: association)
-                
-                print(data.toHex().separate(every: 2, with: " "))
-                
-                association.write(data)
-                
-                // read response
-                
-                // close association
-                
-                completion(accepted, nil)
+                if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
+                    
+                    association.write(message: message, readResponse: true, completion: completion)
+                }
             }
             else {
-                completion(false, "Association failed")
+                completion(false, receivedMessage, error)
                 association.close()
             }
         }
     }
+    
+    
+    
+    public func find(_ queryDataset:DataSet, completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void)  {
+        if !self.isConnected {
+            completion(false, nil, DicomError(description: "Socket is not connected, please connect() first.", level: .error, real: .custom))
+        }
+        
+        let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
+        
+        association.request(sop: "1.2.840.10008.5.1.4.1.2.2.1") { (accepted, receivedMessage, error) in
+            if accepted {
+                if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_FIND_RQ, association: association) as? CFindRQ {
+                    message.queryDataset = queryDataset
+                    
+                    association.write(message: message, readResponse: true, completion: completion)
+                }
+            }
+            else {
+                completion(false, receivedMessage, error)
+                association.close()
+            }
+        }
+    }
+    
     
     
     public func store(_ files:Array<DicomFile>, completion: (_ accepted:Bool, _ error:String?) -> Void)  {
-        if !self.isConnected {
-            completion(false, "Socket is not connected, please connect() first.")
-        }
-        
-        let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
-        
-        association.request(sop: DicomConstants.ultrasoundImageStorageSOP) { (accepted) in
-            if accepted {
-
-                association.close()
-            }
-            else {
-                completion(false, "Association failed")
-                association.close()
-            }
-        }
+//        if !self.isConnected {
+//            completion(false, "Socket is not connected, please connect() first.")
+//        }
+//
+//        let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
+//
+//        association.request(sop: DicomConstants.ultrasoundImageStorageSOP) { (accepted, receivedMessage, error) in
+//            if accepted {
+//
+//                association.close()
+//            }
+//            else {
+//                completion(false, "Association failed")
+//                association.close()
+//            }
+//        }
     }
     
     
-    public func find(_ queryDataset:DataSet, completion: (_ accepted:Bool, _ error:String?) -> Void)  {
-        if !self.isConnected {
-            completion(false, "Socket is not connected, please connect() first.")
-        }
-        
-        let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
-        
-        association.request(sop: "1.2.840.10008.5.1.4.1.2.2.1") { (accepted) in
-            if accepted {
-                print("accepted")
-                
-                let cFindRQMessage = PDUMessage(pduType: PDUType.dataTF, association: association)
-                let data = cFindRQMessage.cfindRQ(queryDataset: queryDataset)
-                
-                print(data.toHex().separate(every: 2, with: " "))
-                
-                association.write(data)
-            }
-            else {
-                completion(false, "Association failed")
-                association.close()
-            }
-        }
-    }
     
     
     public func move() -> Bool  {

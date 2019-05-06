@@ -8,8 +8,7 @@
 
 import Foundation
 
-
-class AssociationRQ: PDUMessage {    
+public class AssociationRQ: PDUMessage {    
     public override func data() -> Data {
         var data = Data()
         
@@ -35,7 +34,29 @@ class AssociationRQ: PDUMessage {
         return data
     }
     
-    override func decodeData(data: Data) -> Bool {
+    
+    override public func decodeData(data: Data) -> Bool {
         return false
+    }
+    
+    
+    override public func handleResponse(data:Data, completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void) -> PDUMessage?  {
+        if let command:UInt8 = data.first {
+            if command == PDUType.associationAC.rawValue {
+                if let message = PDUDecoder.shared.receiveAssocMessage(data: data, pduType: PDUType.associationAC, association: self.association) as? PDUMessage {
+                    completion(true, message, nil)
+                    return message
+                }
+            }
+            else if command == PDUType.associationRJ.rawValue {
+                if let message = PDUDecoder.shared.receiveAssocMessage(data: data, pduType: PDUType.associationRJ, association: self.association) as? PDUMessage {
+                    completion(false, message, message.errors.first)
+                    return message
+                }
+            }
+        }
+        
+        completion(false, nil, nil)
+        return nil
     }
 }

@@ -49,6 +49,14 @@
 		4C53D6FE227CB4480003724F /* DataTF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6FD227CB4480003724F /* DataTF.swift */; };
 		4C53D700227CB4650003724F /* Abort.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D6FF227CB4650003724F /* Abort.swift */; };
 		4C53D702227CB79C0003724F /* PDUDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D701227CB79C0003724F /* PDUDecoder.swift */; };
+		4C53D704227CB83A0003724F /* CEchoRQ.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D703227CB83A0003724F /* CEchoRQ.swift */; };
+		4C53D706227CB8B20003724F /* CFindRQ.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D705227CB8B20003724F /* CFindRQ.swift */; };
+		4C53D708227CBA040003724F /* PDUEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D707227CBA040003724F /* PDUEncoder.swift */; };
+		4C53D70B227CD0770003724F /* CEchoRSP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D70A227CD0770003724F /* CEchoRSP.swift */; };
+		4C53D70E227DAB4B0003724F /* DicomError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D70D227DAB4B0003724F /* DicomError.swift */; };
+		4C53D710227DD0880003724F /* CFindRSP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D70F227DD0880003724F /* CFindRSP.swift */; };
+		4C53D712227E1CEE0003724F /* AppDicomError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D711227E1CEE0003724F /* AppDicomError.swift */; };
+		4C53D714227F4D440003724F /* DIMSEStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D713227F4D440003724F /* DIMSEStatus.swift */; };
 		4C5792FB1FB71994003B1279 /* DocumentController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5792FA1FB71994003B1279 /* DocumentController.swift */; };
 		4C5792FD1FB8709D003B1279 /* AddElementController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5792FC1FB8709D003B1279 /* AddElementController.swift */; };
 		4C5792FF1FB8A8A2003B1279 /* PreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5792FE1FB8A8A2003B1279 /* PreferencesWindowController.swift */; };
@@ -135,7 +143,6 @@
 		4CECD64B2240F3440087AF0D /* DocumentsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64A2240F3440087AF0D /* DocumentsViewController.swift */; };
 		4CECD64D22415EE90087AF0D /* DicomClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64C22415EE90087AF0D /* DicomClient.swift */; };
 		4CECD64F22415F5A0087AF0D /* DicomService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64E22415F5A0087AF0D /* DicomService.swift */; };
-		4CECD65122415F780087AF0D /* DicomServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD65022415F780087AF0D /* DicomServer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -249,6 +256,14 @@
 		4C53D6FD227CB4480003724F /* DataTF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataTF.swift; sourceTree = "<group>"; };
 		4C53D6FF227CB4650003724F /* Abort.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Abort.swift; sourceTree = "<group>"; };
 		4C53D701227CB79C0003724F /* PDUDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDUDecoder.swift; sourceTree = "<group>"; };
+		4C53D703227CB83A0003724F /* CEchoRQ.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CEchoRQ.swift; sourceTree = "<group>"; };
+		4C53D705227CB8B20003724F /* CFindRQ.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CFindRQ.swift; sourceTree = "<group>"; };
+		4C53D707227CBA040003724F /* PDUEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDUEncoder.swift; sourceTree = "<group>"; };
+		4C53D70A227CD0770003724F /* CEchoRSP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CEchoRSP.swift; sourceTree = "<group>"; };
+		4C53D70D227DAB4B0003724F /* DicomError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomError.swift; sourceTree = "<group>"; };
+		4C53D70F227DD0880003724F /* CFindRSP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CFindRSP.swift; sourceTree = "<group>"; };
+		4C53D711227E1CEE0003724F /* AppDicomError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDicomError.swift; sourceTree = "<group>"; };
+		4C53D713227F4D440003724F /* DIMSEStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DIMSEStatus.swift; sourceTree = "<group>"; };
 		4C5792FA1FB71994003B1279 /* DocumentController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentController.swift; sourceTree = "<group>"; };
 		4C5792FC1FB8709D003B1279 /* AddElementController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddElementController.swift; sourceTree = "<group>"; };
 		4C5792FE1FB8A8A2003B1279 /* PreferencesWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesWindowController.swift; sourceTree = "<group>"; };
@@ -319,7 +334,6 @@
 		4CECD64A2240F3440087AF0D /* DocumentsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentsViewController.swift; sourceTree = "<group>"; };
 		4CECD64C22415EE90087AF0D /* DicomClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomClient.swift; sourceTree = "<group>"; };
 		4CECD64E22415F5A0087AF0D /* DicomService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomService.swift; sourceTree = "<group>"; };
-		4CECD65022415F780087AF0D /* DicomServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomServer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -377,6 +391,7 @@
 			isa = PBXGroup;
 			children = (
 				4C3EF243226E3AAC0062B5A3 /* AppDelegate.swift */,
+				4C53D711227E1CEE0003724F /* AppDicomError.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -424,16 +439,12 @@
 			children = (
 				4C53D6F0227CAF310003724F /* PDUType.swift */,
 				4C53D701227CB79C0003724F /* PDUDecoder.swift */,
+				4C53D707227CBA040003724F /* PDUEncoder.swift */,
 				4C53D6E3227B61660003724F /* PDUMessage.swift */,
-				4C53D6F5227CB1100003724F /* AssociationRQ.swift */,
-				4C53D6F2227CAFB20003724F /* AssociationAC.swift */,
-				4C53D6F9227CB3900003724F /* AssociationRJ.swift */,
-				4C53D6FD227CB4480003724F /* DataTF.swift */,
-				4C53D6F7227CB34D0003724F /* ReleaseRQ.swift */,
-				4C53D6FB227CB3B00003724F /* ReleaseRP.swift */,
-				4C53D6FF227CB4650003724F /* Abort.swift */,
 				4C53D6EE227C8B940003724F /* CommandField.swift */,
 				4C53D6EC227C42030003724F /* ItemType.swift */,
+				4C53D713227F4D440003724F /* DIMSEStatus.swift */,
+				4C53D709227CBAE00003724F /* Messages */,
 				4C53D6F4227CAFCE0003724F /* Items */,
 			);
 			path = PDU;
@@ -460,6 +471,32 @@
 				4C53D6E7227B6D0D0003724F /* UserInfo.swift */,
 			);
 			path = Items;
+			sourceTree = "<group>";
+		};
+		4C53D709227CBAE00003724F /* Messages */ = {
+			isa = PBXGroup;
+			children = (
+				4C53D6F5227CB1100003724F /* AssociationRQ.swift */,
+				4C53D6F2227CAFB20003724F /* AssociationAC.swift */,
+				4C53D6F9227CB3900003724F /* AssociationRJ.swift */,
+				4C53D6FD227CB4480003724F /* DataTF.swift */,
+				4C53D6F7227CB34D0003724F /* ReleaseRQ.swift */,
+				4C53D6FB227CB3B00003724F /* ReleaseRP.swift */,
+				4C53D6FF227CB4650003724F /* Abort.swift */,
+				4C53D70C227CD1270003724F /* DIMSE */,
+			);
+			path = Messages;
+			sourceTree = "<group>";
+		};
+		4C53D70C227CD1270003724F /* DIMSE */ = {
+			isa = PBXGroup;
+			children = (
+				4C53D703227CB83A0003724F /* CEchoRQ.swift */,
+				4C53D70A227CD0770003724F /* CEchoRSP.swift */,
+				4C53D705227CB8B20003724F /* CFindRQ.swift */,
+				4C53D70F227DD0880003724F /* CFindRSP.swift */,
+			);
+			path = DIMSE;
 			sourceTree = "<group>";
 		};
 		4C8D798F1F989EB1008300E3 /* DcmSwift */ = {
@@ -587,10 +624,9 @@
 			isa = PBXGroup;
 			children = (
 				4C53D6E0227B5AC30003724F /* PDU */,
-				4CECD64E22415F5A0087AF0D /* DicomService.swift */,
-				4CECD64C22415EE90087AF0D /* DicomClient.swift */,
-				4CECD65022415F780087AF0D /* DicomServer.swift */,
 				4CD0BEE32242A63A0024C357 /* DicomAssociation.swift */,
+				4CECD64C22415EE90087AF0D /* DicomClient.swift */,
+				4CECD64E22415F5A0087AF0D /* DicomService.swift */,
 				4CD0BEE52242B15B0024C357 /* DicomEntity.swift */,
 			);
 			path = Networking;
@@ -617,6 +653,7 @@
 				4C99798F1FA75B3600C90494 /* DicomObject.swift */,
 				4C8D79A71F98A69B008300E3 /* DicomSpec.swift */,
 				4CD0BEE7224401670024C357 /* DicomConstants.swift */,
+				4C53D70D227DAB4B0003724F /* DicomError.swift */,
 			);
 			path = Foundation;
 			sourceTree = "<group>";
@@ -888,6 +925,7 @@
 				4C53D6CD2275B4A90003724F /* OperationCellView.swift in Sources */,
 				4C53D6BF2274C5190003724F /* CollectionViewItem.swift in Sources */,
 				4C53D6CB2275B3200003724F /* SidebarViewController.swift in Sources */,
+				4C53D712227E1CEE0003724F /* AppDicomError.swift in Sources */,
 				4C53D6C92275A4EB0003724F /* LoadOperation.swift in Sources */,
 				4C53D6CF227760690003724F /* RemoteEditViewController.swift in Sources */,
 			);
@@ -898,12 +936,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				4C8D799B1F989EDD008300E3 /* DataSequence.swift in Sources */,
+				4C53D70E227DAB4B0003724F /* DicomError.swift in Sources */,
+				4C53D714227F4D440003724F /* DIMSEStatus.swift in Sources */,
 				4C8D79971F989EDD008300E3 /* DicomFile.swift in Sources */,
 				4C8D799A1F989EDD008300E3 /* DataSet.swift in Sources */,
 				4CECD64D22415EE90087AF0D /* DicomClient.swift in Sources */,
 				4CECD64F22415F5A0087AF0D /* DicomService.swift in Sources */,
 				4C53D6F1227CAF310003724F /* PDUType.swift in Sources */,
 				4C8D79981F989EDD008300E3 /* DataElement.swift in Sources */,
+				4C53D710227DD0880003724F /* CFindRSP.swift in Sources */,
 				4C53D6F3227CAFB20003724F /* AssociationAC.swift in Sources */,
 				4C53D6E8227B6D0D0003724F /* UserInfo.swift in Sources */,
 				4C7B78D11FA1485B005BB2A2 /* DicomDate.swift in Sources */,
@@ -916,20 +957,23 @@
 				4C53D6E4227B61660003724F /* PDUMessage.swift in Sources */,
 				4C7B78D61FA28002005BB2A2 /* DataTag.swift in Sources */,
 				4CD0BEE42242A63A0024C357 /* DicomAssociation.swift in Sources */,
+				4C53D706227CB8B20003724F /* CFindRQ.swift in Sources */,
 				4C53D6F6227CB1100003724F /* AssociationRQ.swift in Sources */,
+				4C53D704227CB83A0003724F /* CEchoRQ.swift in Sources */,
 				4C53D702227CB79C0003724F /* PDUDecoder.swift in Sources */,
 				4C53D6F8227CB34D0003724F /* ReleaseRQ.swift in Sources */,
+				4C53D708227CBA040003724F /* PDUEncoder.swift in Sources */,
 				4C99796F1FA71DEF00C90494 /* PixelSequence.swift in Sources */,
 				4C53D6ED227C42030003724F /* ItemType.swift in Sources */,
 				4C9979971FA7720300C90494 /* DicomImage.swift in Sources */,
 				4CD0BEE8224401670024C357 /* DicomConstants.swift in Sources */,
 				4C53D6E6227B69BB0003724F /* PresentationContext.swift in Sources */,
+				4C53D70B227CD0770003724F /* CEchoRSP.swift in Sources */,
 				4C53D6E2227B5BB50003724F /* ApplicationContext.swift in Sources */,
 				4C53D6FE227CB4480003724F /* DataTF.swift in Sources */,
 				4C53D700227CB4650003724F /* Abort.swift in Sources */,
 				4C8D79AA1F98AB0D008300E3 /* DicomSpec.swift in Sources */,
 				4C53D6FA227CB3900003724F /* AssociationRJ.swift in Sources */,
-				4CECD65122415F780087AF0D /* DicomServer.swift in Sources */,
 				4CD0BEE62242B15B0024C357 /* DicomEntity.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

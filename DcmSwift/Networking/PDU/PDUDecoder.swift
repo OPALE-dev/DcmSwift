@@ -11,18 +11,14 @@ import SwiftyBeaver
 
 public protocol PDUDecodable {
     func decodeData(data:Data) -> Bool
-    func data() -> Data
 }
 
 
 
 public class PDUDecoder {
-    private static var sharedDecoder = PDUDecoder()
-    class func shared() -> PDUDecoder {
-        return sharedDecoder
-    }
+    public static let shared = PDUDecoder()
     
-    public func receiveMessage(data:Data, pduType:PDUType, association:DicomAssociation) -> PDUDecodable? {
+    public func receiveAssocMessage(data:Data, pduType:PDUType, association:DicomAssociation) -> PDUDecodable? {
         if pduType == .associationAC {
             return AssociationAC(data: data, pduType: pduType, association: association)
         }
@@ -48,6 +44,18 @@ public class PDUDecoder {
             SwiftyBeaver.error("Unknow PDU Type : \(pduType). Fatal.")
         }
         
+        return nil
+    }
+    
+    public func receiveDIMSEMessage(data:Data, pduType:PDUType, commandField:CommandField, association:DicomAssociation) -> PDUDecodable? {
+        if pduType == .dataTF {
+            if commandField == .C_ECHO_RSP {
+                return CEchoRSP(data: data, pduType: pduType, commandField:commandField, association: association)
+            }
+            else if commandField == .C_FIND_RSP {
+                return CFindRSP(data: data, pduType: pduType, commandField:commandField, association: association)
+            }
+        }
         return nil
     }
 }

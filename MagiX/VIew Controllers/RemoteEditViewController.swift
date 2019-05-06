@@ -21,9 +21,13 @@ class RemoteEditViewController: NSViewController {
     @IBOutlet weak var portTextField: NSTextField!
     @IBOutlet weak var echoTextField: NSTextField!
     
+    public var remote:Remote?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do view setup here.
+        
+        self.loadFields()
     }
     
     @IBAction func echo(_ sender: Any) {
@@ -39,11 +43,11 @@ class RemoteEditViewController: NSViewController {
         
         client.connect { (ok, error) in
             if ok {
-                client.echo { (ok, error) in
+                client.echo { (ok, receivedMessage, error) in
                     if ok {
                         self.setEcho(text: "Echo succeeded", color: NSColor.darkGray)
                     } else {
-                        self.setEcho(text: error!, color: NSColor.red)
+                        self.setEcho(text: error!.errorMeaning, color: NSColor.red)
                     }
                 }
             } else {
@@ -58,15 +62,26 @@ class RemoteEditViewController: NSViewController {
             return
         }
         
-        let newRemote = Remote(context: DataController.shared.context)
-        newRemote.name = self.nameTextField.stringValue
-        newRemote.title = self.aeTitleTextField.stringValue
-        newRemote.hostname = self.hostnameTextField.stringValue
-        newRemote.port = self.portTextField.intValue
+        if let r = self.remote {
+            r.name = self.nameTextField.stringValue
+            r.title = self.aeTitleTextField.stringValue
+            r.hostname = self.hostnameTextField.stringValue
+            r.port = self.portTextField.intValue
+        }
+        else {
+            let newRemote = Remote(context: DataController.shared.context)
+            newRemote.name = self.nameTextField.stringValue
+            newRemote.title = self.aeTitleTextField.stringValue
+            newRemote.hostname = self.hostnameTextField.stringValue
+            newRemote.port = self.portTextField.intValue
+            
+            self.remote = newRemote
+        }
+        
         
         DataController.shared.save()
         
-        NotificationCenter.default.post(name: .didUpdateRemote, object: newRemote)
+        NotificationCenter.default.post(name: .didUpdateRemote, object: self.remote)
         
         self.dismiss(sender)
     }
@@ -75,6 +90,17 @@ class RemoteEditViewController: NSViewController {
     private func setEcho(text:String, color:NSColor) {
         self.echoTextField.stringValue = text
         self.echoTextField.textColor = color
+    }
+    
+    
+    private func loadFields() {
+        if let r = self.remote {
+            print(r)
+            self.nameTextField.stringValue = r.name ?? ""
+            self.aeTitleTextField.stringValue = r.title ?? ""
+            self.hostnameTextField.stringValue = r.hostname ?? ""
+            self.portTextField.stringValue = String(r.port)
+        }
     }
     
     
