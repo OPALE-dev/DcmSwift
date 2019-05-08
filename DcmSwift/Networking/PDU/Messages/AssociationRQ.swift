@@ -13,7 +13,7 @@ public class AssociationRQ: PDUMessage {
         var data = Data()
         
         let apData = association.applicationContext.data()
-        let pcData = association.presentatinContext!.data()
+        let pcData = association.presentatinContexts.first!.data()
         let uiData = association.userInfo!.data()
         
         let length = UInt32(2 + 2 + 16 + 16 + 32 + apData.count + pcData.count + uiData.count)

@@ -25,8 +25,8 @@ extension Dictionary {
 public class DataSet: DicomObject {
     public var fileMetaInformationGroupLength:Int32 = 0
     public var transferSyntax:String                = DicomConstants.explicitVRLittleEndian
-    public var vrMethod:DicomSpec.VRMethod          = .Explicit
-    public var byteOrder:DicomSpec.ByteOrder        = .LittleEndian
+    public var vrMethod:DicomConstants.VRMethod          = .Explicit
+    public var byteOrder:DicomConstants.ByteOrder        = .LittleEndian
     public var forceExplicit:Bool                   = false
     public var prefixHeader:Bool                    = true
     internal var isCorrupted:Bool                   = false
@@ -140,7 +140,7 @@ public class DataSet: DicomObject {
     
     
     
-     public override func toData(vrMethod inVrMethod:DicomSpec.VRMethod = .Explicit, byteOrder inByteOrder:DicomSpec.ByteOrder = .LittleEndian) -> Data {
+     public override func toData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
         var newData = Data()
         
         var finalVR     = self.vrMethod
@@ -382,7 +382,7 @@ public class DataSet: DicomObject {
     
     
     
-    public func write(atPath path:String, vrMethod inVrMethod:DicomSpec.VRMethod? = nil, byteOrder inByteOrder:DicomSpec.ByteOrder? = nil) -> Bool {
+    public func write(atPath path:String, vrMethod inVrMethod:DicomConstants.VRMethod? = nil, byteOrder inByteOrder:DicomConstants.ByteOrder? = nil) -> Bool {
         var finalVR     = self.vrMethod
         var finalOrder  = self.byteOrder
         
@@ -469,8 +469,8 @@ public class DataSet: DicomObject {
     
     
     private func readDataElement(offset:Int) -> (DataElement, Int) {
-        var order:DicomSpec.ByteOrder           = .LittleEndian
-        var localVRMethod:DicomSpec.VRMethod    = .Explicit
+        var order:DicomConstants.ByteOrder           = .LittleEndian
+        var localVRMethod:DicomConstants.VRMethod    = .Explicit
         var length:Int                          = 0
         var os                                  = offset
 
@@ -670,7 +670,7 @@ public class DataSet: DicomObject {
     
     
     
-    private func readDataSequence(tag:DataTag, offset:Int, length:Int, byteOrder:DicomSpec.ByteOrder) -> (DataSequence, Int) {
+    private func readDataSequence(tag:DataTag, offset:Int, length:Int, byteOrder:DicomConstants.ByteOrder) -> (DataSequence, Int) {
         let sequence:DataSequence = DataSequence(withTag:tag)
         var bytesRead = 0
         var os = offset
@@ -805,7 +805,7 @@ public class DataSet: DicomObject {
     
     
     
-    private func readPixelSequence(tag:DataTag, offset:Int, byteOrder:DicomSpec.ByteOrder) -> (PixelSequence, Int) {
+    private func readPixelSequence(tag:DataTag, offset:Int, byteOrder:DicomConstants.ByteOrder) -> (PixelSequence, Int) {
         let pixelSequence = PixelSequence(withTag: tag)
         var os = offset
         
@@ -857,10 +857,10 @@ public class DataSet: DicomObject {
     
     
     
-    private func write(dataElement element:DataElement, vrMethod:DicomSpec.VRMethod = .Explicit, byteOrder:DicomSpec.ByteOrder = .LittleEndian) -> Data {
+    private func write(dataElement element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit, byteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
         var data = Data()
-        var localVRMethod:DicomSpec.VRMethod = .Explicit
-        var order:DicomSpec.ByteOrder = .LittleEndian
+        var localVRMethod:DicomConstants.VRMethod = .Explicit
+        var order:DicomConstants.ByteOrder = .LittleEndian
         
         // set local byte order to enforce Little Endian for Prefix Header elements
         if self.byteOrder == .BigEndian && element.endOffset > self.fileMetaInformationGroupLength+144 {

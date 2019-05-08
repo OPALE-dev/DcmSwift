@@ -29,7 +29,7 @@ public class DicomObject: CustomStringConvertible {
      Data representation of the DICOM object
      - Returns : A Data representation of the object encoded to comply with the DICOM standard
      */
-    public func toData(vrMethod inVrMethod:DicomSpec.VRMethod = .Explicit, byteOrder inByteOrder:DicomSpec.ByteOrder = .LittleEndian) -> Data {
+    public func toData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
         return Data()
     }
     

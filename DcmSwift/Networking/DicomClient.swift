@@ -59,14 +59,14 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    public func echo(completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void) {
+    public func echo(completion: PDUCompletion) {
         if !self.isConnected {
             completion(false, nil, DicomError(description: "Socket is not connected, please connect() first.", level: .error, realm: .custom))
         }
         
         let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
         
-        association.request(sop: DicomConstants.verificationSOP) { (accepted, receivedMessage, error) in
+        association.request() { (accepted, receivedMessage, error) in
             if accepted {
                 if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
                     association.write(message: message, readResponse: true, completion: completion)
@@ -80,20 +80,27 @@ public class DicomClient : DicomService, StreamDelegate {
     }
     
     
-    public func find(_ queryDataset:DataSet, completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void)  {
+    public func find(_ queryDataset:DataSet, completion: PDUCompletion)  {
         if !self.isConnected {
             completion(false, nil, DicomError(description: "Socket is not connected, please connect first.",
                                               level: .error,
                                               realm: .custom))
         }
         
+        // create assoc between local and remote
         let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
         
-        association.request(sop: "1.2.840.10008.5.1.4.1.2.2.1") { (accepted, receivedMessage, error) in
+        // add C-FIND Study Root QUery Level
+        association.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND)
+        
+        // request assoc
+        association.request() { (accepted, receivedMessage, error) in
             if accepted {
+                // create C-FIND-RQ message
                 if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_FIND_RQ, association: association) as? CFindRQ {
+                    // add query dataset to the message
                     message.queryDataset = queryDataset
-
+                    // send message
                     association.write(message: message, readResponse: true, completion: completion)
                 }
             }
@@ -106,8 +113,37 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    public func store(_ files:Array<DicomFile>, completion: (_ accepted:Bool, _ error:String?) -> Void)  {
-
+    public func store(_ files:Array<DicomFile>, completion: PDUCompletion)  {
+        if !self.isConnected {
+            completion(false, nil, DicomError(description: "Socket is not connected, please connect first.",
+                                              level: .error,
+                                              realm: .custom))
+        }
+        
+        let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
+        
+        for abstractSyntax in DicomConstants.storageSOPClasses {
+            association.addPresentationContext(abstractSyntax: abstractSyntax)
+        }
+        
+        association.request() { (accepted, receivedMessage, error) in
+            if accepted {
+                for f in files {
+                    
+                }
+//                if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_FIND_RQ, association: association) as? CFindRQ {
+//                    message.queryDataset = queryDataset
+//
+//                    association.write(message: message, readResponse: true, completion: completion)
+//                }
+                
+                association.close()
+            }
+            else {
+                completion(false, receivedMessage, error)
+                association.close()
+            }
+        }
     }
     
     

@@ -11,13 +11,13 @@ import Foundation
 
 public class PresentationContext {
     public var acceptedTransferSyntax:String?
-    private var serviceObjectProvider:String!
+    private var abstractSyntax:String!
     public var contextID:UInt8!
     
     private var pcLength:Int16 = 0
     
-    public init(serviceObjectProvider:String, contextID:UInt8) {
-        self.serviceObjectProvider = serviceObjectProvider
+    public init(abstractSyntax:String, transferSyntaxes:[String] = [], contextID:UInt8) {
+        self.abstractSyntax = abstractSyntax
         self.contextID = contextID
     }
     
@@ -51,11 +51,11 @@ public class PresentationContext {
     public func data() -> Data {
         // ABSTRACT SYNTAX Data
         var asData = Data()
-        let asLength = UInt16(self.serviceObjectProvider.data(using: .utf8)!.count)
+        let asLength = UInt16(self.abstractSyntax.data(using: .utf8)!.count)
         asData.append(uint8: ItemType.abstractSyntax.rawValue, bigEndian: true) // 30H
         asData.append(byte: 0x00)
         asData.append(uint16: asLength, bigEndian: true)
-        asData.append(self.serviceObjectProvider.data(using: .utf8)!)
+        asData.append(self.abstractSyntax.data(using: .utf8)!)
         
         // TRANSFER SYNTAXES Data
         var tsData = Data()

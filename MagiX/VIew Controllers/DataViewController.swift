@@ -63,6 +63,9 @@ class DataViewController: NSViewController, NSOutlineViewDelegate, NSOutlineView
                 if let privateDir = directory as? PrivateDirectory {
                     self.studies = (privateDir.studies!.sortedArray(using: [NSSortDescriptor(key: "studyDate", ascending: true)]) as! [Study] as NSArray) as! [Study]
                 }
+                else if let _ = self.representedObject as? SmartDirectory {
+                    self.studies = []
+                }
             }
         }
     }

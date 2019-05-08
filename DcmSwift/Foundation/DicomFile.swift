@@ -65,7 +65,7 @@ public class DicomFile {
     }
     
     
-    public func write(atPath path:String, vrMethod inVrMethod:DicomSpec.VRMethod? = nil, byteOrder inByteOrder:DicomSpec.ByteOrder? = nil) -> Bool {
+    public func write(atPath path:String, vrMethod inVrMethod:DicomConstants.VRMethod? = nil, byteOrder inByteOrder:DicomConstants.ByteOrder? = nil) -> Bool {
         return self.dataset.write(atPath:path, vrMethod:inVrMethod, byteOrder:inByteOrder)
     }
     
