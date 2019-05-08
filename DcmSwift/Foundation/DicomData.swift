@@ -61,13 +61,13 @@ extension Data {
     
 
     
-    public func toInt8(byteOrder: DicomSpec.ByteOrder = .LittleEndian) -> Int8 {
+    public func toInt8(byteOrder: DicomConstants.ByteOrder = .LittleEndian) -> Int8 {
         let i:Int8 = self.withUnsafeBytes { $0.pointee }
         return byteOrder == .LittleEndian ? i : i.bigEndian
     }
     
     
-    public func toUInt16(byteOrder: DicomSpec.ByteOrder = .LittleEndian) -> UInt16 {
+    public func toUInt16(byteOrder: DicomConstants.ByteOrder = .LittleEndian) -> UInt16 {
         if (byteOrder == .LittleEndian) {
             let i16array = self.withUnsafeBytes {
                 return UnsafeBufferPointer<UInt16>(start: $0, count: self.count/2).map(UInt16.init(littleEndian:))
@@ -83,25 +83,25 @@ extension Data {
     }
     
     
-    public func toInt16(byteOrder: DicomSpec.ByteOrder = .LittleEndian) -> Int16 {
+    public func toInt16(byteOrder: DicomConstants.ByteOrder = .LittleEndian) -> Int16 {
         let i:Int16 = self.withUnsafeBytes { $0.pointee }
         return byteOrder == .LittleEndian ? i : i.bigEndian
     }
     
     
-    public func toInt32(byteOrder: DicomSpec.ByteOrder = .LittleEndian) -> Int32 {
+    public func toInt32(byteOrder: DicomConstants.ByteOrder = .LittleEndian) -> Int32 {
         let i:Int32 = self.withUnsafeBytes { $0.pointee }
         return byteOrder == .LittleEndian ? i : i.bigEndian
     }
     
     
-    public func toFloat32(byteOrder: DicomSpec.ByteOrder = .LittleEndian) -> Float32 {
+    public func toFloat32(byteOrder: DicomConstants.ByteOrder = .LittleEndian) -> Float32 {
         return byteOrder == .LittleEndian ? self.withUnsafeBytes { $0.pointee } :
             Float32(bitPattern: UInt32(bigEndian: self.withUnsafeBytes { $0.pointee } ))
     }
     
     
-    public func toFloat64(byteOrder: DicomSpec.ByteOrder = .LittleEndian) -> Float64 {
+    public func toFloat64(byteOrder: DicomConstants.ByteOrder = .LittleEndian) -> Float64 {
         return byteOrder == .LittleEndian ? self.withUnsafeBytes { $0.pointee } :
             Float64(bitPattern: UInt64(bigEndian: self.withUnsafeBytes { $0.pointee } ))
     }

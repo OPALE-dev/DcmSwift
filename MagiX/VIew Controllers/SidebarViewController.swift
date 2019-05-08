@@ -13,6 +13,7 @@ import DcmSwift
 let directoryPastebaodrType = NSPasteboard.PasteboardType(rawValue: "pro.opale.MagiX.sidebar.directory")
 
 class SidebarViewController:    NSViewController,
+                                NSMenuDelegate,
                                 NSTableViewDataSource,
                                 NSTableViewDelegate,
                                 NSOutlineViewDelegate,
@@ -58,9 +59,6 @@ class SidebarViewController:    NSViewController,
         self.directoriesOutlineView.reloadData()
         self.directoriesOutlineView.expandItem(self.directoriesOutlineView.item(atRow: 1), expandChildren: true)
         self.directoriesOutlineView.expandItem(self.directoriesOutlineView.item(atRow: 0), expandChildren: true)
-        
-        self.directoriesOutlineView.target = self
-        self.directoriesOutlineView.doubleAction = #selector(directoriesOutlineViewDoubleClick(s:))
     }
     
     
@@ -82,15 +80,30 @@ class SidebarViewController:    NSViewController,
     
     
     
-    @objc func directoriesOutlineViewDoubleClick(s:Any) {
-        if let selectedItem = self.directoriesOutlineView.item(atRow: self.directoriesOutlineView.clickedRow) as? Remote {
-            if let remoteVC:RemoteEditViewController = NSStoryboard(name: "Main", bundle: nil).instantiateController(withIdentifier: "RemoteEditViewController") as? RemoteEditViewController {
-                remoteVC.remote = selectedItem
-                self.presentAsSheet(remoteVC)
-            }
+    
+    // MARK: - Menu
+    
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
+        
+        let selectedItem = self.directoriesOutlineView.item(atRow: self.selectedRow())
+        
+        if let _ = selectedItem as? PrivateDirectory {
+            menu.addItem(withTitle: "Edit Directory", action: #selector(editPrivateDirectory(_:)), keyEquivalent: "")
+            menu.addItem(NSMenuItem.separator())
+            menu.addItem(withTitle: "Remove Directory", action: #selector(remove(_:)), keyEquivalent: "")
+        }
+        else if let _ = selectedItem as? SmartDirectory {
+            menu.addItem(withTitle: "Edit Directory", action: #selector(editSmartDirectory(_:)), keyEquivalent: "")
+            menu.addItem(NSMenuItem.separator())
+            menu.addItem(withTitle: "Remove Smart Directory", action: #selector(remove(_:)), keyEquivalent: "")
+        }
+        else if let _ = selectedItem as? Remote {
+            menu.addItem(withTitle: "Edit Remote", action: #selector(editRemote(_:)), keyEquivalent: "")
+            menu.addItem(NSMenuItem.separator())
+            menu.addItem(withTitle: "Remove Remote", action: #selector(remove(_:)), keyEquivalent: "")
         }
     }
-    
     
     // MARK: - IBAction
     
@@ -102,6 +115,26 @@ class SidebarViewController:    NSViewController,
         
         self.directories.append(newDirectory)
         self.directoriesOutlineView.reloadData()
+    }
+    
+    @IBAction func editPrivateDirectory(_ sender: Any) {
+        let selectedItem = self.directoriesOutlineView.item(atRow: self.selectedRow())
+        if let d = selectedItem as? PrivateDirectory {
+            if let vc:DirectoryEditViewController = NSStoryboard(name: "Main", bundle: nil).instantiateController(withIdentifier: "DirectoryEditViewController") as? DirectoryEditViewController {
+                vc.directory = d
+                self.presentAsSheet(vc)
+            }
+        }
+    }
+    
+    @IBAction func editSmartDirectory(_ sender: Any) {
+        let selectedItem = self.directoriesOutlineView.item(atRow: self.selectedRow())
+        if let d = selectedItem as? SmartDirectory {
+            if let vc:SmartDirectoryEditViewController = NSStoryboard(name: "Main", bundle: nil).instantiateController(withIdentifier: "SmartDirectoryEditViewController") as? SmartDirectoryEditViewController {
+                vc.directory = d
+                self.presentAsSheet(vc)
+            }
+        }
     }
     
     @IBAction func newSmartDirectory(_ sender: Any) {
@@ -120,10 +153,27 @@ class SidebarViewController:    NSViewController,
         }
     }
     
+    @IBAction func editRemote(_ sender: Any) {
+        let selectedItem = self.directoriesOutlineView.item(atRow: self.selectedRow())
+        if let r = selectedItem as? Remote {
+            if let remoteVC:RemoteEditViewController = NSStoryboard(name: "Main", bundle: nil).instantiateController(withIdentifier: "RemoteEditViewController") as? RemoteEditViewController {
+                remoteVC.remote = r
+                self.presentAsSheet(remoteVC)
+            }
+        }
+    }
+    
     @IBAction func remove(_ sender: Any) {
-        let selectedItem = self.directoriesOutlineView.item(atRow: self.directoriesOutlineView.selectedRow)
+        let selectedItem = self.directoriesOutlineView.item(atRow: self.selectedRow())
         
         if let d = selectedItem as? PrivateDirectory {
+            DataController.shared.removeDirectory(d)
+            
+            if let index = self.directories.index(of:d) {
+                self.directories.remove(at: index)
+            }
+        }
+        else if let d = selectedItem as? SmartDirectory {
             DataController.shared.removeDirectory(d)
             
             if let index = self.directories.index(of:d) {
@@ -241,6 +291,18 @@ class SidebarViewController:    NSViewController,
                         
                     }
                 }
+                else if let directory = selectedItem as? SmartDirectory {
+                    tabViewController.tabView.selectTabViewItem(at: 0)
+                    
+                    if let svc = tabViewController.tabView.selectedTabViewItem?.viewController as? NSSplitViewController {
+                        if let svc2 = svc.children[0] as? NSSplitViewController {
+                            if let vc = svc2.children[0] as? DataViewController {
+                                vc.representedObject = directory
+                            }
+                        }
+                        
+                    }
+                }
                 else if let remote = selectedItem as? Remote {
                     tabViewController.tabView.selectTabViewItem(at: 1)
                     
@@ -292,7 +354,7 @@ class SidebarViewController:    NSViewController,
     // MARK: - Table View
     
     func numberOfRows(in tableView: NSTableView) -> Int {
-        return DataController.shared.operationQueue.operations.count
+        return OperationsController.shared.operationQueue.operations.count
     }
     
     
@@ -301,9 +363,12 @@ class SidebarViewController:    NSViewController,
         
         view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "OperationCellView"), owner: self) as? OperationCellView
         
-        if let laodOperation = DataController.shared.operationQueue.operations[row] as? LoadOperation {
+        if let laodOperation = OperationsController.shared.operationQueue.operations[row] as? LoadOperation {
             view?.textField?.stringValue = "Load files: \(laodOperation.currentIndex)/\(laodOperation.numberOfFiles)"
             view?.progressBar.doubleValue = Double(laodOperation.percents)
+        }
+        else if let _ = OperationsController.shared.operationQueue.operations[row] as? FindOperation {
+            view?.textField?.stringValue = "Find studies…"
         }
         
         return view
@@ -330,18 +395,31 @@ class SidebarViewController:    NSViewController,
                                 r.status = 2
                             }
                             DataController.shared.save()
+                            
+                            let oldSelection = self.directoriesOutlineView.selectedRowIndexes
                             self.remotes = DataController.shared.fetchRemotes()
                             self.directoriesOutlineView.reloadData()
+                            self.directoriesOutlineView.selectRowIndexes(oldSelection, byExtendingSelection: false)
                         }
                     } else {
                         r.status = 2
                         
-                        DataController.shared.save()
+                        let oldSelection = self.directoriesOutlineView.selectedRowIndexes
                         self.remotes = DataController.shared.fetchRemotes()
                         self.directoriesOutlineView.reloadData()
+                        self.directoriesOutlineView.selectRowIndexes(oldSelection, byExtendingSelection: false)
                     }
                 }
             }
         }
+    }
+    
+    
+    private func selectedRow() -> Int {
+        if self.directoriesOutlineView.clickedRow != NSNotFound {
+            return self.directoriesOutlineView.clickedRow
+        }
+        
+        return self.directoriesOutlineView.selectedRow
     }
 }

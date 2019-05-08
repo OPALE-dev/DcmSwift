@@ -12,7 +12,7 @@ import DcmSwift
 class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     @IBOutlet weak var queryTableView: NSTableView!
     
-    var queryOperation:LoadOperation?
+    var queryOperation:FindOperation?
     
     var studies:[Any] = []
     var remote:Remote!
@@ -70,7 +70,7 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
     
     private func query() {
         if self.queryOperation == nil {
-            self.queryOperation = LoadOperation(parentContext: DataController.shared.context)
+            self.queryOperation = FindOperation()
             
             self.queryOperation?.addExecutionBlock {
                 let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
@@ -88,30 +88,47 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
                                     if let findRSP = receivedMessage as? CFindRSP {
                                         self.studies = findRSP.queryResults
                                         
-                                        self.queryTableView.reloadData()
+                                        DispatchQueue.main.async {
+                                            self.queryTableView.reloadData()
+                                        }
                                     }
                                 } else {
                                     if let alert = findError?.alert() {
-                                        alert.runModal()
+                                        DispatchQueue.main.async {
+                                            self.studies = []
+                                            self.queryTableView.reloadData()
+                                            alert.runModal()
+                                        }
                                     }
                                 }
                             }
                         } else {
                             if let alert = error?.alert() {
-                                alert.runModal()
+                                DispatchQueue.main.async {
+                                    self.studies = []
+                                    self.queryTableView.reloadData()
+                                    alert.runModal()
+                                }
                             }
                         }
                     }
+                }
+            }
+            
+            self.queryOperation?.completionBlock = {
+                DispatchQueue.main.async {
+                    OperationsController.shared.stopObserveOperation(self.queryOperation)
+                    self.queryOperation = nil
                 }
             }
         }
         
         if let operation = self.queryOperation {
             if operation.isExecuting {
-                
+                print("Already running")
             }
             else {
-
+                OperationsController.shared.addOperation(operation)
             }
         }
     }

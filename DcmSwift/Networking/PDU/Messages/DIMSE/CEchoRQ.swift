@@ -14,7 +14,7 @@ public class CEchoRQ: DataTF {
         
         let pdvDataset = DataSet()
         _ = pdvDataset.set(value: CommandField.C_ECHO_RQ.rawValue.bigEndian, forTagName: "CommandField")
-        _ = pdvDataset.set(value: self.association.sop, forTagName: "AffectedSOPClassUID")
+        _ = pdvDataset.set(value: self.association.abstractSyntax, forTagName: "AffectedSOPClassUID")
         _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
         _ = pdvDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
         

@@ -31,9 +31,9 @@ public class DataElement : DicomObject {
     public var tag:DataTag
     public var data:Data!
     
-    public var vr:DicomSpec.VR                  = DicomSpec.VR.UN
-    public var vrMethod:DicomSpec.VRMethod      = .Explicit
-    public var byteOrder:DicomSpec.ByteOrder    = .LittleEndian
+    public var vr:DicomConstants.VR                  = DicomConstants.VR.UN
+    public var vrMethod:DicomConstants.VRMethod      = .Explicit
+    public var byteOrder:DicomConstants.ByteOrder    = .LittleEndian
     
     private var dataValues:[DataValue] = []
     
@@ -275,7 +275,7 @@ public class DataElement : DicomObject {
     
     
     
-    public override func toData(vrMethod inVrMethod:DicomSpec.VRMethod = .Explicit, byteOrder inByteOrder:DicomSpec.ByteOrder = .LittleEndian) -> Data {
+    public override func toData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
         var data = Data()
         
         // write tag code

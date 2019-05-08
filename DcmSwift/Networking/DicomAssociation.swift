@@ -23,10 +23,10 @@ public class DicomAssociation : NSObject {
     
     public var maxPDULength:Int = 16384
     public var associationAccepted:Bool = false
-    public var sop:String = "1.2.840.10008.1.1"
+    public var abstractSyntax:String = "1.2.840.10008.1.1"
     
     public var applicationContext:ApplicationContext = ApplicationContext()
-    public var presentatinContext:PresentationContext?
+    public var presentatinContexts:[PresentationContext] = []
     public var userInfo:UserInfo?
     
     public var acceptedTransferSyntax:String?
@@ -49,11 +49,14 @@ public class DicomAssociation : NSObject {
     }
     
     
-    public func request(sop:String, completion: PDUCompletion) {
-        self.sop = sop
-        self.contextID = self.getNextContextID()
-        self.presentatinContext = PresentationContext(serviceObjectProvider: sop, contextID: self.contextID)
-        self.userInfo = UserInfo()
+    public func addPresentationContext(abstractSyntax: String) {
+        let pc = PresentationContext(abstractSyntax: abstractSyntax, contextID: self.getNextContextID())
+        self.presentatinContexts.append(pc)
+    }
+    
+    
+    public func request(completion: PDUCompletion) {
+        self.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP)
         
         if let message = PDUEncoder.shared.createAssocMessage(pduType: .associationRQ, association: self) as? PDUMessage {
             SwiftyBeaver.info("==================== SEND A-ASSOCIATE-RQ ====================")
@@ -65,7 +68,7 @@ public class DicomAssociation : NSObject {
             
             SwiftyBeaver.info("  -> Presentation Contexts:")
             SwiftyBeaver.info("    -> Context ID: \(self.contextID)")
-            SwiftyBeaver.info("      -> Abstract Syntax: \(self.sop)")
+            SwiftyBeaver.info("      -> Abstract Syntax: \(self.abstractSyntax)")
             SwiftyBeaver.info("      -> Proposed Transfer Syntax(es): \(DicomConstants.transfersSyntaxes)")
             
             SwiftyBeaver.info("  -> User Informations:")

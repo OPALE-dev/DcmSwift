@@ -120,6 +120,9 @@
 		4C8D799B1F989EDD008300E3 /* DataSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8D79851F97D84A008300E3 /* DataSequence.swift */; };
 		4C8D79AA1F98AB0D008300E3 /* DicomSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8D79A71F98A69B008300E3 /* DicomSpec.swift */; };
 		4C91251F2282E4A500210165 /* OperationsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C91251E2282E4A500210165 /* OperationsController.swift */; };
+		4C9125212282EA0E00210165 /* FindOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9125202282EA0E00210165 /* FindOperation.swift */; };
+		4C9125232282F14000210165 /* DirectoryEditViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9125222282F14000210165 /* DirectoryEditViewController.swift */; };
+		4C9125252282F2A300210165 /* SmartDirectoryEditViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9125242282F2A300210165 /* SmartDirectoryEditViewController.swift */; };
 		4C99796F1FA71DEF00C90494 /* PixelSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99796E1FA71DEF00C90494 /* PixelSequence.swift */; };
 		4C9979901FA75B3600C90494 /* DicomObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99798F1FA75B3600C90494 /* DicomObject.swift */; };
 		4C9979971FA7720300C90494 /* DicomImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9979961FA7720300C90494 /* DicomImage.swift */; };
@@ -313,6 +316,9 @@
 		4C8D79911F989EB1008300E3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4C8D79A71F98A69B008300E3 /* DicomSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomSpec.swift; sourceTree = "<group>"; };
 		4C91251E2282E4A500210165 /* OperationsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationsController.swift; sourceTree = "<group>"; };
+		4C9125202282EA0E00210165 /* FindOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindOperation.swift; sourceTree = "<group>"; };
+		4C9125222282F14000210165 /* DirectoryEditViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectoryEditViewController.swift; sourceTree = "<group>"; };
+		4C9125242282F2A300210165 /* SmartDirectoryEditViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartDirectoryEditViewController.swift; sourceTree = "<group>"; };
 		4C99796E1FA71DEF00C90494 /* PixelSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelSequence.swift; sourceTree = "<group>"; };
 		4C99798F1FA75B3600C90494 /* DicomObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomObject.swift; sourceTree = "<group>"; };
 		4C9979961FA7720300C90494 /* DicomImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomImage.swift; sourceTree = "<group>"; };
@@ -404,6 +410,8 @@
 			isa = PBXGroup;
 			children = (
 				4C53D6CA2275B3200003724F /* SidebarViewController.swift */,
+				4C9125222282F14000210165 /* DirectoryEditViewController.swift */,
+				4C9125242282F2A300210165 /* SmartDirectoryEditViewController.swift */,
 				4C53D6CE227760690003724F /* RemoteEditViewController.swift */,
 				4C3EF245226E3AAC0062B5A3 /* DataViewController.swift */,
 				4C53D6D02278F3AA0003724F /* RemoteViewController.swift */,
@@ -423,6 +431,7 @@
 				4C3EF259226E44D10062B5A3 /* DataController.swift */,
 				4C91251E2282E4A500210165 /* OperationsController.swift */,
 				4C53D6C82275A4EB0003724F /* LoadOperation.swift */,
+				4C9125202282EA0E00210165 /* FindOperation.swift */,
 				4C53D6DC2278F5F90003724F /* Remote.swift */,
 			);
 			path = "Core Data";
@@ -657,9 +666,9 @@
 				4C783E6A1F969DC500E46F30 /* DicomData.swift */,
 				4C5BF0901FABB4730051F4FE /* DicomString.swift */,
 				4C99798F1FA75B3600C90494 /* DicomObject.swift */,
+				4C53D70D227DAB4B0003724F /* DicomError.swift */,
 				4C8D79A71F98A69B008300E3 /* DicomSpec.swift */,
 				4CD0BEE7224401670024C357 /* DicomConstants.swift */,
-				4C53D70D227DAB4B0003724F /* DicomError.swift */,
 			);
 			path = Foundation;
 			sourceTree = "<group>";
@@ -920,6 +929,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C9125212282EA0E00210165 /* FindOperation.swift in Sources */,
+				4C9125252282F2A300210165 /* SmartDirectoryEditViewController.swift in Sources */,
 				4C53D6DE2278F5F90003724F /* Remote.swift in Sources */,
 				4C3EF246226E3AAC0062B5A3 /* DataViewController.swift in Sources */,
 				4C3EF25A226E44D10062B5A3 /* DataController.swift in Sources */,
@@ -933,6 +944,7 @@
 				4C53D6BF2274C5190003724F /* CollectionViewItem.swift in Sources */,
 				4C53D6CB2275B3200003724F /* SidebarViewController.swift in Sources */,
 				4C53D712227E1CEE0003724F /* AppDicomError.swift in Sources */,
+				4C9125232282F14000210165 /* DirectoryEditViewController.swift in Sources */,
 				4C91251F2282E4A500210165 /* OperationsController.swift in Sources */,
 				4C53D6C92275A4EB0003724F /* LoadOperation.swift in Sources */,
 				4C53D6CF227760690003724F /* RemoteEditViewController.swift in Sources */,

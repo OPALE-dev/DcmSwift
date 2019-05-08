@@ -16,65 +16,7 @@ import Foundation
  in order to facilitate the handling of the DICOM standard
  */
 public class DicomSpec: NSObject, XMLParserDelegate {
-    
 
-    // MARK: - Enumeration definition
-    
-    /**
-     The ByteOrder enumeration defines 2 endianess methods, little and big endian
-     */
-    public enum ByteOrder {
-        case BigEndian
-        case LittleEndian
-    }
-    
-    
-    /**
-     The VRMethod enumeration defines 2 Value Representation methods
-     supported by the DICOM standard
-     */
-    public enum VRMethod {
-        case Explicit
-        case Implicit
-    }
-    
-    
-    /**
-     The list of Value Representations supported by the DICOM standard
-     */
-    public enum VR {
-        case AE
-        case AS
-        case AT
-        case CS
-        case DA
-        case DS
-        case DT
-        case FL
-        case FD
-        case IS
-        case LO
-        case LT
-        case OB
-        case OD
-        case OF
-        case OW
-        case PN
-        case SH
-        case SL
-        case SQ
-        case SS
-        case ST
-        case TM
-        case UI
-        case UL
-        case UN
-        case US
-        case UT
-    }
-    
-    
-    
     
     
     
@@ -100,6 +42,9 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      UID dictionnary by SOP Class
      */
     public var uids:[String: [String : String]] = [:]
+    
+    public var sopClassesArray:[[String : String]]       = []
+    public var transferSyntaxArray:[[String : String]]   = []
     
     private var parser = XMLParser()
     
@@ -140,7 +85,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Parameter vr: VR enum
      
      */
-    public static func lengthOf(vr:VR) -> Int {
+    public static func lengthOf(vr:DicomConstants.VR) -> Int {
         switch vr {
         case .AS:
             return 4
@@ -175,7 +120,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Parameter vr: VR enum
      
      */
-    public static func maxLengthOf(vr:VR) -> Int {
+    public static func maxLengthOf(vr:DicomConstants.VR) -> Int {
         switch vr {
         case .AE:
             return 16
@@ -226,7 +171,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Parameter vr: VR enum
      
      */
-    public static func vr(for vr:String) -> VR {
+    public static func vr(for vr:String) -> DicomConstants.VR {
         switch vr {
         case "AE":
             return .AE
@@ -305,15 +250,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Returns: An array of DICOM SOP Classes
      */
     public func sopClasses() -> [[String : String]] {
-        var sc:[[String : String]] = []
-        
-        for (_, attrs) in self.uids {
-            if attrs["type"] == "SOP Class" {
-                sc.append(attrs)
-            }
-        }
-        
-        return sc
+        return self.sopClassesArray
     }
     
     
@@ -324,15 +261,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Returns: An array of DICOM Transfer Syntaxes
      */
     public func transferSyntaxes() -> [[String : String]] {
-        var ts:[[String : String]] = []
-        
-        for (_, attrs) in self.uids {
-            if attrs["type"] == "Transfer Syntax" {
-                ts.append(attrs)
-            }
-        }
-        
-        return ts
+        return self.transferSyntaxArray
     }
     
     
@@ -378,7 +307,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Parameter code: string composed of DICOM group and element
      - Returns: en VR enum
      */
-    public func vrForTag(withCode code: String) -> VR {
+    public func vrForTag(withCode code: String) -> DicomConstants.VR {
         if tags.keys.contains(code) {
             if let t = tags[code] {
                 if let v = t["vr"] {
@@ -501,6 +430,15 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     public func parserDidEndDocument(_ parser: XMLParser) {
         // print(tags)
         // TODO: log spec loaded successfuly
+
+        for (_, attrs) in self.uids {
+            if attrs["type"] == "SOP Class" {
+                self.sopClassesArray.append(attrs)
+            }
+            else if attrs["type"] == "Transfer Syntax" {
+                self.transferSyntaxArray.append(attrs)
+            }
+        }
     }
     
     

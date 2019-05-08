@@ -922,6 +922,87 @@ Gw
             </objects>
             <point key="canvasLocation" x="-330" y="567"/>
         </scene>
+        <!--Directory Edit View Controller-->
+        <scene sceneID="TTS-yq-XOB">
+            <objects>
+                <viewController storyboardIdentifier="DirectoryEditViewController" id="nUj-BO-AwE" customClass="DirectoryEditViewController" customModule="MagiX" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" id="mlB-tU-0pr">
+                        <rect key="frame" x="0.0" y="0.0" width="494" height="120"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <subviews>
+                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="n1m-bY-F9K">
+                                <rect key="frame" x="14" y="13" width="120" height="32"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="108" id="DEQ-ez-oA4"/>
+                                    <constraint firstAttribute="height" constant="21" id="kKw-RO-1QX"/>
+                                </constraints>
+                                <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="WKo-C8-5ie">
+                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                    <font key="font" metaFont="system"/>
+                                    <string key="keyEquivalent" base64-UTF8="YES">
+Gw
+</string>
+                                </buttonCell>
+                                <connections>
+                                    <action selector="dismissController:" target="nUj-BO-AwE" id="YEU-DD-rLz"/>
+                                </connections>
+                            </button>
+                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="lDe-lA-d29">
+                                <rect key="frame" x="360" y="13" width="120" height="32"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="108" id="716-QR-PAy"/>
+                                    <constraint firstAttribute="height" constant="21" id="HLx-2f-gii"/>
+                                </constraints>
+                                <buttonCell key="cell" type="push" title="OK" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Q1I-9L-bah">
+                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                    <font key="font" metaFont="system"/>
+                                    <string key="keyEquivalent" base64-UTF8="YES">
+DQ
+</string>
+                                </buttonCell>
+                                <connections>
+                                    <action selector="ok:" target="nUj-BO-AwE" id="s4h-gR-48t"/>
+                                </connections>
+                            </button>
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="UiS-Ep-drw">
+                                <rect key="frame" x="103" y="81" width="44" height="17"/>
+                                <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="Name:" id="Zuw-Uw-8VW">
+                                    <font key="font" usesAppearanceFont="YES"/>
+                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="MfE-z9-xpN">
+                                <rect key="frame" x="153" y="78" width="236" height="22"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="236" id="QhR-Wm-dBz"/>
+                                </constraints>
+                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Directory Name" drawsBackground="YES" id="n3o-TO-NHl">
+                                    <font key="font" metaFont="system"/>
+                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                        </subviews>
+                        <constraints>
+                            <constraint firstItem="MfE-z9-xpN" firstAttribute="leading" secondItem="UiS-Ep-drw" secondAttribute="trailing" constant="8" symbolic="YES" id="4mh-bh-tae"/>
+                            <constraint firstItem="UiS-Ep-drw" firstAttribute="top" secondItem="mlB-tU-0pr" secondAttribute="top" constant="22" id="Ek0-BG-hQX"/>
+                            <constraint firstItem="n1m-bY-F9K" firstAttribute="leading" secondItem="mlB-tU-0pr" secondAttribute="leading" constant="20" id="HUc-ah-QQz"/>
+                            <constraint firstItem="MfE-z9-xpN" firstAttribute="leading" secondItem="mlB-tU-0pr" secondAttribute="leading" constant="153" id="RRH-FC-tW9"/>
+                            <constraint firstItem="MfE-z9-xpN" firstAttribute="top" secondItem="mlB-tU-0pr" secondAttribute="top" constant="20" id="YHp-jv-coo"/>
+                            <constraint firstAttribute="trailing" secondItem="lDe-lA-d29" secondAttribute="trailing" constant="20" id="k90-kb-vkn"/>
+                            <constraint firstAttribute="bottom" secondItem="lDe-lA-d29" secondAttribute="bottom" constant="20" id="nBu-LK-X0h"/>
+                            <constraint firstAttribute="bottom" secondItem="n1m-bY-F9K" secondAttribute="bottom" constant="20" id="tPf-fQ-ROa"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="nameTextField" destination="MfE-z9-xpN" id="oPR-lu-D5T"/>
+                    </connections>
+                </viewController>
+                <customObject id="JdH-a7-63R" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="195" y="547"/>
+        </scene>
         <!--Split View Controller-->
         <scene sceneID="OO9-op-LkC">
             <objects>
@@ -2213,6 +2294,7 @@ DQ
                                                             <connections>
                                                                 <outlet property="dataSource" destination="UfE-Ak-0eL" id="1Kg-uT-hHz"/>
                                                                 <outlet property="delegate" destination="UfE-Ak-0eL" id="zYb-Ph-0zB"/>
+                                                                <outlet property="menu" destination="YaW-ee-9w3" id="Wjo-mR-9qL"/>
                                                             </connections>
                                                         </outlineView>
                                                     </subviews>
@@ -2275,7 +2357,7 @@ DQ
                                                                                     <constraints>
                                                                                         <constraint firstAttribute="height" constant="14" id="MwK-de-qaN"/>
                                                                                     </constraints>
-                                                                                    <textFieldCell key="cell" controlSize="small" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" title="Table View Cell" id="nOM-oj-7Z8">
+                                                                                    <textFieldCell key="cell" controlSize="small" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" id="nOM-oj-7Z8">
                                                                                         <font key="font" metaFont="smallSystem"/>
                                                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -2357,6 +2439,11 @@ DQ
                     </connections>
                 </viewController>
                 <customObject id="Pa9-tm-eu5" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+                <menu id="YaW-ee-9w3">
+                    <connections>
+                        <outlet property="delegate" destination="UfE-Ak-0eL" id="PZp-87-NJO"/>
+                    </connections>
+                </menu>
             </objects>
             <point key="canvasLocation" x="1559" y="-825"/>
         </scene>
@@ -2539,6 +2626,184 @@ DQ
                 <customObject id="5Ha-F1-dYE" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="2280" y="-673"/>
+        </scene>
+        <!--Smart Directory Edit View Controller-->
+        <scene sceneID="qvp-Bc-N3q">
+            <objects>
+                <viewController storyboardIdentifier="SmartDirectoryEditViewController" id="dU7-KP-3Qg" customClass="SmartDirectoryEditViewController" customModule="MagiX" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" id="Hwa-hU-9Ci">
+                        <rect key="frame" x="0.0" y="0.0" width="494" height="318"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <subviews>
+                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="a9A-pV-lNN">
+                                <rect key="frame" x="14" y="13" width="120" height="32"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="21" id="64f-zn-JvS"/>
+                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="108" id="S2C-Ca-8Jz"/>
+                                </constraints>
+                                <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Caw-FQ-FZe">
+                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                    <font key="font" metaFont="system"/>
+                                    <string key="keyEquivalent" base64-UTF8="YES">
+Gw
+</string>
+                                </buttonCell>
+                                <connections>
+                                    <action selector="dismissController:" target="dU7-KP-3Qg" id="JCA-0C-clP"/>
+                                </connections>
+                            </button>
+                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Wj1-nK-Wfj">
+                                <rect key="frame" x="360" y="13" width="120" height="32"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="21" id="MkE-8l-UBu"/>
+                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="108" id="t1u-AO-Wrq"/>
+                                </constraints>
+                                <buttonCell key="cell" type="push" title="OK" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="RCK-64-htb">
+                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                    <font key="font" metaFont="system"/>
+                                    <string key="keyEquivalent" base64-UTF8="YES">
+DQ
+</string>
+                                </buttonCell>
+                                <connections>
+                                    <action selector="ok:" target="dU7-KP-3Qg" id="ccj-mt-11Z"/>
+                                </connections>
+                            </button>
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="N6d-Eq-z0X">
+                                <rect key="frame" x="103" y="279" width="44" height="17"/>
+                                <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="Name:" id="o8D-Hj-1SE">
+                                    <font key="font" usesAppearanceFont="YES"/>
+                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="tkS-ef-ddl">
+                                <rect key="frame" x="153" y="276" width="236" height="22"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="236" id="O92-dW-fb3"/>
+                                </constraints>
+                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Directory Name" drawsBackground="YES" id="58v-ND-iay">
+                                    <font key="font" metaFont="system"/>
+                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <scrollView fixedFrame="YES" borderType="none" autohidesScrollers="YES" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="QoT-hE-iKl">
+                                <rect key="frame" x="0.0" y="61" width="494" height="191"/>
+                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                <clipView key="contentView" ambiguous="YES" id="4n1-kP-hjL">
+                                    <rect key="frame" x="0.0" y="0.0" width="494" height="191"/>
+                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                    <subviews>
+                                        <predicateEditor verticalHuggingPriority="750" ambiguous="YES" nestingMode="compound" canRemoveAllRows="YES" rowHeight="32" id="WLs-hX-AwA">
+                                            <rect key="frame" x="0.0" y="0.0" width="494" height="191"/>
+                                            <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
+                                            <rowTemplates>
+                                                <predicateEditorRowTemplate rowType="compound" id="3jQ-zB-Dxb">
+                                                    <popUpMenus>
+                                                        <menu id="3Co-r8-crf">
+                                                            <items>
+                                                                <menuItem title="Any" state="on" id="HzO-7A-Ryw">
+                                                                    <integer key="representedObject" value="2"/>
+                                                                </menuItem>
+                                                                <menuItem title="All" id="LRQ-4T-eQP">
+                                                                    <integer key="representedObject" value="1"/>
+                                                                </menuItem>
+                                                            </items>
+                                                        </menu>
+                                                        <menu id="vp3-JP-6Y7">
+                                                            <items>
+                                                                <menuItem title="of the following are true" state="on" id="gE0-yo-MRW"/>
+                                                            </items>
+                                                        </menu>
+                                                    </popUpMenus>
+                                                </predicateEditorRowTemplate>
+                                                <predicateEditorRowTemplate rowType="simple" id="C6c-0r-JqT">
+                                                    <array key="leftExpressionObject">
+                                                        <expression type="keyPath">
+                                                            <string key="keyPath">name</string>
+                                                        </expression>
+                                                        <expression type="keyPath">
+                                                            <string key="keyPath">address</string>
+                                                        </expression>
+                                                        <expression type="keyPath">
+                                                            <string key="keyPath">sign</string>
+                                                        </expression>
+                                                    </array>
+                                                    <integer key="rightExpressionObject" value="700"/>
+                                                    <popUpMenus>
+                                                        <menu id="Bgl-Y8-0cf">
+                                                            <items>
+                                                                <menuItem title="name" state="on" id="bAw-E3-0ap">
+                                                                    <expression key="representedObject" type="keyPath">
+                                                                        <string key="keyPath">name</string>
+                                                                    </expression>
+                                                                </menuItem>
+                                                                <menuItem title="address" id="GgI-VA-urR">
+                                                                    <expression key="representedObject" type="keyPath">
+                                                                        <string key="keyPath">address</string>
+                                                                    </expression>
+                                                                </menuItem>
+                                                                <menuItem title="sign" id="ZKj-gO-5NE">
+                                                                    <expression key="representedObject" type="keyPath">
+                                                                        <string key="keyPath">sign</string>
+                                                                    </expression>
+                                                                </menuItem>
+                                                            </items>
+                                                        </menu>
+                                                        <menu id="rcc-wt-s9X">
+                                                            <items>
+                                                                <menuItem title="contains" state="on" id="HwI-L6-xkF">
+                                                                    <integer key="representedObject" value="99"/>
+                                                                </menuItem>
+                                                                <menuItem title="begins with" id="MTc-3g-Chh">
+                                                                    <integer key="representedObject" value="8"/>
+                                                                </menuItem>
+                                                                <menuItem title="ends with" id="5P4-rB-JME">
+                                                                    <integer key="representedObject" value="9"/>
+                                                                </menuItem>
+                                                                <menuItem title="is" id="B0x-lY-tkY">
+                                                                    <integer key="representedObject" value="4"/>
+                                                                </menuItem>
+                                                                <menuItem title="is not" id="GD1-QG-hAf">
+                                                                    <integer key="representedObject" value="5"/>
+                                                                </menuItem>
+                                                            </items>
+                                                        </menu>
+                                                    </popUpMenus>
+                                                </predicateEditorRowTemplate>
+                                            </rowTemplates>
+                                        </predicateEditor>
+                                    </subviews>
+                                </clipView>
+                                <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="zc2-Eg-xYm">
+                                    <rect key="frame" x="-100" y="-100" width="360" height="15"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                </scroller>
+                                <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="NO" id="7Bg-ck-vp2">
+                                    <rect key="frame" x="336" y="1" width="15" height="84"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                </scroller>
+                            </scrollView>
+                        </subviews>
+                        <constraints>
+                            <constraint firstAttribute="bottom" secondItem="Wj1-nK-Wfj" secondAttribute="bottom" constant="20" id="35z-WN-yIh"/>
+                            <constraint firstItem="N6d-Eq-z0X" firstAttribute="top" secondItem="Hwa-hU-9Ci" secondAttribute="top" constant="22" id="CLs-Lc-lF3"/>
+                            <constraint firstItem="tkS-ef-ddl" firstAttribute="leading" secondItem="Hwa-hU-9Ci" secondAttribute="leading" constant="153" id="VBg-W7-ne6"/>
+                            <constraint firstItem="tkS-ef-ddl" firstAttribute="leading" secondItem="N6d-Eq-z0X" secondAttribute="trailing" constant="8" symbolic="YES" id="Zxq-9I-dsx"/>
+                            <constraint firstAttribute="trailing" secondItem="Wj1-nK-Wfj" secondAttribute="trailing" constant="20" id="bTt-6x-5f0"/>
+                            <constraint firstItem="tkS-ef-ddl" firstAttribute="top" secondItem="Hwa-hU-9Ci" secondAttribute="top" constant="20" id="eJp-D1-4MC"/>
+                            <constraint firstItem="a9A-pV-lNN" firstAttribute="leading" secondItem="Hwa-hU-9Ci" secondAttribute="leading" constant="20" id="tXT-7A-msC"/>
+                            <constraint firstAttribute="bottom" secondItem="a9A-pV-lNN" secondAttribute="bottom" constant="20" id="xty-5G-Wcg"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="nameTextField" destination="tkS-ef-ddl" id="iWI-6V-ZAb"/>
+                    </connections>
+                </viewController>
+                <customObject id="9nr-1Q-MGb" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="195" y="920"/>
         </scene>
     </scenes>
     <resources>
