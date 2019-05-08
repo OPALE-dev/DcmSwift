@@ -13,8 +13,8 @@ public class AssociationRQ: PDUMessage {
         var data = Data()
         
         let apData = association.applicationContext.data()
-        let pcData = association.presentatinContexts.first!.data()
-        let uiData = association.userInfo!.data()
+        let pcData = association.presentationContexts.first!.data()
+        let uiData = association.userInfo.data()
         
         let length = UInt32(2 + 2 + 16 + 16 + 32 + apData.count + pcData.count + uiData.count)
         
@@ -41,7 +41,6 @@ public class AssociationRQ: PDUMessage {
     
     
     override public func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage?  {
-        print("handleResponse")
         if let command:UInt8 = data.first {
             if command == PDUType.associationAC.rawValue {
                 if let message = PDUDecoder.shared.receiveAssocMessage(data: data, pduType: PDUType.associationAC, association: self.association) as? PDUMessage {

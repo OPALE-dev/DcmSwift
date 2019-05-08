@@ -26,8 +26,9 @@ public class DicomAssociation : NSObject {
     public var abstractSyntax:String = "1.2.840.10008.1.1"
     
     public var applicationContext:ApplicationContext = ApplicationContext()
-    public var presentatinContexts:[PresentationContext] = []
-    public var userInfo:UserInfo?
+    public var presentationContexts:[PresentationContext] = []
+    public var acceptedPresentationContexts:[PresentationContext] = []
+    public var userInfo:UserInfo = UserInfo()
     
     public var acceptedTransferSyntax:String?
     public var remoteMaxPDULength:Int = 0
@@ -45,15 +46,13 @@ public class DicomAssociation : NSObject {
         self.callingAET = callingAET
         self.socket = socket
         
-        self.userInfo = UserInfo()
-
         initLogger()
     }
     
     
     public func addPresentationContext(abstractSyntax: String) {
         let pc = PresentationContext(abstractSyntax: abstractSyntax, contextID: self.getNextContextID())
-        self.presentatinContexts.append(pc)
+        self.presentationContexts.append(pc)
     }
     
     
@@ -163,9 +162,7 @@ public class DicomAssociation : NSObject {
                 //let (r, _) = try self.socket.isReadableOrWritable()
                 // we read only if the buffer is empty
                 if readData.count == 0 {
-                    print("will read")
                     let readSize = try socket.read(into: &readData)
-                    print("did read")
                     
                     if readSize == 0 {
                         isPending = false

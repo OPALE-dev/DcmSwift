@@ -96,7 +96,6 @@ public class DicomClient : DicomService, StreamDelegate {
         // request assoc
         association.request() { (accepted, receivedMessage, error) in
             if accepted {
-                print("accepted")
                 // create C-FIND-RQ message
                 if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_FIND_RQ, association: association) as? CFindRQ {
                     // add query dataset to the message
