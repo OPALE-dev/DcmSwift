@@ -41,7 +41,7 @@ class RemoteEditViewController: NSViewController {
         let calledAE    = DicomEntity(title: self.aeTitleTextField.stringValue, hostname: self.hostnameTextField.stringValue, port: Int(self.portTextField!.intValue))
         let client      = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
         
-        client.connect { (ok, error) in
+        client.connect { (ok, connectError) in
             if ok {
                 client.echo { (ok, receivedMessage, error) in
                     if ok {
@@ -51,7 +51,7 @@ class RemoteEditViewController: NSViewController {
                     }
                 }
             } else {
-                self.setEcho(text: error!, color: NSColor.red)
+                self.setEcho(text: connectError!.errorMeaning, color: NSColor.red)
             }
         }
     }
@@ -95,7 +95,6 @@ class RemoteEditViewController: NSViewController {
     
     private func loadFields() {
         if let r = self.remote {
-            print(r)
             self.nameTextField.stringValue = r.name ?? ""
             self.aeTitleTextField.stringValue = r.title ?? ""
             self.hostnameTextField.stringValue = r.hostname ?? ""

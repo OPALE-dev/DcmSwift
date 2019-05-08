@@ -10,7 +10,7 @@ import Foundation
 import SwiftyBeaver
 
 public protocol PDUResponsable {
-    func handleResponse(data:Data, completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void) -> PDUMessage?
+    func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage?
 }
 
 
@@ -20,6 +20,8 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     public var commandField:CommandField?
     public var association:DicomAssociation!
     public var dimseStatus:DIMSEStatus!
+    public var flags:UInt8!
+    public var responseDataset:DataSet!
     public var errors:[DicomError] = []
 
     
@@ -55,25 +57,25 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     
     
     public func messageData() -> Data? {
-        SwiftyBeaver.warning("Not implemented yet")
+        SwiftyBeaver.warning("Not implemented yet \(#function) \(self.pduType)")
         return nil
     }
     
     
     public func data() -> Data {
-        SwiftyBeaver.warning("Not implemented yet")
+        SwiftyBeaver.warning("Not implemented yet \(#function) \(self.pduType)")
         return Data()
     }
     
     
     public func decodeData(data:Data) -> Bool {
-        SwiftyBeaver.warning("Not implemented yet")
+        SwiftyBeaver.warning("Not implemented yet \(#function) \(self.pduType)")
         return false
     }
     
     
-    public func handleResponse(data:Data, completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void) -> PDUMessage? {
-        SwiftyBeaver.warning("Not implemented yet")
+    public func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage? {
+        SwiftyBeaver.warning("Not implemented yet \(#function) \(self.pduType)")
         completion(false, nil, nil)
         return nil
     }

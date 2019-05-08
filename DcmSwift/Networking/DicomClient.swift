@@ -27,13 +27,14 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    public func connect(completion: (_ ok:Bool, _ error:String?) -> Void) {
+    public func connect(completion: ConnectCompletion) {
         if self.socket == nil {
             self.socket = try! Socket.create()
         }
         
         do {
             try self.socket.connect(to: self.remoteEntity.hostname, port: Int32(self.remoteEntity.port))
+            try self.socket.setBlocking(mode: true)
             self.isConnected = self.socket.isConnected
             
             completion(self.isConnected, nil)
@@ -41,9 +42,9 @@ public class DicomClient : DicomService, StreamDelegate {
             self.isConnected = false
             
             if let socketError = error as? Socket.Error {
-                completion(self.isConnected, socketError.description)
+                completion(self.isConnected, DicomError(socketError: socketError))
             } else {
-                completion(self.isConnected, "Unexpected socket error")
+                completion(self.isConnected, DicomError(description:  "Unexpected Socket Error", level: .error, realm: .custom))
             }
         }
     }
@@ -60,7 +61,7 @@ public class DicomClient : DicomService, StreamDelegate {
     
     public func echo(completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void) {
         if !self.isConnected {
-            completion(false, nil, DicomError(description: "Socket is not connected, please connect() first.", level: .error, real: .custom))
+            completion(false, nil, DicomError(description: "Socket is not connected, please connect() first.", level: .error, realm: .custom))
         }
         
         let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
@@ -68,7 +69,6 @@ public class DicomClient : DicomService, StreamDelegate {
         association.request(sop: DicomConstants.verificationSOP) { (accepted, receivedMessage, error) in
             if accepted {
                 if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
-                    
                     association.write(message: message, readResponse: true, completion: completion)
                 }
             }
@@ -80,10 +80,11 @@ public class DicomClient : DicomService, StreamDelegate {
     }
     
     
-    
     public func find(_ queryDataset:DataSet, completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void)  {
         if !self.isConnected {
-            completion(false, nil, DicomError(description: "Socket is not connected, please connect() first.", level: .error, real: .custom))
+            completion(false, nil, DicomError(description: "Socket is not connected, please connect first.",
+                                              level: .error,
+                                              realm: .custom))
         }
         
         let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
@@ -92,7 +93,7 @@ public class DicomClient : DicomService, StreamDelegate {
             if accepted {
                 if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_FIND_RQ, association: association) as? CFindRQ {
                     message.queryDataset = queryDataset
-                    
+
                     association.write(message: message, readResponse: true, completion: completion)
                 }
             }
@@ -106,22 +107,7 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     public func store(_ files:Array<DicomFile>, completion: (_ accepted:Bool, _ error:String?) -> Void)  {
-//        if !self.isConnected {
-//            completion(false, "Socket is not connected, please connect() first.")
-//        }
-//
-//        let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
-//
-//        association.request(sop: DicomConstants.ultrasoundImageStorageSOP) { (accepted, receivedMessage, error) in
-//            if accepted {
-//
-//                association.close()
-//            }
-//            else {
-//                completion(false, "Association failed")
-//                association.close()
-//            }
-//        }
+
     }
     
     

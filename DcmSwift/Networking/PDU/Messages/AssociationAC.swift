@@ -96,4 +96,9 @@ public class AssociationAC: PDUMessage {
         
         return true
     }
+    
+    
+    public override func messageData() -> Data? {
+        return nil
+    }
 }

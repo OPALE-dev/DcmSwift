@@ -40,7 +40,7 @@ public class AssociationRQ: PDUMessage {
     }
     
     
-    override public func handleResponse(data:Data, completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void) -> PDUMessage?  {
+    override public func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage?  {
         if let command:UInt8 = data.first {
             if command == PDUType.associationAC.rawValue {
                 if let message = PDUDecoder.shared.receiveAssocMessage(data: data, pduType: PDUType.associationAC, association: self.association) as? PDUMessage {

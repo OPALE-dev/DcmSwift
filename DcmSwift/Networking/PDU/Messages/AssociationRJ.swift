@@ -17,7 +17,7 @@ public class AssociationRJ: PDUMessage {
         let reason = data.subdata(in: 9..<10).toInt8().bigEndian
         
         if reason == 0x07 {
-            let error = DicomError(code: 7, level: .error, real: .network)
+            let error = DicomError(code: 7, level: .error, realm: .network)
             self.errors.append(error)
             return true
         }

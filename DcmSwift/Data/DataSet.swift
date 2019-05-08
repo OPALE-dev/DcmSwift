@@ -27,6 +27,7 @@ public class DataSet: DicomObject {
     public var transferSyntax:String                = DicomConstants.explicitVRLittleEndian
     public var vrMethod:DicomSpec.VRMethod          = .Explicit
     public var byteOrder:DicomSpec.ByteOrder        = .LittleEndian
+    public var forceExplicit:Bool                   = false
     public var prefixHeader:Bool                    = true
     internal var isCorrupted:Bool                   = false
     
@@ -87,7 +88,7 @@ public class DataSet: DicomObject {
         
         while(offset < data.count && !self.isCorrupted) {
             let (newElement, elementOffset) = self.readDataElement(offset: offset)
-            
+                        
             if newElement.name == "FileMetaInformationGroupLength" {
                 self.fileMetaInformationGroupLength = newElement.value as! Int32
             }
@@ -493,6 +494,10 @@ public class DataSet: DicomObject {
             localVRMethod = .Implicit
         }
         
+        if self.forceExplicit {
+            localVRMethod = .Explicit
+        }
+        
 //        if os < 0 || os+4 > data.count {
 //            let msg = "Fatal, next tag is not readable: unknow offset error"
 //            let v = ValidationResult(self, message: msg, severity: .Fatal)
@@ -510,7 +515,7 @@ public class DataSet: DicomObject {
         let tag = DataTag(withData:tagData, byteOrder:order)
         
         os += 4
-        
+    
         // create new data element
         var element:DataElement = DataElement(withTag:tag, dataset: self)
         element.startOffset = os
@@ -550,8 +555,6 @@ public class DataSet: DicomObject {
                 element.vr = DicomSpec.shared.vrForTag(withCode:element.tag.code)
             }
         }
-        
-
         
         // read length
         if localVRMethod == .Explicit {

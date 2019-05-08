@@ -148,7 +148,7 @@ public class DicomFile {
             if magic == "DICM" {
                 return true
             } else {
-                // maybe try to catch ACR-NEMA file header
+                /// maybe try to catch ACR-NEMA file header
                 let range:Range<Data.Index> = 0..<8
                 let subdata:Data = data.subdata(in: range)
                 // ACR-NEMA lol magic bytes ?

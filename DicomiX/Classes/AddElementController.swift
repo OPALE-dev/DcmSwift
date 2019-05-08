@@ -161,7 +161,6 @@ class AddElementController: NSViewController, NSComboBoxDelegate, NSComboBoxData
                 self.filteredKeys = Array(self.keys)
             }
         }
-        print(self.filteredKeys)
 
         self.comboBox.reloadData()
     }

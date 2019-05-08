@@ -41,26 +41,26 @@ class EntitiesPrefViewController: NSViewController, NSTableViewDelegate, NSTable
     }
     
     @IBAction func echoEntity(_ sender: Any) {
-        if self.entitiesTableView.selectedRow != -1 {
-            let localAET    = UserDefaults.standard.string(forKey: "LocalAET")!
-            let callingAE   = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
-            let calledAE    = self.entities[self.entitiesTableView.selectedRow]
-            let client      = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
-            
-            client.connect { (ok, error) in
-                if ok {
-                    client.echo { (ok, error) in
-                        if ok {
-                            self.setEcho(text: "Echo succeeded", color: NSColor.darkGray)
-                        } else {
-                            self.setEcho(text: error!, color: NSColor.red)
-                        }
-                    }
-                } else {
-                    self.setEcho(text: error!, color: NSColor.red)
-                }
-            }
-        }
+//        if self.entitiesTableView.selectedRow != -1 {
+//            let localAET    = UserDefaults.standard.string(forKey: "LocalAET")!
+//            let callingAE   = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
+//            let calledAE    = self.entities[self.entitiesTableView.selectedRow]
+//            let client      = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
+//            
+//            client.connect { (ok, error) in
+//                if ok {
+//                    client.echo { (ok, error) in
+//                        if ok {
+//                            self.setEcho(text: "Echo succeeded", color: NSColor.darkGray)
+//                        } else {
+//                            self.setEcho(text: error!, color: NSColor.red)
+//                        }
+//                    }
+//                } else {
+//                    self.setEcho(text: error!, color: NSColor.red)
+//                }
+//            }
+//        }
     }
     
     

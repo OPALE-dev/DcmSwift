@@ -8,9 +8,25 @@
 
 import Cocoa
 
-class CFindRSP: DataTF {
-    override func decodeData(data: Data) -> Bool {
+public class CFindRSP: DataTF {
+    public var queryResults:[Any] = []
+    
+    override public func decodeData(data: Data) -> Bool {
         super.decodeDIMSEStatus(data: data)
+        
+        let commandData = data.subdata(in: 12..<data.count)
+        
+        if commandData.count > 0 {
+            if self.flags == 0x02 {
+                if let dataset = DataSet(withData: commandData, readHeader: false) {
+                    dataset.prefixHeader = false
+                    dataset.forceExplicit = true
+                    if dataset.loadData() {
+                        responseDataset = dataset
+                    }
+                }
+            }
+        }
         
         return true
     }

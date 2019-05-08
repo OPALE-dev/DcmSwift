@@ -41,10 +41,10 @@ class SidebarViewController:    NSViewController,
         self.directories = DataController.shared.fetchDirectories()
         self.remotes = DataController.shared.fetchRemotes()
         
-//        self.reloadRemotesStatus()
-//        _ = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { timer in
-//            self.reloadRemotesStatus()
-//        }
+        self.reloadRemotesStatus()
+        _ = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { timer in
+            self.reloadRemotesStatus()
+        }
         
         // drag and drop
         // Register for the dropped object types we can accept.
@@ -208,6 +208,7 @@ class SidebarViewController:    NSViewController,
         }
         else if let remote = item as? Remote {
             view = outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "DataCell"), owner: self) as? NSTableCellView
+
             if remote.status == 0 {
                 view?.imageView?.image = NSImage(named: NSImage.Name("NSStatusNone"))
             }
@@ -243,13 +244,13 @@ class SidebarViewController:    NSViewController,
                 else if let remote = selectedItem as? Remote {
                     tabViewController.tabView.selectTabViewItem(at: 1)
                     
-                    if let remoteViewController = tabViewController.tabView.selectedTabViewItem?.viewController as? RemoteViewController {
-                        remoteViewController.representedObject = remote
+                    if let svc = tabViewController.tabView.selectedTabViewItem?.viewController as? NSSplitViewController {
+                        if let remoteViewController = svc.children[0] as? RemoteViewController {
+                            remoteViewController.representedObject = remote
+                        }
                     }
                 }
-                
             }
-            
         }
     }
     
@@ -271,7 +272,6 @@ class SidebarViewController:    NSViewController,
         
         if let data = info.draggingPasteboard.data(forType: dataPastebaodrType) {
             if let objectIDs = NSKeyedUnarchiver.unarchiveObject(with: data) as? [URL] {
-                print(objectIDs)
                 for objectID in objectIDs {
                     if let managedObjectID = DataController.shared.context.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: objectID) {
                         if let study = DataController.shared.context.object(with: managedObjectID) as? Study {

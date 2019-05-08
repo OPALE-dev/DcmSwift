@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		4C00FB541FC621BB00E76466 /* Bridge-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 4C00FB521FC6205500E76466 /* Bridge-Header.h */; };
+		4C18DBCA2282062E000D105A /* RemoteQueryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C18DBC92282062E000D105A /* RemoteQueryViewController.swift */; };
 		4C38D7741FA0817D00633A5D /* MainSplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7731FA0817D00633A5D /* MainSplitViewController.swift */; };
 		4C38D7761FA0922300633A5D /* InspectorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7751FA0922300633A5D /* InspectorViewController.swift */; };
 		4C38D7791FA0B9B200633A5D /* FileViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7771FA0B9B200633A5D /* FileViewController.swift */; };
@@ -118,6 +119,7 @@
 		4C8D799A1F989EDD008300E3 /* DataSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3CD47A1F96981300323E8A /* DataSet.swift */; };
 		4C8D799B1F989EDD008300E3 /* DataSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8D79851F97D84A008300E3 /* DataSequence.swift */; };
 		4C8D79AA1F98AB0D008300E3 /* DicomSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8D79A71F98A69B008300E3 /* DicomSpec.swift */; };
+		4C91251F2282E4A500210165 /* OperationsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C91251E2282E4A500210165 /* OperationsController.swift */; };
 		4C99796F1FA71DEF00C90494 /* PixelSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99796E1FA71DEF00C90494 /* PixelSequence.swift */; };
 		4C9979901FA75B3600C90494 /* DicomObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99798F1FA75B3600C90494 /* DicomObject.swift */; };
 		4C9979971FA7720300C90494 /* DicomImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9979961FA7720300C90494 /* DicomImage.swift */; };
@@ -211,6 +213,7 @@
 
 /* Begin PBXFileReference section */
 		4C00FB521FC6205500E76466 /* Bridge-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Bridge-Header.h"; sourceTree = "<group>"; };
+		4C18DBC92282062E000D105A /* RemoteQueryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteQueryViewController.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		4C38D7731FA0817D00633A5D /* MainSplitViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainSplitViewController.swift; sourceTree = "<group>"; };
 		4C38D7751FA0922300633A5D /* InspectorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorViewController.swift; sourceTree = "<group>"; };
 		4C38D7771FA0B9B200633A5D /* FileViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileViewController.swift; sourceTree = "<group>"; };
@@ -309,6 +312,7 @@
 		4C8D79901F989EB1008300E3 /* DcmSwift.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DcmSwift.h; sourceTree = "<group>"; };
 		4C8D79911F989EB1008300E3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4C8D79A71F98A69B008300E3 /* DicomSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomSpec.swift; sourceTree = "<group>"; };
+		4C91251E2282E4A500210165 /* OperationsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationsController.swift; sourceTree = "<group>"; };
 		4C99796E1FA71DEF00C90494 /* PixelSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelSequence.swift; sourceTree = "<group>"; };
 		4C99798F1FA75B3600C90494 /* DicomObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomObject.swift; sourceTree = "<group>"; };
 		4C9979961FA7720300C90494 /* DicomImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomImage.swift; sourceTree = "<group>"; };
@@ -403,6 +407,7 @@
 				4C53D6CE227760690003724F /* RemoteEditViewController.swift */,
 				4C3EF245226E3AAC0062B5A3 /* DataViewController.swift */,
 				4C53D6D02278F3AA0003724F /* RemoteViewController.swift */,
+				4C18DBC92282062E000D105A /* RemoteQueryViewController.swift */,
 				4C3EF25B226E5D650062B5A3 /* ImageViewController.swift */,
 				4C53D6C12274E50D0003724F /* MetadataViewController.swift */,
 				4C53D6BD2274C5190003724F /* CollectionViewItem.swift */,
@@ -416,6 +421,7 @@
 			isa = PBXGroup;
 			children = (
 				4C3EF259226E44D10062B5A3 /* DataController.swift */,
+				4C91251E2282E4A500210165 /* OperationsController.swift */,
 				4C53D6C82275A4EB0003724F /* LoadOperation.swift */,
 				4C53D6DC2278F5F90003724F /* Remote.swift */,
 			);
@@ -918,6 +924,7 @@
 				4C3EF246226E3AAC0062B5A3 /* DataViewController.swift in Sources */,
 				4C3EF25A226E44D10062B5A3 /* DataController.swift in Sources */,
 				4C3EF25C226E5D650062B5A3 /* ImageViewController.swift in Sources */,
+				4C18DBCA2282062E000D105A /* RemoteQueryViewController.swift in Sources */,
 				4C53D6C22274E50D0003724F /* MetadataViewController.swift in Sources */,
 				4C53D6D22278F3AA0003724F /* RemoteViewController.swift in Sources */,
 				4C3EF244226E3AAC0062B5A3 /* AppDelegate.swift in Sources */,
@@ -926,6 +933,7 @@
 				4C53D6BF2274C5190003724F /* CollectionViewItem.swift in Sources */,
 				4C53D6CB2275B3200003724F /* SidebarViewController.swift in Sources */,
 				4C53D712227E1CEE0003724F /* AppDicomError.swift in Sources */,
+				4C91251F2282E4A500210165 /* OperationsController.swift in Sources */,
 				4C53D6C92275A4EB0003724F /* LoadOperation.swift in Sources */,
 				4C53D6CF227760690003724F /* RemoteEditViewController.swift in Sources */,
 			);
