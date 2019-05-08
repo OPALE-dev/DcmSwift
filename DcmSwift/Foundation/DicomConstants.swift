@@ -251,7 +251,7 @@ public struct DicomConstants {
     /**
      C-FIND Root Level
      */
-    public static let StudyRootQueryRetrieveInformationModelFIND = "1.2.840.10008.5.1.4.1.1.1"
+    public static let StudyRootQueryRetrieveInformationModelFIND = "1.2.840.10008.5.1.4.1.2.2.1"
     
     
     /**

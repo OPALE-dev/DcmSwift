@@ -26,6 +26,7 @@ public struct DIMSEStatus {
         case UnableToSupportRequestedTemplate   = 0xC200
         case Cancel                             = 0xFE00
         case Pending                            = 0xFF00
+        case Unknow                             = 0xA800
     }
     
     let status: Status, command: CommandField

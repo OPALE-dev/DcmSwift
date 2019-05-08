@@ -36,11 +36,12 @@ public class AssociationRQ: PDUMessage {
     
     
     override public func decodeData(data: Data) -> Bool {
-        return false
+        return true
     }
     
     
     override public func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage?  {
+        print("handleResponse")
         if let command:UInt8 = data.first {
             if command == PDUType.associationAC.rawValue {
                 if let message = PDUDecoder.shared.receiveAssocMessage(data: data, pduType: PDUType.associationAC, association: self.association) as? PDUMessage {

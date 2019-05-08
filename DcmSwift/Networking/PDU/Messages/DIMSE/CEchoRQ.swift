@@ -24,7 +24,7 @@ public class CEchoRQ: DataTF {
         var pdvData = Data()
         let pdvLength = commandGroupLength + 14
         pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
-        pdvData.append(uint8: association.contextID, bigEndian: true) // Context
+        pdvData.append(uint8: association.presentatinContexts.first!.contextID, bigEndian: true) // Context
         pdvData.append(byte: 0x03) // Flags
         pdvData.append(pdvDataset.toData())
         
