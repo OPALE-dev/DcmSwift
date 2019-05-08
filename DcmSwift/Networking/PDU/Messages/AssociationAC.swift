@@ -54,10 +54,10 @@ public class AssociationAC: PDUMessage {
             return false
         }
         
-        if presentationContext.contextID != self.association?.contextID {
-            SwiftyBeaver.error("Wrong context ID. Abort.")
-            return false
-        }
+//        if presentationContext.contextID != self.association?.contextID {
+//            SwiftyBeaver.error("Wrong context ID. Abort.")
+//            return false
+//        }
         
         if let ats = presentationContext.acceptedTransferSyntax {
             if let assoc = self.association {

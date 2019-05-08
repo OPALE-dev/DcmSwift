@@ -11,7 +11,7 @@ import Foundation
 
 public class PresentationContext {
     public var acceptedTransferSyntax:String?
-    private var abstractSyntax:String!
+    public var abstractSyntax:String!
     public var contextID:UInt8!
     
     private var pcLength:Int16 = 0
@@ -59,7 +59,7 @@ public class PresentationContext {
         
         // TRANSFER SYNTAXES Data
         var tsData = Data()
-        for ts in DicomConstants.transfersSyntaxes {
+        for ts in [DicomConstants.explicitVRLittleEndian] {
             let tsLength = UInt16(ts.data(using: .utf8)!.count)
             tsData.append(uint8: ItemType.transferSyntax.rawValue, bigEndian: true)
             tsData.append(byte: 0x00) // RESERVED

@@ -44,6 +44,8 @@ public class DicomAssociation : NSObject {
         self.calledAET = calledAET
         self.callingAET = callingAET
         self.socket = socket
+        
+        self.userInfo = UserInfo()
 
         initLogger()
     }
@@ -67,7 +69,7 @@ public class DicomAssociation : NSObject {
             SwiftyBeaver.info("  -> Local Max PDU: \(self.maxPDULength)")
             
             SwiftyBeaver.info("  -> Presentation Contexts:")
-            SwiftyBeaver.info("    -> Context ID: \(self.contextID)")
+            //SwiftyBeaver.info("    -> Context ID: \(self.contextID)")
             SwiftyBeaver.info("      -> Abstract Syntax: \(self.abstractSyntax)")
             SwiftyBeaver.info("      -> Proposed Transfer Syntax(es): \(DicomConstants.transfersSyntaxes)")
             
@@ -126,8 +128,6 @@ public class DicomAssociation : NSObject {
     
     public func write(message:PDUMessage, readResponse:Bool = false, completion: PDUCompletion) {
         do {
-            //_ = try self.socket.isReadableOrWritable(waitForever: true)
-            
             let data = message.data()
             try socket.write(from: data)
             
@@ -143,8 +143,6 @@ public class DicomAssociation : NSObject {
             let response = self.readResponse(forMessage: message, completion: completion)
             
             completion(true, response, nil)
-            
-            
         } catch let e {
             print(e)
             completion(false, nil, nil)
@@ -165,7 +163,14 @@ public class DicomAssociation : NSObject {
                 //let (r, _) = try self.socket.isReadableOrWritable()
                 // we read only if the buffer is empty
                 if readData.count == 0 {
-                    let _ = try socket.read(into: &readData)
+                    print("will read")
+                    let readSize = try socket.read(into: &readData)
+                    print("did read")
+                    
+                    if readSize == 0 {
+                        isPending = false
+                        break
+                    }
                 }
                 
                 // Check for PDU data
