@@ -6,7 +6,9 @@
 //  Copyright © 2019 Read-Write.fr. All rights reserved.
 //
 
-import Cocoa
+import Foundation
+import Socket
+
 
 public class DicomError: NSObject {
     public enum ErrorLevel:Int {
@@ -21,7 +23,7 @@ public class DicomError: NSObject {
         case custom     = 0
         case general    = 1
         case network    = 2
-        
+        case socket     = 3
     }
 
     public var errorCode:Int!
@@ -29,16 +31,22 @@ public class DicomError: NSObject {
     public var errorRealm:ErrorRealm!
     public var customDescription:String?
     
-    public init(code:Int, level:ErrorLevel, real:ErrorRealm = .general) {
+    public init(code:Int, level:ErrorLevel, realm:ErrorRealm = .general) {
         self.errorCode = code
         self.errorLevel = level
-        self.errorRealm = real
+        self.errorRealm = realm
     }
     
     
-    public convenience init(description:String, level:ErrorLevel, real:ErrorRealm = .general) {
-        self.init(code: 0, level: level, real: real)
+    public convenience init(description:String, level:ErrorLevel, realm:ErrorRealm = .general) {
+        self.init(code: 0, level: level, realm: realm)
         self.customDescription = description
+    }
+    
+    
+    public convenience init(socketError error:Socket.Error) {
+        self.init(code: Int(error.errorCode), level: .error, realm: .socket)
+        self.customDescription = error.description
     }
     
     
@@ -105,7 +113,7 @@ public class DicomError: NSObject {
                 return "Unknow error"
             }
         }
-        else if self.errorRealm == .custom {
+        else if self.errorRealm == .custom || self.errorRealm == .socket {
             return self.customDescription ?? "Unknow error"
         }
         

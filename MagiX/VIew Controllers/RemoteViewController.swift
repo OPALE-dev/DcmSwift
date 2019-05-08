@@ -9,17 +9,51 @@
 import Cocoa
 import DcmSwift
 
-class RemoteViewController: NSViewController {
+class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     @IBOutlet weak var queryTableView: NSTableView!
     
+    var queryOperation:LoadOperation?
+    
+    var studies:[Any] = []
     var remote:Remote!
+    var queryDataset:DataSet = DataSet()
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do view setup here.
+        
+        let studyDate = DateRange(startDate: Date(),
+                                  endDate: nil,
+                                  rangeType: .afterDate).description
+        
+        queryDataset.prefixHeader = false
+        
+        _ = queryDataset.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
+        _ = queryDataset.set(value: "", forTagName: "PatientID")
+        _ = queryDataset.set(value: "", forTagName: "PatientName")
+        _ = queryDataset.set(value: "", forTagName: "PatientBirthDate")
+        _ = queryDataset.set(value: "", forTagName: "AccessionNumber")
+        _ = queryDataset.set(value: "", forTagName: "NumberOfStudyRelatedInstances")
+        _ = queryDataset.set(value: "", forTagName: "ModalitiesInStudy")
+        _ = queryDataset.set(value: "", forTagName: "StudyDescription")
+        _ = queryDataset.set(value: "", forTagName: "StudyInstanceUID")
+        _ = queryDataset.set(value: studyDate, forTagName: "StudyDate")
+        _ = queryDataset.set(value: "", forTagName: "StudyTime")
+
+        NotificationCenter.default.addObserver(self, selector: #selector(queryDidChange(n:)), name: .queryDidChange, object: nil)
     }
     
+    
+    
+    @objc func queryDidChange(n:Notification) {
+        if let d = n.object as? DataSet {
+            self.queryDataset = d
+            
+            print(self.queryDataset)
+            
+            query()
+        }
+    }
     
     
     override var representedObject: Any? {
@@ -35,37 +69,117 @@ class RemoteViewController: NSViewController {
     
     
     private func query() {
-        let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
-        let callingAE = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
-        
-        if let calledAE = self.remote.dicomEntity {
-            let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
-
-            client.connect { (ok, error) in
-                if ok {
-                    let dataset = DataSet()
-                    dataset.prefixHeader = false
-                    _ = dataset.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
-                    _ = dataset.set(value: "", forTagName: "PatientID")
-                    _ = dataset.set(value: "", forTagName: "ModalitiesInStudy")
-                    _ = dataset.set(value: "", forTagName: "StudyDescription")
-                    _ = dataset.set(value: "", forTagName: "StudyDate")
+        if self.queryOperation == nil {
+            self.queryOperation = LoadOperation(parentContext: DataController.shared.context)
+            
+            self.queryOperation?.addExecutionBlock {
+                let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
+                let callingAE = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
+                
+                if let calledAE = self.remote.dicomEntity {
+                    let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
                     
-                    print(dataset)
-                    
-                    client.find(dataset) { (okEcho, receivedMessage, errorEcho) in
-                        if okEcho {
-                            print("Query OK")
+                    client.connect { (ok, error) in
+                        if ok {
+                            let dataset = self.queryDataset
+                            
+                            client.find(dataset) { (okFind, receivedMessage, findError) in
+                                if okFind {
+                                    if let findRSP = receivedMessage as? CFindRSP {
+                                        self.studies = findRSP.queryResults
+                                        
+                                        self.queryTableView.reloadData()
+                                    }
+                                } else {
+                                    if let alert = findError?.alert() {
+                                        alert.runModal()
+                                    }
+                                }
+                            }
                         } else {
-                            if let alert = errorEcho?.alert() {
+                            if let alert = error?.alert() {
                                 alert.runModal()
                             }
                         }
                     }
-                } else {
-                    print("Connection error: \(error)")
                 }
             }
         }
+        
+        if let operation = self.queryOperation {
+            if operation.isExecuting {
+                
+            }
+            else {
+
+            }
+        }
     }
+    
+    
+    func numberOfRows(in tableView: NSTableView) -> Int {
+        return self.studies.count
+    }
+    
+    
+    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+        var view: NSTableCellView?
+        
+        let df = DateFormatter()
+        df.dateFormat = "yyyy/MM/dd HH:mm:ss"
+        
+        if let study = self.studies[row] as? [String:[String:Any]] {
+            if tableColumn?.title == "Name" {
+                view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
+                if let name = study["00100010"] {
+                    view?.textField?.stringValue = name["value"] as! String
+                }
+            }
+            else if tableColumn?.title == "ID" {
+                view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
+                if let name = study["00100020"] {
+                    view?.textField?.stringValue = name["value"] as! String
+                }
+            }
+            else if tableColumn?.title == "Birthdate" {
+                view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
+                if let name = study["00100030"] {
+                    view?.textField?.stringValue = name["value"] as! String
+                }
+            }
+            else if tableColumn?.title == "Description" {
+                view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
+                if let name = study["00081030"] {
+                    view?.textField?.stringValue = name["value"] as! String
+                }
+            }
+            else if tableColumn?.title == "Modalities" {
+                view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
+                if let name = study["00080061"] {
+                    view?.textField?.stringValue = name["value"] as! String
+                }
+            }
+            else if tableColumn?.title == "Date" {
+                view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
+                if let name = study["00080020"] {
+                    view?.textField?.stringValue = name["value"] as! String
+                }
+            }
+            else if tableColumn?.title == "Accession" {
+                view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
+                if let name = study["00080050"] {
+                    view?.textField?.stringValue = name["value"] as! String
+                }
+            }
+            else if tableColumn?.title == "#" {
+                view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
+                if let name = study["00201208"] {
+                    view?.textField?.stringValue = name["value"] as! String
+                }
+            }
+        }
+        
+        return view
+    }
+
 }

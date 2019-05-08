@@ -11,6 +11,10 @@ import SwiftyBeaver
 import Socket
 
 
+public typealias ConnectCompletion = (_ ok:Bool, _ error:DicomError?) -> Void
+public typealias PDUCompletion = (_ ok:Bool, _ response:PDUMessage?, _ error:DicomError?) -> Void
+
+
 public class DicomAssociation : NSObject {
     private static var lastContextID:UInt8 = 1
     
@@ -33,7 +37,7 @@ public class DicomAssociation : NSObject {
     private var socket:Socket!
     public var protocolVersion:Int = 1
     public var contextID:UInt8 = 1
-    
+    var isPending:Bool = false
     
     
     public init(_ callingAET:DicomEntity, calledAET:DicomEntity, socket:Socket) {
@@ -45,7 +49,7 @@ public class DicomAssociation : NSObject {
     }
     
     
-    public func request(sop:String, completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void) {
+    public func request(sop:String, completion: PDUCompletion) {
         self.sop = sop
         self.contextID = self.getNextContextID()
         self.presentatinContext = PresentationContext(serviceObjectProvider: sop, contextID: self.contextID)
@@ -117,8 +121,10 @@ public class DicomAssociation : NSObject {
     }
     
     
-    public func write(message:PDUMessage, readResponse:Bool = false, completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void) {
+    public func write(message:PDUMessage, readResponse:Bool = false, completion: PDUCompletion) {
         do {
+            //_ = try self.socket.isReadableOrWritable(waitForever: true)
+            
             let data = message.data()
             try socket.write(from: data)
             
@@ -135,6 +141,7 @@ public class DicomAssociation : NSObject {
             
             completion(true, response, nil)
             
+            
         } catch let e {
             print(e)
             completion(false, nil, nil)
@@ -144,42 +151,34 @@ public class DicomAssociation : NSObject {
     
     
     
-    public func readResponse(forMessage message:PDUMessage, completion: (_ accepted:Bool, _ receivedMessage:PDUMessage?, _ error:DicomError?) -> Void) -> PDUMessage? {
-        print("readResponse")
+    public func readResponse(forMessage message:PDUMessage, completion: PDUCompletion) -> PDUMessage? {
         var response:PDUMessage? = nil
         var readData = Data()
-        var isPending = true
+        
+        isPending = true
         
         do {
-            while isPending == true {
-                
+            repeat {
+                //let (r, _) = try self.socket.isReadableOrWritable()
                 // we read only if the buffer is empty
                 if readData.count == 0 {
                     let _ = try socket.read(into: &readData)
                 }
                 
-                print(readData.toHex())
-                
                 // Check for PDU data
-                if readData.first == 0x02 || readData.first == 0x04 {
+                if let f = readData.first, PDUType.isSupported(f) {
                     let pduLength = readData.subdata(in: 2..<6).toInt32().bigEndian
                     var dataLength = readData.count
                     
                     // Reassemble data fragments if needed for DATA-TF messages
-                    while dataLength < pduLength {
+                    while pduLength > 4 && dataLength < pduLength {
                         // read more if PDU is incomplete
-                        try _ = socket.read(into: &readData)
+                        let _ = try socket.read(into: &readData)
                         dataLength = readData.count
                     }
                     
                     var messageData = Data()
                     let messageLength = Int(pduLength + 6)
-                    
-                    print("fullLength:  \(dataLength)")
-                    print("pduLength:   \(pduLength)")
-                    print("messageLength:   \(messageLength)")
-                    print("dataLength:  \(dataLength)")
-                    
                     
                     // now if we have to much data, we handle this first message
                     if dataLength > pduLength {
@@ -192,25 +191,28 @@ public class DicomAssociation : NSObject {
                         readData = Data()
                     }
                     
-                    print("messageData: \(messageData.toHex())")
-                    
                     // read message and check pending status
                     if let r = message.handleResponse(data: messageData, completion: completion) {
+                        response = r
+                        
+                        if let cFinRQ = message as? CFindRQ {
+                            if let cFinRSP = response as? CFindRSP {
+                                cFinRSP.queryResults = cFinRQ.queryResults
+                            }
+                        }
+                        
                         if let s = r.dimseStatus {
                             if s.status == DIMSEStatus.Status.Pending {
                                 isPending = true
                             }
                             else if s.status == DIMSEStatus.Status.Success {
                                 isPending = false
-                                
-                                
+                                break
                             }
                         }
-                        response = r
                     }
                 }
-                
-            }
+            } while (isPending == true)
             
         } catch let e {
             print(e)
@@ -239,7 +241,7 @@ public class DicomAssociation : NSObject {
     
     
     private func getNextContextID() -> UInt8 {
-        if DicomAssociation.lastContextID == 255 {
+        if DicomAssociation.lastContextID == 127 {
             DicomAssociation.lastContextID = 1
         } else {
             DicomAssociation.lastContextID += 1

@@ -8,7 +8,7 @@
 
 import Foundation
 
-class CEchoRSP: DataTF {
+public class CEchoRSP: DataTF {
     public override func data() -> Data {
         return Data()
     }

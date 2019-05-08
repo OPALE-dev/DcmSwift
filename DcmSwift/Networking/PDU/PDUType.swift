@@ -16,4 +16,13 @@ public enum PDUType: UInt8 {
     case releaseRQ      = 0x05
     case releaseRP      = 0x06
     case abort          = 0x07
+    
+    public static func isSupported(_ pduType:UInt8) -> Bool {
+        switch pduType {
+        case 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07:
+            return true
+        default:
+            return false
+        }
+    }
 }
