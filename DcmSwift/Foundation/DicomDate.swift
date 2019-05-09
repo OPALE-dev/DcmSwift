@@ -38,14 +38,14 @@ extension Date {
         let df = DateFormatter()
         
         // DICOM 3.0 format
-        if dicomDate.count == 8 {
+        if dicomDate.count == 8 {// 8 bytes fixed
             df.dateFormat = "yyyyMMdd"
             if let d = df.date(from: dicomDate) {
                 date = d
             }
         }
         // ACR-NEMA 2.0 format
-        else if dicomDate.count == 10 {
+        else if dicomDate.count == 10 {// 10 bytes fixed (2 periods)
             df.dateFormat = "yyyy.MM.dd"
             date = df.date(from: dicomDate)!
         }
@@ -71,31 +71,29 @@ extension Date {
     public init?(dicomTime:String) {
         let df      = DateFormatter()
         var date    = Date()
-        
+        var format  = "HHmmss.SSSSS"// DICOM 3.0 format
+
         // ACR-NEMA 2.0 format
         if dicomTime.contains(":") {
-            if dicomTime.count == 8 {
-                df.dateFormat = "HH:mm:ss"
-                date = df.date(from: dicomTime)!
-            } else {
-                return nil
-            }
+            format = "HH:mm:ss.SSSSS"
         }
-        // DICOM 3.0 format
+
+        // The date string will truncate the format string
+        // thanks to the length of the string
+        let index = format.index(format.startIndex, offsetBy: dicomTime.count)
+        let remainingFormat = format[..<index]
+
+        print("Remaining : " + remainingFormat)
+
+        df.dateFormat = String(remainingFormat)
+        df.locale = .current
+        if let d = df.date(from: dicomTime) {
+            date = d
+        }
         else {
-            if dicomTime.count == 6 {
-                df.dateFormat = "HHmmss"
-                df.locale = .current
-                if let d = df.date(from: dicomTime) {
-                    date = d
-                }
-            } else {
-                return nil
-            }
+            return nil
         }
-        
-        // TODO: DICOM `FRAC` format
-    
+
         self.init(timeInterval:0, since:date)
     }
     

@@ -151,7 +151,7 @@ class DcmSwiftTests: XCTestCase {
         let ds1 = "143250"
         let dd1 = Date(dicomTime: ds1)
         let desc1 = dd1!.description(with: .current)
-        let r1 = "Saturday 1 January 2000 at 14:32:50 Central European Standard Time"
+        let r1 = "samedi 1 janvier 2000 à 14:32:50 heure normale d’Europe centrale"
         
         assert(desc1 == r1)
         
@@ -159,7 +159,7 @@ class DcmSwiftTests: XCTestCase {
         let ds2 = "14:32:50"
         let dd2 = Date(dicomTime: ds2)
         let desc2 = dd2?.description(with: .current)
-        let r2 = "Saturday 1 January 2000 at 14:32:50 Central European Standard Time"
+        let r2 = "samedi 1 janvier 2000 à 14:32:50 heure normale d’Europe centrale"
         
         assert(desc2 == r2)
     }
