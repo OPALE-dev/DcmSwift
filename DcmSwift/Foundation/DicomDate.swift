@@ -34,35 +34,26 @@ extension Date {
      
      */
     public init?(dicomDate:String) {
-        var date:Date? = nil
         let df = DateFormatter()
-        
-        // DICOM 3.0 format
-        if dicomDate.count == 8 {// 8 bytes fixed
-            df.dateFormat = "yyyyMMdd"
-            if let d = df.date(from: dicomDate) {
-                date = d
-            }
-        }
+        df.dateFormat = "yyyyMMdd"// DICOM 3.0 format
+
         // ACR-NEMA 2.0 format
-        else if dicomDate.count == 10 {// 10 bytes fixed (2 periods)
+        if dicomDate.count == 10 {// 10 bytes fixed (2 periods)
             df.dateFormat = "yyyy.MM.dd"
-            date = df.date(from: dicomDate)!
+        }
+
+        if let date = df.date(from: dicomDate) {
+            self.init(timeInterval:0, since:date)
         }
         else {
             return nil
         }
-        
-        if let dt = date {
-            self.init(timeInterval:0, since:dt)
-        }
-        
-        return nil
     }
     
     
     /**
      Format DICOM Time
+     Must be between 2 and 12 characters
      
      - parameter dicomTime: DICOM time string (TM)
      - returns: Date object or nil if formatting fails
@@ -82,8 +73,6 @@ extension Date {
         // thanks to the length of the string
         let index = format.index(format.startIndex, offsetBy: dicomTime.count)
         let remainingFormat = format[..<index]
-
-        print("Remaining : " + remainingFormat)
 
         df.dateFormat = String(remainingFormat)
         df.locale = .current
@@ -127,6 +116,7 @@ extension Date {
 
     /**
      Format DICOM DateTime
+     Must be between 4 and 25 characters
      
      - parameter dicomDateTime: DICOM datetime string (DT)
      - returns: Date object or nil if formatting fails
@@ -134,11 +124,11 @@ extension Date {
      */
     public init?(dicomDateTime:String) {
         var dateTime:Date? = nil
-        
-        if dicomDateTime.count >= 14 {
-            if dicomDateTime.count == 14 {
+
+        if dicomDateTime.count >= 20 {
+            if dicomDateTime.count == 20 {
                 let ds = String(dicomDateTime.prefix(6))
-                let ts = String(dicomDateTime.suffix(4))
+                let ts = String(dicomDateTime.suffix(12))
                 
                 if let date = Date(dicomDate: ds) {
                     if let time = Date(dicomTime: ts) {
@@ -149,9 +139,7 @@ extension Date {
                 }
             }
         }
-        
-        // TODO: DICOM `FRAC` format
-        
+
         if let dt = dateTime {
             self.init(timeInterval:0, since:dt)
         }
@@ -252,6 +240,24 @@ public class DateRange : CustomStringConvertible {
         case priorDateTime
         case afterDateTime
         case betweenDateTime
+    }
+
+    public enum DateRange {
+        case prior
+        case after
+        case between
+    }
+
+    public enum TimeRange {
+        case prior
+        case after
+        case between
+    }
+
+    public enum DateTimeRange {
+        case prior
+        case after
+        case between
     }
     
     
@@ -477,3 +483,4 @@ extension Date {
         return dayAfter.month != month
     }
 }
+
