@@ -55,6 +55,9 @@ public class PDUDecoder {
             else if commandField == .C_FIND_RSP {
                 return CFindRSP(data: data, pduType: pduType, commandField:commandField, association: association)
             }
+            else if commandField == .C_STORE_RSP {
+                return CStoreRSP(data: data, pduType: pduType, commandField:commandField, association: association)
+            }
         }
         return nil
     }

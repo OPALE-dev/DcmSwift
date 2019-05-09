@@ -8,8 +8,7 @@
 
 import Foundation
 
-
-public class DicomService : NSObject {
+public class DicomService: NSObject {
     public var localAET:String = "DCMSWIFT"
     
     

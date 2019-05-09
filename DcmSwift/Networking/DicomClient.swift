@@ -113,7 +113,7 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    public func store(_ files:Array<DicomFile>, completion: PDUCompletion)  {
+    public func store(_ files:[String], completion: PDUCompletion)  {
         if !self.isConnected {
             completion(false, nil, DicomError(description: "Socket is not connected, please connect first.",
                                               level: .error,
@@ -129,13 +129,12 @@ public class DicomClient : DicomService, StreamDelegate {
         association.request() { (accepted, receivedMessage, error) in
             if accepted {
                 for f in files {
-                    
+                    if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_STORE_RQ, association: association) as? CStoreRQ {
+                        message.dicomFile = DicomFile(forPath: f)
+                        association.write(message: message, readResponse: true, completion: completion)
+                    }
+
                 }
-//                if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_FIND_RQ, association: association) as? CFindRQ {
-//                    message.queryDataset = queryDataset
-//
-//                    association.write(message: message, readResponse: true, completion: completion)
-//                }
                 
                 association.close()
             }

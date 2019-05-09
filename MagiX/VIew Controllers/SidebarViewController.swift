@@ -42,11 +42,11 @@ class SidebarViewController:    NSViewController,
         self.directories = DataController.shared.fetchDirectories()
         self.remotes = DataController.shared.fetchRemotes()
         
-//        self.reloadRemotesStatus()
-//        _ = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { timer in
-//            self.reloadRemotesStatus()
-//        }
-//        
+        self.reloadRemotesStatus()
+        _ = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { timer in
+            self.reloadRemotesStatus()
+        }
+        
         // drag and drop
         // Register for the dropped object types we can accept.
         self.directoriesOutlineView.registerForDraggedTypes([directoryPastebaodrType, dataPastebaodrType])
@@ -324,6 +324,9 @@ class SidebarViewController:    NSViewController,
         if (item as? PrivateDirectory) != nil {
             retVal = NSDragOperation.copy
         }
+        else if (item as? Remote) != nil {
+            retVal = NSDragOperation.copy
+        }
 
         return retVal
     }
@@ -339,6 +342,10 @@ class SidebarViewController:    NSViewController,
                         if let study = DataController.shared.context.object(with: managedObjectID) as? Study {
                             if let privateDirectory = item as? PrivateDirectory {
                                 privateDirectory.addToStudies(study)
+                                retVal = true
+                            }
+                            else if let remote = item as? Remote {
+                                self.storeStudy(study, toRemote: remote)
                                 retVal = true
                             }
                         }
@@ -368,6 +375,7 @@ class SidebarViewController:    NSViewController,
             view?.progressBar.doubleValue = Double(laodOperation.percents)
         }
         else if let _ = OperationsController.shared.operationQueue.operations[row] as? FindOperation {
+            view?.progressBar.isIndeterminate = true
             view?.textField?.stringValue = "Find studies…"
         }
         
@@ -421,5 +429,57 @@ class SidebarViewController:    NSViewController,
         }
         
         return self.directoriesOutlineView.selectedRow
+    }
+    
+    private func storeStudy(_ study: Study, toRemote remote: Remote) {
+        let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
+        let callingAE = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
+        
+        if let calledAE = remote.dicomEntity {
+            let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
+            
+            client.connect { (ok, error) in
+                if ok {
+                    var files:[String] = []
+                    
+                    study.series?.forEach({ s in
+                        if let serie = s as? Serie {
+                            serie.instances?.forEach({ i in
+                                if let instance = i as? Instance {
+                                    if let filePath = instance.filePath {
+                                        files.append(filePath)
+                                    }
+                                }
+                            })
+                        }
+                    })
+                    
+                    client.store(files) { (okFind, receivedMessage, findError) in
+                        if okFind {
+                            if let storeRSP = receivedMessage as? CStoreRSP {
+                                
+                                DispatchQueue.main.async {
+
+                                }
+                            }
+                        } else {
+                            if let alert = findError?.alert() {
+                                DispatchQueue.main.async {
+
+                                    alert.runModal()
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    if let alert = error?.alert() {
+                        DispatchQueue.main.async {
+
+                            alert.runModal()
+                        }
+                    }
+                }
+            }
+        }
     }
 }
