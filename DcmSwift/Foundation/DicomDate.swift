@@ -37,6 +37,12 @@ extension Date {
         let df = DateFormatter()
         df.dateFormat = "yyyyMMdd"// DICOM 3.0 format
 
+        // 8 or 10 bytes fixed
+        if dicomDate.count != 8 && dicomDate.count != 10 {
+            print("Wrong length of string")
+            return nil
+        }
+
         // ACR-NEMA 2.0 format
         if dicomDate.count == 10 {// 10 bytes fixed (2 periods)
             df.dateFormat = "yyyy.MM.dd"
@@ -61,29 +67,29 @@ extension Date {
      */
     public init?(dicomTime:String) {
         let df      = DateFormatter()
-        var date    = Date()
         var format  = "HHmmss.SSSSS"// DICOM 3.0 format
 
         // ACR-NEMA 2.0 format
         if dicomTime.contains(":") {
             format = "HH:mm:ss.SSSSS"
         }
+        else if dicomTime.count % 2 == 1 {
+            print("Length of DICOM Time cannot be odd")
+            return nil
+        }
 
         // The date string will truncate the format string
         // thanks to the length of the string
-        let index = format.index(format.startIndex, offsetBy: dicomTime.count)
-        let remainingFormat = format[..<index]
+        let remainingFormat = String(format.prefix(dicomTime.count))
 
         df.dateFormat = String(remainingFormat)
         df.locale = .current
-        if let d = df.date(from: dicomTime) {
-            date = d
+        if let dt = df.date(from: dicomTime) {
+            self.init(timeInterval:0, since:dt)
         }
         else {
             return nil
         }
-
-        self.init(timeInterval:0, since:date)
     }
     
     
@@ -100,7 +106,9 @@ extension Date {
         var dateTime:Date? = nil
         
         if let date = Date(dicomDate: dicomDate) {
+            print(date)
             if let time = Date(dicomTime: dicomTime) {
+                print(time)
                 if let dt = Date.combineDateWithTime(date: date, time: time) {
                     dateTime = dt
                 }
@@ -484,3 +492,6 @@ extension Date {
     }
 }
 
+//enum WrongLength: Error {
+//    case runtimeError(String)
+//}

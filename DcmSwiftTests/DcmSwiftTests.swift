@@ -145,6 +145,22 @@ class DcmSwiftTests: XCTestCase {
         
         assert(dd1 == "20120124")
     }
+
+    public func testDicomDateWrongLength() {
+        // Must be 8 or 10 bytes
+        var ds = ""
+        for i in 0...11 {
+            if i == 8 || i == 10 {
+                ds += "1"
+                continue
+            }
+
+            let dd = Date(dicomDate: ds)
+            assert(dd == nil)
+
+            ds += "1"
+        }
+    }
     
     
     public func testReadDicomTime() {
@@ -163,7 +179,49 @@ class DcmSwiftTests: XCTestCase {
         
         assert(desc2 == r2)
     }
-    
+
+
+    public func testReadDicomTimeMidnight() {
+        let ds1 = "240000"
+        let dd1 = Date(dicomTime: ds1)
+
+        assert(dd1 == nil)
+
+        // ACR-NEMA time format
+        let ds2 = "24:00:00"
+        let dd2 = Date(dicomTime: ds2)
+
+        assert(dd2 == nil)
+    }
+
+
+    public func testDicomTimeWrongLength() {
+        var ds1 = "1"
+        for _ in 0...3 {
+            let dd1 = Date(dicomTime: ds1)
+            assert(dd1 == nil)
+            ds1 += "11"
+        }
+    }
+
+    public func testDicomTimeWeirdTime() {
+        let ds1 = "236000"
+        let dd1 = Date(dicomTime: ds1)
+
+        assert(dd1 == nil)
+
+        let ds2 = "235099"
+        let dd2 = Date(dicomTime: ds2)
+
+        assert(dd2 == nil)
+
+
+
+        let ds3 = "255009"
+        let dd3 = Date(dicomTime: ds3)
+
+        assert(dd3 == nil)
+    }
     
     public func testWriteDicomTime() {
         let dateFormatter = DateFormatter()
@@ -175,7 +233,7 @@ class DcmSwiftTests: XCTestCase {
         
         assert(dd1 == "143250")
     }
-    
+
     
     public func testCombineDateAndTime() {
         let ds1 = "20001201"
