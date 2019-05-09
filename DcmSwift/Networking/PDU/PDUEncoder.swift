@@ -63,6 +63,12 @@ class PDUEncoder {
             else if commandField == .C_FIND_RSP {
                 encodable = CFindRSP(pduType: pduType, commandField:commandField, association: association)
             }
+            else if commandField == .C_STORE_RQ {
+                encodable = CStoreRQ(pduType: pduType, commandField:commandField, association: association)
+            }
+            else if commandField == .C_STORE_RSP {
+                encodable = CStoreRSP(pduType: pduType, commandField:commandField, association: association)
+            }
             else {
                  encodable = DataTF(pduType: pduType, commandField:commandField, association: association)
             }

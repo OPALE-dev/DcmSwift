@@ -6,7 +6,7 @@
 //  Copyright © 2019 Read-Write.fr. All rights reserved.
 //
 
-import Cocoa
+import Foundation
 
 public class CFindRSP: DataTF {
     public var queryResults:[Any] = []

@@ -126,6 +126,9 @@
 		4C99796F1FA71DEF00C90494 /* PixelSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99796E1FA71DEF00C90494 /* PixelSequence.swift */; };
 		4C9979901FA75B3600C90494 /* DicomObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99798F1FA75B3600C90494 /* DicomObject.swift */; };
 		4C9979971FA7720300C90494 /* DicomImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9979961FA7720300C90494 /* DicomImage.swift */; };
+		4CA0717A2283693B006227E1 /* CStoreRQ.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA071792283693B006227E1 /* CStoreRQ.swift */; };
+		4CA0717C22836946006227E1 /* CStoreRSP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA0717B22836946006227E1 /* CStoreRSP.swift */; };
+		4CA0717E22836BC9006227E1 /* DicomServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA0717D22836BC9006227E1 /* DicomServer.swift */; };
 		4CA405211FA67DF3006F8053 /* DcmSwiftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA405201FA67DF3006F8053 /* DcmSwiftTests.swift */; };
 		4CA405231FA67DF3006F8053 /* DcmSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8D798E1F989EB1008300E3 /* DcmSwift.framework */; };
 		4CB9C9A11FB248C000C5356B /* ExportViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB9C9A01FB248C000C5356B /* ExportViewController.swift */; };
@@ -323,6 +326,9 @@
 		4C99798F1FA75B3600C90494 /* DicomObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomObject.swift; sourceTree = "<group>"; };
 		4C9979961FA7720300C90494 /* DicomImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomImage.swift; sourceTree = "<group>"; };
 		4C9979991FA78EF800C90494 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		4CA071792283693B006227E1 /* CStoreRQ.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CStoreRQ.swift; sourceTree = "<group>"; };
+		4CA0717B22836946006227E1 /* CStoreRSP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CStoreRSP.swift; sourceTree = "<group>"; };
+		4CA0717D22836BC9006227E1 /* DicomServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomServer.swift; sourceTree = "<group>"; };
 		4CA36BFB2256922F0024313B /* MyPlayground.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = MyPlayground.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		4CA4051E1FA67DF3006F8053 /* DcmSwiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DcmSwiftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CA405201FA67DF3006F8053 /* DcmSwiftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DcmSwiftTests.swift; sourceTree = "<group>"; };
@@ -510,6 +516,8 @@
 				4C53D70A227CD0770003724F /* CEchoRSP.swift */,
 				4C53D705227CB8B20003724F /* CFindRQ.swift */,
 				4C53D70F227DD0880003724F /* CFindRSP.swift */,
+				4CA071792283693B006227E1 /* CStoreRQ.swift */,
+				4CA0717B22836946006227E1 /* CStoreRSP.swift */,
 			);
 			path = DIMSE;
 			sourceTree = "<group>";
@@ -640,8 +648,9 @@
 			children = (
 				4C53D6E0227B5AC30003724F /* PDU */,
 				4CD0BEE32242A63A0024C357 /* DicomAssociation.swift */,
-				4CECD64C22415EE90087AF0D /* DicomClient.swift */,
 				4CECD64E22415F5A0087AF0D /* DicomService.swift */,
+				4CECD64C22415EE90087AF0D /* DicomClient.swift */,
+				4CA0717D22836BC9006227E1 /* DicomServer.swift */,
 				4CD0BEE52242B15B0024C357 /* DicomEntity.swift */,
 			);
 			path = Networking;
@@ -971,6 +980,7 @@
 				4C8D79991F989EDD008300E3 /* DicomData.swift in Sources */,
 				4C53D6EF227C8B940003724F /* CommandField.swift in Sources */,
 				4C8D79961F989EDD008300E3 /* DataItem.swift in Sources */,
+				4CA0717E22836BC9006227E1 /* DicomServer.swift in Sources */,
 				4C5BF0911FABB4730051F4FE /* DicomString.swift in Sources */,
 				4C53D6FC227CB3B00003724F /* ReleaseRP.swift in Sources */,
 				4C9979901FA75B3600C90494 /* DicomObject.swift in Sources */,
@@ -984,9 +994,11 @@
 				4C53D6F8227CB34D0003724F /* ReleaseRQ.swift in Sources */,
 				4C53D708227CBA040003724F /* PDUEncoder.swift in Sources */,
 				4C99796F1FA71DEF00C90494 /* PixelSequence.swift in Sources */,
+				4CA0717C22836946006227E1 /* CStoreRSP.swift in Sources */,
 				4C53D6ED227C42030003724F /* ItemType.swift in Sources */,
 				4C9979971FA7720300C90494 /* DicomImage.swift in Sources */,
 				4CD0BEE8224401670024C357 /* DicomConstants.swift in Sources */,
+				4CA0717A2283693B006227E1 /* CStoreRQ.swift in Sources */,
 				4C53D6E6227B69BB0003724F /* PresentationContext.swift in Sources */,
 				4C53D70B227CD0770003724F /* CEchoRSP.swift in Sources */,
 				4C53D6E2227B5BB50003724F /* ApplicationContext.swift in Sources */,

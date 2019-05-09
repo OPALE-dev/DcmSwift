@@ -545,7 +545,7 @@ public func initLogger() {
     console.format  = format
     
     if SwiftyBeaver.destinations.count == 0 {
-//        SwiftyBeaver.addDestination(console)
-//        SwiftyBeaver.addDestination(file)
+        SwiftyBeaver.addDestination(console)
+        SwiftyBeaver.addDestination(file)
     }
 }

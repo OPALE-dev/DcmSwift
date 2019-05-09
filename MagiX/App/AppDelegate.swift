@@ -7,6 +7,7 @@
 //
 
 import Cocoa
+import DcmSwift
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -22,7 +23,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
-        
+//        let server = DicomServer(port: 11112, localAET: "MAGIX")
+//        Thread.detachNewThread {
+//            server.run()
+//        }
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
