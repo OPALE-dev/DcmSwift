@@ -46,52 +46,52 @@ public class AssociationAC: PDUMessage {
         // parse presentation context
         SwiftyBeaver.info("  -> Presentation Contexts:")
         offset = Int(applicationContext.length) + 8
-        subdata = subdata.subdata(in: offset..<subdata.count)
+        
+        var pcType = subdata.subdata(in: offset..<offset + 1).toInt8()
         offset = 0
         
-        guard let presentationContext = PresentationContext(data: subdata) else {
-            SwiftyBeaver.error("Missing presentation context. Abort.")
-            return false
-        }
-        
-//        if presentationContext.contextID != self.association?.contextID {
-//            SwiftyBeaver.error("Wrong context ID. Abort.")
-//            return false
-//        }
-        
-        if let ats = presentationContext.acceptedTransferSyntax {
-            if let assoc = self.association {
-                if !assoc.checkTransferSyntax(ats) {
-                    SwiftyBeaver.error("Unsupported accepted Transfer Syntax. Abort.")
-                    return false
-                }
+        while pcType == ItemType.acPresentationContext.rawValue {
+            offset += 2
+            
+            let pcLength = subdata.subdata(in: offset..<offset + 2).toInt16().bigEndian
+            offset += 2
+            
+            let pcData = subdata.subdata(in: offset-4..<offset-4+Int(pcLength))
+            
+            print(pcData.toHex())
+            
+            if let presentationContext = PresentationContext(data: pcData) {
+                print("presentationContext")
+                self.association.acceptedPresentationContexts.append(presentationContext)
+                
+                SwiftyBeaver.info("    -> Context ID: \(presentationContext.contextID ?? 0)")
+                SwiftyBeaver.info("      -> Accepted Transfer Syntax(es): \(presentationContext.acceptedTransferSyntax ?? "")")
             }
-            self.association?.acceptedTransferSyntax = ats
+            
+            offset += Int(pcLength) - 4
+            pcType = subdata.subdata(in: offset..<offset + 1).toInt8()
         }
-        
-        SwiftyBeaver.info("    -> Context ID: \(presentationContext.contextID ?? 0)")
-        SwiftyBeaver.info("      -> Accepted Transfer Syntax(es): \(presentationContext.acceptedTransferSyntax ?? "")")
-        
+
         // read user info
         SwiftyBeaver.info("  -> User Informations:")
-        offset = Int(presentationContext.length()) + 4
+        offset = offset + 4
         subdata = subdata.subdata(in: offset..<subdata.count)
-        
+
         guard let userInfo = UserInfo(data: subdata) else {
             SwiftyBeaver.warning("No user information values provided. Abort")
             return false
         }
-        
+
         self.association?.maxPDULength = userInfo.maxPDULength
         self.association?.remoteImplementationUID = userInfo.implementationUID
         self.association?.remoteImplementationVersion = userInfo.implementationVersion
-        
+
         SwiftyBeaver.info("    -> Remote Max PDU: \(self.association!.maxPDULength)")
         SwiftyBeaver.info("    -> Implementation class UID: \(self.association!.remoteImplementationUID ?? "")")
         SwiftyBeaver.info("    -> Implementation version: \(self.association!.remoteImplementationVersion ?? "")")
-        
+
         self.association?.associationAccepted = true
-        
+
         SwiftyBeaver.info(" ")
         
         return true
