@@ -8,27 +8,6 @@
 
 import Foundation
 
-// https://stackoverflow.com/questions/44009804/swift-3-how-to-get-date-for-tomorrow-and-yesterday-take-care-special-case-ne
-extension Date {
-    public static var yesterday: Date { return Date().dayBefore }
-    public static var tomorrow:  Date { return Date().dayAfter }
-    public var dayBefore: Date {
-        return Calendar.current.date(byAdding: .day, value: -1, to: noon)!
-    }
-    public var dayAfter: Date {
-        return Calendar.current.date(byAdding: .day, value: 1, to: noon)!
-    }
-    public var noon: Date {
-        return Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: self)!
-    }
-    public var month: Int {
-        return Calendar.current.component(.month,  from: self)
-    }
-    public var isLastDayOfMonth: Bool {
-        return dayAfter.month != month
-    }
-}
-
 
 
 /**
@@ -286,21 +265,47 @@ public class DateRange : CustomStringConvertible {
     
     public var rangeType:DateRangeType = .betweenDate
     
-    
+    /**
+     Create a DICOM Date Range
+     
+     - parameter startDate: Date object, required for both .afterDate and .betweenDate
+     - parameter endDate: Date object, required for both .priorDate and .betweenDate
+     - parameter rangeType: DateRangeType
+     - returns: DateRange object
+     
+     */
     public init(startDate:Date?, endDate:Date?, rangeType:DateRangeType) {
         self.startDate  = startDate
         self.endDate    = endDate
         self.rangeType  = rangeType
     }
     
-    
+    /**
+     Create a DICOM Time Range
+     
+     - parameter startTime: Date object, required for both .afterTime and .betweenTime
+     - parameter endTime: Date object, required for both .priorTime and .betweenTime
+     - parameter rangeType: DateRangeType
+     - returns: DateRange object
+     
+     */
     public init(startTime:Date?, endTime:Date?, rangeType:DateRangeType) {
         self.startTime  = startTime
         self.endTime    = endTime
         self.rangeType  = rangeType
     }
     
-    
+    /**
+     Create a DICOM Date Range for DICOM date strings
+     
+     - parameter dicomStartDate: DICOM Date string, required for both .afterDate and .betweenDate
+     - parameter dicomEndDate: DICOM Date string, required for both .priorDate and .betweenDate
+     - parameter rangeType: DateRangeType
+     - returns: DateRange object
+     
+     DICOM Date string will be automatically formatted to Date objects
+     
+     */
     public convenience init?(dicomStartDate:String?, dicomEndDate:String?, rangeType:DateRangeType) {
         guard let dsd = dicomStartDate, let sd = Date(dicomDate: dsd) else {
             Swift.print("Invalid DICOM start date")
@@ -316,6 +321,17 @@ public class DateRange : CustomStringConvertible {
     }
     
     
+    /**
+     Create a DICOM Time Range for DICOM time strings
+     
+     - parameter dicomStartTime: DICOM Date string, required for both .afterTime and .betweenTime
+     - parameter dicomEndTime: DICOM Date string, required for both .priorTime and .betweenTime
+     - parameter rangeType: DateRangeType
+     - returns: DateRange object
+     
+     DICOM Time string will be automatically formatted to Date objects
+     
+     */
     public convenience init?(dicomStartTime:String?, dicomEndTime:String?, rangeType:DateRangeType) {
         guard let dst = dicomStartTime, let st = Date(dicomTime: dst) else {
             Swift.print("Invalid DICOM start time")
@@ -331,6 +347,9 @@ public class DateRange : CustomStringConvertible {
     }
     
     
+    /**
+     Create a DICOM Date Range from DICOM Date Range String
+     */
     public convenience init?(dicomDateRange:String) {
         let components  = dicomDateRange.split(separator: "-")
         var rangeType   = DateRangeType.priorDate
@@ -364,6 +383,9 @@ public class DateRange : CustomStringConvertible {
     }
     
     
+    /**
+     Create a DICOM Time Range from DICOM Time Range String
+     */
     public convenience init?(dicomTimeRange:String) {
         let components  = dicomTimeRange.split(separator: "-")
         var rangeType   = DateRangeType.priorTime
@@ -432,5 +454,28 @@ public class DateRange : CustomStringConvertible {
         }
         
         return string
+    }
+}
+
+
+
+// https://stackoverflow.com/questions/44009804/swift-3-how-to-get-date-for-tomorrow-and-yesterday-take-care-special-case-ne
+extension Date {
+    public static var yesterday: Date { return Date().dayBefore }
+    public static var tomorrow:  Date { return Date().dayAfter }
+    public var dayBefore: Date {
+        return Calendar.current.date(byAdding: .day, value: -1, to: noon)!
+    }
+    public var dayAfter: Date {
+        return Calendar.current.date(byAdding: .day, value: 1, to: noon)!
+    }
+    public var noon: Date {
+        return Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: self)!
+    }
+    public var month: Int {
+        return Calendar.current.component(.month,  from: self)
+    }
+    public var isLastDayOfMonth: Bool {
+        return dayAfter.month != month
     }
 }
