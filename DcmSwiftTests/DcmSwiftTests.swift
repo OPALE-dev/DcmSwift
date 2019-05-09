@@ -121,15 +121,15 @@ class DcmSwiftTests: XCTestCase {
         let ds1 = "20001201"
         let dd1 = Date(dicomDate: ds1)
         let desc1 = dd1!.description(with: .current)
-        let r1 = "Friday 1 December 2000 at 00:00:00 Central European Standard Time"
+        let r1 = "vendredi 1 décembre 2000 à 00:00:00 heure normale d’Europe centrale"
         
         assert(desc1 == r1)
         
         // ACR-NEMA date format
-        let ds2 = "2000.12.02"
+        let ds2 = "2000.12.01"
         let dd2 = Date(dicomDate: ds2)
         let desc2 = dd2!.description(with: .current)
-        let r2 = "Saturday 2 December 2000 at 00:00:00 Central European Standard Time"
+        let r2 = "vendredi 1 décembre 2000 à 00:00:00 heure normale d’Europe centrale"
         
         assert(desc2 == r2)
     }
@@ -184,7 +184,7 @@ class DcmSwiftTests: XCTestCase {
         let dateAndTime = Date(dicomDate: ds1, dicomTime: ts1)
         let dts = dateAndTime?.description(with: .current)
         
-        assert(dts == "Friday 1 December 2000 at 14:32:50 Central European Standard Time")
+        assert(dts == "vendredi 1 décembre 2000 à 14:32:50 heure normale d’Europe centrale")
     }
     
     
