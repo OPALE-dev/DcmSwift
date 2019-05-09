@@ -270,7 +270,7 @@ public class DateRange : CustomStringConvertible {
      
      - parameter startDate: Date object, required for both .afterDate and .betweenDate
      - parameter endDate: Date object, required for both .priorDate and .betweenDate
-     - parameter rangeType: DateRangeType
+     - parameter rangeType: DateRangeType: priorDate, afterDate, betweenDate
      - returns: DateRange object
      
      */
@@ -285,7 +285,7 @@ public class DateRange : CustomStringConvertible {
      
      - parameter startTime: Date object, required for both .afterTime and .betweenTime
      - parameter endTime: Date object, required for both .priorTime and .betweenTime
-     - parameter rangeType: DateRangeType
+     - parameter rangeType: DateRangeType: priorTime, afterTime, betweenTime
      - returns: DateRange object
      
      */
@@ -300,7 +300,7 @@ public class DateRange : CustomStringConvertible {
      
      - parameter dicomStartDate: DICOM Date string, required for both .afterDate and .betweenDate
      - parameter dicomEndDate: DICOM Date string, required for both .priorDate and .betweenDate
-     - parameter rangeType: DateRangeType
+     - parameter rangeType: DateRangeType: priorDate, afterDate, betweenDate
      - returns: DateRange object
      
      DICOM Date string will be automatically formatted to Date objects
