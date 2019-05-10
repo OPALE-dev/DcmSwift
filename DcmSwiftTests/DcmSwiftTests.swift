@@ -59,8 +59,8 @@ class DcmSwiftTests: XCTestCase {
             suite.addTest(DcmSwiftTests(selector: #selector(testReadDicomTime)))
             suite.addTest(DcmSwiftTests(selector: #selector(testWriteDicomTime)))
             suite.addTest(DcmSwiftTests(selector: #selector(testCombineDateAndTime)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testReadWriteDicomDateRange)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testReadWriteDicomTimeRange)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testReadWriteDicomRange)))
+
         }
         
         
@@ -231,7 +231,7 @@ class DcmSwiftTests: XCTestCase {
         let d1  = dateFormatter.date(from: ds1)
         let dd1 = d1!.dicomTimeString()
         
-        assert(dd1 == "143250")
+        assert(dd1 == "143250.00000")
     }
 
     
@@ -248,30 +248,19 @@ class DcmSwiftTests: XCTestCase {
     
     
     
-    public func testReadWriteDicomDateRange() {
+    public func testReadWriteDicomRange() {
         let ds1 = "20001201"
         let ds2 = "20021201"
         
         let dicomRange = "\(ds1)-\(ds2)"
-        let dateRange = DateRange(dicomDateRange: dicomRange)
+        let dateRange = DateRange(dicomRange: dicomRange, type: DicomConstants.VR.DA)
         
-        assert(dateRange!.rangeType     == .betweenDate)
+        assert(dateRange!.range     == .between)
         assert(dateRange!.description   == "20001201-20021201")
     }
     
     
-    
-    public func testReadWriteDicomTimeRange() {
-        let ts1 = "143250"
-        let ts2 = "173250"
-        
-        let dicomRange = "\(ts1)-\(ts2)"
-        let timeRange = DateRange(dicomTimeRange: dicomRange)
-        
-        assert(timeRange!.rangeType     == .betweenTime)
-        assert(timeRange!.description   == "143250-173250")
-    }
-    
+
 
     
     
