@@ -238,224 +238,91 @@ public class DateRange : CustomStringConvertible {
      This enumeration identify DICOM Date Range sub-operation
      on date and time VR.
      
-     - priorDate: A string of the form "- <date1>" shall match all occurrences of dates prior to and including <date1>
-     - afterDate: A string of the form "<date1> -" shall match all occurrences of <date1> and subsequent dates
-     - betweenDate: A string of the form "<date1> - <date2>", where <date1> is less or equal to <date2>, shall match all occurrences of dates that fall between <date1> and <date2> inclusive
-     
-     - priorTime: A string of the form "- <time1>" shall match all occurrences of times prior to and including <time1>
-     - aftrerTime: A string of the form "<time1> -" shall match all occurrences of <time1> and subsequent times
-     - betweenTime: A string of the form "<time1> - <time2>", where <time1> is less or equal to <time2>, shall match all occurrences of times that fall between <time1> and <time2> inclusive
-     
-     - priorDateTime: A string of the form "- <datetime1>" shall match all moments in time prior to and including <datetime1>
-     - aftrerDateTime: A string of the form "<datetime1> -" shall match all moments in time subsequent to and including <datetime1>
-     - betweenDateTime: A string of the form "<datetime1> - <datetime2>", where <datetime1> is less or equal to <datetime2>, shall match all moments in time that fall between <datetime1> and <datetime2> inclusive
-     
-     */
-    public enum DateRangeType {
-        case priorDate
-        case afterDate
-        case betweenDate
-        
-        case priorTime
-        case afterTime
-        case betweenTime
-        
-        // TODO: implement DateTime
-        case priorDateTime
-        case afterDateTime
-        case betweenDateTime
-    }
+     - prior: A string of the form "- <date1>" shall match all occurrences of dates prior to and including <date1>
+     - after: A string of the form "<date1> -" shall match all occurrences of <date1> and subsequent dates
+     - between: A string of the form "<date1> - <date2>", where <date1> is less or equal to <date2>, shall match all occurrences of dates that fall between <date1> and <date2> inclusive
 
-    public enum DateRange {
+     */
+
+    public enum Range {
         case prior
         case after
         case between
     }
 
-    public enum TimeRange {
-        case prior
-        case after
-        case between
-    }
+    public var start:Date?
+    public var end:Date?
+    public var range:Range = .between
+    public var type:DicomConstants.VR = .DA
 
-    public enum DateTimeRange {
-        case prior
-        case after
-        case between
-    }
-    
-    
-    public var startDate:Date?
-    public var endDate:Date?
-
-    public var startTime:Date?
-    public var endTime:Date?
-
-    public var startDateTime:Date?
-    public var endDateTime:Date?
-    
-    public var rangeType:DateRangeType = .betweenDate
-
-    public var rangeDate:DateRange = .between
-    public var rangeTime:TimeRange = .between
-    public var rangeDateTime:DateTimeRange = .between
-    
-    /**
-     Create a DICOM Date Range
-     
-     - parameter startDate: Date object, required for both .after and .between
-     - parameter endDate: Date object, required for both .prior and .between
-     - parameter rangeDate: DateRange
-     - returns: DateRange object
-     
-     */
-    public init(startDate:Date?, endDate:Date?, rangeDate:DateRange) {
-        self.startDate  = startDate
-        self.endDate    = endDate
-        self.rangeDate  = rangeDate
-    }
-    
-    /**
-     Create a DICOM Time Range
-     
-     - parameter startTime: Date object, required for both .after and .between
-     - parameter endTime: Date object, required for both .prior and .between
-     - parameter rangeType: TimeRange
-     - returns: DateRange object
-     
-     */
-    public init(startTime:Date?, endTime:Date?, rangeTime:TimeRange) {
-        self.startTime  = startTime
-        self.endTime    = endTime
-        self.rangeTime  = rangeTime
-    }
 
     /**
-     Create a DICOM DateTime Range
+     Create a DICOM Range for any type of Date (DA, TM, DT)
 
-     - parameter startDateTime: Date object, required for both .after and .between
-     - parameter endDateTime: Date object, required for both .prior and .between
-     - parameter rangeDateTime: DateTimeRange
+     - parameter start: Date object, required for both .after and .between
+     - parameter end: Date object, required for both .prior and .between
+     - parameter range: Range
+     - parameter type: type of date
      - returns: DateRange object
 
      */
-    public init(startDateTime:Date?, endDateTime:Date?, rangeDateTime:DateTimeRange) {
-        self.startDateTime  = startDateTime
-        self.endDateTime    = endDateTime
-        self.rangeDateTime  = rangeDateTime
+    public init(start:Date?, end:Date?, range:Range, type:DicomConstants.VR) {
+        self.start  = start
+        self.end    = end
+        self.range  = range
+        self.type   = type
     }
 
 
-
-
-
-
-
-
-
-
     /**
-     Create a DICOM Date Range for DICOM date strings
-     
-     - parameter dicomStartDate: DICOM Date string, required for both .afterDate and .betweenDate
-     - parameter dicomEndDate: DICOM Date string, required for both .priorDate and .betweenDate
-     - parameter rangeType: DateRangeType
+     Create a DICOM Range for any DICOM date strings
+
+     - parameter dicomStart: DICOM Date string, required for both .after and .between
+     - parameter dicomEnd: DICOM Date string, required for both .prior and .between
+     - parameter range: Range
+     - parameter type: DicomConstants.VR
      - returns: DateRange object
-     
+
      DICOM Date string will be automatically formatted to Date objects
-     
+
      */
-    public convenience init?(dicomStartDate:String?, dicomEndDate:String?, rangeType:DateRange) {
-        guard let dsd = dicomStartDate, let sd = Date(dicomDate: dsd) else {
+    public convenience init?(dicomStart:String?, dicomEnd:String?, range:Range, type:DicomConstants.VR) {
+        guard let dsd = dicomStart, let sd = Date(dicomDate: dsd) else {
             Swift.print("Invalid DICOM start date")
             return nil
         }
 
-        guard let ded = dicomEndDate, let ed = Date(dicomDate: ded) else {
-            Swift.print("Invalid DICOM end date")
-            return nil
-        }
-        
-        self.init(startDate: sd, endDate: ed, rangeDate:rangeType)
-    }
-    
-    
-    /**
-     Create a DICOM Time Range for DICOM time strings
-     
-     - parameter dicomStartTime: DICOM Date string, required for both .afterTime and .betweenTime
-     - parameter dicomEndTime: DICOM Date string, required for both .priorTime and .betweenTime
-     - parameter rangeType: DateRangeType
-     - returns: DateRange object
-     
-     DICOM Time string will be automatically formatted to Date objects
-     
-     */
-    public convenience init?(dicomStartTime:String?, dicomEndTime:String?, rangeType:TimeRange) {
-        guard let dst = dicomStartTime, let st = Date(dicomTime: dst) else {
-            Swift.print("Invalid DICOM start time")
-            return nil
-        }
-        
-        guard let det = dicomEndTime, let et = Date(dicomTime: det) else {
-            Swift.print("Invalid DICOM end date")
-            return nil
-        }
-        
-        self.init(startTime: st, endTime: et, rangeTime:rangeType)
-    }
-
-
-    /**
-     Create a DICOM DateTime Range for DICOM datetime strings
-
-     - parameter dicomStartTime: DICOM Date string, required for both .afterTime and .betweenTime
-     - parameter dicomEndTime: DICOM Date string, required for both .priorTime and .betweenTime
-     - parameter rangeType: DateRangeType
-     - returns: DateRange object
-
-     DICOM Time string will be automatically formatted to Date objects
-
-     */
-    public convenience init?(dicomStartDateTime:String?, dicomEndDateTime:String?, rangeType:DateTimeRange) {
-        guard let dst = dicomStartDateTime, let st = Date(dicomDateTime: dst) else {
-            Swift.print("Invalid DICOM start time")
-            return nil
-        }
-
-        guard let det = dicomEndDateTime, let et = Date(dicomTime: det) else {
+        guard let ded = dicomEnd, let ed = Date(dicomDate: ded) else {
             Swift.print("Invalid DICOM end date")
             return nil
         }
 
-        self.init(startDateTime: st, endDateTime: et, rangeDateTime:rangeType)
+        self.init(start: sd, end: ed, range: range, type: type)
     }
 
-
-    
     /**
      Create a DICOM Date Range from DICOM Date Range String
      */
-    public convenience init?(dicomDateRange:String) {
-        let components  = dicomDateRange.split(separator: "-")
-        var rangeType   = DateRange.prior
-        
+    public convenience init?(dicomRange:String, type: DicomConstants.VR) {
+        let components  = dicomRange.split(separator: "-")
+        var rangeType   = Range.prior
+
         var startDate:String? = nil
         var endDate:String?   = nil
-        
+
         // before/after range
         if components.count == 1 {
             // before range
-            if dicomDateRange.first == "-" {
+            if dicomRange.first == "-" {
                 rangeType = .prior
                 endDate   = String(components[0])
             }
-            // after range
-            else if dicomDateRange.last == "-" {
+                // after range
+            else if dicomRange.last == "-" {
                 rangeType = .after
                 startDate = String(components[0])
             }
-        // between range
+            // between range
         } else if components.count == 2 {
             startDate   = String(components[0])
             endDate     = String(components[1])
@@ -464,127 +331,59 @@ public class DateRange : CustomStringConvertible {
             Swift.print("Invalid DICOM Date Range")
             return nil
         }
-        
-        self.init(dicomStartDate: startDate, dicomEndDate: endDate, rangeType:rangeType)
-    }
-    
-    
-    /**
-     Create a DICOM Time Range from DICOM Time Range String
-     */
-    public convenience init?(dicomTimeRange:String) {
-        let components  = dicomTimeRange.split(separator: "-")
-        var rangeType   = TimeRange.prior
-        
-        var startTime:String? = nil
-        var endTime:String?   = nil
-        
-        // before/after range
-        if components.count == 1 {
-            // before range
-            if dicomTimeRange.first == "-" {
-                rangeType = .prior
-                endTime   = String(components[0])
-            }
-                // after range
-            else if dicomTimeRange.last == "-" {
-                rangeType = .after
-                startTime = String(components[0])
-            }
-            // between range
-        } else if components.count == 2 {
-            startTime   = String(components[0])
-            endTime     = String(components[1])
-            rangeType   = .between
-        } else {
-            Swift.print("Invalid DICOM Date Range")
-            return nil
-        }
-        
-        self.init(dicomStartTime: startTime, dicomEndTime: endTime, rangeType:rangeType)
-    }
-    
 
-
-
-    /**
-     Create a DICOM DateTime Range from DICOM DateTime Range String
-     */
-    public convenience init?(dicomDateTimeRange:String) {
-        let components  = dicomDateTimeRange.split(separator: "-")
-        var rangeType   = DateTimeRange.prior
-
-        var startTime:String? = nil
-        var endTime:String?   = nil
-
-        // before/after range
-        if components.count == 1 {
-            // before range
-            if dicomDateTimeRange.first == "-" {
-                rangeType = .prior
-                endTime   = String(components[0])
-            }
-                // after range
-            else if dicomDateTimeRange.last == "-" {
-                rangeType = .after
-                startTime = String(components[0])
-            }
-            // between range
-        } else if components.count == 2 {
-            startTime   = String(components[0])
-            endTime     = String(components[1])
-            rangeType   = .between
-        } else {
-            Swift.print("Invalid DICOM Date Range")
-            return nil
-        }
-
-        self.init(dicomStartDateTime: startTime, dicomEndDateTime: endTime, rangeType:rangeType)
+        self.init(dicomStart: startDate, dicomEnd: endDate, range: rangeType, type: type)
     }
 
-
-
-
-
-
-
-
-    
     /**
      A string description of the Date range
      */
     public var description: String {
         var string = ""
-        
-        switch self.rangeType {
-        case .priorDate:
-            string = "-\(self.endDate!.dicomDateString())"
-            
-        case .afterDate:
-            string = "\(self.startDate!.dicomDateString())-"
-            
-        case .betweenDate:
-            string = "\(self.startDate!.dicomDateString())-\(self.endDate!.dicomDateString())"
-            
-        case .priorTime:
-            string = "-\(self.endTime!.dicomTimeString())"
-            
-        case .afterTime:
-            string = "\(self.startTime!.dicomTimeString())-"
-            
-        case .betweenTime:
-            string = "\(self.startTime!.dicomTimeString())-\(self.endTime!.dicomTimeString())"
-            
-        case .priorDateTime:
-            string = "-\(self.endDateTime!.dicomDateTimeString())"
-        case .afterDateTime:
-            string = "NOT IMPLEMENTED!"
-        case .betweenDateTime:
-            string = "NOT IMPLEMENTED!"
+        switch self.type {
+        case .DA:
+            switch self.range {
+
+            case .prior:
+                string = "-\(self.end!.dicomDateString())"
+
+            case .after:
+                string = "\(self.start!.dicomDateString())-"
+
+            case .between:
+                string = "\(self.start!.dicomDateString())-\(self.end!.dicomDateString())"
+            }
+        case .TM:
+            switch self.range {
+
+            case .prior:
+                string = "-\(self.end!.dicomTimeString())"
+
+            case .after:
+                string = "\(self.start!.dicomTimeString())-"
+
+            case .between:
+                string = "\(self.start!.dicomTimeString())-\(self.end!.dicomTimeString())"
+            }
+        case .DT:
+            switch self.range {
+
+            case .prior:
+                string = "-\(self.end!.dicomDateTimeString())"
+
+            case .after:
+                string = "\(self.start!.dicomDateTimeString())-"
+
+            case .between:
+                string = "\(self.start!.dicomDateTimeString())-\(self.end!.dicomDateTimeString())"
+            }
+        default:
+            string = ""
         }
-        
+
         return string
     }
+
 }
 
 
