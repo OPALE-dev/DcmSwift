@@ -22,9 +22,9 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let studyDate = DateRange(startDate: Date(),
-                                  endDate: nil,
-                                  rangeType: .afterDate).description
+        let studyDate = DateRange(start: Date(),
+                                  end: nil,
+                                  range: .after, type: DicomConstants.VR.DA).description
         
         queryDataset.prefixHeader = false
         

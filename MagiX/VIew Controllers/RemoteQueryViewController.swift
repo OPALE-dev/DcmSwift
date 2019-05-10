@@ -133,43 +133,43 @@ class RemoteQueryViewController: NSViewController {
                     
                 }
                 else if b == timeToday {
-                    string = DateRange(startDate: Date(),
-                                       endDate: nil,
-                                       rangeType: .afterDate).description
+                    string = DateRange(start: Date(),
+                                       end: nil,
+                                       range: .after, type: DicomConstants.VR.DA).description
                 }
                 else if b == timeYesterday {
-                    string = DateRange(startDate: Date().dayBefore,
-                                       endDate: Date().dayBefore,
-                                       rangeType: .betweenDate).description
+                    string = DateRange(start: Date().dayBefore,
+                                       end: Date().dayBefore,
+                                       range: .between, type: DicomConstants.VR.DA).description
                 }
                 else if b == timeLast2Days {
                     let sd = Calendar.current.date(byAdding: .day, value: -2, to: Date())
-                    string = DateRange(startDate: sd,
-                                       endDate: Date(),
-                                       rangeType: .betweenDate).description
+                    string = DateRange(start: sd,
+                                       end: Date(),
+                                       range: .between, type: DicomConstants.VR.DA).description
                 }
                 else if b == timeLast7Days {
                     let sd = Calendar.current.date(byAdding: .day, value: -7, to: Date())
-                    string = DateRange(startDate: sd,
-                                       endDate: Date(),
-                                       rangeType: .betweenDate).description
+                    string = DateRange(start: sd,
+                                       end: Date(),
+                                       range: .between, type: DicomConstants.VR.DA).description
                 }
                 else if b == timeLastMonth {
                     let sd = Calendar.current.date(byAdding: .month, value: -1, to: Date())
-                    string = DateRange(startDate: sd,
-                                       endDate: Date(),
-                                       rangeType: .betweenDate).description
+                    string = DateRange(start: sd,
+                                       end: Date(),
+                                       range: .between, type: DicomConstants.VR.DA).description
                 }
                 else if b == timeLast3Month {
                     let sd = Calendar.current.date(byAdding: .month, value: -3, to: Date())
-                    string = DateRange(startDate: sd,
-                                       endDate: Date(),
-                                       rangeType: .betweenDate).description
+                    string = DateRange(start: sd,
+                                       end: Date(),
+                                       range: .between, type: DicomConstants.VR.DA).description
                 }
                 else if b == timeDateRange {
-                    string = DateRange(startDate: self.timeStartDatePicker.dateValue,
-                                       endDate: self.timeEndDatePicker.dateValue,
-                                       rangeType: .betweenDate).description
+                    string = DateRange(start: self.timeStartDatePicker.dateValue,
+                                       end: self.timeEndDatePicker.dateValue,
+                                       range: .between, type: DicomConstants.VR.DA).description
                 }
             }
         }
