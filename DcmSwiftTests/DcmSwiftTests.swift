@@ -59,8 +59,8 @@ class DcmSwiftTests: XCTestCase {
             suite.addTest(DcmSwiftTests(selector: #selector(testReadDicomTime)))
             suite.addTest(DcmSwiftTests(selector: #selector(testWriteDicomTime)))
             suite.addTest(DcmSwiftTests(selector: #selector(testCombineDateAndTime)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testReadWriteDicomDateRange)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testReadWriteDicomTimeRange)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testReadWriteDicomRange)))
+
         }
         
         
@@ -121,15 +121,15 @@ class DcmSwiftTests: XCTestCase {
         let ds1 = "20001201"
         let dd1 = Date(dicomDate: ds1)
         let desc1 = dd1!.description(with: .current)
-        let r1 = "Friday 1 December 2000 at 00:00:00 Central European Standard Time"
+        let r1 = "vendredi 1 décembre 2000 à 00:00:00 heure normale d’Europe centrale"
         
         assert(desc1 == r1)
         
         // ACR-NEMA date format
-        let ds2 = "2000.12.02"
+        let ds2 = "2000.12.01"
         let dd2 = Date(dicomDate: ds2)
         let desc2 = dd2!.description(with: .current)
-        let r2 = "Saturday 2 December 2000 at 00:00:00 Central European Standard Time"
+        let r2 = "vendredi 1 décembre 2000 à 00:00:00 heure normale d’Europe centrale"
         
         assert(desc2 == r2)
     }
@@ -145,13 +145,29 @@ class DcmSwiftTests: XCTestCase {
         
         assert(dd1 == "20120124")
     }
+
+    public func testDicomDateWrongLength() {
+        // Must be 8 or 10 bytes
+        var ds = ""
+        for i in 0...11 {
+            if i == 8 || i == 10 {
+                ds += "1"
+                continue
+            }
+
+            let dd = Date(dicomDate: ds)
+            assert(dd == nil)
+
+            ds += "1"
+        }
+    }
     
     
     public func testReadDicomTime() {
         let ds1 = "143250"
         let dd1 = Date(dicomTime: ds1)
         let desc1 = dd1!.description(with: .current)
-        let r1 = "Saturday 1 January 2000 at 14:32:50 Central European Standard Time"
+        let r1 = "samedi 1 janvier 2000 à 14:32:50 heure normale d’Europe centrale"
         
         assert(desc1 == r1)
         
@@ -159,11 +175,53 @@ class DcmSwiftTests: XCTestCase {
         let ds2 = "14:32:50"
         let dd2 = Date(dicomTime: ds2)
         let desc2 = dd2?.description(with: .current)
-        let r2 = "Saturday 1 January 2000 at 14:32:50 Central European Standard Time"
+        let r2 = "samedi 1 janvier 2000 à 14:32:50 heure normale d’Europe centrale"
         
         assert(desc2 == r2)
     }
-    
+
+
+    public func testReadDicomTimeMidnight() {
+        let ds1 = "240000"
+        let dd1 = Date(dicomTime: ds1)
+
+        assert(dd1 == nil)
+
+        // ACR-NEMA time format
+        let ds2 = "24:00:00"
+        let dd2 = Date(dicomTime: ds2)
+
+        assert(dd2 == nil)
+    }
+
+
+    public func testDicomTimeWrongLength() {
+        var ds1 = "1"
+        for _ in 0...3 {
+            let dd1 = Date(dicomTime: ds1)
+            assert(dd1 == nil)
+            ds1 += "11"
+        }
+    }
+
+    public func testDicomTimeWeirdTime() {
+        let ds1 = "236000"
+        let dd1 = Date(dicomTime: ds1)
+
+        assert(dd1 == nil)
+
+        let ds2 = "235099"
+        let dd2 = Date(dicomTime: ds2)
+
+        assert(dd2 == nil)
+
+
+
+        let ds3 = "255009"
+        let dd3 = Date(dicomTime: ds3)
+
+        assert(dd3 == nil)
+    }
     
     public func testWriteDicomTime() {
         let dateFormatter = DateFormatter()
@@ -173,9 +231,9 @@ class DcmSwiftTests: XCTestCase {
         let d1  = dateFormatter.date(from: ds1)
         let dd1 = d1!.dicomTimeString()
         
-        assert(dd1 == "143250")
+        assert(dd1 == "143250.00000")
     }
-    
+
     
     public func testCombineDateAndTime() {
         let ds1 = "20001201"
@@ -184,36 +242,25 @@ class DcmSwiftTests: XCTestCase {
         let dateAndTime = Date(dicomDate: ds1, dicomTime: ts1)
         let dts = dateAndTime?.description(with: .current)
         
-        assert(dts == "Friday 1 December 2000 at 14:32:50 Central European Standard Time")
+        assert(dts == "vendredi 1 décembre 2000 à 14:32:50 heure normale d’Europe centrale")
     }
     
     
     
     
-    public func testReadWriteDicomDateRange() {
+    public func testReadWriteDicomRange() {
         let ds1 = "20001201"
         let ds2 = "20021201"
         
         let dicomRange = "\(ds1)-\(ds2)"
-        let dateRange = DateRange(dicomDateRange: dicomRange)
+        let dateRange = DateRange(dicomRange: dicomRange, type: DicomConstants.VR.DA)
         
-        assert(dateRange!.rangeType     == .betweenDate)
+        assert(dateRange!.range     == .between)
         assert(dateRange!.description   == "20001201-20021201")
     }
     
     
-    
-    public func testReadWriteDicomTimeRange() {
-        let ts1 = "143250"
-        let ts2 = "173250"
-        
-        let dicomRange = "\(ts1)-\(ts2)"
-        let timeRange = DateRange(dicomTimeRange: dicomRange)
-        
-        assert(timeRange!.rangeType     == .betweenTime)
-        assert(timeRange!.description   == "143250-173250")
-    }
-    
+
 
     
     
