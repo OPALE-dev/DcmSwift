@@ -19,17 +19,23 @@ public class ApplicationContext {
     
     
     public init?(data:Data) {
+        var offset = 0
         let acType = data.first
+        offset += 1
         
         if acType != ItemType.applicationContext.rawValue {
             return nil
         }
+                    
+        offset += 1 // reserved byte
         
-        let acLength = data.subdata(in: 2..<4).toInt16(byteOrder: .BigEndian)
-        let applicationContextData = data.subdata(in: 4..<Int(acLength))
-        let applicationContextName = String(bytes: applicationContextData, encoding: .utf8)
+        let acLength = data.subdata(in: offset..<offset+2).toInt16(byteOrder: .BigEndian)
+        offset += 2
         
-        self.applicationContextName = applicationContextName ?? DicomConstants.applicationContextName
+        let applicationContextData = data.subdata(in: offset..<Int(acLength))
+        if let applicationContextName = String(bytes: applicationContextData, encoding: .utf8) {
+            self.applicationContextName = applicationContextName
+        }
     }
     
     
@@ -44,7 +50,7 @@ public class ApplicationContext {
         
         data.append(uint8: ItemType.applicationContext.rawValue, bigEndian: true)
         data.append(byte: 0x00) // reserved        
-        data.append(uint16: UInt16(self.length), bigEndian: true)
+        data.append(uint16: UInt16(self.applicationContextName.count), bigEndian: true)
         data.append(appContext!)
         
         return data

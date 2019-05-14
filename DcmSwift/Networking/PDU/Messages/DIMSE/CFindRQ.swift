@@ -14,12 +14,19 @@ public class CFindRQ: DataTF {
     
     public var queryResults:[Any] = []
     
+    public override func messageName() -> String {
+        return "C-FIND-RQ"
+    }
+    
+    
     public override func data() -> Data {
         var data = Data()
         
+        let pc = association.presentationContexts[association.presentationContexts.keys.first!]
+        
         let pdvDataset = DataSet()
         _ = pdvDataset.set(value: CommandField.C_FIND_RQ.rawValue.bigEndian, forTagName: "CommandField")
-        _ = pdvDataset.set(value: self.association.presentationContexts.first!.abstractSyntax, forTagName: "AffectedSOPClassUID")
+        _ = pdvDataset.set(value: pc!.abstractSyntax, forTagName: "AffectedSOPClassUID")
         _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
         _ = pdvDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
         _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
@@ -30,7 +37,7 @@ public class CFindRQ: DataTF {
         var pdvData = Data()
         let pdvLength = commandGroupLength + 14
         pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
-        pdvData.append(uint8: association.presentationContexts.first!.contextID, bigEndian: true) // Context
+        pdvData.append(uint8: association.presentationContexts.keys.first!, bigEndian: true) // Context
         pdvData.append(byte: 0x03) // Flags
         pdvData.append(pdvDataset.toData())
         
@@ -44,7 +51,7 @@ public class CFindRQ: DataTF {
     }
     
     
-    public override func messageData() -> Data? {
+    public override func messagesData() -> [Data] {
         var data = Data()
         
         if let qrDataset = self.queryDataset, qrDataset.allElements.count > 0 {
@@ -58,7 +65,7 @@ public class CFindRQ: DataTF {
             let pdvLength2 = datasetData.count + 2
             
             pdvData2.append(uint32: UInt32(pdvLength2), bigEndian: true)
-            pdvData2.append(uint8: association.presentationContexts.first!.contextID, bigEndian: true) // Context
+            pdvData2.append(uint8: association.presentationContexts.keys.first!, bigEndian: true) // Context
             pdvData2.append(byte: 0x02) // Flags
             pdvData2.append(datasetData)
             
@@ -69,7 +76,7 @@ public class CFindRQ: DataTF {
             data.append(pdvData2)
         }
         
-        return data
+        return [data]
     }
     
     

@@ -23,7 +23,7 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     public var flags:UInt8!
     public var responseDataset:DataSet!
     public var errors:[DicomError] = []
-
+    public var debugDescription:String = "No message description"
     
     public init(pduType:PDUType, association:DicomAssociation) {
         self.pduType = pduType
@@ -56,9 +56,13 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     }
     
     
-    public func messageData() -> Data? {
+    public func messageName() -> String {
+        return "UNKNOW-DIMSE"
+    }
+    
+    public func messagesData() -> [Data] {
         SwiftyBeaver.warning("Not implemented yet \(#function) \(self.pduType)")
-        return nil
+        return []
     }
     
     

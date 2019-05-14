@@ -10,5 +10,8 @@ import Foundation
 
 
 public class ReleaseRP: PDUMessage {
+    public override func messageName() -> String {
+        return "A-RELEASE-RSP"
+    }
     
 }

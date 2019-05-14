@@ -11,6 +11,11 @@ import Foundation
 public class CFindRSP: DataTF {
     public var queryResults:[Any] = []
     
+    public override func messageName() -> String {
+        return "C-FIND-RSP"
+    }
+    
+    
     override public func decodeData(data: Data) -> Bool {
         super.decodeDIMSEStatus(data: data)
         

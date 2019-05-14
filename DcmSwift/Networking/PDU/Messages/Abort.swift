@@ -9,6 +9,10 @@
 import Foundation
 
 public class Abort: PDUMessage {
+    public override func messageName() -> String {
+        return "A-ABORT"
+    }
+    
     public override func data() -> Data {
         var data = Data()
         let length = UInt32(4)

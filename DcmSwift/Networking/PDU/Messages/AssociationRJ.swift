@@ -10,6 +10,10 @@ import Foundation
 
 
 public class AssociationRJ: PDUMessage {
+    public override func messageName() -> String {
+        return "A-ASSOCIATE-RJ"
+    }
+    
     public override func decodeData(data: Data) -> Bool {
 //        let pduLength = data.subdata(in: 2..<6).toInt32().bigEndian
 //        let result = data.subdata(in: 7..<8).toInt8().bigEndian

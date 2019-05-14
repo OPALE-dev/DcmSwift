@@ -10,6 +10,9 @@ import Foundation
 
 
 public class PresentationContext {
+    public var transferSyntaxes:[String] = []
+    
+    
     public var acceptedTransferSyntax:String?
     public var abstractSyntax:String!
     public var contextID:UInt8!
@@ -17,6 +20,7 @@ public class PresentationContext {
     private var pcLength:Int16 = 0
     
     public init(abstractSyntax:String, transferSyntaxes:[String] = [], contextID:UInt8) {
+        self.transferSyntaxes = transferSyntaxes
         self.abstractSyntax = abstractSyntax
         self.contextID = contextID
     }
@@ -32,19 +36,36 @@ public class PresentationContext {
         if pcType != ItemType.acPresentationContext.rawValue {
             return nil
         }
+                
+        // let length = data.subdata(in: 2..<4).toInt16(byteOrder: .BigEndian)
+        let pcContextID = data.subdata(in: 4..<5).toInt8(byteOrder: .BigEndian)
+        // let result = data.subdata(in: 6..<7).toInt8(byteOrder: .BigEndian)
+        var offset = 8
         
-        let pcContextID = data.subdata(in: 4..<6).toInt8(byteOrder: .BigEndian)
         self.contextID = UInt8(pcContextID)
         
-        let offset = 8
-        
-        // parse & check transfer syntax
-        let tsData = data.subdata(in: offset..<data.count)
-        let tsLength = tsData.subdata(in: 2..<4).toInt16(byteOrder: .BigEndian)
-        let transferSyntaxData = tsData.subdata(in: 4..<Int(tsLength)+4)
-        
-        self.acceptedTransferSyntax = String(bytes: transferSyntaxData, encoding: .utf8)
-        self.pcLength = Int16(offset) + tsLength
+        // parse transfer syntaxes
+        var tsType = data.subdata(in: offset..<offset+1).toInt8(byteOrder: .BigEndian)
+        //offset += 1
+        while tsType == 0x40 {
+            offset += 2
+            
+            let tsLength = data.subdata(in: offset..<offset+2).toInt16(byteOrder: .BigEndian)
+            offset += 2
+
+            let transferSyntaxData = data.subdata(in: offset..<offset+Int(tsLength))
+            if let acceptedTransferSyntax = String(bytes: transferSyntaxData, encoding: .utf8) {
+                transferSyntaxes.append(acceptedTransferSyntax)
+            }
+            
+            offset = offset+Int(tsLength)
+            
+            if offset < data.count {
+                tsType = data.subdata(in: offset..<1).toInt8(byteOrder: .BigEndian)
+            } else {
+                tsType = 0
+            }
+        }
     }
     
     
@@ -59,7 +80,7 @@ public class PresentationContext {
         
         // TRANSFER SYNTAXES Data
         var tsData = Data()
-        for ts in [DicomConstants.explicitVRLittleEndian] {
+        for ts in [DicomConstants.implicitVRLittleEndian, DicomConstants.explicitVRLittleEndian] {
             let tsLength = UInt16(ts.data(using: .utf8)!.count)
             tsData.append(uint8: ItemType.transferSyntax.rawValue, bigEndian: true)
             tsData.append(byte: 0x00) // RESERVED

@@ -244,7 +244,7 @@ public class DataSet: DicomObject {
     public func string(forTag tag:String ) -> String? {
         for el in self.allElements {
             if el.name == tag {
-                return el.value as? String
+                return (el.value as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
             }
         }
         return nil

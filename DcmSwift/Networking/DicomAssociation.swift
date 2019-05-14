@@ -26,8 +26,10 @@ public class DicomAssociation : NSObject {
     public var abstractSyntax:String = "1.2.840.10008.1.1"
     
     public var applicationContext:ApplicationContext = ApplicationContext()
-    public var presentationContexts:[PresentationContext] = []
-    public var acceptedPresentationContexts:[PresentationContext] = []
+    public var remoteApplicationContext:ApplicationContext?
+    
+    public var presentationContexts:[UInt8 : PresentationContext] = [:]
+    public var acceptedPresentationContexts:[UInt8 : PresentationContext] = [:]
     public var userInfo:UserInfo = UserInfo()
     
     public var acceptedTransferSyntax:String?
@@ -51,8 +53,9 @@ public class DicomAssociation : NSObject {
     
     
     public func addPresentationContext(abstractSyntax: String) {
-        let pc = PresentationContext(abstractSyntax: abstractSyntax, contextID: self.getNextContextID())
-        self.presentationContexts.append(pc)
+        let ctID = self.getNextContextID()
+        let pc = PresentationContext(abstractSyntax: abstractSyntax, contextID: ctID)
+        self.presentationContexts[ctID] = pc
     }
     
     
@@ -60,20 +63,18 @@ public class DicomAssociation : NSObject {
         self.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP)
         
         if let message = PDUEncoder.shared.createAssocMessage(pduType: .associationRQ, association: self) as? PDUMessage {
-            SwiftyBeaver.info("==================== SEND A-ASSOCIATE-RQ ====================")
-            SwiftyBeaver.debug("A-ASSOCIATE-RQ DATA")
-            SwiftyBeaver.info("  -> Application Context Name: \(DicomConstants.applicationContextName)")
-            SwiftyBeaver.info("  -> Called Application Entity: \(calledAET.fullname())")
-            SwiftyBeaver.info("  -> Calling Application Entity: \(callingAET.fullname())")
-            SwiftyBeaver.info("  -> Local Max PDU: \(self.maxPDULength)")
-            
-            SwiftyBeaver.info("  -> Presentation Contexts:")
-            //SwiftyBeaver.info("    -> Context ID: \(self.contextID)")
-            SwiftyBeaver.info("      -> Abstract Syntax: \(self.abstractSyntax)")
-            SwiftyBeaver.info("      -> Proposed Transfer Syntax(es): \(DicomConstants.transfersSyntaxes)")
-            
-            SwiftyBeaver.info("  -> User Informations:")
-            SwiftyBeaver.info("    -> Local Max PDU: \(self.maxPDULength)")
+            message.debugDescription = "\n  -> Application Context Name: \(DicomConstants.applicationContextName)\n"
+            message.debugDescription.append("  -> Called Application Entity: \(calledAET.fullname())\n")
+            message.debugDescription.append("  -> Calling Application Entity: \(callingAET.fullname())\n")
+            message.debugDescription.append("  -> Local Max PDU: \(self.maxPDULength)\n")
+            message.debugDescription.append("  -> Presentation Contexts:\n")
+            for (_, pc) in self.presentationContexts {
+                message.debugDescription.append("    -> Context ID: \(pc.contextID ?? 0xff)\n")
+                message.debugDescription.append("      -> Abstract Syntax: \(pc.abstractSyntax ?? "Unset?")\n")
+                message.debugDescription.append("      -> Proposed Transfer Syntax(es): \(pc.transferSyntaxes)\n")
+            }
+            message.debugDescription.append("  -> User Informations:\n")
+            message.debugDescription.append("    -> Local Max PDU: \(self.maxPDULength)\n")
             
             self.write(message: message, readResponse: true, completion: completion)
             
@@ -130,7 +131,13 @@ public class DicomAssociation : NSObject {
             let data = message.data()
             try socket.write(from: data)
             
-            if let messageData = message.messageData() {
+            print("==================== SEND \(message.messageName() ) ====================")
+            //SwiftyBeaver.debug("HEX DATA : \(data.toHex().separate(every: 2, with: " "))")
+            print(message.debugDescription)
+            
+            for messageData in message.messagesData() {
+                print("==================== SEND \(message.messageName() ) ====================")
+                //SwiftyBeaver.debug("HEX DATA : \(messageData.toHex().separate(every: 2, with: " "))")
                 try socket.write(from: messageData)
             }
             
@@ -140,6 +147,10 @@ public class DicomAssociation : NSObject {
             }
             
             let response = self.readResponse(forMessage: message, completion: completion)
+            
+            print("==================== RECEIVE \(response?.messageName() ?? "UNKNOW-DIMSE") ====================")
+            //SwiftyBeaver.debug("HEX DATA : \(data.toHex().separate(every: 2, with: " "))")
+            print(message.debugDescription)
             
             completion(true, response, nil)
         } catch let e {
@@ -159,7 +170,7 @@ public class DicomAssociation : NSObject {
         
         do {
             repeat {
-                //let (r, _) = try self.socket.isReadableOrWritable()
+                let (r, _) = try self.socket.isReadableOrWritable(waitForever: false, timeout: DicomConstants.dicomTimeOut)
                 // we read only if the buffer is empty
                 if readData.count == 0 {
                     let readSize = try socket.read(into: &readData)
@@ -200,6 +211,7 @@ public class DicomAssociation : NSObject {
                     if let r = message.handleResponse(data: messageData, completion: completion) {
                         response = r
                         
+                        // get results from last RSP message
                         if let cFinRQ = message as? CFindRQ {
                             if let cFinRSP = response as? CFindRSP {
                                 cFinRSP.queryResults = cFinRQ.queryResults
@@ -227,6 +239,21 @@ public class DicomAssociation : NSObject {
         return response
     }
     
+    
+    
+    public func acceptedPresentationContexts(forSOPClassUID sopClassUID:String) -> [PresentationContext] {
+        var pcs:[PresentationContext] = []
+        
+        for (_,pc) in self.presentationContexts {
+            if pc.abstractSyntax == sopClassUID {
+                if let _ = self.acceptedPresentationContexts[pc.contextID] {
+                    pcs.append(pc)
+                }
+            }
+        }
+        
+        return pcs
+    }
     
     
     
