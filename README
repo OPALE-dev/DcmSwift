@@ -1,0 +1,5 @@
+# README
+
+Before anything, install dependencies with Carthage :
+
+carthage update --platform macos

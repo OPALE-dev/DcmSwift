@@ -77,14 +77,12 @@
 		4C5BF0911FABB4730051F4FE /* DicomString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5BF0901FABB4730051F4FE /* DicomString.swift */; };
 		4C5BF0921FABB4730051F4FE /* DicomString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5BF0901FABB4730051F4FE /* DicomString.swift */; };
 		4C5F9B382248DC5E0076DA82 /* Socket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; };
-		4C5F9B3A2248E1E30076DA82 /* Socket.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4C5F9B3C2248E3870076DA82 /* EntitiesPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B3B2248E3870076DA82 /* EntitiesPrefViewController.swift */; };
 		4C5F9B3E224911E30076DA82 /* GeneralPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B3D224911E30076DA82 /* GeneralPrefViewController.swift */; };
 		4C5F9B40224913A10076DA82 /* NetworkPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B3F224913A10076DA82 /* NetworkPrefViewController.swift */; };
 		4C5F9B42224913C00076DA82 /* DicomPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B41224913C00076DA82 /* DicomPrefViewController.swift */; };
 		4C5F9B44224935530076DA82 /* SendViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B43224935530076DA82 /* SendViewController.swift */; };
 		4C5F9B4B224A4C920076DA82 /* SwiftyBeaver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; };
-		4C5F9B4C224A4CA50076DA82 /* SwiftyBeaver.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4C76A9E722480F5E0057350E /* DicomConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE7224401670024C357 /* DicomConstants.swift */; };
 		4C76AA00224814F60057350E /* CR-MONO1-10-chest in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9E9224814F30057350E /* CR-MONO1-10-chest */; };
 		4C76AA01224814F60057350E /* MR-MONO2-16-knee in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9EA224814F30057350E /* MR-MONO2-16-knee */; };
@@ -151,6 +149,8 @@
 		4CECD64B2240F3440087AF0D /* DocumentsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64A2240F3440087AF0D /* DocumentsViewController.swift */; };
 		4CECD64D22415EE90087AF0D /* DicomClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64C22415EE90087AF0D /* DicomClient.swift */; };
 		4CECD64F22415F5A0087AF0D /* DicomService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64E22415F5A0087AF0D /* DicomService.swift */; };
+		DABE9BC5228AEFBC0015655D /* SwiftyBeaver.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		DABE9BC6228AEFBC0015655D /* Socket.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -187,8 +187,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				4C5F9B4C224A4CA50076DA82 /* SwiftyBeaver.framework in Copy Frameworks */,
-				4C5F9B3A2248E1E30076DA82 /* Socket.framework in Copy Frameworks */,
+				DABE9BC5228AEFBC0015655D /* SwiftyBeaver.framework in Copy Frameworks */,
+				DABE9BC6228AEFBC0015655D /* Socket.framework in Copy Frameworks */,
 			);
 			name = "Copy Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -350,6 +350,7 @@
 		4CECD64A2240F3440087AF0D /* DocumentsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentsViewController.swift; sourceTree = "<group>"; };
 		4CECD64C22415EE90087AF0D /* DicomClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomClient.swift; sourceTree = "<group>"; };
 		4CECD64E22415F5A0087AF0D /* DicomService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomService.swift; sourceTree = "<group>"; };
+		DABE9BC3228AEBEB0015655D /* README */ = {isa = PBXFileReference; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -693,6 +694,7 @@
 		4CFF024F1F960F0700E31D74 = {
 			isa = PBXGroup;
 			children = (
+				DABE9BC3228AEBEB0015655D /* README */,
 				4CCF6B181F9FABBA000579C7 /* DicomiX */,
 				4C3EF242226E3AAC0062B5A3 /* MagiX */,
 				4C8D798F1F989EB1008300E3 /* DcmSwift */,
@@ -824,7 +826,7 @@
 				TargetAttributes = {
 					4C3EF240226E3AAC0062B5A3 = {
 						CreatedOnToolsVersion = 10.1;
-						ProvisioningStyle = Manual;
+						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
 							com.apple.Sandbox = {
 								enabled = 0;
@@ -1103,9 +1105,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = JSVJHJ78QE;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = MagiX/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
@@ -1123,9 +1126,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = JSVJHJ78QE;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = MagiX/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
@@ -1140,7 +1144,7 @@
 		4C8D79941F989EB1008300E3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -1171,7 +1175,7 @@
 		4C8D79951F989EB1008300E3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -1202,9 +1206,10 @@
 		4CA405261FA67DF3006F8053 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = JSVJHJ78QE;
+				DEVELOPMENT_TEAM = "";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/Mac",
@@ -1213,6 +1218,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.read-write.DcmSwiftTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 4.2;
 			};
 			name = Debug;
@@ -1220,9 +1226,10 @@
 		4CA405271FA67DF3006F8053 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = JSVJHJ78QE;
+				DEVELOPMENT_TEAM = "";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/Mac",
@@ -1231,6 +1238,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.read-write.DcmSwiftTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 4.2;
 			};
 			name = Release;
@@ -1240,7 +1248,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = DicomiX/Resources/DicomiX.entitlements;
-				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = JSVJHJ78QE;
@@ -1259,7 +1267,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = DicomiX/Resources/DicomiX.entitlements;
-				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = JSVJHJ78QE;
