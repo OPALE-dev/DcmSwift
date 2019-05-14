@@ -235,19 +235,19 @@ public class DicomImage {
         return nil
     }
     
-//#elseif os(iOS)
-//    public func image(forFrame frame: Int) -> UIImage? {
-//        if !frames.indices.contains(frame) { return nil }
-//
-//        let size = NSSize(width: self.columns, height: self.rows)
-//        let data = self.frames[frame]
-//
-//        if let cgim = self.imageFromPixels(size: size, pixels: data.toUnsigned8Array(), width: self.columns, height: self.rows) {
-//            return UIImage(cgImage: cgim, size: size)
-//        }
-//
-//        return nil
-//    }
+#elseif os(iOS)
+    public func image(forFrame frame: Int) -> UIImage? {
+        if !frames.indices.contains(frame) { return nil }
+
+        let size = NSSize(width: self.columns, height: self.rows)
+        let data = self.frames[frame]
+
+        if let cgim = self.imageFromPixels(size: size, pixels: data.toUnsigned8Array(), width: self.columns, height: self.rows) {
+            return UIImage(cgImage: cgim, size: size)
+        }
+
+        return nil
+    }
 #endif
     
     

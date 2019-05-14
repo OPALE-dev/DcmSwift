@@ -94,7 +94,14 @@ class ElementViewController: NSViewController, NSControlTextEditingDelegate {
                     self.valueTextField.objectValue = data.toHexString()
                 }
                 else {
-                    self.valueTextField.objectValue = self.element.value
+                    if element.vr == .DA || element.vr == .DT || element.vr == .TM {
+                        if let date = self.element?.value as! Date? {
+                            self.valueTextField.objectValue = date.format(accordingTo: element.vr)
+                        }
+                    }
+                    else {
+                        self.valueTextField.objectValue = self.element.value
+                    }
                 }
                 
                 self.valueTextField.isEditable  = self.element.isEditable
