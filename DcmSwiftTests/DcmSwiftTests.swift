@@ -14,9 +14,9 @@ import SwiftyBeaver
 
 class DcmSwiftTests: XCTestCase {
     // Configure the test suite
-    private static var testDicomDateAndTime     = false
-    private static var testDicomFileIO          = true
-    private static var testDicomDataSet         = true
+    private static var testDicomDateAndTime     = true
+    private static var testDicomFileIO          = false
+    private static var testDicomDataSet         = false
     private static var testDicomImage           = false
     
     public var filePath:String!
@@ -54,12 +54,12 @@ class DcmSwiftTests: XCTestCase {
         let paths = bundle.paths(forResourcesOfType: "", inDirectory: nil)
         
         if testDicomDateAndTime {
-            suite.addTest(DcmSwiftTests(selector: #selector(testReadDicomDate)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testWriteDicomDate)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testReadDicomTime)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testWriteDicomTime)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testCombineDateAndTime)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testReadWriteDicomRange)))
+            suite.addTest(DcmSwiftTests(selector: #selector(readDicomDate)))
+            suite.addTest(DcmSwiftTests(selector: #selector(writeDicomDate)))
+            suite.addTest(DcmSwiftTests(selector: #selector(readDicomTime)))
+            suite.addTest(DcmSwiftTests(selector: #selector(writeDicomTime)))
+            suite.addTest(DcmSwiftTests(selector: #selector(combineDateAndTime)))
+            suite.addTest(DcmSwiftTests(selector: #selector(readWriteDicomRange)))
 
         }
         
@@ -117,7 +117,7 @@ class DcmSwiftTests: XCTestCase {
     
     
     
-    public func testReadDicomDate() {
+    public func readDicomDate() {
         let ds1 = "20001201"
         let dd1 = Date(dicomDate: ds1)
         let desc1 = dd1!.description(with: .current)
@@ -135,7 +135,7 @@ class DcmSwiftTests: XCTestCase {
     }
     
     
-    public func testWriteDicomDate() {
+    public func writeDicomDate() {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy/MM/dd"
         
@@ -146,7 +146,7 @@ class DcmSwiftTests: XCTestCase {
         assert(dd1 == "20120124")
     }
 
-    public func testDicomDateWrongLength() {
+    public func dicomDateWrongLength() {
         // Must be 8 or 10 bytes
         var ds = ""
         for i in 0...11 {
@@ -163,7 +163,7 @@ class DcmSwiftTests: XCTestCase {
     }
     
     
-    public func testReadDicomTime() {
+    public func readDicomTime() {
         let ds1 = "143250"
         let dd1 = Date(dicomTime: ds1)
         let desc1 = dd1!.description(with: .current)
@@ -181,7 +181,7 @@ class DcmSwiftTests: XCTestCase {
     }
 
 
-    public func testReadDicomTimeMidnight() {
+    public func readDicomTimeMidnight() {
         let ds1 = "240000"
         let dd1 = Date(dicomTime: ds1)
 
@@ -195,7 +195,7 @@ class DcmSwiftTests: XCTestCase {
     }
 
 
-    public func testDicomTimeWrongLength() {
+    public func dicomTimeWrongLength() {
         var ds1 = "1"
         for _ in 0...3 {
             let dd1 = Date(dicomTime: ds1)
@@ -204,7 +204,7 @@ class DcmSwiftTests: XCTestCase {
         }
     }
 
-    public func testDicomTimeWeirdTime() {
+    public func dicomTimeWeirdTime() {
         let ds1 = "236000"
         let dd1 = Date(dicomTime: ds1)
 
@@ -223,7 +223,7 @@ class DcmSwiftTests: XCTestCase {
         assert(dd3 == nil)
     }
     
-    public func testWriteDicomTime() {
+    public func writeDicomTime() {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "HH:mm:ss"
         
@@ -235,7 +235,7 @@ class DcmSwiftTests: XCTestCase {
     }
 
     
-    public func testCombineDateAndTime() {
+    public func combineDateAndTime() {
         let ds1 = "20001201"
         let ts1 = "143250"
         
@@ -248,7 +248,7 @@ class DcmSwiftTests: XCTestCase {
     
     
     
-    public func testReadWriteDicomRange() {
+    public func readWriteDicomRange() {
         let ds1 = "20001201"
         let ds2 = "20021201"
         

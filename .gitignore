@@ -37,6 +37,7 @@ Pods/
 
 # Ignore Xcode user-related files
 xcuserdata/
+*.xcodeproj/xcuserdata
 
 # Ignore AppCode user-related files
 .idea/
