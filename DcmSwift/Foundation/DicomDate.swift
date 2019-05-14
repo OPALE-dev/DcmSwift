@@ -273,51 +273,6 @@ public class DateRange : CustomStringConvertible {
         self.type   = type
     }
 
-
-    /**
-     Create a DICOM Range for any DICOM date strings
-
-     - parameter dicomStart: DICOM Date string, required for both .after and .between
-     - parameter dicomEnd: DICOM Date string, required for both .prior and .between
-     - parameter range: Range
-     - parameter type: DicomConstants.VR
-     - returns: DateRange object
-
-    public var startTime:Date?
-    public var endTime:Date?
-    
-    public var rangeType:DateRangeType = .betweenDate
-    
-    /**
-     Create a DICOM Date Range
-     
-     - parameter startDate: Date object, required for both .afterDate and .betweenDate
-     - parameter endDate: Date object, required for both .priorDate and .betweenDate
-     - parameter rangeType: DateRangeType: priorDate, afterDate, betweenDate
-     - returns: DateRange object
-     
-     */
-    public init(startDate:Date?, endDate:Date?, rangeType:DateRangeType) {
-        self.startDate  = startDate
-        self.endDate    = endDate
-        self.rangeType  = rangeType
-    }
-    
-    /**
-     Create a DICOM Time Range
-     
-     - parameter startTime: Date object, required for both .afterTime and .betweenTime
-     - parameter endTime: Date object, required for both .priorTime and .betweenTime
-     - parameter rangeType: DateRangeType: priorTime, afterTime, betweenTime
-     - returns: DateRange object
-     
-     */
-    public init(startTime:Date?, endTime:Date?, rangeType:DateRangeType) {
-        self.startTime  = startTime
-        self.endTime    = endTime
-        self.rangeType  = rangeType
-    }
-    
     /**
      Create a DICOM Date Range for DICOM date strings
      
