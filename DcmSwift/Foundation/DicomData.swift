@@ -144,6 +144,30 @@ extension Data {
         var data = bigEndian ? data.bigEndian : data.littleEndian
         self.append(UnsafeBufferPointer(start: &data, count: 1))
     }
+    
+    
+    public func chunck(into size:Int) ->  [Data] {
+        let dataLen = self.count
+        let chunkSize = size
+        
+        let fullChunks = Int(dataLen / chunkSize)
+        let totalChunks = fullChunks + (dataLen % 1024 != 0 ? 1 : 0)
+        
+        var chunks:[Data] = [Data]()
+        
+        for chunkCounter in 0..<totalChunks {
+            var chunk:Data
+            let chunkBase = chunkCounter * chunkSize
+            var diff = chunkSize
+            if(chunkCounter == totalChunks - 1) {
+                diff = dataLen - chunkBase
+            }
+            
+            chunk = self.subdata(in: chunkBase..<(chunkBase + diff))
+            chunks.append(chunk)
+        }
+        return chunks
+    }
 }
 
 

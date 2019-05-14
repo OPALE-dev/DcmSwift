@@ -70,7 +70,7 @@ public class CStoreRQ: DataTF {
                     do {
                         // read file data
                         let fileData = try Data(contentsOf: URL(fileURLWithPath: filePath))
-                        let chunks = Array(fileData).chunked(into: fileData.count / 16372).map { e in Data(bytes: e)}
+                        let chunks = fileData.chunck(into: 16372)
                         
                         var index = 0
                         
@@ -97,11 +97,6 @@ public class CStoreRQ: DataTF {
                             datas.append(data)
                             index += 1
                         }
-                        
-                        
-                        
-
-                        
                     } catch {
                         print("File cannot be read")
                         return []
