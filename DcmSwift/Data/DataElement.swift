@@ -175,12 +175,9 @@ public class DataElement : DicomObject {
                 self.vr == .ST ||
                 self.vr == .PN ||
                 self.vr == .DS ||
-                self.vr == .DA ||
                 self.vr == .DS ||
-                self.vr == .DT ||
                 self.vr == .IS ||
                 self.vr == .LT ||
-                self.vr == .TM ||
                 self.vr == .AE {
             return self.data.toString()
         }
@@ -191,6 +188,15 @@ public class DataElement : DicomObject {
         }
         else if self.vr == .SQ {
             return ""
+        }
+        else if self.vr == .DA {
+            return Date(dicomDate: self.data.toString())
+        }
+        else if self.vr == .DT {
+            return Date(dicomDateTime: self.data.toString())
+        }
+        else if self.vr == .TM {
+            return Date(dicomTime: self.data.toString())
         }
         
         return self.data
