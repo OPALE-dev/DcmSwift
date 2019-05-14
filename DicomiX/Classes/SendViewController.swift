@@ -33,12 +33,12 @@ class SendViewController: NSViewController {
         
         client.connect { (ok, error) in
             if ok {
-                if let document = NSDocumentController.shared.currentDocument as? DicomDocument {
-                    client.store([document.dicomFile!], completion: { (ok, error) in
-                        print(ok)
-                        print(error)
-                    })
-                }
+//                if let document = NSDocumentController.shared.currentDocument as? DicomDocument {
+//                    client.store([document.dicomFile!], completion: { (ok, error) in
+//                        print(ok)
+//                        print(error)
+//                    })
+//                }
             }
         }
         

@@ -9,6 +9,10 @@
 import Foundation
 
 public class CEchoRSP: DataTF {
+    public override func messageName() -> String {
+        return "C-ECHO-RSP"
+    }
+    
     public override func data() -> Data {
         return Data()
     }

@@ -10,6 +10,11 @@ import Foundation
 
 
 public class ReleaseRQ: PDUMessage {
+    public override func messageName() -> String {
+        return "A-RELEASE-RJ"
+    }
+    
+    
     public override func data() -> Data {
         var data = Data()
         let length = UInt32(4)

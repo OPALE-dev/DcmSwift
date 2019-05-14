@@ -9,6 +9,10 @@
 import Foundation
 
 public class DataTF: PDUMessage {
+    public override func messageName() -> String {
+        return "DATA-TF"
+    }
+    
     public func decodeFlags(data: Data) {
         let flags = data.subdata(in: 11..<12).toInt8().bigEndian
         let commandData = data.subdata(in: 12..<data.count)

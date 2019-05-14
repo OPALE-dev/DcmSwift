@@ -9,5 +9,19 @@
 import Foundation
 
 public class CStoreRSP: DataTF {
-
+    public override func messageName() -> String {
+        return "C-STORE-RSP"
+    }
+    
+    
+    public override func decodeData(data: Data) -> Bool {
+        super.decodeDIMSEStatus(data: data)
+        
+        return true
+    }
+    
+    
+    public override func handleResponse(data: Data, completion: PDUCompletion) -> PDUMessage? {
+        return nil
+    }
 }

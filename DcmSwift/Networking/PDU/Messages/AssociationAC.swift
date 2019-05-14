@@ -10,18 +10,32 @@ import Foundation
 import SwiftyBeaver
 
 public class AssociationAC: PDUMessage {
+    public var remoteCalledAETitle:String?
+    public var remoteCallingAETitle:String?
+    
     public override func data() -> Data {
         return Data()
     }
     
+    public override func messageName() -> String {
+        return "A-ASSOCIATE-AC"
+    }
+    
+    
     public override func decodeData(data:Data) -> Bool {
-        SwiftyBeaver.info("==================== RECEIVE A-ASSOCIATE-AC ====================")
-        SwiftyBeaver.debug("A-ASSOCIATE-AC DATA : \(data.toHex().separate(every: 2, with: " "))")
+        var offset = 0
+        
+        // PDU type
+        let pcPduType = data.first
+        if pcPduType != 0x02 {
+            SwiftyBeaver.error("ERROR: Waiting for an A-ASSOCIATE-AC message, received \(String(describing: pcPduType))")
+            return false
+        }
+        offset += 2
         
         // get full length
-        var offset = 2
-        //let length = data.subdata(in: offset..<6).toInt32(byteOrder: .BigEndian)
-        offset = 6
+        let _ = data.subdata(in: offset..<6).toInt32(byteOrder: .BigEndian)
+        offset += 4 
         
         // check protocol version
         let protocolVersion = data.subdata(in: offset..<offset+2).toInt16(byteOrder: .BigEndian)
@@ -29,55 +43,54 @@ public class AssociationAC: PDUMessage {
             SwiftyBeaver.error("WARN: Wrong protocol version")
             return false
         }
-        offset = 8
+        offset += 2
+        
+        // reserved bytes
+        offset += 2
         
         // TODO: Called / Calling AE Titles
-        offset = 74
+        self.remoteCalledAETitle = data.subdata(in: offset..<offset+16).toString()
+        offset += 16
+        self.remoteCallingAETitle = data.subdata(in: offset..<offset+16).toString()
+        offset += 16
+        
+        // reserved bytes
+        offset += 32
         
         // parse app context
-        var subdata = data.subdata(in: offset..<data.count)
-        guard let applicationContext = ApplicationContext(data: subdata) else {
+        let acLength = Int(data.subdata(in: offset+2..<offset+4).toInt16(byteOrder: .BigEndian))
+        var acData = data.subdata(in: offset..<offset+acLength+4)
+        guard let applicationContext = ApplicationContext(data: acData) else {
             SwiftyBeaver.error("Missing application context. Abort.")
             return false
         }
-        
-        SwiftyBeaver.info("  -> Application Context Name: \(applicationContext.applicationContextName)")
+        offset += acData.count
+        self.association.remoteApplicationContext = applicationContext
         
         // parse presentation context
-        SwiftyBeaver.info("  -> Presentation Contexts:")
-        offset = Int(applicationContext.length) + 8
-        
-        var pcType = subdata.subdata(in: offset..<offset + 1).toInt8()
-        offset = 0
+        var pcType = data.subdata(in: offset..<offset + 1).toInt8()
         
         while pcType == ItemType.acPresentationContext.rawValue {
             offset += 2
             
-            let pcLength = subdata.subdata(in: offset..<offset + 2).toInt16().bigEndian
+            let pcLength = data.subdata(in: offset..<offset + 2).toInt16().bigEndian
             offset += 2
             
-            let pcData = subdata.subdata(in: offset-4..<offset-4+Int(pcLength))
-            
-            print(pcData.toHex())
+            let pcData = data.subdata(in: offset-4..<offset+Int(pcLength))
             
             if let presentationContext = PresentationContext(data: pcData) {
-                print("presentationContext")
-                self.association.acceptedPresentationContexts.append(presentationContext)
-                
-                SwiftyBeaver.info("    -> Context ID: \(presentationContext.contextID ?? 0)")
-                SwiftyBeaver.info("      -> Accepted Transfer Syntax(es): \(presentationContext.acceptedTransferSyntax ?? "")")
+                self.association.acceptedPresentationContexts[presentationContext.contextID] = presentationContext
             }
             
-            offset += Int(pcLength) - 4
-            pcType = subdata.subdata(in: offset..<offset + 1).toInt8()
+            offset += Int(pcLength)
+            pcType = data.subdata(in: offset..<offset + 1).toInt8()
         }
 
         // read user info
-        SwiftyBeaver.info("  -> User Informations:")
         offset = offset + 4
-        subdata = subdata.subdata(in: offset..<subdata.count)
-
-        guard let userInfo = UserInfo(data: subdata) else {
+        let userInfoData = data.subdata(in: offset..<data.count)
+        
+        guard let userInfo = UserInfo(data: userInfoData) else {
             SwiftyBeaver.warning("No user information values provided. Abort")
             return false
         }
@@ -85,11 +98,6 @@ public class AssociationAC: PDUMessage {
         self.association?.maxPDULength = userInfo.maxPDULength
         self.association?.remoteImplementationUID = userInfo.implementationUID
         self.association?.remoteImplementationVersion = userInfo.implementationVersion
-
-        SwiftyBeaver.info("    -> Remote Max PDU: \(self.association!.maxPDULength)")
-        SwiftyBeaver.info("    -> Implementation class UID: \(self.association!.remoteImplementationUID ?? "")")
-        SwiftyBeaver.info("    -> Implementation version: \(self.association!.remoteImplementationVersion ?? "")")
-
         self.association?.associationAccepted = true
 
         SwiftyBeaver.info(" ")
@@ -98,7 +106,7 @@ public class AssociationAC: PDUMessage {
     }
     
     
-    public override func messageData() -> Data? {
-        return nil
+    public override func messagesData() -> [Data] {
+        return []
     }
 }
