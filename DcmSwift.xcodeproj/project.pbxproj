@@ -82,7 +82,6 @@
 		4C5F9B40224913A10076DA82 /* NetworkPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B3F224913A10076DA82 /* NetworkPrefViewController.swift */; };
 		4C5F9B42224913C00076DA82 /* DicomPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B41224913C00076DA82 /* DicomPrefViewController.swift */; };
 		4C5F9B44224935530076DA82 /* SendViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B43224935530076DA82 /* SendViewController.swift */; };
-		4C5F9B4B224A4C920076DA82 /* SwiftyBeaver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; };
 		4C76A9E722480F5E0057350E /* DicomConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE7224401670024C357 /* DicomConstants.swift */; };
 		4C76AA00224814F60057350E /* CR-MONO1-10-chest in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9E9224814F30057350E /* CR-MONO1-10-chest */; };
 		4C76AA01224814F60057350E /* MR-MONO2-16-knee in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9EA224814F30057350E /* MR-MONO2-16-knee */; };
@@ -139,9 +138,7 @@
 		4CCF6B2D1F9FABDF000579C7 /* DcmSwift.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8D798E1F989EB1008300E3 /* DcmSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4CCF6B2F1F9FB285000579C7 /* WindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCF6B2E1F9FB285000579C7 /* WindowController.swift */; };
 		4CCF8FA0224AAAE60032325C /* ExportDICOMViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCF8F9F224AAAE60032325C /* ExportDICOMViewController.swift */; };
-		4CCF8FA1224AB0B20032325C /* SwiftyBeaver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; };
 		4CCF8FA2224AB0B20032325C /* Socket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; };
-		4CCF8FA4224AB1440032325C /* SwiftyBeaver.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4CCF8FA5224AB1440032325C /* Socket.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4CD0BEE42242A63A0024C357 /* DicomAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE32242A63A0024C357 /* DicomAssociation.swift */; };
 		4CD0BEE62242B15B0024C357 /* DicomEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE52242B15B0024C357 /* DicomEntity.swift */; };
@@ -150,7 +147,6 @@
 		4CECD64D22415EE90087AF0D /* DicomClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64C22415EE90087AF0D /* DicomClient.swift */; };
 		4CECD64F22415F5A0087AF0D /* DicomService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64E22415F5A0087AF0D /* DicomService.swift */; };
 		DA41828A228BF77100A79D54 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA418289228BF77100A79D54 /* Logger.swift */; };
-		DABE9BC5228AEFBC0015655D /* SwiftyBeaver.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DABE9BC6228AEFBC0015655D /* Socket.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DABE9BC9228B07710015655D /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DABE9BC8228B07710015655D /* DateExtensions.swift */; };
 /* End PBXBuildFile section */
@@ -189,7 +185,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				DABE9BC5228AEFBC0015655D /* SwiftyBeaver.framework in Copy Frameworks */,
 				DABE9BC6228AEFBC0015655D /* Socket.framework in Copy Frameworks */,
 			);
 			name = "Copy Frameworks";
@@ -212,7 +207,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				4CCF8FA4224AB1440032325C /* SwiftyBeaver.framework in CopyFiles */,
 				4CCF8FA5224AB1440032325C /* Socket.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -287,7 +281,6 @@
 		4C5F9B3F224913A10076DA82 /* NetworkPrefViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkPrefViewController.swift; sourceTree = "<group>"; };
 		4C5F9B41224913C00076DA82 /* DicomPrefViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomPrefViewController.swift; sourceTree = "<group>"; };
 		4C5F9B43224935530076DA82 /* SendViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendViewController.swift; sourceTree = "<group>"; };
-		4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftyBeaver.framework; path = Carthage/Build/Mac/SwiftyBeaver.framework; sourceTree = "<group>"; };
 		4C76A9E9224814F30057350E /* CR-MONO1-10-chest */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CR-MONO1-10-chest"; sourceTree = "<group>"; };
 		4C76A9EA224814F30057350E /* MR-MONO2-16-knee */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-16-knee"; sourceTree = "<group>"; };
 		4C76A9EB224814F30057350E /* NM-MONO2-16-13x-heart */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NM-MONO2-16-13x-heart"; sourceTree = "<group>"; };
@@ -371,7 +364,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				4C5F9B382248DC5E0076DA82 /* Socket.framework in Frameworks */,
-				4C5F9B4B224A4C920076DA82 /* SwiftyBeaver.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -380,7 +372,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				4CA405231FA67DF3006F8053 /* DcmSwift.framework in Frameworks */,
-				4CCF8FA1224AB0B20032325C /* SwiftyBeaver.framework in Frameworks */,
 				4CCF8FA2224AB0B20032325C /* Socket.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -544,7 +535,6 @@
 		4C8D799E1F989EF4008300E3 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */,
 				4C5F9B372248DC5E0076DA82 /* Socket.framework */,
 				4C9979991FA78EF800C90494 /* AppKit.framework */,
 			);
