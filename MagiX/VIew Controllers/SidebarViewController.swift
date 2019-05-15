@@ -378,8 +378,9 @@ class SidebarViewController:    NSViewController,
             view?.progressBar.isIndeterminate = true
             view?.textField?.stringValue = "Find studies…"
         }
-        else if let _ = OperationsController.shared.operationQueue.operations[row] as? SendOperation {
-            view?.textField?.stringValue = "Send files…"
+        else if let op = OperationsController.shared.operationQueue.operations[row] as? SendOperation {
+            view?.textField?.stringValue = "Send files: \(op.currentIndex)/\(op.numberOfFiles)"
+            view?.progressBar.doubleValue = Double(op.percents)
         }
         
         return view
@@ -437,6 +438,22 @@ class SidebarViewController:    NSViewController,
     private func storeStudy(_ study: Study, toRemote remote: Remote) {
         let operation = SendOperation()
         
+        var files:[String] = []
+        
+        study.series?.forEach({ s in
+            if let serie = s as? Serie {
+                serie.instances?.forEach({ i in
+                    if let instance = i as? Instance {
+                        if let filePath = instance.filePath {
+                            files.append(filePath)
+                        }
+                    }
+                })
+            }
+        })
+        
+        operation.numberOfFiles = files.count
+        
         operation.addExecutionBlock {
             let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
             let callingAE = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
@@ -446,22 +463,13 @@ class SidebarViewController:    NSViewController,
                 
                 client.connect { (ok, error) in
                     if ok {
-                        var files:[String] = []
-                        
-                        study.series?.forEach({ s in
-                            if let serie = s as? Serie {
-                                serie.instances?.forEach({ i in
-                                    if let instance = i as? Instance {
-                                        if let filePath = instance.filePath {
-                                            files.append(filePath)
-                                        }
-                                    }
-                                })
-                            }
-                        })
-                        
-                        client.store(files) { (okFind, receivedMessage, findError) in
-                            if okFind {
+                        client.store(files, progression: { index in
+                            let percent = Int((Float(index) / Float(operation.numberOfFiles)) * 100)
+                            operation.currentIndex = index
+                            operation.percents = percent
+                            
+                        }, completion: { (ok, receivedMessage, findError) in
+                            if ok {
                                 if let _ = receivedMessage as? CStoreRSP {
                                     DispatchQueue.main.async {
                                         
@@ -470,16 +478,14 @@ class SidebarViewController:    NSViewController,
                             } else {
                                 if let alert = findError?.alert() {
                                     DispatchQueue.main.async {
-                                        
                                         alert.runModal()
                                     }
                                 }
                             }
-                        }
+                        })
                     } else {
                         if let alert = error?.alert() {
                             DispatchQueue.main.async {
-                                
                                 alert.runModal()
                             }
                         }
