@@ -447,9 +447,12 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             else if identifier == "ElementValue" {
                 if !(element.value is Data) {
                     if !self.showHexData {
+                        Logger.setDestinations([Logger.Output.Stdout, Logger.Output.File], filePath: "log.txt")
                         
                         if element.vr == .DA || element.vr == .TM || element.vr == .DT {
+
                             if let date = element.value as? Date {
+                                Logger.info("DATE : \(date.format(accordingTo: element.vr))")
                                 view?.textField?.objectValue = date.format(accordingTo: element.vr)
                             }
                         } else {
