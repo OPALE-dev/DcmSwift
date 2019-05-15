@@ -23,7 +23,12 @@
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="VOq-y0-SEH"/>
-                                        <menuItem title="Preferences…" keyEquivalent="," id="BOF-NM-1cW"/>
+                                        <menuItem title="Preferences…" keyEquivalent="," id="BOF-NM-1cW">
+                                            <connections>
+                                                <action selector="showPreferences:" target="Voe-Tx-rLC" id="SzZ-Yr-5Th"/>
+                                                <segue destination="gnb-oV-tJu" kind="show" id="9B1-mq-dh4"/>
+                                            </connections>
+                                        </menuItem>
                                         <menuItem isSeparatorItem="YES" id="wFC-TO-SCJ"/>
                                         <menuItem title="Services" id="NMo-om-nkz">
                                             <modifierMask key="keyEquivalentModifierMask"/>
@@ -1788,11 +1793,11 @@ DQ
                             <scrollView borderType="none" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Pqo-Lw-yP2">
                                 <rect key="frame" x="0.0" y="0.0" width="987" height="302"/>
                                 <clipView key="contentView" id="DFD-6R-ZJE">
-                                    <rect key="frame" x="0.0" y="0.0" width="987" height="302"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="987" height="287"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" multipleSelection="NO" autosaveColumns="NO" rowSizeStyle="automatic" headerView="If5-Om-Eib" viewBased="YES" indentationPerLevel="16" outlineTableColumn="CVv-vI-Lqe" id="UZa-un-sJA">
-                                            <rect key="frame" x="0.0" y="0.0" width="1052" height="279"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="1052" height="264"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <size key="intercellSpacing" width="3" height="2"/>
                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -2010,7 +2015,7 @@ DQ
                                     <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="302" id="7EG-4f-NLm"/>
                                 </constraints>
                                 <scroller key="horizontalScroller" verticalHuggingPriority="750" horizontal="YES" id="0lp-Yc-YwO">
-                                    <rect key="frame" x="0.0" y="286" width="987" height="16"/>
+                                    <rect key="frame" x="0.0" y="287" width="987" height="15"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="NO" id="sla-AS-hmP">
@@ -2805,10 +2810,95 @@ DQ
             </objects>
             <point key="canvasLocation" x="195" y="920"/>
         </scene>
+        <!--Window Controller-->
+        <scene sceneID="9HP-XF-D5u">
+            <objects>
+                <windowController id="gnb-oV-tJu" customClass="PreferencesWindowViewController" customModule="MagiX" customModuleProvider="target" sceneMemberID="viewController">
+                    <window key="window" title="Preferences" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" id="c6A-co-lCZ">
+                        <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES"/>
+                        <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
+                        <rect key="contentRect" x="294" y="372" width="480" height="270"/>
+                        <rect key="screenRect" x="0.0" y="0.0" width="1920" height="1200"/>
+                        <connections>
+                            <outlet property="delegate" destination="gnb-oV-tJu" id="ltG-V1-B6X"/>
+                        </connections>
+                    </window>
+                    <connections>
+                        <segue destination="fUc-4R-nqo" kind="relationship" relationship="window.shadowedContentViewController" id="yKQ-gE-T2z"/>
+                    </connections>
+                </windowController>
+                <customObject id="2og-zk-e7m" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="320" y="-1502"/>
+        </scene>
+        <!--Tab View Controller-->
+        <scene sceneID="91K-7K-GY8">
+            <objects>
+                <tabViewController selectedTabViewItemIndex="0" tabStyle="toolbar" id="fUc-4R-nqo" sceneMemberID="viewController">
+                    <tabViewItems>
+                        <tabViewItem label="General" image="NSPreferencesGeneral" id="3RQ-6S-tMK"/>
+                        <tabViewItem label="Network" image="NSNetwork" id="8gG-yi-IMg"/>
+                    </tabViewItems>
+                    <tabView key="tabView" type="noTabsNoBorder" id="HcE-Xb-BmI">
+                        <rect key="frame" x="0.0" y="0.0" width="450" height="300"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <font key="font" metaFont="message"/>
+                        <connections>
+                            <outlet property="delegate" destination="fUc-4R-nqo" id="AQH-Wn-UiG"/>
+                        </connections>
+                    </tabView>
+                    <connections>
+                        <outlet property="tabView" destination="HcE-Xb-BmI" id="7Ox-hm-JDJ"/>
+                        <segue destination="2fZ-b3-Xf4" kind="relationship" relationship="tabItems" id="J5F-Sl-afS"/>
+                        <segue destination="BwC-e3-wCc" kind="relationship" relationship="tabItems" id="vBm-5c-e8t"/>
+                    </connections>
+                </tabViewController>
+                <customObject id="z5a-bP-LVY" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="958" y="-1525"/>
+        </scene>
+        <!--General-->
+        <scene sceneID="1B5-1R-H7y">
+            <objects>
+                <viewController title="General" id="2fZ-b3-Xf4" customClass="PreferencesTabViewController" customModule="MagiX" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" id="55y-Su-mXg">
+                        <rect key="frame" x="0.0" y="0.0" width="450" height="300"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <subviews>
+                            <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="y0e-xa-FbM">
+                                <rect key="frame" x="72" y="239" width="72" height="18"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <buttonCell key="cell" type="check" title="OPTION" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="kbe-ax-sS2">
+                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                    <font key="font" metaFont="system"/>
+                                </buttonCell>
+                            </button>
+                        </subviews>
+                    </view>
+                </viewController>
+                <customObject id="uHg-pb-P0V" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1659" y="-1922"/>
+        </scene>
+        <!--Network-->
+        <scene sceneID="UTs-i8-Dsy">
+            <objects>
+                <viewController title="Network" id="BwC-e3-wCc" customClass="PreferencesTabViewController" customModule="MagiX" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" id="fRp-wP-WME">
+                        <rect key="frame" x="0.0" y="0.0" width="450" height="300"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </view>
+                </viewController>
+                <customObject id="0eB-2N-lbj" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1659" y="-1541"/>
+        </scene>
     </scenes>
     <resources>
         <image name="NSAddTemplate" width="11" height="11"/>
         <image name="NSComputer" width="32" height="32"/>
+        <image name="NSNetwork" width="32" height="32"/>
+        <image name="NSPreferencesGeneral" width="32" height="32"/>
         <image name="NSRemoveTemplate" width="11" height="11"/>
         <image name="TB_Inspector" width="17" height="17"/>
         <image name="TB_Sidebar" width="17" height="17"/>
