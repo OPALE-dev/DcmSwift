@@ -46,9 +46,13 @@ public class CEchoRQ: DataTF {
     }
     
     override public func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage? {
+        print("handleResponse")
+        
         if let type:UInt8 = data.first {
             if type == PDUType.dataTF.rawValue {
+                print("handleResponse")
                 if let message = PDUDecoder.shared.receiveDIMSEMessage(data: data, pduType: PDUType.dataTF, commandField: .C_ECHO_RSP, association: self.association) as? PDUMessage {
+                    print(message)
                     completion(true, message, message.errors.first)
                     return message
                 }

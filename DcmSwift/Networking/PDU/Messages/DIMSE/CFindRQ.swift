@@ -22,6 +22,7 @@ public class CFindRQ: DataTF {
     public override func data() -> Data {
         var data = Data()
         
+        //let pcs:[PresentationContext] = self.association.acceptedPresentationContexts(forSOPClassUID: sopClassUID)
         let pc = association.presentationContexts[association.presentationContexts.keys.first!]
         
         let pdvDataset = DataSet()
@@ -96,7 +97,6 @@ public class CFindRQ: DataTF {
                 }
             }
         }
-        //completion(false, nil, nil)
         return nil
     }
 }

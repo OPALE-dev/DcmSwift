@@ -33,8 +33,9 @@ public class DicomClient : DicomService, StreamDelegate {
         }
         
         do {
-            try self.socket.connect(to: self.remoteEntity.hostname, port: Int32(self.remoteEntity.port))
             try self.socket.setBlocking(mode: true)
+            
+            try self.socket.connect(to: self.remoteEntity.hostname, port: Int32(self.remoteEntity.port))
             self.isConnected = self.socket.isConnected
             
             completion(self.isConnected, nil)
@@ -66,6 +67,8 @@ public class DicomClient : DicomService, StreamDelegate {
         
         let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
         
+        association.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP)
+        
         association.request() { (accepted, receivedMessage, error) in
             if accepted {
                 if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
@@ -90,7 +93,7 @@ public class DicomClient : DicomService, StreamDelegate {
         // create assoc between local and remote
         let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
         
-        // add C-FIND Study Root QUery Level
+        // add C-FIND Study Root Query Level
         association.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND)
         
         // request assoc
@@ -142,7 +145,7 @@ public class DicomClient : DicomService, StreamDelegate {
 //
 //                }
 
-                association.close()
+               // association.close()
             }
             else {
                 completion(false, receivedMessage, error)

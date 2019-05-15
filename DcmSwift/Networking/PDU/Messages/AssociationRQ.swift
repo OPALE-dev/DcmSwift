@@ -66,19 +66,16 @@ public class AssociationRQ: PDUMessage {
                     debugDescription.append("    -> Implementation class UID: \(response.association.remoteImplementationUID ?? "")\n")
                     debugDescription.append("    -> Implementation version: \(self.association.remoteImplementationVersion ?? "")\n")
 
-                    completion(true, response, nil)
                     return response
                 }
             }
             else if command == PDUType.associationRJ.rawValue {
                 if let response = PDUDecoder.shared.receiveAssocMessage(data: data, pduType: PDUType.associationRJ, association: self.association) as? PDUMessage {
-                    completion(false, response, response.errors.first)
                     return response
                 }
             }
         }
-        
-        completion(false, nil, nil)
+
         return nil
     }
 }
