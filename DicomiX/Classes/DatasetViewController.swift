@@ -405,7 +405,8 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         return false
     }
     
-    
+    /**
+    */
     func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
         var view: NSTableCellView?
         
@@ -421,29 +422,39 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             view = outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
             
             view?.textField?.stringValue = ""
+
+            let identifier = (tableColumn?.identifier)!.rawValue
+
             
-            if (tableColumn?.identifier)!.rawValue == "StartOffset" {
+            if identifier == "StartOffset" {
                 view?.textField?.stringValue = "\(element.startOffset-4)"
             }
-            else if (tableColumn?.identifier)!.rawValue == "TagCode" {
+            else if identifier == "TagCode" {
                 view?.textField?.stringValue = "\(element.group),\(element.element)"
             }
-            else if (tableColumn?.identifier)!.rawValue == "ElementName" {
+            else if identifier == "ElementName" {
                 view?.textField?.stringValue = element.name
             }
-            else if (tableColumn?.identifier)!.rawValue == "VR" {
+            else if identifier == "VR" {
                 view?.textField?.stringValue = "\(element.vr)"
             }
-            else if (tableColumn?.identifier)!.rawValue == "Length" {
+            else if identifier == "Length" {
                 view?.textField?.stringValue = "\(element.length)"
             }
-            else if (tableColumn?.identifier)!.rawValue == "DataOffset" {
+            else if identifier == "DataOffset" {
                 view?.textField?.stringValue = "\(element.dataOffset)"
             }
-            else if (tableColumn?.identifier)!.rawValue == "ElementValue" {
+            else if identifier == "ElementValue" {
                 if !(element.value is Data) {
-                    if !self.showHexData {
-                        view?.textField?.objectValue = element.value
+                    if !self.showHexData {                        
+                        if element.vr == .DA || element.vr == .TM || element.vr == .DT {
+
+                            if let date = element.value as? Date {
+                                view?.textField?.objectValue = date.format(accordingTo: element.vr)
+                            }
+                        } else {
+                            view?.textField?.objectValue = element.value
+                        }
                     } else {
                         if element.data != nil {
                             //view?.textField?.stringValue = element.data.toHex()

@@ -67,11 +67,11 @@ extension Date {
      */
     public init?(dicomTime:String) {
         let df      = DateFormatter()
-        var format  = "HHmmss.SSSSS"// DICOM 3.0 format
+        var format  = "HHmmss.SSSSSS"// DICOM 3.0 format
 
         // ACR-NEMA 2.0 format
         if dicomTime.contains(":") {
-            format = "HH:mm:ss.SSSSS"
+            format = "HH:mm:ss.SSSSSS"
         }
         else if dicomTime.count % 2 == 1 {
             print("Length of DICOM Time cannot be odd")
@@ -177,7 +177,7 @@ extension Date {
      */
     public func dicomTimeString() -> String {
         let df = DateFormatter()
-        df.dateFormat = "HHmmss.SSSSS"
+        df.dateFormat = "HHmmss.SSSSSS"
         return df.string(from: self)
     }
     
@@ -191,7 +191,7 @@ extension Date {
      */
     public func dicomDateTimeString() -> String {
         let df = DateFormatter()
-        df.dateFormat = "yyyyMMddHHmmss.SSSSS"
+        df.dateFormat = "yyyyMMddHHmmss.SSSSSS"
         return df.string(from: self)
     }
 

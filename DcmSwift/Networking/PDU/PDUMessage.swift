@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import SwiftyBeaver
+
 
 public protocol PDUResponsable {
     func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage?
@@ -60,25 +60,25 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     }
     
     public func messagesData() -> [Data] {
-        SwiftyBeaver.warning("Not implemented yet \(#function) \(self.pduType)")
+        Logger.warning("Not implemented yet \(#function) \(self.pduType)")
         return []
     }
     
     
     public func data() -> Data {
-        SwiftyBeaver.warning("Not implemented yet \(#function) \(self.pduType)")
+        Logger.warning("Not implemented yet \(#function) \(self.pduType)")
         return Data()
     }
     
     
     public func decodeData(data:Data) -> Bool {
-        SwiftyBeaver.warning("Not implemented yet \(#function) \(self.pduType)")
+        Logger.warning("Not implemented yet \(#function) \(self.pduType)")
         return false
     }
     
     
     public func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage? {
-        SwiftyBeaver.warning("Not implemented yet \(#function) \(self.pduType)")
+        Logger.warning("Not implemented yet \(#function) \(self.pduType)")
         completion(false, nil, nil)
         return nil
     }
