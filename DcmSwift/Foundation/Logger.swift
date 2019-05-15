@@ -8,6 +8,12 @@
 
 import Foundation
 
+/**
+ This class is for printing log, either in the console or in a file.
+ Log can have different type of severity, and different type of output as
+ stated before.
+
+ */
 public class Logger {
 
 
@@ -25,6 +31,8 @@ public class Logger {
 
     /**
      Enumeration for type of output
+     - Stdout: console
+     - File: file
     */
     public enum Output {
         case Stdout
@@ -32,9 +40,9 @@ public class Logger {
     }
 
 
-    public var fileName:String = "/"
+    public var fileName:String  = "dicom.log"
     public var outputs:[Output] = [.Stdout]
-    private static var shared = Logger()
+    private static var shared   = Logger()
 
 
 
@@ -65,13 +73,21 @@ public class Logger {
 
     /**
      Format the output
+     Adds a newline for writting in file
+     - parameter string: the message to be sent
+     - parameter file: file where the log was called
+     - parameter function: same
+     - parameter line: same
+     - parameter severity: level of severity of the log (see enum)
+
      */
     public func output(string:String, _ file: String = #file, _ function: String = #function, line: Int = #line, severity:LogLevel) {
         let date = Date()
         let df = DateFormatter()
         // formatting date
         df.dateFormat = "dd-MM-yyyy HH:mm:ss"
-        let outputString:String = "\(df.string(from: date)) \(severity.rawValue) \t -> \(string)"
+        /* DATE SEVERITY MESSAGE */
+        let outputString:String = "\(df.string(from: date)) \(severity.rawValue) \t \(string)"
 
         // managing different type of output (console or file)
         for output in outputs {
@@ -86,20 +102,26 @@ public class Logger {
     }
 
     /**
-     Print to the console
+     Prints to the console
+     - parameter message: the log to be printed in the console
+
      */
     public func consoleLog(message:String) {
         print(message)
     }
 
     /**
-     Write in file
+     Write in file. Creates a file if the file doesn't exist. Append at
+     the end of the file.
+     - parameter message: the log to be written in the file
+
     */
     public func fileLog(message: String) {
         if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
             let fileURL = dir.appendingPathComponent(fileName)
 
             var isDirectory = ObjCBool(true)
+            // if file doesn't exist we create it
             if !FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) {
                 FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
             }
@@ -119,9 +141,12 @@ public class Logger {
 
 
     /**
-     Set the destination for output : file (with name of file), console
+     Set the destination for output : file (with name of file), console.
+     Default log file is dicom.log
+     - parameter destinations: all the destinations where the logs are outputted
+
     */
-    public static func setDestinations(_ destinations: [Output], filePath: String = "/") {
+    public static func setDestinations(_ destinations: [Output], filePath: String = "dicom.log") {
         shared.outputs = destinations
         shared.fileName = filePath
     }
