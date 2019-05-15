@@ -450,7 +450,6 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
                         if element.vr == .DA || element.vr == .TM || element.vr == .DT {
 
                             if let date = element.value as? Date {
-                                Logger.info("DATE : \(date.format(accordingTo: element.vr))")
                                 view?.textField?.objectValue = date.format(accordingTo: element.vr)
                             }
                         } else {
