@@ -73,10 +73,6 @@ extension Date {
         if dicomTime.contains(":") {
             format = "HH:mm:ss.SSSSSS"
         }
-        else if dicomTime.count % 2 == 1 {
-            print("Length of DICOM Time cannot be odd")
-            return nil
-        }
 
         // The date string will truncate the format string
         // thanks to the length of the string
