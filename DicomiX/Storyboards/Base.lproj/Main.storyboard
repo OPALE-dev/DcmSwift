@@ -1825,15 +1825,15 @@ DQ
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="o1w-aJ-WX6">
                                 <rect key="frame" x="0.0" y="30" width="436" height="143"/>
                                 <clipView key="contentView" drawsBackground="NO" id="oSy-k8-2tA">
-                                    <rect key="frame" x="0.0" y="0.0" width="436" height="143"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="421" height="143"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <textView editable="NO" importsGraphics="NO" richText="NO" verticallyResizable="YES" findStyle="panel" allowsCharacterPickerTouchBarItem="NO" allowsNonContiguousLayout="YES" textCompletion="NO" id="h3t-5G-Hjp">
-                                            <rect key="frame" x="0.0" y="0.0" width="436" height="143"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="421" height="143"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                            <size key="minSize" width="436" height="143"/>
+                                            <size key="minSize" width="421" height="143"/>
                                             <size key="maxSize" width="582" height="10000000"/>
                                             <color key="insertionPointColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                             <connections>
@@ -1847,7 +1847,7 @@ DQ
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="LXm-3d-qD6">
-                                    <rect key="frame" x="420" y="0.0" width="16" height="143"/>
+                                    <rect key="frame" x="421" y="0.0" width="15" height="143"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
@@ -2691,7 +2691,7 @@ DQ
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" horizontalScrollElasticity="none" verticalScrollElasticity="none" translatesAutoresizingMaskIntoConstraints="NO" id="GJA-9U-ZpH">
                                 <rect key="frame" x="0.0" y="0.0" width="280" height="806"/>
                                 <clipView key="contentView" id="dlR-kW-Rcs">
-                                    <rect key="frame" x="0.0" y="0.0" width="280" height="806"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="265" height="806"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qEX-Qz-3dZ" customClass="FlippedStackView" customModule="DicomiX" customModuleProvider="target">
@@ -3355,7 +3355,7 @@ DQ
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="yKc-Kb-dBM">
-                                    <rect key="frame" x="264" y="0.0" width="16" height="806"/>
+                                    <rect key="frame" x="265" y="0.0" width="15" height="806"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
@@ -3402,11 +3402,11 @@ DQ
             <objects>
                 <viewController id="s0b-jj-Sb4" customClass="ElementViewController" customModule="DicomiX" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" id="vq2-Yw-j1X">
-                        <rect key="frame" x="0.0" y="0.0" width="280" height="383"/>
+                        <rect key="frame" x="0.0" y="0.0" width="295" height="383"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" horizontalScrollElasticity="none" translatesAutoresizingMaskIntoConstraints="NO" id="dlA-Fq-5hJ">
-                                <rect key="frame" x="0.0" y="0.0" width="280" height="383"/>
+                                <rect key="frame" x="0.0" y="0.0" width="295" height="383"/>
                                 <clipView key="contentView" id="LyN-nx-X1I">
                                     <rect key="frame" x="0.0" y="0.0" width="280" height="383"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -3770,7 +3770,7 @@ DQ
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="D7p-1H-3Kn">
-                                    <rect key="frame" x="264" y="0.0" width="16" height="383"/>
+                                    <rect key="frame" x="280" y="0.0" width="15" height="383"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
@@ -3804,11 +3804,11 @@ DQ
             <objects>
                 <viewController id="bHQ-nT-0fZ" customClass="PictureViewController" customModule="DicomiX" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" id="Mho-AT-ebS">
-                        <rect key="frame" x="0.0" y="0.0" width="280" height="516"/>
+                        <rect key="frame" x="0.0" y="0.0" width="295" height="516"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" horizontalScrollElasticity="none" translatesAutoresizingMaskIntoConstraints="NO" id="sgI-28-aeY">
-                                <rect key="frame" x="0.0" y="0.0" width="280" height="516"/>
+                                <rect key="frame" x="0.0" y="0.0" width="295" height="516"/>
                                 <clipView key="contentView" id="9xU-8Z-d6L">
                                     <rect key="frame" x="0.0" y="0.0" width="280" height="516"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -3948,7 +3948,7 @@ DQ
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="8qi-iE-UgY">
-                                    <rect key="frame" x="264" y="0.0" width="16" height="516"/>
+                                    <rect key="frame" x="280" y="0.0" width="15" height="516"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>

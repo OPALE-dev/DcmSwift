@@ -149,8 +149,10 @@
 		4CECD64B2240F3440087AF0D /* DocumentsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64A2240F3440087AF0D /* DocumentsViewController.swift */; };
 		4CECD64D22415EE90087AF0D /* DicomClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64C22415EE90087AF0D /* DicomClient.swift */; };
 		4CECD64F22415F5A0087AF0D /* DicomService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64E22415F5A0087AF0D /* DicomService.swift */; };
+		DA41828A228BF77100A79D54 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA418289228BF77100A79D54 /* Logger.swift */; };
 		DABE9BC5228AEFBC0015655D /* SwiftyBeaver.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DABE9BC6228AEFBC0015655D /* Socket.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		DABE9BC9228B07710015655D /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DABE9BC8228B07710015655D /* DateExtensions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -350,7 +352,9 @@
 		4CECD64A2240F3440087AF0D /* DocumentsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentsViewController.swift; sourceTree = "<group>"; };
 		4CECD64C22415EE90087AF0D /* DicomClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomClient.swift; sourceTree = "<group>"; };
 		4CECD64E22415F5A0087AF0D /* DicomService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomService.swift; sourceTree = "<group>"; };
+		DA418289228BF77100A79D54 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		DABE9BC3228AEBEB0015655D /* README */ = {isa = PBXFileReference; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
+		DABE9BC8228B07710015655D /* DateExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateExtensions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -661,6 +665,7 @@
 			isa = PBXGroup;
 			children = (
 				4C9979931FA75C8300C90494 /* Classes */,
+				DABE9BC7228B07420015655D /* Extensions */,
 				4C9979941FA75C8D00C90494 /* Storyboards */,
 				4C9979951FA75C9D00C90494 /* Resources */,
 				4CCF6B241F9FABBA000579C7 /* Info.plist */,
@@ -679,6 +684,7 @@
 				4C53D70D227DAB4B0003724F /* DicomError.swift */,
 				4C8D79A71F98A69B008300E3 /* DicomSpec.swift */,
 				4CD0BEE7224401670024C357 /* DicomConstants.swift */,
+				DA418289228BF77100A79D54 /* Logger.swift */,
 			);
 			path = Foundation;
 			sourceTree = "<group>";
@@ -714,6 +720,14 @@
 				4C3EF241226E3AAC0062B5A3 /* MagiX.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		DABE9BC7228B07420015655D /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				DABE9BC8228B07710015655D /* DateExtensions.swift */,
+			);
+			path = Extensions;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -989,6 +1003,7 @@
 				4C53D6E4227B61660003724F /* PDUMessage.swift in Sources */,
 				4C7B78D61FA28002005BB2A2 /* DataTag.swift in Sources */,
 				4CD0BEE42242A63A0024C357 /* DicomAssociation.swift in Sources */,
+				DA41828A228BF77100A79D54 /* Logger.swift in Sources */,
 				4C53D706227CB8B20003724F /* CFindRQ.swift in Sources */,
 				4C53D6F6227CB1100003724F /* AssociationRQ.swift in Sources */,
 				4C53D704227CB83A0003724F /* CEchoRQ.swift in Sources */,
@@ -1049,6 +1064,7 @@
 				4C5792FD1FB8709D003B1279 /* AddElementController.swift in Sources */,
 				4CCF6B2F1F9FB285000579C7 /* WindowController.swift in Sources */,
 				4CCF6B1A1F9FABBA000579C7 /* AppDelegate.swift in Sources */,
+				DABE9BC9228B07710015655D /* DateExtensions.swift in Sources */,
 				4CB9C9A11FB248C000C5356B /* ExportViewController.swift in Sources */,
 				4C38D7761FA0922300633A5D /* InspectorViewController.swift in Sources */,
 				4C38D77E1FA11A7400633A5D /* ElementViewController.swift in Sources */,

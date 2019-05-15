@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import SwiftyBeaver
+
 
 public class DicomFile {
     // MARK: - Attributes
@@ -22,15 +22,15 @@ public class DicomFile {
     // MARK: - Public methods
 
     public init?(forPath filepath: String) {
-        initLogger()
+        
         
         if !FileManager.default.fileExists(atPath: filepath) {
-            SwiftyBeaver.error("No such file at \(filepath)")
+            Logger.error("No such file at \(filepath)")
             return nil
         }
         
         if !DicomFile.isDicomFile(filepath) {
-            SwiftyBeaver.error("Not a DICOM file at \(filepath)")
+            Logger.error("Not a DICOM file at \(filepath)")
             return nil
         }
         
@@ -54,7 +54,7 @@ public class DicomFile {
             let attr = try FileManager.default.attributesOfItem(atPath: self.filepath)
             return attr[FileAttributeKey.size] as! UInt64
         } catch {
-            SwiftyBeaver.error("Error: \(error)")
+            Logger.error("Error: \(error)")
             return 0
         }
     }
@@ -132,13 +132,13 @@ public class DicomFile {
         let url = URL.init(fileURLWithPath: filepath)
         var data:Data
         
-        initLogger()
+        
         
         do {
             try data = Data(contentsOf: url)
                         
             if data.count <= 128 {
-                SwiftyBeaver.error("Not enought data in preamble, not a valid DICOM file, not a reagular DICOM file.")
+                Logger.error("Not enought data in preamble, not a valid DICOM file, not a reagular DICOM file.")
             }
             
             let range:Range<Data.Index> = 128..<132
@@ -156,10 +156,10 @@ public class DicomFile {
                     return true
                 }
                 
-                SwiftyBeaver.error("DICM magic word not found, not a reagular DICOM file. Try to read Dataset anyway.")
+                Logger.error("DICM magic word not found, not a reagular DICOM file. Try to read Dataset anyway.")
             }
         } catch {
-            SwiftyBeaver.error("Enable to load file dataset, not a valid DICOM file: \(error)")
+            Logger.error("Enable to load file dataset, not a valid DICOM file: \(error)")
             return false
         }
         return false
@@ -173,16 +173,16 @@ public class DicomFile {
     private func load() -> Bool {
         let url = URL.init(fileURLWithPath: self.filepath)
  
-        SwiftyBeaver.info("* Load file : \(self.fileName())")
-        SwiftyBeaver.debug("  -> File path : \(self.filepath ?? "")")
-        SwiftyBeaver.debug("  -> File size : \(self.fileSizeWithUnit())")
+        Logger.info("* Load file : \(self.fileName())")
+        Logger.debug("  -> File path : \(self.filepath ?? "")")
+        Logger.debug("  -> File size : \(self.fileSizeWithUnit())")
         
         do {
             let data:Data   = try Data(contentsOf: url)
             
             // check wheather or not the header exists
             if data.count <= 8 {
-                SwiftyBeaver.error("Not enought data in preamble, not a valid DICOM file.")
+                Logger.error("Not enought data in preamble, not a valid DICOM file.")
                 return false
             }
             
@@ -192,7 +192,7 @@ public class DicomFile {
             let magic:String            = subdata.toString()
             
             if magic != "DICM" {
-                SwiftyBeaver.error("DICM magic word not found. Try without prefix-header (ACR-NEMA)")
+                Logger.error("DICM magic word not found. Try without prefix-header (ACR-NEMA)")
                 
                 // maybe try to catch no prefix header file (ACR-NEMA)
                 let range:Range<Data.Index> = 0..<8
@@ -200,36 +200,36 @@ public class DicomFile {
                 
                 // ultimate check for truncated DICOM file (ACR-NEMA magic bytes ?!)
                 if subdata != Data([0x08, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00]) {
-                    SwiftyBeaver.error("Enable to read the file header, abort!")
+                    Logger.error("Enable to read the file header, abort!")
                     return false
                 }
                 
                 self.hasPrefixHeader = false
             }
             
-            SwiftyBeaver.debug("  -> Meta-Information Header : \(!self.hasPrefixHeader)")
+            Logger.debug("  -> Meta-Information Header : \(!self.hasPrefixHeader)")
             
             // read dataset and load data
             self.dataset = DataSet(withData: data, readHeader: self.hasPrefixHeader)
             let rez = self.dataset.loadData()
             
-            SwiftyBeaver.debug("  -> Transfer Syntax : \(self.dataset.transferSyntax)")
-            SwiftyBeaver.debug("  -> Byte Order : \(self.dataset.byteOrder)")
+            Logger.debug("  -> Transfer Syntax : \(self.dataset.transferSyntax)")
+            Logger.debug("  -> Byte Order : \(self.dataset.byteOrder)")
             
             if !rez {
-               SwiftyBeaver.error("Enable to load file dataset, abort!")
+               Logger.error("Enable to load file dataset, abort!")
             }
             
             if let s = self.dataset.string(forTag: "MIMETypeOfEncapsulatedDocument") {
                 if s.trimmingCharacters(in: .whitespaces) == "application/pdf " {
-                    SwiftyBeaver.debug("  -> MIMETypeOfEncapsulatedDocument : application/pdf")
+                    Logger.debug("  -> MIMETypeOfEncapsulatedDocument : application/pdf")
                     self.isEncapsulatedPDF = true
                 }
             }
             
             return rez
         } catch {
-            SwiftyBeaver.error("Enable to load file data, abort!")
+            Logger.error("Enable to load file data, abort!")
             return false
         }
     }
