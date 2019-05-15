@@ -92,7 +92,7 @@ public class DicomAssociation : NSObject {
                 if let message = PDUEncoder.shared.createAssocMessage(pduType: .releaseRQ, association: self) {
                     let data = message.data()
                     
-                    SwiftyBeaver.info("==================== SEND A-RELEASE-RQ ====================")
+                    Logger.info("==================== SEND A-RELEASE-RQ ====================")
                     SwiftyBeaver.debug("A-RELEASE-RQ DATA : \(data.toHex().separate(every: 2, with: " "))")
                     
                     try socket.write(from: data)
