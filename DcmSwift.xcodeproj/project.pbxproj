@@ -149,6 +149,7 @@
 		4CECD64B2240F3440087AF0D /* DocumentsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64A2240F3440087AF0D /* DocumentsViewController.swift */; };
 		4CECD64D22415EE90087AF0D /* DicomClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64C22415EE90087AF0D /* DicomClient.swift */; };
 		4CECD64F22415F5A0087AF0D /* DicomService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64E22415F5A0087AF0D /* DicomService.swift */; };
+		4CFBF6AF228C61C7006FE616 /* SendOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFBF6AE228C61C7006FE616 /* SendOperation.swift */; };
 		DA41828A228BF77100A79D54 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA418289228BF77100A79D54 /* Logger.swift */; };
 		DABE9BC5228AEFBC0015655D /* SwiftyBeaver.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B4A224A4C920076DA82 /* SwiftyBeaver.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DABE9BC6228AEFBC0015655D /* Socket.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -352,6 +353,7 @@
 		4CECD64A2240F3440087AF0D /* DocumentsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentsViewController.swift; sourceTree = "<group>"; };
 		4CECD64C22415EE90087AF0D /* DicomClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomClient.swift; sourceTree = "<group>"; };
 		4CECD64E22415F5A0087AF0D /* DicomService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomService.swift; sourceTree = "<group>"; };
+		4CFBF6AE228C61C7006FE616 /* SendOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendOperation.swift; sourceTree = "<group>"; };
 		DA418289228BF77100A79D54 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		DABE9BC3228AEBEB0015655D /* README */ = {isa = PBXFileReference; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 		DABE9BC8228B07710015655D /* DateExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateExtensions.swift; sourceTree = "<group>"; };
@@ -402,6 +404,7 @@
 				4C53D6C32274E5150003724F /* App */,
 				4C53D6C52274E5280003724F /* View Controllers */,
 				4C53D6C62274E5390003724F /* Core Data */,
+				4CFBF6AD228C61A1006FE616 /* Operations */,
 				4C53D6C72274E5470003724F /* Resources */,
 				4C3EF24F226E3AAD0062B5A3 /* Info.plist */,
 			);
@@ -441,8 +444,6 @@
 			children = (
 				4C3EF259226E44D10062B5A3 /* DataController.swift */,
 				4C91251E2282E4A500210165 /* OperationsController.swift */,
-				4C53D6C82275A4EB0003724F /* LoadOperation.swift */,
-				4C9125202282EA0E00210165 /* FindOperation.swift */,
 				4C53D6DC2278F5F90003724F /* Remote.swift */,
 			);
 			path = "Core Data";
@@ -695,6 +696,16 @@
 				4C9979961FA7720300C90494 /* DicomImage.swift */,
 			);
 			path = Graphics;
+			sourceTree = "<group>";
+		};
+		4CFBF6AD228C61A1006FE616 /* Operations */ = {
+			isa = PBXGroup;
+			children = (
+				4C53D6C82275A4EB0003724F /* LoadOperation.swift */,
+				4C9125202282EA0E00210165 /* FindOperation.swift */,
+				4CFBF6AE228C61C7006FE616 /* SendOperation.swift */,
+			);
+			path = Operations;
 			sourceTree = "<group>";
 		};
 		4CFF024F1F960F0700E31D74 = {
@@ -971,6 +982,7 @@
 				4C53D712227E1CEE0003724F /* AppDicomError.swift in Sources */,
 				4C9125232282F14000210165 /* DirectoryEditViewController.swift in Sources */,
 				4C91251F2282E4A500210165 /* OperationsController.swift in Sources */,
+				4CFBF6AF228C61C7006FE616 /* SendOperation.swift in Sources */,
 				4C53D6C92275A4EB0003724F /* LoadOperation.swift in Sources */,
 				4C53D6CF227760690003724F /* RemoteEditViewController.swift in Sources */,
 			);

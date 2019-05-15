@@ -51,6 +51,77 @@ public class DataSequence: DataElement {
     public override func toData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
         var data = Data()
         
+        // write tag code
+        //print("self.tag : (\(self.tag.group),\(self.tag.element))")
+        data.append(self.tag.data(withByteOrder: inByteOrder))
+        
+        // write VR (only explicit)
+        if inVrMethod == .Explicit  {
+            let vrString = "\(self.vr)"
+            let vrData = vrString.data(using: .ascii)
+            data.append(vrData!)
+            
+            if self.vr == .SQ {
+                data.append(Data(repeating: 0x00, count: 2))
+            }
+            else if self.vr == .OB ||
+                self.vr == .OW ||
+                self.vr == .OF ||
+                self.vr == .SQ ||
+                self.vr == .UT ||
+                self.vr == .UN {
+                data.append(Data(repeating: 0x00, count: 2))
+            }
+        }
+        
+        
+        // write length
+        if self.vr == .SQ {
+            var intLength = UInt32(self.length)
+            let lengthData = Data(bytes: &intLength, count: 4)
+            data.append(lengthData)
+        }
+        else if self.vr == .OB ||
+            self.vr == .OW ||
+            self.vr == .OF ||
+            self.vr == .UT ||
+            self.vr == .UN {
+            if self.length >= 0 {
+                let intLength = UInt32(self.length)
+                var convertedNumber = inByteOrder == .LittleEndian ?
+                    intLength.littleEndian : intLength.bigEndian
+                
+                let lengthData = Data(bytes: &convertedNumber, count: 4)
+                data.append(lengthData)
+            }
+                // negative length indicate sequence here
+            else if self.length == -1 {
+                // if OB/OW is a Pixel Sequence
+                if let _ = self as? PixelSequence {
+                    //print(pixelSequence)
+                    data.append(Data(repeating: 0xff, count: 4))
+                }
+            }
+        }
+        else {
+            if inVrMethod == .Explicit {
+                // we only take care of endianneess with Explicit
+                let intLength = UInt16(self.length)
+                var convertedNumber = inByteOrder == .LittleEndian ?
+                    intLength.littleEndian : intLength.bigEndian
+                
+                withUnsafePointer(to: &convertedNumber) {
+                    data.append(UnsafeRawPointer($0).assumingMemoryBound(to: UInt8.self), count: 2)
+                }
+            }
+            else if inVrMethod == .Implicit {
+                var intLength = UInt32(self.length)
+                let lengthData = Data(bytes: &intLength, count: 4)
+                data.append(lengthData)
+            }
+        }
+        
+        
         for item in self.items {
             // write item tag
             data.append(item.tag.data)
