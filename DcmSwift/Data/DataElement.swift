@@ -21,10 +21,10 @@ public class DataValue {
 
 
 public class DataElement : DicomObject {
-    public var startOffset:Int              = 0
-    public var dataOffset:Int               = 0
-    public var endOffset:Int                = 0
-    public var length:Int                   = 0
+    public var startOffset:Int  = 0
+    public var dataOffset:Int   = 0
+    public var endOffset:Int    = 0
+    public var length:Int       = 0
     
     public var parent:DataElement?
     public var dataset:DataSet?
@@ -285,6 +285,7 @@ public class DataElement : DicomObject {
         var data = Data()
         
         // write tag code
+        //print("self.tag : (\(self.tag.group),\(self.tag.element))")
         data.append(self.tag.data(withByteOrder: inByteOrder))
         
         // write VR (only explicit)

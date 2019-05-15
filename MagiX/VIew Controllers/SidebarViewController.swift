@@ -378,6 +378,9 @@ class SidebarViewController:    NSViewController,
             view?.progressBar.isIndeterminate = true
             view?.textField?.stringValue = "Find studies…"
         }
+        else if let _ = OperationsController.shared.operationQueue.operations[row] as? SendOperation {
+            view?.textField?.stringValue = "Send files…"
+        }
         
         return view
     }
@@ -432,54 +435,66 @@ class SidebarViewController:    NSViewController,
     }
     
     private func storeStudy(_ study: Study, toRemote remote: Remote) {
-        let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
-        let callingAE = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
+        let operation = SendOperation()
         
-        if let calledAE = remote.dicomEntity {
-            let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
+        operation.addExecutionBlock {
+            let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
+            let callingAE = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
             
-            client.connect { (ok, error) in
-                if ok {
-                    var files:[String] = []
-                    
-                    study.series?.forEach({ s in
-                        if let serie = s as? Serie {
-                            serie.instances?.forEach({ i in
-                                if let instance = i as? Instance {
-                                    if let filePath = instance.filePath {
-                                        files.append(filePath)
+            if let calledAE = remote.dicomEntity {
+                let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
+                
+                client.connect { (ok, error) in
+                    if ok {
+                        var files:[String] = []
+                        
+                        study.series?.forEach({ s in
+                            if let serie = s as? Serie {
+                                serie.instances?.forEach({ i in
+                                    if let instance = i as? Instance {
+                                        if let filePath = instance.filePath {
+                                            files.append(filePath)
+                                        }
+                                    }
+                                })
+                            }
+                        })
+                        
+                        client.store(files) { (okFind, receivedMessage, findError) in
+                            if okFind {
+                                if let _ = receivedMessage as? CStoreRSP {
+                                    DispatchQueue.main.async {
+                                        
                                     }
                                 }
-                            })
+                            } else {
+                                if let alert = findError?.alert() {
+                                    DispatchQueue.main.async {
+                                        
+                                        alert.runModal()
+                                    }
+                                }
+                            }
                         }
-                    })
-                    
-                    client.store(files) { (okFind, receivedMessage, findError) in
-                        if okFind {
-                            if let storeRSP = receivedMessage as? CStoreRSP {
+                    } else {
+                        if let alert = error?.alert() {
+                            DispatchQueue.main.async {
                                 
-                                DispatchQueue.main.async {
-
-                                }
+                                alert.runModal()
                             }
-                        } else {
-                            if let alert = findError?.alert() {
-                                DispatchQueue.main.async {
-
-                                    alert.runModal()
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    if let alert = error?.alert() {
-                        DispatchQueue.main.async {
-
-                            alert.runModal()
                         }
                     }
                 }
             }
         }
+        
+        operation.completionBlock = {
+            DispatchQueue.main.async {
+                OperationsController.shared.stopObserveOperation(operation)
+            }
+        }
+        
+        OperationsController.shared.addOperation(operation)
+        
     }
 }

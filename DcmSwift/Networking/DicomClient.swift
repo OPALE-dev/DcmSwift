@@ -131,21 +131,13 @@ public class DicomClient : DicomService, StreamDelegate {
         
         association.request() { (accepted, receivedMessage, error) in
             if accepted {
-                if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_STORE_RQ, association: association) as? CStoreRQ {
-                    message.dicomFile = DicomFile(forPath: files.first!)
-                    
-                    association.write(message: message, readResponse: true, completion: completion)
+                for f in files {
+                    if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_STORE_RQ, association: association) as? CStoreRQ {
+                        message.dicomFile = DicomFile(forPath: f)
+                        
+                        association.write(message: message, readResponse: true, completion: completion)
+                    }
                 }
-                
-//                for f in files {
-//                    if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_STORE_RQ, association: association) as? CStoreRQ {
-//                        message.dicomFile = DicomFile(forPath: f)
-//                        association.write(message: message, readResponse: true, completion: completion)
-//                    }
-//
-//                }
-
-               // association.close()
             }
             else {
                 completion(false, receivedMessage, error)
