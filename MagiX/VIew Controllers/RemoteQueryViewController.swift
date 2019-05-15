@@ -52,7 +52,9 @@ class RemoteQueryViewController: NSViewController {
     @IBOutlet weak var modalityXC: NSButton!
     @IBOutlet weak var modalityVL: NSButton!
     @IBOutlet weak var modalityUS: NSButton!
-    
+
+    @IBOutlet weak var listColumns: NSView!
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -92,6 +94,8 @@ class RemoteQueryViewController: NSViewController {
                 _ = dataset.set(value: searchTextField.stringValue, forTagName: "AccessionNumber")
             }
         }
+
+
 
         NotificationCenter.default.post(name: .queryDidChange, object: dataset)
     }
