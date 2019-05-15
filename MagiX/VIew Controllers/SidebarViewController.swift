@@ -166,29 +166,43 @@ class SidebarViewController:    NSViewController,
     @IBAction func remove(_ sender: Any) {
         let selectedItem = self.directoriesOutlineView.item(atRow: self.selectedRow())
         
-        if let d = selectedItem as? PrivateDirectory {
-            DataController.shared.removeDirectory(d)
+        if let _ = selectedItem as? Item {
+            if let dir = selectedItem as? Directory {
+                if dir.main { return }
+            }
             
-            if let index = self.directories.index(of:d) {
-                self.directories.remove(at: index)
+            let alert = NSAlert()
+            alert.messageText = "Are you sure?"
+            alert.informativeText = "This delete operation cannot be undone"
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: "Cancel")
+            
+            if alert.runModal() == .alertFirstButtonReturn {
+                if let d = selectedItem as? PrivateDirectory {
+                    DataController.shared.removeDirectory(d)
+                    
+                    if let index = self.directories.index(of:d) {
+                        self.directories.remove(at: index)
+                    }
+                }
+                else if let d = selectedItem as? SmartDirectory {
+                    DataController.shared.removeDirectory(d)
+                    
+                    if let index = self.directories.index(of:d) {
+                        self.directories.remove(at: index)
+                    }
+                }
+                else if let r = selectedItem as? Remote {
+                    DataController.shared.removeRemote(r)
+                    
+                    if let index = self.remotes.index(of:r) {
+                        self.remotes.remove(at: index)
+                    }
+                }
+                self.directoriesOutlineView.reloadData()
             }
         }
-        else if let d = selectedItem as? SmartDirectory {
-            DataController.shared.removeDirectory(d)
-            
-            if let index = self.directories.index(of:d) {
-                self.directories.remove(at: index)
-            }
-        }
-        else if let r = selectedItem as? Remote {
-            DataController.shared.removeRemote(r)
-            
-            if let index = self.remotes.index(of:r) {
-                self.remotes.remove(at: index)
-            }
-        }
-        
-        self.directoriesOutlineView.reloadData()
     }
     
     
@@ -428,7 +442,7 @@ class SidebarViewController:    NSViewController,
     
     
     private func selectedRow() -> Int {
-        if self.directoriesOutlineView.clickedRow != NSNotFound {
+        if self.directoriesOutlineView.clickedRow != -1 {
             return self.directoriesOutlineView.clickedRow
         }
         
@@ -467,6 +481,10 @@ class SidebarViewController:    NSViewController,
                             let percent = Int((Float(index) / Float(operation.numberOfFiles)) * 100)
                             operation.currentIndex = index
                             operation.percents = percent
+                            
+                            DispatchQueue.main.async {
+                                NotificationCenter.default.post(name: .loadOperationUpdated, object: operation)
+                            }
                             
                         }, completion: { (ok, receivedMessage, findError) in
                             if ok {

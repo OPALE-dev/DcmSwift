@@ -440,7 +440,6 @@
 			isa = PBXGroup;
 			children = (
 				4C3EF259226E44D10062B5A3 /* DataController.swift */,
-				4C91251E2282E4A500210165 /* OperationsController.swift */,
 				4C53D6DC2278F5F90003724F /* Remote.swift */,
 			);
 			path = "Core Data";
@@ -697,6 +696,7 @@
 		4CFBF6AD228C61A1006FE616 /* Operations */ = {
 			isa = PBXGroup;
 			children = (
+				4C91251E2282E4A500210165 /* OperationsController.swift */,
 				4C53D6C82275A4EB0003724F /* LoadOperation.swift */,
 				4C9125202282EA0E00210165 /* FindOperation.swift */,
 				4CFBF6AE228C61C7006FE616 /* SendOperation.swift */,
