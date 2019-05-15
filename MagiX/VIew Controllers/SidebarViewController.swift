@@ -385,6 +385,7 @@ class SidebarViewController:    NSViewController,
         view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "OperationCellView"), owner: self) as? OperationCellView
         
         if let laodOperation = OperationsController.shared.operationQueue.operations[row] as? LoadOperation {
+            view?.progressBar.isIndeterminate = false
             view?.textField?.stringValue = "Load files: \(laodOperation.currentIndex)/\(laodOperation.numberOfFiles)"
             view?.progressBar.doubleValue = Double(laodOperation.percents)
         }
@@ -393,6 +394,7 @@ class SidebarViewController:    NSViewController,
             view?.textField?.stringValue = "Find studies…"
         }
         else if let op = OperationsController.shared.operationQueue.operations[row] as? SendOperation {
+            view?.progressBar.isIndeterminate = false
             view?.textField?.stringValue = "Send files: \(op.currentIndex)/\(op.numberOfFiles)"
             view?.progressBar.doubleValue = Double(op.percents)
         }
