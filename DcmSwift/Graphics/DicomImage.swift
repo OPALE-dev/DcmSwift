@@ -8,7 +8,7 @@
 
 import Foundation
 import Quartz
-import SwiftyBeaver
+
 
 
 #if os(macOS)
@@ -196,14 +196,14 @@ public class DicomImage {
             }
         }
         
-        SwiftyBeaver.verbose("  -> rows : \(self.rows)")
-        SwiftyBeaver.verbose("  -> columns : \(self.columns)")
-        SwiftyBeaver.verbose("  -> photoInter : \(photoInter)")
-        SwiftyBeaver.verbose("  -> isMultiframe : \(isMultiframe)")
-        SwiftyBeaver.verbose("  -> numberOfFrames : \(numberOfFrames)")
-        SwiftyBeaver.verbose("  -> samplesPerPixel : \(samplesPerPixel)")
-        SwiftyBeaver.verbose("  -> bitsAllocated : \(bitsAllocated)")
-        SwiftyBeaver.verbose("  -> bitsStored : \(bitsStored)")
+        Logger.verbose("  -> rows : \(self.rows)")
+        Logger.verbose("  -> columns : \(self.columns)")
+        Logger.verbose("  -> photoInter : \(photoInter)")
+        Logger.verbose("  -> isMultiframe : \(isMultiframe)")
+        Logger.verbose("  -> numberOfFrames : \(numberOfFrames)")
+        Logger.verbose("  -> samplesPerPixel : \(samplesPerPixel)")
+        Logger.verbose("  -> bitsAllocated : \(bitsAllocated)")
+        Logger.verbose("  -> bitsStored : \(bitsStored)")
         
         self.loadPixelData()
     }
@@ -216,7 +216,7 @@ public class DicomImage {
 #if os(macOS)
     public func image(forFrame frame: Int = 0) -> NSImage? {
         if !frames.indices.contains(frame) {
-            SwiftyBeaver.error("  -> No such frame (\(frame))")
+            Logger.error("  -> No such frame (\(frame))")
             return nil
         }
         
@@ -280,17 +280,17 @@ public class DicomImage {
         self.bytesPerRow  = width * (self.bitsAllocated / 8) * samplesPerPixel
         let dataLength = height * bytesPerRow // ??
         
-        SwiftyBeaver.verbose("  -> width : \(width)")
-        SwiftyBeaver.verbose("  -> height : \(height)")
-        SwiftyBeaver.verbose("  -> bytesPerRow : \(bytesPerRow)")
-        SwiftyBeaver.verbose("  -> bitsPerPixel : \(bitsPerPixel)")
-        SwiftyBeaver.verbose("  -> dataLength : \(dataLength)")
+        Logger.verbose("  -> width : \(width)")
+        Logger.verbose("  -> height : \(height)")
+        Logger.verbose("  -> bytesPerRow : \(bytesPerRow)")
+        Logger.verbose("  -> bitsPerPixel : \(bitsPerPixel)")
+        Logger.verbose("  -> dataLength : \(dataLength)")
         
         let imageData = NSData(bytes: pixels, length: dataLength)
         let providerRef = CGDataProvider(data: imageData)
         
         if providerRef == nil {
-            SwiftyBeaver.error("  -> FATAL: cannot allocate bitmap properly")
+            Logger.error("  -> FATAL: cannot allocate bitmap properly")
             return nil
         }
         
@@ -310,7 +310,7 @@ public class DicomImage {
             return cgim
         }
         
-        SwiftyBeaver.error("  -> FATAL: invalid bitmap for CGImage")
+        Logger.error("  -> FATAL: invalid bitmap for CGImage")
         
         return nil
     }
@@ -321,10 +321,10 @@ public class DicomImage {
     private func processPresentationValues(pixels: [UInt8]) -> [UInt8] {
         var output:[UInt8] = pixels
         
-        SwiftyBeaver.verbose("  -> rescaleIntercept : \(self.rescaleIntercept)")
-        SwiftyBeaver.verbose("  -> rescaleSlope : \(self.rescaleSlope)")
-        SwiftyBeaver.verbose("  -> windowCenter : \(self.windowCenter)")
-        SwiftyBeaver.verbose("  -> windowWidth : \(self.windowWidth)")
+        Logger.verbose("  -> rescaleIntercept : \(self.rescaleIntercept)")
+        Logger.verbose("  -> rescaleSlope : \(self.rescaleSlope)")
+        Logger.verbose("  -> windowCenter : \(self.windowCenter)")
+        Logger.verbose("  -> windowWidth : \(self.windowWidth)")
         
         // sanity checks
         if rescaleIntercept != 0 || rescaleSlope != 1 {
@@ -338,8 +338,8 @@ public class DicomImage {
             let low = windowCenter - windowWidth / 2
             let high = windowCenter + windowWidth / 2
             
-            SwiftyBeaver.verbose("  -> low : \(low)")
-            SwiftyBeaver.verbose("  -> low : \(low)")
+            Logger.verbose("  -> low : \(low)")
+            Logger.verbose("  -> low : \(low)")
 
             for i in 0..<output.count {
                 if output[i] < low {
@@ -357,7 +357,7 @@ public class DicomImage {
     private func loadPixelData() {
         // refuse NON native DICOM TS for now
 //        if !DicomConstants.transfersSyntaxes.contains(self.dataset.transferSyntax) {
-//            SwiftyBeaver.error("  -> Unsuppoorted Transfer Syntax")
+//            Logger.error("  -> Unsuppoorted Transfer Syntax")
 //            return;
 //        }
         

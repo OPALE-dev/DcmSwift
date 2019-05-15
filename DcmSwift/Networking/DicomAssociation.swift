@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import SwiftyBeaver
+
 import Socket
 
 
@@ -48,7 +48,7 @@ public class DicomAssociation : NSObject {
         self.callingAET = callingAET
         self.socket = socket
         
-        initLogger()
+        
     }
     
     
@@ -93,7 +93,7 @@ public class DicomAssociation : NSObject {
                     let data = message.data()
                     
                     Logger.info("==================== SEND A-RELEASE-RQ ====================")
-                    SwiftyBeaver.debug("A-RELEASE-RQ DATA : \(data.toHex().separate(every: 2, with: " "))")
+                    Logger.debug("A-RELEASE-RQ DATA : \(data.toHex().separate(every: 2, with: " "))")
                     
                     try socket.write(from: data)
                     var readData = Data()
@@ -113,8 +113,8 @@ public class DicomAssociation : NSObject {
             if let message = PDUEncoder.shared.createAssocMessage(pduType: .abort, association: self) {
                 let data = message.data()
                 
-                SwiftyBeaver.info("==================== SEND A-ABORT ====================")
-                SwiftyBeaver.debug("A-ABORT DATA : \(data.toHex().separate(every: 2, with: " "))")
+                Logger.info("==================== SEND A-ABORT ====================")
+                Logger.debug("A-ABORT DATA : \(data.toHex().separate(every: 2, with: " "))")
                 
                 try socket.write(from: data)
                 var readData = Data()
@@ -132,12 +132,12 @@ public class DicomAssociation : NSObject {
             try socket.write(from: data)
             
             print("==================== SEND \(message.messageName() ) ====================")
-            //SwiftyBeaver.debug("HEX DATA : \(data.toHex().separate(every: 2, with: " "))")
+            //Logger.debug("HEX DATA : \(data.toHex().separate(every: 2, with: " "))")
             print(message.debugDescription)
             
             for messageData in message.messagesData() {
                 print("==================== SEND \(message.messageName() ) ====================")
-                //SwiftyBeaver.debug("HEX DATA : \(messageData.toHex().separate(every: 2, with: " "))")
+                //Logger.debug("HEX DATA : \(messageData.toHex().separate(every: 2, with: " "))")
                 try socket.write(from: messageData)
             }
             
@@ -149,7 +149,7 @@ public class DicomAssociation : NSObject {
             let response = self.readResponse(forMessage: message, completion: completion)
             
             print("==================== RECEIVE \(response?.messageName() ?? "UNKNOW-DIMSE") ====================")
-            //SwiftyBeaver.debug("HEX DATA : \(data.toHex().separate(every: 2, with: " "))")
+            //Logger.debug("HEX DATA : \(data.toHex().separate(every: 2, with: " "))")
             print(message.debugDescription)
             
             completion(true, response, nil)

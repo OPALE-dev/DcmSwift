@@ -9,7 +9,7 @@
 import XCTest
 import Cocoa
 import DcmSwift
-import SwiftyBeaver
+
 
 
 class DcmSwiftTests: XCTestCase {
@@ -298,17 +298,17 @@ class DcmSwiftTests: XCTestCase {
         let fileName = path.components(separatedBy: "/").last!.replacingOccurrences(of: ".dcm", with: "")
         var writePath = "\(self.finderTestDir)/\(fileName)-rwi-test.png"
         
-        SwiftyBeaver.info("#########################################################")
-        SwiftyBeaver.info("# PIXEL DATA TEST")
-        SwiftyBeaver.info("#")
-        SwiftyBeaver.info("# Source file : \(path)")
-        SwiftyBeaver.info("# Destination file : \(writePath)")
-        SwiftyBeaver.info("#")
+        Logger.info("#########################################################")
+        Logger.info("# PIXEL DATA TEST")
+        Logger.info("#")
+        Logger.info("# Source file : \(path)")
+        Logger.info("# Destination file : \(writePath)")
+        Logger.info("#")
         
         if let dicomFile = DicomFile(forPath: path) {
-            if printDatasets { SwiftyBeaver.info("\(dicomFile.dataset.description )") }
+            if printDatasets { Logger.info("\(dicomFile.dataset.description )") }
             
-            SwiftyBeaver.info("# Read succeeded")
+            Logger.info("# Read succeeded")
             
             if let dicomImage = dicomFile.dicomImage {
                 for i in 0 ..< 1 {
@@ -329,22 +329,22 @@ class DcmSwiftTests: XCTestCase {
                             _ = image.writeToFile(file: writePath, atomically: true, usingType: NSBitmapImageRep.FileType.bmp)
                         }
                     } else {
-                        SwiftyBeaver.info("# Error: while extracting Pixel Data")
-                        SwiftyBeaver.info("#")
-                        SwiftyBeaver.info("#########################################################")
+                        Logger.info("# Error: while extracting Pixel Data")
+                        Logger.info("#")
+                        Logger.info("#########################################################")
                         return false
                     }
                 }
             } else {
-                SwiftyBeaver.info("# Error: while extracting Pixel Data")
-                SwiftyBeaver.info("#")
-                SwiftyBeaver.info("#########################################################")
+                Logger.info("# Error: while extracting Pixel Data")
+                Logger.info("#")
+                Logger.info("#########################################################")
                 return false
                 
             }
             
-            SwiftyBeaver.info("#")
-            SwiftyBeaver.info("#########################################################")
+            Logger.info("#")
+            Logger.info("#########################################################")
             
             return true
         }
@@ -359,47 +359,47 @@ class DcmSwiftTests: XCTestCase {
         let fileName = path.components(separatedBy: "/").last!.replacingOccurrences(of: ".dcm", with: "")
         let writePath = "\(self.finderTestDir)/\(fileName)-rwu-test.dcm"
         
-        SwiftyBeaver.info("#########################################################")
-        SwiftyBeaver.info("# UPDATE INTEGRITY TEST")
-        SwiftyBeaver.info("#")
-        SwiftyBeaver.info("# Source file : \(path)")
-        SwiftyBeaver.info("# Destination file : \(writePath)")
-        SwiftyBeaver.info("#")
+        Logger.info("#########################################################")
+        Logger.info("# UPDATE INTEGRITY TEST")
+        Logger.info("#")
+        Logger.info("# Source file : \(path)")
+        Logger.info("# Destination file : \(writePath)")
+        Logger.info("#")
         
         if let dicomFile = DicomFile(forPath: path) {
-            if printDatasets { SwiftyBeaver.info("\(dicomFile.dataset.description )") }
+            if printDatasets { Logger.info("\(dicomFile.dataset.description )") }
             
-            SwiftyBeaver.info("# Read succeeded")
+            Logger.info("# Read succeeded")
             
             if dicomFile.dataset.set(value: "Dicomix", forTagName: "PatientName") != nil {
-                SwiftyBeaver.info("# Update succeeded")
+                Logger.info("# Update succeeded")
             } else {
-                SwiftyBeaver.info("# Update failed")
+                Logger.info("# Update failed")
             }
             
             if (dicomFile.write(atPath: writePath)) {
-                SwiftyBeaver.info("# Write succeeded")
-                SwiftyBeaver.info("#")
+                Logger.info("# Write succeeded")
+                Logger.info("#")
                 
                 if DicomFile(forPath: writePath) != nil {
-                    SwiftyBeaver.info("# Re-read updated file read succeeded !!!")
-                    SwiftyBeaver.info("#")
+                    Logger.info("# Re-read updated file read succeeded !!!")
+                    Logger.info("#")
                 } else {
-                    SwiftyBeaver.info("# Re-read updated file read failed…")
-                    SwiftyBeaver.info("#")
-                    SwiftyBeaver.info("#########################################################")
+                    Logger.info("# Re-read updated file read failed…")
+                    Logger.info("#")
+                    Logger.info("#########################################################")
                     return false
                 }
             }
             else {
-                SwiftyBeaver.info("# Error: while writing file: \(writePath)")
-                SwiftyBeaver.info("#")
-                SwiftyBeaver.info("#########################################################")
+                Logger.info("# Error: while writing file: \(writePath)")
+                Logger.info("#")
+                Logger.info("#########################################################")
                 return false
             }
             
-            SwiftyBeaver.info("#")
-            SwiftyBeaver.info("#########################################################")
+            Logger.info("#")
+            Logger.info("#########################################################")
             
             return true
         }
@@ -414,55 +414,55 @@ class DcmSwiftTests: XCTestCase {
         let fileName = path.components(separatedBy: "/").last!.replacingOccurrences(of: ".dcm", with: "")
         let writePath = "\(self.finderTestDir)/\(fileName)-rw-test.dcm"
         
-        SwiftyBeaver.info("#########################################################")
-        SwiftyBeaver.info("# READ/WRITE INTEGRITY TEST")
-        SwiftyBeaver.info("#")
-        SwiftyBeaver.info("# Source file : \(path)")
-        SwiftyBeaver.info("# Destination file : \(writePath)")
-        SwiftyBeaver.info("#")
+        Logger.info("#########################################################")
+        Logger.info("# READ/WRITE INTEGRITY TEST")
+        Logger.info("#")
+        Logger.info("# Source file : \(path)")
+        Logger.info("# Destination file : \(writePath)")
+        Logger.info("#")
         
         if let dicomFile = DicomFile(forPath: path) {
-            if printDatasets { SwiftyBeaver.info("\(dicomFile.dataset.description )") }
+            if printDatasets { Logger.info("\(dicomFile.dataset.description )") }
             
-            SwiftyBeaver.info("# Read succeeded")
+            Logger.info("# Read succeeded")
             
             if (dicomFile.write(atPath: writePath)) {
-                SwiftyBeaver.info("# Write succeeded")
-                SwiftyBeaver.info("#")
+                Logger.info("# Write succeeded")
+                Logger.info("#")
                 
-                SwiftyBeaver.info("# Source file size : \(self.fileSize(filePath: path))")
-                SwiftyBeaver.info("# Dest. file size  : \(self.fileSize(filePath: writePath))")
-                SwiftyBeaver.info("#")
+                Logger.info("# Source file size : \(self.fileSize(filePath: path))")
+                Logger.info("# Dest. file size  : \(self.fileSize(filePath: writePath))")
+                Logger.info("#")
                 
-                SwiftyBeaver.info("# Calculating checksum...")
-                SwiftyBeaver.info("#")
+                Logger.info("# Calculating checksum...")
+                Logger.info("#")
                 
                 let originalSum = shell(launchPath: "/sbin/md5", arguments: ["-q", path]).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
                 let savedSum = shell(launchPath: "/sbin/md5", arguments: ["-q", writePath]).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
                 
-                SwiftyBeaver.info("# Source file MD5 : \(originalSum)")
-                SwiftyBeaver.info("# Dest. file MD5  : \(savedSum)")
-                SwiftyBeaver.info("#")
+                Logger.info("# Source file MD5 : \(originalSum)")
+                Logger.info("# Dest. file MD5  : \(savedSum)")
+                Logger.info("#")
                 
                 if originalSum == savedSum {
-                    SwiftyBeaver.info("# Checksum succeeded: \(originalSum) == \(savedSum)")
+                    Logger.info("# Checksum succeeded: \(originalSum) == \(savedSum)")
                 }
                 else {
-                    SwiftyBeaver.info("# Error: wrong checksum: \(originalSum) != \(savedSum)")
-                    SwiftyBeaver.info("#")
-                    SwiftyBeaver.info("#########################################################")
+                    Logger.info("# Error: wrong checksum: \(originalSum) != \(savedSum)")
+                    Logger.info("#")
+                    Logger.info("#########################################################")
                     return false
                 }
             }
             else {
-                SwiftyBeaver.info("# Error: while writing file: \(writePath)")
-                SwiftyBeaver.info("#")
-                SwiftyBeaver.info("#########################################################")
+                Logger.info("# Error: while writing file: \(writePath)")
+                Logger.info("#")
+                Logger.info("#########################################################")
                 return false
             }
             
-            SwiftyBeaver.info("#")
-            SwiftyBeaver.info("#########################################################")
+            Logger.info("#")
+            Logger.info("#########################################################")
             
             return true
         }

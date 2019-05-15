@@ -13,6 +13,8 @@ import DcmSwift
 class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        Logger.setDestinations([Logger.Output.Stdout, Logger.Output.File], filePath: "dicomix.log")
+
         // Default preferences
         UserDefaults.standard.register(defaults: [
             "LocalAET": "DICOMIX",
@@ -41,7 +43,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @IBAction func showLogs(_ sender: Any) {
         let appName = Bundle.main.infoDictionary![kCFBundleNameKey as String] as! String
         let caches = (NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.cachesDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)[0])
-        let logFile = [caches, appName, "swiftybeaver.log"]
+        let logFile = [caches, appName, "Logger.log"]
         
         NSWorkspace.shared.openFile(logFile.joined(separator: "/"))
     }

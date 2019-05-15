@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import SwiftyBeaver
+
 
 public class AssociationRQ: PDUMessage {    
     public override func data() -> Data {

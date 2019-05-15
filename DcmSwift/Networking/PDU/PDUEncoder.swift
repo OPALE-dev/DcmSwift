@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import SwiftyBeaver
+
 
 public protocol PDUEncodable {
     func data() -> Data
@@ -40,7 +40,7 @@ class PDUEncoder {
             return Abort(pduType: pduType, association: association)
         }
         else {
-            SwiftyBeaver.error("Unknow PDU Type : \(pduType). Fatal.")
+            Logger.error("Unknow PDU Type : \(pduType). Fatal.")
         }
         
         return nil
@@ -74,7 +74,7 @@ class PDUEncoder {
             }
         }
         else {
-            SwiftyBeaver.error("Unsupported PDU Type : \(pduType). Fatal.")
+            Logger.error("Unsupported PDU Type : \(pduType). Fatal.")
         }
         
         return encodable

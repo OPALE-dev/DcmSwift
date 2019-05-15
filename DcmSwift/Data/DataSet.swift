@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import SwiftyBeaver
+
 
 
 extension Dictionary {
@@ -43,12 +43,12 @@ public class DataSet: DicomObject {
     public override init() {
         self.prefixHeader = false
         
-        initLogger()
+        
     }
     
     
     public init?(withData data:Data, readHeader:Bool = true) {
-        initLogger()
+        
         
         self.data               = data
         self.prefixHeader       = readHeader
@@ -114,7 +114,7 @@ public class DataSet: DicomObject {
             
             // append to sub-datasets
             if !self.isCorrupted {
-                //SwiftyBeaver.debug(newElement)
+                //Logger.debug(newElement)
                 
                 if newElement.group != DicomConstants.metaInformationGroup {
                     self.datasetElements.append(newElement)
@@ -503,7 +503,7 @@ public class DataSet: DicomObject {
 //            let v = ValidationResult(self, message: msg, severity: .Fatal)
 //
 //            self.internalValidations.append(v)
-//            SwiftyBeaver.error(msg)
+//            Logger.error(msg)
 //
 //            self.isCorrupted = true
 //
@@ -662,7 +662,7 @@ public class DataSet: DicomObject {
         self.internalValidations.append(v)
         self.isCorrupted = true
         
-        SwiftyBeaver.error(message)
+        Logger.error(message)
         
         return (element, data.count)
     }

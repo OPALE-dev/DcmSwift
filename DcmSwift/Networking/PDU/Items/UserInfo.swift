@@ -24,7 +24,7 @@ public class UserInfo {
         let uiType = data.first //.subdata(in: offset..<offset+1).toInt18(byteOrder: .BigEndian)
         
         if uiType == ItemType.userInfo.rawValue {
-            //SwiftyBeaver.info("  -> User Informations:")
+            //Logger.info("  -> User Informations:")
             let uiItemData = data.subdata(in: 4..<data.count)
             
             var offset = 0
@@ -37,17 +37,17 @@ public class UserInfo {
                 if uiItemType == ItemType.maxPduLength.rawValue {
                     let maxPDU = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toInt32(byteOrder: .BigEndian)
                     self.maxPDULength = Int(maxPDU)
-                    //SwiftyBeaver.info("    -> Remote Max PDU: \(self.association!.maxPDULength)")
+                    //Logger.info("    -> Remote Max PDU: \(self.association!.maxPDULength)")
                 }
                 else if uiItemType == ItemType.implClassUID.rawValue {
                     let impClasslUID = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toString()
                     self.implementationUID = impClasslUID
-                    //SwiftyBeaver.info("    -> Implementation class UID: \(self.association!.remoteImplementationUID ?? "")")
+                    //Logger.info("    -> Implementation class UID: \(self.association!.remoteImplementationUID ?? "")")
                 }
                 else if uiItemType == ItemType.implVersionName.rawValue {
                     let impVersion = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toString()
                     self.implementationVersion = impVersion
-                    //SwiftyBeaver.info("    -> Implementation version: \(self.association!.remoteImplementationVersion ?? "")")
+                    //Logger.info("    -> Implementation version: \(self.association!.remoteImplementationVersion ?? "")")
                     
                 }
                 
