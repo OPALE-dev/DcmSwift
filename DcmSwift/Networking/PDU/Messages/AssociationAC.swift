@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import SwiftyBeaver
+
 
 public class AssociationAC: PDUMessage {
     public var remoteCalledAETitle:String?
@@ -28,7 +28,7 @@ public class AssociationAC: PDUMessage {
         // PDU type
         let pcPduType = data.first
         if pcPduType != 0x02 {
-            SwiftyBeaver.error("ERROR: Waiting for an A-ASSOCIATE-AC message, received \(String(describing: pcPduType))")
+            Logger.error("ERROR: Waiting for an A-ASSOCIATE-AC message, received \(String(describing: pcPduType))")
             return false
         }
         offset += 2
@@ -40,7 +40,7 @@ public class AssociationAC: PDUMessage {
         // check protocol version
         let protocolVersion = data.subdata(in: offset..<offset+2).toInt16(byteOrder: .BigEndian)
         if Int(protocolVersion) != self.association?.protocolVersion {
-            SwiftyBeaver.error("WARN: Wrong protocol version")
+            Logger.error("WARN: Wrong protocol version")
             return false
         }
         offset += 2
@@ -61,7 +61,7 @@ public class AssociationAC: PDUMessage {
         let acLength = Int(data.subdata(in: offset+2..<offset+4).toInt16(byteOrder: .BigEndian))
         var acData = data.subdata(in: offset..<offset+acLength+4)
         guard let applicationContext = ApplicationContext(data: acData) else {
-            SwiftyBeaver.error("Missing application context. Abort.")
+            Logger.error("Missing application context. Abort.")
             return false
         }
         offset += acData.count
@@ -91,7 +91,7 @@ public class AssociationAC: PDUMessage {
         let userInfoData = data.subdata(in: offset..<data.count)
         
         guard let userInfo = UserInfo(data: userInfoData) else {
-            SwiftyBeaver.warning("No user information values provided. Abort")
+            Logger.warning("No user information values provided. Abort")
             return false
         }
 
@@ -100,7 +100,7 @@ public class AssociationAC: PDUMessage {
         self.association?.remoteImplementationVersion = userInfo.implementationVersion
         self.association?.associationAccepted = true
 
-        SwiftyBeaver.info(" ")
+        Logger.info(" ")
         
         return true
     }

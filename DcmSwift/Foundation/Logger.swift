@@ -33,23 +33,23 @@ public class Logger {
         shared.output(string: string, file, function, line: line, severity: LogLevel.Info)
     }
 
-    public static func warning(string:String, _ file: String = #file, _ function: String = #function, line: Int = #line) {
+    public static func warning(_ string:String, _ file: String = #file, _ function: String = #function, line: Int = #line) {
         shared.output(string: string, file, function, line: line, severity: LogLevel.Warning)
     }
 
-    public static func error(string:String, _ file: String = #file, _ function: String = #function, line: Int = #line) {
+    public static func error(_ string:String, _ file: String = #file, _ function: String = #function, line: Int = #line) {
         shared.output(string: string, file, function, line: line, severity: LogLevel.Error)
     }
 
-    public static func notice(string:String, _ file: String = #file, _ function: String = #function, line: Int = #line) {
+    public static func notice(_ string:String, _ file: String = #file, _ function: String = #function, line: Int = #line) {
         shared.output(string: string, file, function, line: line, severity: LogLevel.Notice)
     }
 
-    public static func verbose(string:String, _ file: String = #file, _ function: String = #function, line: Int = #line) {
+    public static func verbose(_ string:String, _ file: String = #file, _ function: String = #function, line: Int = #line) {
         shared.output(string: string, file, function, line: line, severity: LogLevel.Notice)
     }
 
-    public static func debug(string:String, _ file: String = #file, _ function: String = #function, line: Int = #line) {
+    public static func debug(_ string:String, _ file: String = #file, _ function: String = #function, line: Int = #line) {
         shared.output(string: string, file, function, line: line, severity: LogLevel.Debug)
     }
 
@@ -64,7 +64,7 @@ public class Logger {
             case .Stdout:
                 consoleLog(message: outputString)
             case .File:
-                fileLog(message: outputString)
+                fileLog(message: outputString + "\n")
             }
 
         }
@@ -78,12 +78,21 @@ public class Logger {
         if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
             let fileURL = dir.appendingPathComponent(fileName)
 
-            FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
+            var isDirectory = ObjCBool(true)
+            if !FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) {
+                FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
+            }
 
             //writing
             do {
-                print("J ECRIS : \(fileURL)")
-                try message.write(to: fileURL, atomically: false, encoding: .utf8)
+                //try message.write(to: fileURL, atomically: true, encoding: .utf8)
+                if let fileHandle = FileHandle(forWritingAtPath: fileURL.path) {
+                    fileHandle.seekToEndOfFile()
+                    let data:Data = message.data(using: String.Encoding.utf8, allowLossyConversion: false)!
+                    fileHandle.write(data)
+                } else {
+                    try message.write(to: fileURL, atomically: false, encoding: .utf8)
+                }
             }
             catch {/* error handling here */}
         }
