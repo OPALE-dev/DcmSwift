@@ -16,7 +16,6 @@ public protocol PDUResponsable {
 
 public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     public var pduType:PDUType!
-    //public var pduLength:Int?
     public var commandField:CommandField?
     public var association:DicomAssociation!
     public var dimseStatus:DIMSEStatus!

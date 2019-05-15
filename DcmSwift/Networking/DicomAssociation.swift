@@ -60,8 +60,6 @@ public class DicomAssociation : NSObject {
     
     
     public func request(completion: PDUCompletion) {
-        self.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP)
-        
         if let message = PDUEncoder.shared.createAssocMessage(pduType: .associationRQ, association: self) as? PDUMessage {
             message.debugDescription = "\n  -> Application Context Name: \(DicomConstants.applicationContextName)\n"
             message.debugDescription.append("  -> Called Application Entity: \(calledAET.fullname())\n")
@@ -136,9 +134,11 @@ public class DicomAssociation : NSObject {
             print(message.debugDescription)
             
             for messageData in message.messagesData() {
-                print("==================== SEND \(message.messageName() ) ====================")
+                print("==================== SEND \(message.messageName())-DATA ====================")
                 //SwiftyBeaver.debug("HEX DATA : \(messageData.toHex().separate(every: 2, with: " "))")
-                try socket.write(from: messageData)
+                if messageData.count > 0 {
+                    try socket.write(from: messageData)
+                }
             }
             
             if !readResponse {
@@ -151,6 +151,18 @@ public class DicomAssociation : NSObject {
             print("==================== RECEIVE \(response?.messageName() ?? "UNKNOW-DIMSE") ====================")
             //SwiftyBeaver.debug("HEX DATA : \(data.toHex().separate(every: 2, with: " "))")
             print(message.debugDescription)
+            
+            // Special case: Only one « Unsupported Abstract Syntaxes (Result: 0x3) » in returned accepted presentation contexts
+            if self.acceptedPresentationContexts.count == 1 {
+                for (_,v) in self.acceptedPresentationContexts {
+                    if v.result == 0x3 {
+                        completion(false, response, DicomError(description: "Unsupported Abstract Syntaxes",
+                                                                      level: .error,
+                                                                      realm: .custom))
+                        self.close()
+                    }
+                }
+            }
             
             completion(true, response, nil)
         } catch let e {
@@ -170,7 +182,7 @@ public class DicomAssociation : NSObject {
         
         do {
             repeat {
-                let (r, _) = try self.socket.isReadableOrWritable(waitForever: false, timeout: DicomConstants.dicomTimeOut)
+                //let (r, _) = try self.socket.isReadableOrWritable(waitForever: false, timeout: DicomConstants.dicomTimeOut)
                 // we read only if the buffer is empty
                 if readData.count == 0 {
                     let readSize = try socket.read(into: &readData)
@@ -211,6 +223,10 @@ public class DicomAssociation : NSObject {
                     if let r = message.handleResponse(data: messageData, completion: completion) {
                         response = r
                         
+                        if response?.pduType == PDUType.associationAC {
+                            return response
+                        }
+                        
                         // get results from last RSP message
                         if let cFinRQ = message as? CFindRQ {
                             if let cFinRSP = response as? CFindRSP {
@@ -227,6 +243,8 @@ public class DicomAssociation : NSObject {
                                 break
                             }
                         }
+                    } else {
+                        isPending = false
                     }
                 }
             } while (isPending == true)
@@ -245,9 +263,11 @@ public class DicomAssociation : NSObject {
         var pcs:[PresentationContext] = []
         
         for (_,pc) in self.presentationContexts {
-            if pc.abstractSyntax == sopClassUID {
-                if let _ = self.acceptedPresentationContexts[pc.contextID] {
-                    pcs.append(pc)
+            if pc.result != 0x3 { // Unsupported abtract syntax
+                if pc.abstractSyntax == sopClassUID {
+                    if let _ = self.acceptedPresentationContexts[pc.contextID] {
+                        pcs.append(pc)
+                    }
                 }
             }
         }

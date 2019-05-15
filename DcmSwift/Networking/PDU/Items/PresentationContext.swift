@@ -16,6 +16,7 @@ public class PresentationContext {
     public var acceptedTransferSyntax:String?
     public var abstractSyntax:String!
     public var contextID:UInt8!
+    public var result:UInt8!
     
     private var pcLength:Int16 = 0
     
@@ -39,7 +40,8 @@ public class PresentationContext {
                 
         // let length = data.subdata(in: 2..<4).toInt16(byteOrder: .BigEndian)
         let pcContextID = data.subdata(in: 4..<5).toInt8(byteOrder: .BigEndian)
-        // let result = data.subdata(in: 6..<7).toInt8(byteOrder: .BigEndian)
+        self.result = UInt8(data.subdata(in: 6..<7).toInt8(byteOrder: .BigEndian))
+        
         var offset = 8
         
         self.contextID = UInt8(pcContextID)
