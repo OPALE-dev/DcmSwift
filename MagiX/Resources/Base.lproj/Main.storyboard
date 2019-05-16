@@ -617,9 +617,9 @@
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="hB3-LF-h0Y"/>
-                                        <menuItem title="Value Format" id="GQm-Oa-G8o">
+                                        <menuItem title="Metadata Value Format" id="GQm-Oa-G8o">
                                             <modifierMask key="keyEquivalentModifierMask"/>
-                                            <menu key="submenu" title="Value Format" autoenablesItems="NO" id="Nk4-26-HSu">
+                                            <menu key="submenu" title="Metadata Value Format" autoenablesItems="NO" id="Nk4-26-HSu">
                                                 <items>
                                                     <menuItem title="Original  Values" tag="1" id="lXL-UT-hW7">
                                                         <modifierMask key="keyEquivalentModifierMask"/>
