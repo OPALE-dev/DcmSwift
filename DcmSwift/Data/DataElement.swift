@@ -190,13 +190,19 @@ public class DataElement : DicomObject {
             return ""
         }
         else if self.vr == .DA {
-            return Date(dicomDate: self.data.toString())
+            if let date = Date(dicomDate: self.data.toString()) {
+                return date
+            }
         }
         else if self.vr == .DT {
-            return Date(dicomDateTime: self.data.toString())
+            if let date = Date(dicomDateTime: self.data.toString()) {
+                return date
+            }
         }
         else if self.vr == .TM {
-            return Date(dicomTime: self.data.toString())
+            if let date = Date(dicomTime: self.data.toString()) {
+                return date
+            }
         }
         
         return self.data
