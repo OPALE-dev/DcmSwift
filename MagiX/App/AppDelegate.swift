@@ -23,7 +23,7 @@ public enum ValueFormat:Int {
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
-
+    @IBOutlet weak var valueFormatMenu: NSMenu!
     
     override init() {
         // Default preferences
@@ -38,6 +38,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        // select the default value format
+        for mi in valueFormatMenu.items {
+            let savedFormat = UserDefaults.standard.integer(forKey: "ValueFormat")
+            
+            if mi.tag == savedFormat {
+                mi.state = .on
+            }
+            else {
+                mi.state = .off
+            }
+        }
+        
 //        let server = DicomServer(port: 11112, localAET: "MAGIX")
 //        Thread.detachNewThread {
 //            server.run()
@@ -65,8 +77,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @IBAction func valueFormatChanged(_ sender: AnyObject?) {
-        print("IBAction valueFormatChanged")
-        
         if let menuItem = sender as? NSMenuItem {
             for mi in menuItem.menu!.items {
                 mi.state = .off

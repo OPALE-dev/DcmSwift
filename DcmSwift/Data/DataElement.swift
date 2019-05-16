@@ -167,7 +167,10 @@ public class DataElement : DicomObject {
         else if self.vr == .FD {
             return self.data.toFloat64(byteOrder: self.byteOrder)
         }
-        else if self.vr == .UI ||
+        else if self.vr == .DA ||
+                self.vr == .DT ||
+                self.vr == .TM ||
+                self.vr == .UI ||
                 self.vr == .SH ||
                 self.vr == .AS ||
                 self.vr == .CS ||
@@ -188,15 +191,6 @@ public class DataElement : DicomObject {
         }
         else if self.vr == .SQ {
             return ""
-        }
-        else if self.vr == .DA {
-            return Date(dicomDate: self.data.toString())
-        }
-        else if self.vr == .DT {
-            return Date(dicomDateTime: self.data.toString())
-        }
-        else if self.vr == .TM {
-            return Date(dicomTime: self.data.toString())
         }
         
         return self.data
@@ -466,9 +460,6 @@ public class DataElement : DicomObject {
         
         return json
     }
-    
-    
-    
     
     
     

@@ -197,9 +197,25 @@ class MetadataViewController: NSViewController, NSOutlineViewDelegate, NSOutline
                         view?.textField?.objectValue = element.value
                     }
                     else  if valueFormat == ValueFormat.Formatted.rawValue {
-                        if element.vr == .DA || element.vr == .TM || element.vr == .DT {
-                            if let date = element.value as? Date {
-                                view?.textField?.objectValue = date.format(accordingTo: element.vr)
+                        if element.vr == .DA {
+                            if let str = element.value as? String {
+                                if let date = Date(dicomDate: str) {
+                                    view?.textField?.objectValue = date.format(accordingTo: element.vr)
+                                }
+                            }
+                        }
+                        else if element.vr == .TM {
+                            if let str = element.value as? String {
+                                if let date = Date(dicomTime: str) {
+                                    view?.textField?.objectValue = date.format(accordingTo: element.vr)
+                                }
+                            }
+                        }
+                        else if element.vr == .DT {
+                            if let str = element.value as? String {
+                                if let date = Date(dicomDateTime: str) {
+                                    view?.textField?.objectValue = date.format(accordingTo: element.vr)
+                                }
                             }
                         }
                         else if element.vr == .UI {
