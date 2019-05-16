@@ -38,6 +38,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        // setup the Logger
+        Logger.setDestinations([Logger.Output.Stdout, Logger.Output.File])
+        Logger.setMaxLevel(Logger.LogLevel.DEBUG)
+        
+        
         // select the default value format
         for mi in valueFormatMenu.items {
             let savedFormat = UserDefaults.standard.integer(forKey: "ValueFormat")
@@ -49,7 +54,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 mi.state = .off
             }
         }
-        
+
+        // start a local server instance
 //        let server = DicomServer(port: 11112, localAET: "MAGIX")
 //        Thread.detachNewThread {
 //            server.run()

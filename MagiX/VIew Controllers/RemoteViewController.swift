@@ -62,6 +62,8 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
                 self.remote = r
                 
                 self.query()
+
+                queryTableView.sortDescriptors = [NSSortDescriptor.init(key: "name", ascending: true)]
             }
         }
     }
@@ -141,7 +143,7 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
     
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         var view: NSTableCellView?
-        
+
         let df = DateFormatter()
         df.dateFormat = "yyyy/MM/dd HH:mm:ss"
         
@@ -179,7 +181,16 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
             else if tableColumn?.title == "Date" {
                 view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
                 if let name = study["00080020"] {
-                    view?.textField?.stringValue = name["value"] as! String
+                    if let s = name["value"] as? String {
+                        view?.textField?.stringValue = s
+                    }
+                    // TODO: y a un sushi là (optional date dans le query dataset)
+//                    let dateString:String = name["value"] as! String
+//                    let date:Date? = Date(dicomDateTime: dateString)
+//                    Logger.warning("DATE : \(dateString))")
+//                    view?.textField?.stringValue = date?.dicomDateTimeString() ?? dateString
+//                    view?.textField?.stringValue = (name["value"] as! Date).dicomDateTimeString()
+
                 }
             }
             else if tableColumn?.title == "Accession" {
@@ -199,4 +210,28 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
         return view
     }
 
+    func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
+        if let fDescriptor = oldDescriptors.first {
+            if let key = fDescriptor.key {
+                self.studies = self.studies.sorted { (one, two) -> Bool in
+                    if key == "name" {
+                        if let s1 = one as? [String:[String:Any]], let s2 = two as? [String:[String:Any]] {
+                            if let name = s1["00100010"], let name2 = s2["00100010"] {
+                                if let n = name["value"] as? String, let n2 = name2["value"] as? String {
+                                    if !fDescriptor.ascending {
+                                        return n < n2
+                                    } else {
+                                        return n > n2
+
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return false
+                }
+                self.queryTableView.reloadData()
+            }
+        }
+    }
 }

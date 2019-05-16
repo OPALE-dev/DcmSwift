@@ -152,6 +152,7 @@
 		DA418290228C2C7700A79D54 /* PreferencesWindowViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA41828F228C2C7700A79D54 /* PreferencesWindowViewController.swift */; };
 		DABE9BC6228AEFBC0015655D /* Socket.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DABE9BC9228B07710015655D /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DABE9BC8228B07710015655D /* DateExtensions.swift */; };
+		DAE005A1228D852A002CCB47 /* EntitiesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE005A0228D852A002CCB47 /* EntitiesViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -354,6 +355,7 @@
 		DA41828F228C2C7700A79D54 /* PreferencesWindowViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesWindowViewController.swift; sourceTree = "<group>"; };
 		DABE9BC3228AEBEB0015655D /* README */ = {isa = PBXFileReference; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 		DABE9BC8228B07710015655D /* DateExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateExtensions.swift; sourceTree = "<group>"; };
+		DAE005A0228D852A002CCB47 /* EntitiesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitiesViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -431,6 +433,7 @@
 				4C53D6CC2275B4A90003724F /* OperationCellView.swift */,
 				DA41828B228C2B7200A79D54 /* PreferencesTabViewController.swift */,
 				DA41828F228C2C7700A79D54 /* PreferencesWindowViewController.swift */,
+				DAE005A0228D852A002CCB47 /* EntitiesViewController.swift */,
 			);
 			name = "View Controllers";
 			path = "VIew Controllers";
@@ -962,6 +965,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4C9125212282EA0E00210165 /* FindOperation.swift in Sources */,
+				DAE005A1228D852A002CCB47 /* EntitiesViewController.swift in Sources */,
 				4C9125252282F2A300210165 /* SmartDirectoryEditViewController.swift in Sources */,
 				4C53D6DE2278F5F90003724F /* Remote.swift in Sources */,
 				4C3EF246226E3AAC0062B5A3 /* DataViewController.swift in Sources */,
