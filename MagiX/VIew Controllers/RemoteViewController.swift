@@ -143,7 +143,7 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
     
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         var view: NSTableCellView?
-        
+
         let df = DateFormatter()
         df.dateFormat = "yyyy/MM/dd HH:mm:ss"
         
@@ -222,6 +222,7 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
                                         return n < n2
                                     } else {
                                         return n > n2
+
                                     }
                                 }
                             }
