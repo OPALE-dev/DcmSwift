@@ -7,6 +7,7 @@
 //
 
 import Cocoa
+import DcmSwift
 
 class EntitiesViewController: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     @IBOutlet weak var tableView: NSTableView!
@@ -18,6 +19,42 @@ class EntitiesViewController: NSViewController, NSTableViewDelegate, NSTableView
         super.viewDidLoad()
         // Do view setup here.
         self.remotes = DataController.shared.fetchRemotes()
+
+        NotificationCenter.default.addObserver(self, selector: #selector(didUpdateRemote(n:)), name: .didUpdateRemote, object: nil)
+//        tableView.doubleAction = #selector(SidebarViewController.editRemote(_:))
+        tableView.doubleAction = #selector(editOnDoubleClick(r:))
+        
+    }
+    
+
+
+    @objc func didUpdateRemote(n:Notification) {
+        if let r = n.object as? Remote
+        {
+            if !self.remotes.contains(r) {
+                self.remotes.append(r)
+            }
+            self.tableView.reloadData()
+        }
+    }
+
+    @objc func editOnDoubleClick(r: Any?) {
+        let selectedItem = selectedRow()
+        let remote = remotes[selectedItem]
+        if let remoteVC:RemoteEditViewController = NSStoryboard(name: "Main", bundle: nil).instantiateController(withIdentifier: "RemoteEditViewController") as? RemoteEditViewController {
+            remoteVC.remote = remote
+            self.presentAsSheet(remoteVC)
+        }
+
+    }
+
+
+    private func selectedRow() -> Int {
+        if self.tableView.clickedRow != -1 {
+            return self.tableView.clickedRow
+        }
+
+        return self.tableView.selectedRow
     }
 
 
@@ -65,12 +102,15 @@ class EntitiesViewController: NSViewController, NSTableViewDelegate, NSTableView
 
 
     @IBAction func removeButtonClicked(_ sender: Any) {
-        let index = tableView.selectedRow
+        let index = selectedRow()
+        if index <= 0 {
+            return
+        }
         let remote = remotes[index]
 
         DataController.shared.removeRemote(remote)
         self.remotes = DataController.shared.fetchRemotes()
-        
+
         self.tableView.reloadData()
     }
 }
