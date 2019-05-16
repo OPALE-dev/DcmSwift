@@ -30,7 +30,7 @@ class OperationsController: NSObject {
     private override init() {
         super.init()
         
-        self.operationQueue.maxConcurrentOperationCount = 1
+        self.operationQueue.maxConcurrentOperationCount = 5
     }
     
     

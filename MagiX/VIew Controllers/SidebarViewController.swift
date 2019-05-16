@@ -166,29 +166,43 @@ class SidebarViewController:    NSViewController,
     @IBAction func remove(_ sender: Any) {
         let selectedItem = self.directoriesOutlineView.item(atRow: self.selectedRow())
         
-        if let d = selectedItem as? PrivateDirectory {
-            DataController.shared.removeDirectory(d)
+        if let _ = selectedItem as? Item {
+            if let dir = selectedItem as? Directory {
+                if dir.main { return }
+            }
             
-            if let index = self.directories.index(of:d) {
-                self.directories.remove(at: index)
+            let alert = NSAlert()
+            alert.messageText = "Are you sure?"
+            alert.informativeText = "This delete operation cannot be undone"
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: "Cancel")
+            
+            if alert.runModal() == .alertFirstButtonReturn {
+                if let d = selectedItem as? PrivateDirectory {
+                    DataController.shared.removeDirectory(d)
+                    
+                    if let index = self.directories.index(of:d) {
+                        self.directories.remove(at: index)
+                    }
+                }
+                else if let d = selectedItem as? SmartDirectory {
+                    DataController.shared.removeDirectory(d)
+                    
+                    if let index = self.directories.index(of:d) {
+                        self.directories.remove(at: index)
+                    }
+                }
+                else if let r = selectedItem as? Remote {
+                    DataController.shared.removeRemote(r)
+                    
+                    if let index = self.remotes.index(of:r) {
+                        self.remotes.remove(at: index)
+                    }
+                }
+                self.directoriesOutlineView.reloadData()
             }
         }
-        else if let d = selectedItem as? SmartDirectory {
-            DataController.shared.removeDirectory(d)
-            
-            if let index = self.directories.index(of:d) {
-                self.directories.remove(at: index)
-            }
-        }
-        else if let r = selectedItem as? Remote {
-            DataController.shared.removeRemote(r)
-            
-            if let index = self.remotes.index(of:r) {
-                self.remotes.remove(at: index)
-            }
-        }
-        
-        self.directoriesOutlineView.reloadData()
     }
     
     
@@ -371,12 +385,18 @@ class SidebarViewController:    NSViewController,
         view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "OperationCellView"), owner: self) as? OperationCellView
         
         if let laodOperation = OperationsController.shared.operationQueue.operations[row] as? LoadOperation {
+            view?.progressBar.isIndeterminate = false
             view?.textField?.stringValue = "Load files: \(laodOperation.currentIndex)/\(laodOperation.numberOfFiles)"
             view?.progressBar.doubleValue = Double(laodOperation.percents)
         }
         else if let _ = OperationsController.shared.operationQueue.operations[row] as? FindOperation {
             view?.progressBar.isIndeterminate = true
             view?.textField?.stringValue = "Find studies…"
+        }
+        else if let op = OperationsController.shared.operationQueue.operations[row] as? SendOperation {
+            view?.progressBar.isIndeterminate = false
+            view?.textField?.stringValue = "Send files: \(op.currentIndex)/\(op.numberOfFiles)"
+            view?.progressBar.doubleValue = Double(op.percents)
         }
         
         return view
@@ -424,7 +444,7 @@ class SidebarViewController:    NSViewController,
     
     
     private func selectedRow() -> Int {
-        if self.directoriesOutlineView.clickedRow != NSNotFound {
+        if self.directoriesOutlineView.clickedRow != -1 {
             return self.directoriesOutlineView.clickedRow
         }
         
@@ -432,54 +452,75 @@ class SidebarViewController:    NSViewController,
     }
     
     private func storeStudy(_ study: Study, toRemote remote: Remote) {
-        let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
-        let callingAE = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
+        let operation = SendOperation()
         
-        if let calledAE = remote.dicomEntity {
-            let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
-            
-            client.connect { (ok, error) in
-                if ok {
-                    var files:[String] = []
-                    
-                    study.series?.forEach({ s in
-                        if let serie = s as? Serie {
-                            serie.instances?.forEach({ i in
-                                if let instance = i as? Instance {
-                                    if let filePath = instance.filePath {
-                                        files.append(filePath)
-                                    }
-                                }
-                            })
-                        }
-                    })
-                    
-                    client.store(files) { (okFind, receivedMessage, findError) in
-                        if okFind {
-                            if let storeRSP = receivedMessage as? CStoreRSP {
-                                
-                                DispatchQueue.main.async {
-
-                                }
-                            }
-                        } else {
-                            if let alert = findError?.alert() {
-                                DispatchQueue.main.async {
-
-                                    alert.runModal()
-                                }
-                            }
+        var files:[String] = []
+        
+        study.series?.forEach({ s in
+            if let serie = s as? Serie {
+                serie.instances?.forEach({ i in
+                    if let instance = i as? Instance {
+                        if let filePath = instance.filePath {
+                            files.append(filePath)
                         }
                     }
-                } else {
-                    if let alert = error?.alert() {
-                        DispatchQueue.main.async {
-
-                            alert.runModal()
+                })
+            }
+        })
+        
+        operation.numberOfFiles = files.count
+        
+        operation.addExecutionBlock {
+            let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
+            let callingAE = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
+            
+            if let calledAE = remote.dicomEntity {
+                let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
+                
+                client.connect { (ok, error) in
+                    if ok {
+                        client.store(files, progression: { index in
+                            let percent = Int((Float(index) / Float(operation.numberOfFiles)) * 100)
+                            operation.currentIndex = index
+                            operation.percents = percent
+                            
+                            DispatchQueue.main.async {
+                                NotificationCenter.default.post(name: .loadOperationUpdated, object: operation)
+                            }
+                            
+                        }, completion: { (ok, receivedMessage, findError) in
+                            if ok {
+                                if let _ = receivedMessage as? CStoreRSP {
+                                    DispatchQueue.main.async {
+                                        
+                                    }
+                                }
+                            } else {
+                                if let alert = findError?.alert() {
+                                    DispatchQueue.main.async {
+                                        alert.runModal()
+                                    }
+                                }
+                            }
+                        })
+                    } else {
+                        if let alert = error?.alert() {
+                            DispatchQueue.main.async {
+                                alert.runModal()
+                            }
                         }
                     }
                 }
             }
         }
+        
+        operation.completionBlock = {
+            DispatchQueue.main.async {
+                OperationsController.shared.stopObserveOperation(operation)
+            }
+        }
+        
+        OperationsController.shared.addOperation(operation)
+        
     }
 }

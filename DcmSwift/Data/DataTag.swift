@@ -98,8 +98,7 @@ public class DataTag : DicomObject {
         
         return data
     }
-    
-    
+        
     private func writeData(withByteOrder:DicomConstants.ByteOrder) {
         self.data = Data()
         

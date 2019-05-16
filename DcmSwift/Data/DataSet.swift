@@ -175,7 +175,7 @@ public class DataSet: DicomObject {
     
     
     public func DIMSEData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
-        var newData = Data()
+        var data = Data()
         
         var finalVR     = self.vrMethod
         var finalOrder  = self.byteOrder
@@ -188,10 +188,10 @@ public class DataSet: DicomObject {
         }
         
         for element in self.datasetElements {
-            newData.append(self.write(dataElement: element, vrMethod:finalVR, byteOrder:finalOrder))
+            data.append(element.toData(vrMethod: finalVR, byteOrder: finalOrder))
         }
         
-        return newData
+        return data
     }
 
     
