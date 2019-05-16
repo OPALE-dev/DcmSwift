@@ -704,11 +704,15 @@
                         <outlet property="delegate" destination="Voe-Tx-rLC" id="PrD-fu-P6m"/>
                     </connections>
                 </application>
-                <customObject id="Voe-Tx-rLC" customClass="AppDelegate" customModule="MagiX" customModuleProvider="target"/>
+                <customObject id="Voe-Tx-rLC" customClass="AppDelegate" customModule="MagiX" customModuleProvider="target">
+                    <connections>
+                        <outlet property="valueFormatMenu" destination="Nk4-26-HSu" id="Zxm-Lk-ZsG"/>
+                    </connections>
+                </customObject>
                 <customObject id="YLy-65-1bz" customClass="NSFontManager"/>
                 <customObject id="Ady-hI-5gd" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-242" y="-606"/>
+            <point key="canvasLocation" x="-230" y="-774"/>
         </scene>
         <!--Window Controller-->
         <scene sceneID="R2V-B0-nI4">
