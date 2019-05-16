@@ -9,13 +9,28 @@
 import Cocoa
 import DcmSwift
 
+
+extension Notification.Name {
+    static let valueFormatChanged = Notification.Name(rawValue: "valueFormatChanged")
+}
+
+public enum ValueFormat:Int {
+    case Original   = 1
+    case Formatted  = 2
+    case Hexa       = 3
+}
+
+
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
+
+    
     override init() {
         // Default preferences
         UserDefaults.standard.register(defaults: [
             "LocalAET": "MAGIX",
-            "MaxPDU": 16384
+            "MaxPDU": 16384,
+            "ValueFormat": ValueFormat.Formatted.rawValue,
             ])
         
         UserDefaults.standard.synchronize()
@@ -46,6 +61,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if result == NSApplication.ModalResponse.OK {
                 DataController.shared.load(fileURLs: openPanel.urls)
             }
+        }
+    }
+    
+    @IBAction func valueFormatChanged(_ sender: AnyObject?) {
+        print("IBAction valueFormatChanged")
+        
+        if let menuItem = sender as? NSMenuItem {
+            for mi in menuItem.menu!.items {
+                mi.state = .off
+            }
+            
+            menuItem.state = .on
+            UserDefaults.standard.set(menuItem.tag, forKey: "ValueFormat")
+            UserDefaults.standard.synchronize()
+            
+            print("post notif")
+            NotificationCenter.default.post(name: .valueFormatChanged, object: nil)
         }
     }
     

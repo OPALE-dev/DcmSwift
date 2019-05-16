@@ -194,6 +194,25 @@ extension Date {
         df.dateFormat = "yyyyMMddHHmmss.SSSSSS"
         return df.string(from: self)
     }
+    
+    
+    
+    
+    
+    public func format(accordingTo: DicomConstants.VR) -> String {
+        let df = DateFormatter()
+        df.dateStyle = .short
+        df.timeStyle = .short
+        
+        if accordingTo == .DA {
+            df.timeStyle = .none
+        }
+        else if accordingTo == .TM {
+            df.dateStyle = .none
+        }
+        
+        return df.string(from: self)
+    }// format
 
 
 
