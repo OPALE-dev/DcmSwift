@@ -116,7 +116,7 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    public func store(_ files:[String], completion: PDUCompletion)  {
+    public func store(_ files:[String], progression: (_ index:Int) -> Void, completion: PDUCompletion)  {
         if !self.isConnected {
             completion(false, nil, DicomError(description: "Socket is not connected, please connect first.",
                                               level: .error,
@@ -131,21 +131,17 @@ public class DicomClient : DicomService, StreamDelegate {
         
         association.request() { (accepted, receivedMessage, error) in
             if accepted {
-                if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_STORE_RQ, association: association) as? CStoreRQ {
-                    message.dicomFile = DicomFile(forPath: files.first!)
-                    
-                    association.write(message: message, readResponse: true, completion: completion)
+                var index = 0
+                for f in files {
+                    if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_STORE_RQ, association: association) as? CStoreRQ {
+                        message.dicomFile = DicomFile(forPath: f)
+                        
+                        association.write(message: message, readResponse: true, completion: completion)
+                        
+                        progression(index)
+                        index += 1
+                    }
                 }
-                
-//                for f in files {
-//                    if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_STORE_RQ, association: association) as? CStoreRQ {
-//                        message.dicomFile = DicomFile(forPath: f)
-//                        association.write(message: message, readResponse: true, completion: completion)
-//                    }
-//
-//                }
-
-               // association.close()
             }
             else {
                 completion(false, receivedMessage, error)
