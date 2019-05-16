@@ -617,6 +617,35 @@
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="hB3-LF-h0Y"/>
+                                        <menuItem title="Value Format" id="GQm-Oa-G8o">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <menu key="submenu" title="Value Format" autoenablesItems="NO" id="Nk4-26-HSu">
+                                                <items>
+                                                    <menuItem title="Original  Values" tag="1" id="lXL-UT-hW7">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="valueFormatChanged:" target="Voe-Tx-rLC" id="KxH-5J-lQ0"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Formatted  Values" state="on" tag="2" id="tMK-ZO-waR">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="valueFormatChanged:" target="Voe-Tx-rLC" id="GyO-Ww-qxW"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Hexadecimal Values" tag="3" id="y5n-bm-tRb">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="valueFormatChanged:" target="Voe-Tx-rLC" id="CZS-r1-6Mn"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                </items>
+                                            </menu>
+                                            <connections>
+                                                <action selector="valueFormatChanged:" target="Voe-Tx-rLC" id="gKn-2L-BaW"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="vQT-cy-Fd1"/>
                                         <menuItem title="Show Sidebar" keyEquivalent="s" id="kIP-vf-haE">
                                             <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                                             <connections>
@@ -1793,11 +1822,11 @@ DQ
                             <scrollView borderType="none" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Pqo-Lw-yP2">
                                 <rect key="frame" x="0.0" y="0.0" width="987" height="302"/>
                                 <clipView key="contentView" id="DFD-6R-ZJE">
-                                    <rect key="frame" x="0.0" y="0.0" width="987" height="287"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="987" height="302"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" multipleSelection="NO" autosaveColumns="NO" rowSizeStyle="automatic" headerView="If5-Om-Eib" viewBased="YES" indentationPerLevel="16" outlineTableColumn="CVv-vI-Lqe" id="UZa-un-sJA">
-                                            <rect key="frame" x="0.0" y="0.0" width="1052" height="264"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="1052" height="279"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <size key="intercellSpacing" width="3" height="2"/>
                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -2015,7 +2044,7 @@ DQ
                                     <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="302" id="7EG-4f-NLm"/>
                                 </constraints>
                                 <scroller key="horizontalScroller" verticalHuggingPriority="750" horizontal="YES" id="0lp-Yc-YwO">
-                                    <rect key="frame" x="0.0" y="287" width="987" height="15"/>
+                                    <rect key="frame" x="0.0" y="286" width="987" height="16"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="NO" id="sla-AS-hmP">
