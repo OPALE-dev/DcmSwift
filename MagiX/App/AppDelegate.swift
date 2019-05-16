@@ -23,6 +23,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        Logger.setDestinations([Logger.Output.Stdout, Logger.Output.File])
+        Logger.setMaxLevel(Logger.LogLevel.DEBUG)
+        Logger.info("info")
 //        let server = DicomServer(port: 11112, localAET: "MAGIX")
 //        Thread.detachNewThread {
 //            server.run()
