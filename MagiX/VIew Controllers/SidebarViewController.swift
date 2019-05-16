@@ -148,6 +148,7 @@ class SidebarViewController:    NSViewController,
     }
     
     @IBAction func newRemote(_ sender: Any) {
+        print("newRemote")
         if let remoteVC:NSViewController = NSStoryboard(name: "Main", bundle: nil).instantiateController(withIdentifier: "RemoteEditViewController") as? RemoteEditViewController {
             self.presentAsSheet(remoteVC)
         }
