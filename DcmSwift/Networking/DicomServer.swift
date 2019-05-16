@@ -54,11 +54,11 @@ public class DicomServer: DicomService {
         
         let queue = DispatchQueue.global(qos: .background)
         
-        //queue.async { [unowned self] in
+        queue.async { [unowned self] in
             
             do {
                 // Create an IPV6 socket...
-                try self.listenSocket = Socket.create(family: .inet)
+                try self.listenSocket = Socket.create(family: .inet6)
                 
                 guard let socket = self.listenSocket else {
                     
@@ -93,8 +93,8 @@ public class DicomServer: DicomService {
                     
                 }
             }
-       //}
-        //dispatchMain()
+        }
+        dispatchMain()
     }
     
     func addNewConnection(socket: Socket) {

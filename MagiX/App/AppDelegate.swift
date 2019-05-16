@@ -56,10 +56,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // start a local server instance
-        let server = DicomServer(port: 11112, localAET: "MAGIX")
-        Thread.detachNewThread {
-            server.run()
-        }
+//        let server = DicomServer(port: 11112, localAET: "MAGIX")
+//        Thread.detachNewThread {
+//            server.run()
+//        }
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
