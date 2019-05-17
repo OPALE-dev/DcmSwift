@@ -25,6 +25,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         Logger.setPreferences()
         Logger.info("Application did finish launching")
+        Logger.info("IMPORTANT : \(Logger.getFileDestination())")
 //        let server = DicomServer(port: 11112, localAET: "MAGIX")
 //        Thread.detachNewThread {
 //            server.run()
@@ -33,6 +34,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ aNotification: Notification) {
         // Insert code here to tear down your application
+        Logger.info("APPLICATION WILL TERMINATE")
+        Logger.info("IMPORTANT : \(Logger.getFileDestination())")
     }
     
     
