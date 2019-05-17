@@ -10,7 +10,8 @@ import Foundation
 
 
 public protocol PDUResponsable {
-    func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage?
+    func handleResponse(data:Data) -> PDUMessage?
+    func handleRequest() -> PDUMessage?
 }
 
 
@@ -77,9 +78,13 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     }
     
     
-    public func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage? {
+    public func handleResponse(data:Data) -> PDUMessage? {
         Logger.warning("Not implemented yet \(#function) \(self.pduType)")
-        completion(false, nil, nil)
         return nil
     }
+
+    public func handleRequest() -> PDUMessage? {
+        return nil
+    }
+    
 }

@@ -63,7 +63,7 @@ public class Logger {
     public var fileName:String  = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String
     public var outputs:[Output] = [.Stdout]
     private static var shared   = Logger()
-    private var maxLevel: Int = 6
+    private var maxLevel: Int = 5
 
 
 

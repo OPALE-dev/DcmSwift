@@ -14,7 +14,35 @@ public class AssociationAC: PDUMessage {
     public var remoteCallingAETitle:String?
     
     public override func data() -> Data {
-        return Data()
+        var data = Data()
+        
+        let apData = association.applicationContext.data()
+        var pcData = Data()
+                
+        for (_, pc) in association.acceptedPresentationContexts {
+            pc.result = 0x00
+            pc.abstractSyntax = nil
+            pcData.append(pc.data())
+        }
+        
+        let uiData = association.userInfo.data()
+        
+        let length = UInt32(2 + 2 + 16 + 16 + 32 + apData.count + pcData.count + uiData.count)
+        
+        data.append(uint8: self.pduType.rawValue, bigEndian: true)
+        data.append(byte: 0x00) // 00H
+        data.append(uint32: length, bigEndian: true)
+        data.append(Data(bytes: [0x00, 0x01])) // Protocol version
+        data.append(byte: 0x00, count: 2)
+        data.append(association.calledAET.paddedTitleData()!) // Called AET Title
+        data.append(association.callingAET!.paddedTitleData()!) // Calling AET Title
+        data.append(Data(repeating: 0x00, count: 32)) // 00H
+        
+        data.append(apData)
+        data.append(pcData)
+        data.append(uiData)
+        
+        return data
     }
     
     public override func messageName() -> String {
@@ -108,5 +136,17 @@ public class AssociationAC: PDUMessage {
     
     public override func messagesData() -> [Data] {
         return []
+    }
+    
+    
+    public override func handleResponse(data: Data) -> PDUMessage? {
+        if let command:UInt8 = data.first {
+            if command == PDUType.dataTF.rawValue {
+                if let response = PDUDecoder.shared.receiveAssocMessage(data: data, pduType: PDUType.associationAC, association: self.association) as? AssociationAC {
+                    return response
+                }
+            }
+        }
+        return nil
     }
 }
