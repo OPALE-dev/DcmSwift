@@ -2911,6 +2911,14 @@ DQ
                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                     </textFieldCell>
+                                                    <connections>
+                                                        <binding destination="GC9-9q-b85" name="value" keyPath="values.logFilePath" id="BRx-5v-tlz">
+                                                            <dictionary key="options">
+                                                                <bool key="NSConditionallySetsEnabled" value="YES"/>
+                                                                <bool key="NSContinuouslyUpdatesValue" value="YES"/>
+                                                            </dictionary>
+                                                        </binding>
+                                                    </connections>
                                                 </textField>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="B9z-EF-6e5">
                                                     <rect key="frame" x="18" y="23" width="22" height="19"/>
@@ -2931,6 +2939,9 @@ DQ
                                                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                         <font key="font" metaFont="system"/>
                                                     </buttonCell>
+                                                    <connections>
+                                                        <action selector="chooseFile:" target="2fZ-b3-Xf4" id="FDh-lf-Erp"/>
+                                                    </connections>
                                                 </button>
                                             </subviews>
                                         </customView>
@@ -3049,6 +3060,7 @@ DQ
                         <outlet property="checkConsoleDestination" destination="W6j-CW-xz1" id="7BJ-de-mug"/>
                         <outlet property="checkfileDestination" destination="B9z-EF-6e5" id="Eh2-b1-2jc"/>
                         <outlet property="cleanLogPeriods" destination="pt5-8g-LIJ" id="UVb-1U-QcN"/>
+                        <outlet property="fileField" destination="i7f-C4-xz6" id="8MY-qR-TPz"/>
                         <outlet property="logLevel" destination="7Vd-Uc-GUz" id="cbW-1D-JnW"/>
                     </connections>
                 </viewController>

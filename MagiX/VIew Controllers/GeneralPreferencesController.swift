@@ -17,6 +17,7 @@ class GeneralPreferencesController: NSViewController {
     @IBOutlet weak var buttonChooseFile: NSButton!
     @IBOutlet weak var checkConsoleDestination: NSButton!
     @IBOutlet weak var cleanLogPeriods: NSPopUpButton!
+    @IBOutlet weak var fileField: NSTextField!
 
 
 
@@ -56,4 +57,34 @@ class GeneralPreferencesController: NSViewController {
         Logger.debug("console log rule changed")
     }
 
+    @IBAction func chooseFile(_ sender: Any) {
+        let openPanel = NSOpenPanel()
+        openPanel.allowsMultipleSelection = false
+        openPanel.canChooseDirectories = true
+        openPanel.canCreateDirectories = true
+        openPanel.canChooseFiles = false
+
+        let i = openPanel.runModal()
+        if(i.rawValue == NSApplication.ModalResponse.OK.rawValue) {
+            Logger.fatal("\(String(describing: openPanel.url))")
+
+            if let path = openPanel.url?.path {
+                if Logger.setFileDestination(path) {
+                    // success
+                }
+                Logger.fatal("Après le setFileDestination")
+                fileField.stringValue = path
+            }
+
+        }
+    }
+
+
+
+
+    /**/
+    func isSandboxingEnabled() -> Bool {
+        let environment = ProcessInfo.processInfo.environment
+        return environment["APP_SANDBOX_CONTAINER_ID"] != nil
+    }
 }
