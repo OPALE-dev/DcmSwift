@@ -60,12 +60,10 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    public func echo(completion: PDUCompletion) {
-        if !self.isConnected {
-            completion(false, nil, DicomError(description: "Socket is not connected, please connect() first.", level: .error, realm: .custom))
-        }
+    public func echo(completion: PDUCompletion?) {
+        if !self.checkConnected(completion) { return }
         
-        let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
+        let association = DicomAssociation(socket: self.socket, callingAET: self.localEntity, calledAET: self.remoteEntity)
         
         association.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP)
         
@@ -76,22 +74,18 @@ public class DicomClient : DicomService, StreamDelegate {
                 }
             }
             else {
-                completion(false, receivedMessage, error)
+                completion?(false, receivedMessage, error)
                 association.close()
             }
         }
     }
     
     
-    public func find(_ queryDataset:DataSet, completion: PDUCompletion)  {
-        if !self.isConnected {
-            completion(false, nil, DicomError(description: "Socket is not connected, please connect first.",
-                                              level: .error,
-                                              realm: .custom))
-        }
+    public func find(_ queryDataset:DataSet, completion: PDUCompletion?)  {
+        if !self.checkConnected(completion) { return }
         
         // create assoc between local and remote
-        let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
+        let association = DicomAssociation(socket: self.socket, callingAET: self.localEntity, calledAET: self.remoteEntity)
         
         // add C-FIND Study Root Query Level
         association.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND)
@@ -108,7 +102,7 @@ public class DicomClient : DicomService, StreamDelegate {
                 }
             }
             else {
-                completion(false, receivedMessage, error)
+                completion?(false, receivedMessage, error)
                 association.close()
             }
         }
@@ -116,15 +110,12 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    public func store(_ files:[String], progression: (_ index:Int) -> Void, completion: PDUCompletion)  {
-        if !self.isConnected {
-            completion(false, nil, DicomError(description: "Socket is not connected, please connect first.",
-                                              level: .error,
-                                              realm: .custom))
-        }
+    public func store(_ files:[String], progression: @escaping (_ index:Int) -> Void, completion: PDUCompletion?)  {
+        if !self.checkConnected(completion) { return }
         
-        let association = DicomAssociation(self.localEntity, calledAET: self.remoteEntity, socket: self.socket)
+        let association = DicomAssociation(socket: self.socket, callingAET: self.localEntity, calledAET: self.remoteEntity)
         
+        // Add all know SOP classes
         for abstractSyntax in DicomConstants.storageSOPClasses {
             association.addPresentationContext(abstractSyntax: abstractSyntax)
         }
@@ -144,7 +135,7 @@ public class DicomClient : DicomService, StreamDelegate {
                 }
             }
             else {
-                completion(false, receivedMessage, error)
+                completion?(false, receivedMessage, error)
                 association.close()
             }
         }
@@ -164,7 +155,15 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-
+    private func checkConnected(_ completion: PDUCompletion?) -> Bool {
+        if !self.isConnected {
+            completion?(false, nil, DicomError(description: "Socket is not connected, please connect first.",
+                                               level: .error,
+                                               realm: .custom))
+            return false
+        }
+        return self.isConnected
+    }
     
 
     private func write(data:Data) -> Int{

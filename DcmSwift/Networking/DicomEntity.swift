@@ -9,7 +9,12 @@
 import Foundation
 
 
-public class DicomEntity : Codable {
+public class DicomEntity : Codable, CustomStringConvertible {
+    /**
+     A string description of the DICOM object
+     */
+    public var description: String { return self.fullname() }
+    
     public var title:String
     public var hostname:String
     public var port:Int
