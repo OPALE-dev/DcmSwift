@@ -60,7 +60,7 @@ public class Logger {
     }
 
 
-    public var fileName:String  = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String
+    public var fileName:String  = (Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String) + ".log"
     public var outputs:[Output] = [.Stdout]
     private static var shared   = Logger()
     private var maxLevel: Int = 6
@@ -200,5 +200,31 @@ public class Logger {
         if 0 <= at.rawValue && at.rawValue <= 5 {
             shared.maxLevel = at.rawValue
         }
+    }
+
+    public static func addDestination(_ dest: Output) {
+        shared.outputs.append(dest)
+    }
+
+    public static func removeDestination(_ dest: Output) {
+        shared.outputs = shared.outputs.filter{$0 != dest}
+    }
+
+
+
+
+    public static func setPreferences() {
+        /* set the destinations output */
+        var destinations:[Logger.Output] = []
+        if UserDefaults.standard.bool(forKey: "Print LogsInLogFile") {
+            destinations.append(Logger.Output.Stdout)
+        }
+        if UserDefaults.standard.bool(forKey: "logInConsole") {
+            destinations.append(Logger.Output.File)
+        }
+        Logger.setDestinations(destinations)
+        
+        /* set the maximum level of log output */
+        Logger.setMaxLevel(Logger.LogLevel(rawValue: UserDefaults.standard.integer(forKey: "LogLevel"))!)
     }
 }

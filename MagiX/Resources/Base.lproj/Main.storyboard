@@ -1739,11 +1739,7 @@ DQ
                                             <font key="font" metaFont="menu"/>
                                             <menu key="menu" id="3YD-bb-Xft">
                                                 <items>
-                                                    <menuItem title="ID" state="on" id="R2o-TK-NmV">
-                                                        <connections>
-                                                            <action selector="sortColumnOnClick:" target="zL8-uk-naK" id="na4-TK-ce9"/>
-                                                        </connections>
-                                                    </menuItem>
+                                                    <menuItem title="ID" state="on" id="R2o-TK-NmV"/>
                                                     <menuItem title="Modality" id="Zeh-T0-VBD"/>
                                                     <menuItem title="Description" id="vWD-sA-379"/>
                                                     <menuItem title="Accession" id="zWI-VJ-akw">
@@ -2892,7 +2888,7 @@ DQ
         <!--General-->
         <scene sceneID="1B5-1R-H7y">
             <objects>
-                <viewController title="General" id="2fZ-b3-Xf4" customClass="GeneralPrefViewController" customModule="DicomiX" sceneMemberID="viewController">
+                <viewController title="General" id="2fZ-b3-Xf4" customClass="GeneralPreferencesController" customModule="MagiX" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" id="55y-Su-mXg">
                         <rect key="frame" x="0.0" y="0.0" width="559" height="385"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -2923,6 +2919,10 @@ DQ
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                                         <font key="font" metaFont="system"/>
                                                     </buttonCell>
+                                                    <connections>
+                                                        <action selector="fileDestinationChanged:" target="2fZ-b3-Xf4" id="u1X-XP-3Sq"/>
+                                                        <binding destination="GC9-9q-b85" name="value" keyPath="values.Print LogsInLogFile" id="aeH-fk-Gt6"/>
+                                                    </connections>
                                                 </button>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Wh4-93-SEH">
                                                     <rect key="frame" x="239" y="14" width="109" height="32"/>
@@ -2934,20 +2934,6 @@ DQ
                                                 </button>
                                             </subviews>
                                         </customView>
-                                        <popUpButton verticalHuggingPriority="750" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="pt5-8g-LIJ">
-                                            <rect key="frame" x="177" y="6" width="173" height="26"/>
-                                            <popUpButtonCell key="cell" type="push" title="minute" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="KNP-Sr-vqW" id="l1b-Ge-NSw">
-                                                <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
-                                                <font key="font" metaFont="menu"/>
-                                                <menu key="menu" id="3Mn-ZX-4JX">
-                                                    <items>
-                                                        <menuItem title="minute" state="on" id="KNP-Sr-vqW"/>
-                                                        <menuItem title="hour" id="mPm-KF-0P2"/>
-                                                        <menuItem title="day" id="jPr-1a-vfJ"/>
-                                                    </items>
-                                                </menu>
-                                            </popUpButtonCell>
-                                        </popUpButton>
                                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4x7-aY-UJO">
                                             <rect key="frame" x="38" y="73" width="124" height="17"/>
                                             <textFieldCell key="cell" lineBreakMode="clipping" title="Print logs in log file:" id="yvh-dL-QlG">
@@ -2957,11 +2943,15 @@ DQ
                                             </textFieldCell>
                                         </textField>
                                         <button verticalHuggingPriority="750" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="W6j-CW-xz1">
-                                            <rect key="frame" x="177" y="41" width="22" height="18"/>
+                                            <rect key="frame" x="177" y="9" width="22" height="18"/>
                                             <buttonCell key="cell" type="check" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="2Ku-6E-WB1">
                                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                                 <font key="font" metaFont="system"/>
                                             </buttonCell>
+                                            <connections>
+                                                <action selector="logsInConsoleChanged:" target="2fZ-b3-Xf4" id="ic8-qL-c2Q"/>
+                                                <binding destination="GC9-9q-b85" name="value" keyPath="values.logInConsole" id="En8-PV-koM"/>
+                                            </connections>
                                         </button>
                                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VOq-k5-PeR">
                                             <rect key="frame" x="100" y="104" width="62" height="17"/>
@@ -2971,16 +2961,8 @@ DQ
                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                             </textFieldCell>
                                         </textField>
-                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LDT-4L-cDL">
-                                            <rect key="frame" x="23" y="11" width="139" height="17"/>
-                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Reinitialize logs every:" id="7rb-ka-QWk">
-                                                <font key="font" metaFont="system"/>
-                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                            </textFieldCell>
-                                        </textField>
                                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="OXz-mm-Hdr">
-                                            <rect key="frame" x="31" y="42" width="131" height="17"/>
+                                            <rect key="frame" x="31" y="10" width="131" height="17"/>
                                             <textFieldCell key="cell" lineBreakMode="clipping" title="Print logs in console:" id="M6S-jc-kJk">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -2995,24 +2977,53 @@ DQ
                                                 <menu key="menu" id="tbw-Y9-dlb">
                                                     <items>
                                                         <menuItem title="Fatal" state="on" id="XZg-24-Nfl"/>
-                                                        <menuItem title="Notice" id="DCT-Xr-BuX"/>
-                                                        <menuItem title="Info" id="uOj-Io-Giv"/>
-                                                        <menuItem title="Verbose" id="XDP-3t-OTS">
+                                                        <menuItem title="Notice" tag="1" id="DCT-Xr-BuX"/>
+                                                        <menuItem title="Info" tag="2" id="uOj-Io-Giv"/>
+                                                        <menuItem title="Verbose" tag="3" id="XDP-3t-OTS">
                                                             <modifierMask key="keyEquivalentModifierMask"/>
                                                         </menuItem>
-                                                        <menuItem title="Debug" id="y0r-nu-fxF">
+                                                        <menuItem title="Debug" tag="4" id="y0r-nu-fxF">
                                                             <modifierMask key="keyEquivalentModifierMask"/>
                                                         </menuItem>
-                                                        <menuItem title="Warning" id="zOa-Vh-LpK">
+                                                        <menuItem title="Warning" tag="5" id="zOa-Vh-LpK">
                                                             <modifierMask key="keyEquivalentModifierMask"/>
                                                         </menuItem>
-                                                        <menuItem title="Error" id="JNz-Kd-OO4">
+                                                        <menuItem title="Error" tag="6" id="JNz-Kd-OO4">
                                                             <modifierMask key="keyEquivalentModifierMask"/>
                                                         </menuItem>
                                                     </items>
                                                 </menu>
                                             </popUpButtonCell>
+                                            <connections>
+                                                <action selector="logLevelChanged:" target="2fZ-b3-Xf4" id="rjN-fr-zjT"/>
+                                                <binding destination="GC9-9q-b85" name="selectedTag" keyPath="values.LogLevel" id="WBC-zJ-52M"/>
+                                            </connections>
                                         </popUpButton>
+                                        <popUpButton verticalHuggingPriority="750" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="pt5-8g-LIJ">
+                                            <rect key="frame" x="179" y="32" width="173" height="26"/>
+                                            <popUpButtonCell key="cell" type="push" title="minute" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="KNP-Sr-vqW" id="l1b-Ge-NSw">
+                                                <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="menu"/>
+                                                <menu key="menu" id="3Mn-ZX-4JX">
+                                                    <items>
+                                                        <menuItem title="minute" state="on" id="KNP-Sr-vqW"/>
+                                                        <menuItem title="hour" id="mPm-KF-0P2"/>
+                                                        <menuItem title="day" id="jPr-1a-vfJ"/>
+                                                    </items>
+                                                </menu>
+                                            </popUpButtonCell>
+                                            <connections>
+                                                <binding destination="GC9-9q-b85" name="selectedTag" keyPath="values.clearLogPeriods" id="3dt-hl-WS1"/>
+                                            </connections>
+                                        </popUpButton>
+                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LDT-4L-cDL">
+                                            <rect key="frame" x="25" y="37" width="139" height="17"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Reinitialize logs every:" id="7rb-ka-QWk">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
                                     </subviews>
                                     <constraints>
                                         <constraint firstItem="LDT-4L-cDL" firstAttribute="height" secondItem="4x7-aY-UJO" secondAttribute="height" id="74T-oc-oYY"/>
@@ -3033,8 +3044,16 @@ DQ
                             <constraint firstItem="xLf-vk-LKt" firstAttribute="leading" secondItem="55y-Su-mXg" secondAttribute="leading" constant="20" id="CvY-de-gjU"/>
                         </constraints>
                     </view>
+                    <connections>
+                        <outlet property="buttonChooseFile" destination="7Vd-Uc-GUz" id="gfM-oV-gm6"/>
+                        <outlet property="checkConsoleDestination" destination="W6j-CW-xz1" id="7BJ-de-mug"/>
+                        <outlet property="checkfileDestination" destination="B9z-EF-6e5" id="Eh2-b1-2jc"/>
+                        <outlet property="cleanLogPeriods" destination="pt5-8g-LIJ" id="UVb-1U-QcN"/>
+                        <outlet property="logLevel" destination="7Vd-Uc-GUz" id="cbW-1D-JnW"/>
+                    </connections>
                 </viewController>
                 <customObject id="uHg-pb-P0V" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+                <userDefaultsController representsSharedInstance="YES" id="GC9-9q-b85"/>
             </objects>
             <point key="canvasLocation" x="1919.5" y="-1996.5"/>
         </scene>
