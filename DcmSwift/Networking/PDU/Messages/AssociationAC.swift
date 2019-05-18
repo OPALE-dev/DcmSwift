@@ -18,11 +18,17 @@ public class AssociationAC: PDUMessage {
         
         let apData = association.applicationContext.data()
         var pcData = Data()
-                
+        
         for (_, pc) in association.acceptedPresentationContexts {
             pc.result = 0x00
+            
+            // Weird but works:
+            // - we don't need AS in assoc-as
+            // - but we need it later for message response
+            let asx = pc.abstractSyntax
             pc.abstractSyntax = nil
             pcData.append(pc.data())
+            pc.abstractSyntax = asx
         }
         
         let uiData = association.userInfo.data()

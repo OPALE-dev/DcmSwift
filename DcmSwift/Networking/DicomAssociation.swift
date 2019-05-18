@@ -194,15 +194,15 @@ public class DicomAssociation : NSObject {
         while listen && message != nil {
             if let response = message?.handleRequest() {
                 self.write(message: response)
-                listen = false
             }
+            
+            message = self.readMessage()
             
             if !listen {
                 break
             }
-            
-            message = self.readMessage()
         }
+        print("assoc remove")
     }
     
     

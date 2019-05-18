@@ -24,6 +24,8 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     public var responseDataset:DataSet!
     public var errors:[DicomError] = []
     public var debugDescription:String = "No message description"
+    public var requestMessage:PDUMessage?
+    public var messageID = UInt16(1).bigEndian
     
     public init(pduType:PDUType, association:DicomAssociation) {
         self.pduType = pduType
