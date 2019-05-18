@@ -29,6 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Default preferences
         UserDefaults.standard.register(defaults: [
             "LocalAET": "MAGIX",
+            "LocalPort": DicomConstants.dicomDefaultPort,
             "MaxPDU": 16384,
             "ValueFormat": ValueFormat.Formatted.rawValue,
             ])
@@ -49,8 +50,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             
             if mi.tag == savedFormat {
                 mi.state = .on
-            }
-            else {
+            } else {
                 mi.state = .off
             }
         }

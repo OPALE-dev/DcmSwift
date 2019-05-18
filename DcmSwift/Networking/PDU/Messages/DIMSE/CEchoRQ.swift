@@ -19,7 +19,7 @@ public class CEchoRQ: DataTF {
         let pdvDataset = DataSet()
         _ = pdvDataset.set(value: CommandField.C_ECHO_RQ.rawValue.bigEndian, forTagName: "CommandField")
         _ = pdvDataset.set(value: self.association.abstractSyntax, forTagName: "AffectedSOPClassUID")
-        _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
+        _ = pdvDataset.set(value: self.messageID, forTagName: "MessageID")
         _ = pdvDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
         
         let commandGroupLength = pdvDataset.toData().count
@@ -42,7 +42,7 @@ public class CEchoRQ: DataTF {
     }
     
     public override func decodeData(data: Data) -> Bool {
-        print("decodeData")
+        print("TODO: decodeData")
         return true
     }
     
@@ -59,8 +59,13 @@ public class CEchoRQ: DataTF {
     }
     
     public override func handleRequest() -> PDUMessage? {
-        print("handleRequest")
-        return PDUEncoder.shared.createDIMSEMessage(pduType: .dataTF, commandField: .C_ECHO_RSP, association: self.association) as? PDUMessage
-
+        if let response = PDUEncoder.shared.createDIMSEMessage(pduType: .dataTF, commandField: .C_ECHO_RSP, association: self.association) as? PDUMessage {
+            
+            response.requestMessage = self
+            
+            return response
+        }
+        return nil
+        
     }
 }
