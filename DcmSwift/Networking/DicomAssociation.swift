@@ -179,6 +179,8 @@ public class DicomAssociation : NSObject {
                 self.write(message: associationAC, readResponse: false, completion: nil)
             }
             
+            self.associationAccepted = true
+            
             return true
         }
         
@@ -187,22 +189,24 @@ public class DicomAssociation : NSObject {
     
     
     
-    public func listen() {
-        var listen = true
+    public func listen(withCompletion completion:((_ socket:Socket) -> Void)?) {
+        //var listen = true
         var message = self.readMessage()
 
-        while listen && message != nil {
+        while message != nil {
             if let response = message?.handleRequest() {
                 self.write(message: response)
             }
             
             message = self.readMessage()
             
-            if !listen {
-                break
-            }
+//            if !listen {
+//                break
+//            }
         }
-        print("assoc remove")
+        
+        Logger.debug("Association ended")
+        completion?(self.socket)
     }
     
     

@@ -42,10 +42,10 @@ class SidebarViewController:    NSViewController,
         self.directories = DataController.shared.fetchDirectories()
         self.remotes = DataController.shared.fetchRemotes()
         
-//        self.reloadRemotesStatus()
-//        _ = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { timer in
-//            self.reloadRemotesStatus()
-//        }
+        self.reloadRemotesStatus()
+        _ = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { timer in
+            self.reloadRemotesStatus()
+        }
         
         // drag and drop
         // Register for the dropped object types we can accept.
