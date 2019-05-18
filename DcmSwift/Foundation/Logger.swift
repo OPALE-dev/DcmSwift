@@ -60,10 +60,19 @@ public class Logger {
     }
 
 
-    public var fileName:String  = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String
-    public var outputs:[Output] = [.Stdout]
-    private static var shared   = Logger()
-    private var maxLevel: Int = 5
+    public var targetName:String {
+        get {
+            return (Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String)
+        }
+    }
+
+
+
+    private static var shared       = Logger()
+    private var maxLevel: Int       = 6
+    public lazy var fileName:String = targetName + ".log"
+    //public var filePath:String      = "/" + Logger.shared.fileName
+    public var outputs:[Output]     = [.Stdout]
 
 
 
@@ -126,7 +135,7 @@ public class Logger {
         // formatting date
         df.dateFormat = "dd-MM-yyyy HH:mm:ss"
         // if tag is nil, tag is name of target
-        let tagName:String = tag ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String
+        let tagName:String = tag ?? self.targetName
 
         /* DATE SEVERITY -> [TAG]        MESSAGE */
         let outputString:String = "\(df.string(from: date)) \(severity.description) -> [\(tagName)]\t \(string)"
@@ -158,27 +167,29 @@ public class Logger {
      - parameter message: the log to be written in the file
 
     */
-    public func fileLog(message: String) {
-        if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-            let fileURL = dir.appendingPathComponent(fileName)
+    public func fileLog(message: String) -> Bool {
+        print("debug : \(self.fileName)")
+        let fileURL = URL(fileURLWithPath: self.fileName)
 
-            var isDirectory = ObjCBool(true)
-            // if file doesn't exist we create it
-            if !FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) {
-                FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
-            }
-
-            do {
-                if let fileHandle = FileHandle(forWritingAtPath: fileURL.path) {
-                    fileHandle.seekToEndOfFile()
-                    let data:Data = message.data(using: String.Encoding.utf8, allowLossyConversion: false)!
-                    fileHandle.write(data)
-                } else {
-                    try message.write(to: fileURL, atomically: false, encoding: .utf8)
-                }
-            }
-            catch {/* error handling here */}
+        var isDirectory = ObjCBool(true)
+        // if file doesn't exist we create it
+        if !FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) {
+            FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
+            print("debug 2")
         }
+
+        do {
+            if let fileHandle = FileHandle(forWritingAtPath: fileURL.path) {
+                fileHandle.seekToEndOfFile()
+                let data:Data = message.data(using: String.Encoding.utf8, allowLossyConversion: false)!
+                fileHandle.write(data)
+            } else {
+                try message.write(to: fileURL, atomically: false, encoding: .utf8)
+            }
+        }
+        catch {/* error handling here */}
+
+        return true
     }
 
 
@@ -196,9 +207,69 @@ public class Logger {
     }
 
 
+    /**
+     Set the file path where the logs are printed
+     By default, the path is ~/Documents/\(targetName).log
+     - parameter withPath: path of the file, the filename is appended at the end
+     if there is none
+     - returns: false is path is nil, else true
+
+     */
+    public static func setFileDestination(_ withPath: String?) -> Bool {
+        guard var path = withPath else {
+            return false
+        }
+
+        if !path.contains(self.shared.fileName) {
+            path += "/" + self.shared.fileName
+        }
+        shared.fileName = path
+
+        print("FILE = \(shared.fileName)")
+        return true
+    }
+
+    public static func getFileDestination() -> String {
+        return shared.fileName
+    }
+
+
     public static func setMaxLevel(_ at: LogLevel) {
         if 0 <= at.rawValue && at.rawValue <= 5 {
             shared.maxLevel = at.rawValue
         }
+    }
+
+    public static func addDestination(_ dest: Output) {
+        shared.outputs.append(dest)
+    }
+
+    public static func removeDestination(_ dest: Output) {
+        shared.outputs = shared.outputs.filter{$0 != dest}
+    }
+
+
+
+
+
+
+
+
+    public static func setPreferences() {
+        /* set the destinations output */
+        var destinations:[Logger.Output] = []
+        if UserDefaults.standard.bool(forKey: "Print LogsInLogFile") {
+            destinations.append(Logger.Output.Stdout)
+        }
+        if UserDefaults.standard.bool(forKey: "logInConsole") {
+            destinations.append(Logger.Output.File)
+        }
+        Logger.setDestinations(destinations)
+        if Logger.setFileDestination(UserDefaults.standard.string(forKey: "logFilePath")) {
+            // success
+        }
+        
+        /* set the maximum level of log output */
+        Logger.setMaxLevel(Logger.LogLevel(rawValue: UserDefaults.standard.integer(forKey: "LogLevel"))!)
     }
 }

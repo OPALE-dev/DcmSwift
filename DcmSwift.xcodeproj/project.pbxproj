@@ -154,6 +154,7 @@
 		DABE9BC6228AEFBC0015655D /* Socket.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DABE9BC9228B07710015655D /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DABE9BC8228B07710015655D /* DateExtensions.swift */; };
 		DAE005A1228D852A002CCB47 /* EntitiesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE005A0228D852A002CCB47 /* EntitiesViewController.swift */; };
+		DAE005A8228DA929002CCB47 /* GeneralPreferencesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE005A6228DA929002CCB47 /* GeneralPreferencesController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -358,6 +359,7 @@
 		DABE9BC3228AEBEB0015655D /* README */ = {isa = PBXFileReference; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 		DABE9BC8228B07710015655D /* DateExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateExtensions.swift; sourceTree = "<group>"; };
 		DAE005A0228D852A002CCB47 /* EntitiesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitiesViewController.swift; sourceTree = "<group>"; };
+		DAE005A6228DA929002CCB47 /* GeneralPreferencesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralPreferencesController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -437,6 +439,7 @@
 				DA41828B228C2B7200A79D54 /* PreferencesTabViewController.swift */,
 				DA41828F228C2C7700A79D54 /* PreferencesWindowViewController.swift */,
 				DAE005A0228D852A002CCB47 /* EntitiesViewController.swift */,
+				DAE005A6228DA929002CCB47 /* GeneralPreferencesController.swift */,
 			);
 			name = "View Controllers";
 			path = "VIew Controllers";
@@ -997,6 +1000,7 @@
 				4C91251F2282E4A500210165 /* OperationsController.swift in Sources */,
 				4CFBF6B222907A29006FE616 /* ServerController.swift in Sources */,
 				4CFBF6AF228C61C7006FE616 /* SendOperation.swift in Sources */,
+				DAE005A8228DA929002CCB47 /* GeneralPreferencesController.swift in Sources */,
 				4C53D6C92275A4EB0003724F /* LoadOperation.swift in Sources */,
 				4C53D6CF227760690003724F /* RemoteEditViewController.swift in Sources */,
 			);
