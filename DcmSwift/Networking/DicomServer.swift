@@ -85,7 +85,6 @@ public class DicomServer: DicomService {
             }
             
             if self.continueRunning {
-                
                 Logger.error("Error reported:\n \(socketError.description)")
                 
             }
@@ -104,11 +103,16 @@ public class DicomServer: DicomService {
         
         // read ASSOCIATION-AC
         if association.acknowledge() {
-            Logger.debug("Add association: calledAET:\(String(describing: association.calledAET)) <-> callingAET:\(String(describing: association.callingAET))")
+            Logger.debug("Add association: [\(socket.socketfd)] calledAET:\(String(describing: association.calledAET)) <-> callingAET:\(String(describing: association.callingAET))")
             self.connectedAssociations[socket.socketfd] = association
             
             // listen for DIMSE service messages (C-ECHO-RQ, C-FIND-RQ, etc.)
-            association.listen()
+            association.listen { (sock) in
+                self.connectedAssociations.removeValue(forKey: sock.socketfd)
+                Logger.debug("Remove association: [\(socket.socketfd)]")
+                
+                sock.close()
+            }
         }
     }
 }

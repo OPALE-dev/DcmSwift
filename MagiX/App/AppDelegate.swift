@@ -30,9 +30,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         UserDefaults.standard.register(defaults: [
             "LocalAET": "MAGIX",
             "LocalPort": DicomConstants.dicomDefaultPort,
+            "ServerEnabled": true,
             "MaxPDU": 16384,
             "ValueFormat": ValueFormat.Formatted.rawValue,
-            ])
+        ])
         
         UserDefaults.standard.synchronize()
     }
@@ -56,9 +57,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // start a local server instance
-        let server = DicomServer(port: 11112, localAET: "MAGIX")
-        Thread.detachNewThread {
-            server.run()
+        if UserDefaults.standard.bool(forKey: "ServerEnabled") {
+            ServerController.shared.startServer()
         }
     }
 
