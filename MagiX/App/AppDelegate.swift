@@ -41,9 +41,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // setup the Logger
-        Logger.setDestinations([Logger.Output.Stdout, Logger.Output.File])
-        Logger.setMaxLevel(Logger.LogLevel.DEBUG)
-        
+        Logger.setPreferences()
+        Logger.info("Application did finish launching")
+        Logger.info("IMPORTANT : \(Logger.getFileDestination())")
         
         // select the default value format
         for mi in valueFormatMenu.items {
@@ -61,9 +61,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             ServerController.shared.startServer()
         }
     }
+        
 
     func applicationWillTerminate(_ aNotification: Notification) {
         // Insert code here to tear down your application
+        Logger.info("APPLICATION WILL TERMINATE")
+        Logger.info("IMPORTANT : \(Logger.getFileDestination())")
     }
     
     
