@@ -86,7 +86,7 @@ public class CFindRQ: DataTF {
     }
     
     
-    override public func handleResponse(data: Data, completion: PDUCompletion) -> PDUMessage? {
+    override public func handleResponse(data: Data) -> PDUMessage? {
         if let command:UInt8 = data.first {
             if command == self.pduType.rawValue {
                 if let message = PDUDecoder.shared.receiveDIMSEMessage(data: data, pduType: PDUType.dataTF, commandField: CommandField.C_FIND_RSP, association: self.association) as? PDUMessage {

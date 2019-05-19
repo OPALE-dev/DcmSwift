@@ -42,10 +42,10 @@ class SidebarViewController:    NSViewController,
         self.directories = DataController.shared.fetchDirectories()
         self.remotes = DataController.shared.fetchRemotes()
         
-//        self.reloadRemotesStatus()
-//        _ = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { timer in
-//            self.reloadRemotesStatus()
-//        }
+        self.reloadRemotesStatus()
+        _ = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { timer in
+            self.reloadRemotesStatus()
+        }
         
         // drag and drop
         // Register for the dropped object types we can accept.
@@ -409,36 +409,44 @@ class SidebarViewController:    NSViewController,
     // MARK: - Private
     
     private func reloadRemotesStatus() {
-        for r in self.remotes {
-            let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
-            let callingAE = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
-            if let calledAE = r.dicomEntity {
-                let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
-                
-                client.connect { (ok, error) in
-                    if ok {
-                        client.echo() { (okEcho, receivedMessage, errorEcho) in
-                            if okEcho {
-                                r.status = 1
-                            } else {
-                                r.status = 2
+        if UserDefaults.standard.bool(forKey: "PeriodicallyRefreshRemoteStatus") {
+            for r in self.remotes {
+                let localAET = UserDefaults.standard.string(forKey: "LocalAET")!
+                let callingAE = DicomEntity(title: localAET, hostname: "127.0.0.1", port: 11112)
+                if let calledAE = r.dicomEntity {
+                    let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
+                    
+                    client.connect { (ok, error) in
+                        if ok {
+                            client.echo() { (okEcho, receivedMessage, errorEcho) in
+                                if okEcho {
+                                    r.status = 1
+                                } else {
+                                    r.status = 2
+                                }
+                                DataController.shared.save()
+                                
+                                self.remotes = DataController.shared.fetchRemotes()
+                                self.directoriesOutlineView.reloadItem(r)
                             }
+                        } else {
+                            r.status = 2
+                            
                             DataController.shared.save()
                             
-                            let oldSelection = self.directoriesOutlineView.selectedRowIndexes
                             self.remotes = DataController.shared.fetchRemotes()
-                            self.directoriesOutlineView.reloadData()
-                            self.directoriesOutlineView.selectRowIndexes(oldSelection, byExtendingSelection: false)
+                            self.directoriesOutlineView.reloadItem(r)
                         }
-                    } else {
-                        r.status = 2
-                        
-                        let oldSelection = self.directoriesOutlineView.selectedRowIndexes
-                        self.remotes = DataController.shared.fetchRemotes()
-                        self.directoriesOutlineView.reloadData()
-                        self.directoriesOutlineView.selectRowIndexes(oldSelection, byExtendingSelection: false)
                     }
                 }
+            }
+        } else {
+            for r in self.remotes {
+                r.status = 0
+                DataController.shared.save()
+                
+                self.remotes = DataController.shared.fetchRemotes()
+                self.directoriesOutlineView.reloadItem(r)
             }
         }
     }

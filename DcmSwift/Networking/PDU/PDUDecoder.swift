@@ -52,11 +52,20 @@ public class PDUDecoder {
             if commandField == .C_ECHO_RSP {
                 return CEchoRSP(data: data, pduType: pduType, commandField:commandField, association: association)
             }
+            else if commandField == .C_ECHO_RQ {
+                return CEchoRQ(data: data, pduType: pduType, commandField:commandField, association: association)
+            }
             else if commandField == .C_FIND_RSP {
                 return CFindRSP(data: data, pduType: pduType, commandField:commandField, association: association)
             }
+            else if commandField == .C_FIND_RQ {
+                return CFindRQ(data: data, pduType: pduType, commandField:commandField, association: association)
+            }
             else if commandField == .C_STORE_RSP {
                 return CStoreRSP(data: data, pduType: pduType, commandField:commandField, association: association)
+            }
+            else if commandField == .C_STORE_RQ {
+                return CStoreRQ(data: data, pduType: pduType, commandField:commandField, association: association)
             }
         }
         return nil

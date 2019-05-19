@@ -19,7 +19,7 @@ public class CEchoRQ: DataTF {
         let pdvDataset = DataSet()
         _ = pdvDataset.set(value: CommandField.C_ECHO_RQ.rawValue.bigEndian, forTagName: "CommandField")
         _ = pdvDataset.set(value: self.association.abstractSyntax, forTagName: "AffectedSOPClassUID")
-        _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
+        _ = pdvDataset.set(value: self.messageID, forTagName: "MessageID")
         _ = pdvDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
         
         let commandGroupLength = pdvDataset.toData().count
@@ -42,23 +42,30 @@ public class CEchoRQ: DataTF {
     }
     
     public override func decodeData(data: Data) -> Bool {
-        return false
+        print("TODO: decodeData")
+        return true
     }
     
-    override public func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage? {
-        print("handleResponse")
-        
+    public override func handleResponse(data:Data) -> PDUMessage? {
         if let type:UInt8 = data.first {
             if type == PDUType.dataTF.rawValue {
-                print("handleResponse")
                 if let message = PDUDecoder.shared.receiveDIMSEMessage(data: data, pduType: PDUType.dataTF, commandField: .C_ECHO_RSP, association: self.association) as? PDUMessage {
-                    print(message)
-                    completion(true, message, message.errors.first)
+
                     return message
                 }
             }
         }
-        completion(false, nil, nil)
         return nil
+    }
+    
+    public override func handleRequest() -> PDUMessage? {
+        if let response = PDUEncoder.shared.createDIMSEMessage(pduType: .dataTF, commandField: .C_ECHO_RSP, association: self.association) as? PDUMessage {
+            
+            response.requestMessage = self
+            
+            return response
+        }
+        return nil
+        
     }
 }
