@@ -20,6 +20,12 @@ public enum ValueFormat:Int {
     case Hexa       = 3
 }
 
+public enum OnImportAction:Int {
+    case Copy   = 1
+    case Link   = 2
+    case Ask    = 3
+}
+
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -28,10 +34,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     override init() {
         // Default preferences
         UserDefaults.standard.register(defaults: [
+            "PeriodicallyRefreshRemoteStatus": true,
             "LocalAET": "MAGIX",
             "LocalPort": DicomConstants.dicomDefaultPort,
             "ServerEnabled": true,
             "MaxPDU": 16384,
+            "OnImportAction": OnImportAction.Copy.rawValue,
             "ValueFormat": ValueFormat.Formatted.rawValue,
         ])
         
@@ -55,7 +63,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 mi.state = .off
             }
         }
-
+        
+        // setup storages
+        _ = StorageController.shared
+        
         // start a local server instance
         if UserDefaults.standard.bool(forKey: "ServerEnabled") {
             ServerController.shared.startServer()
@@ -80,7 +91,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         openPanel.canChooseFiles = true
         openPanel.begin { (result) -> Void in
             if result == NSApplication.ModalResponse.OK {
-                DataController.shared.load(fileURLs: openPanel.urls)
+                self.load(urls: openPanel.urls)
             }
         }
     }
@@ -95,14 +106,52 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             UserDefaults.standard.set(menuItem.tag, forKey: "ValueFormat")
             UserDefaults.standard.synchronize()
             
-            print("post notif")
             NotificationCenter.default.post(name: .valueFormatChanged, object: nil)
         }
     }
     
     
     func application(_ application: NSApplication, open urls: [URL]) {
-        DataController.shared.load(fileURLs: urls)
+        self.load(urls: urls)
+    }
+    
+    
+    
+    func load(urls: [URL]) {
+        let action = UserDefaults.standard.integer(forKey: "OnImportAction")
+        
+        if let storage = StorageController.shared.activeStorage() {
+            switch action {
+            case OnImportAction.Copy.rawValue:
+                StorageController.shared.load(fileURLs: urls, copy: true, inStorage: storage)
+                
+            case OnImportAction.Link.rawValue:
+                StorageController.shared.load(fileURLs: urls, copy: false, inStorage: storage)
+                
+            case OnImportAction.Ask.rawValue:
+                let alert = NSAlert()
+                alert.messageText = "Importing files"
+                alert.informativeText = "Do you want to copy files into the storage ? Or simply link reference to the actual files?"
+                
+                alert.addButton(withTitle: "Copy")
+                alert.addButton(withTitle: "Link")
+                alert.addButton(withTitle: "Cancel")
+                
+                let answer = alert.runModal()
+                if answer == .alertFirstButtonReturn {
+                    StorageController.shared.load(fileURLs: urls, copy: true, inStorage: storage)
+                }
+                else if answer == .alertSecondButtonReturn {
+                    StorageController.shared.load(fileURLs: urls, copy: false, inStorage: storage)
+                }
+                else if answer == .alertThirdButtonReturn {
+                    return
+                }
+                
+            default: break
+                
+            }
+        }
     }
     
     

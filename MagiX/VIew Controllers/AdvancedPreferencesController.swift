@@ -9,7 +9,7 @@
 import Cocoa
 import DcmSwift
 
-class GeneralPreferencesController: NSViewController {
+class AdvancedPreferencesController: NSViewController {
 
     /* Outlets */
     @IBOutlet weak var logLevel: NSPopUpButton!
