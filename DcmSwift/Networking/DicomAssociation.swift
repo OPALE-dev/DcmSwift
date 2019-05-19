@@ -16,12 +16,71 @@ public typealias PDUCompletion = (_ ok:Bool, _ response:PDUMessage?, _ error:Dic
 
 
 public class DicomAssociation : NSObject {
+    public enum Origin {
+        case Local
+        case Remote
+    }
+    
+    // http://dicom.nema.org/medical/dicom/2017e/output/chtml/part08/sect_9.3.4.html
+    // http://dicom.nema.org/medical/dicom/2014c/output/chtml/part02/sect_F.4.2.2.4.html#table_F.4.2-14
+    //
+    // rejection result
+    public enum RejectResult: UInt8 {
+        case RejectedPermanent = 0x1
+        case RejectedTransient = 0x2
+    }
+    
+    // source of the rejection
+    public enum RejectSource: UInt8 {
+        case DICOMULServiceUser                 = 0x1
+        case DICOMULServiceProviderACSE         = 0x2
+        case DICOMULServiceProviderPresentation = 0x3
+    }
+    
+    // Reasons
+    
+    public enum UserReason: UInt8 {
+        case NoReasonGiven                      = 0x1
+        case ApplicationContextNameNotSupported = 0x2
+        case CallingAETitleNotRecognized        = 0x3
+        case Reserved4                          = 0x4
+        case Reserved5                          = 0x5
+        case Reserved6                          = 0x6
+        case CalledAETitleNotRecognized         = 0x7
+        case Reserved8                          = 0x8
+        case Reserved9                          = 0x9
+        case Reserved10                         = 0xf
+    }
+    
+    public enum ACSEReason: UInt8 {
+        case NoReasonGiven                      = 0x1
+        case ProtocolVersionNotSupported        = 0x2
+    }
+    
+    public enum PresentationReason: UInt8 {
+        case Reserved1                          = 0x1
+        case TemporaryCongestion                = 0x2
+        case LocalLimitExceeded                 = 0x3
+        case Reserved4                          = 0x4
+        case Reserved5                          = 0x5
+        case Reserved6                          = 0x6
+        case Reserved7                          = 0x7
+        case Reserved8                          = 0x8
+    }
+    
+    
+//    enum Either<A,B> {
+//        case Left(A)
+//        case Right(B)
+//    }
+
+    
     private static var lastContextID:UInt8 = 1
     
-    public var callingAET:DicomEntity!
+    public var callingAET:DicomEntity?
     public var calledAET:DicomEntity!
     
-    public var maxPDULength:Int = 16384
+    public var maxPDULength:Int = DicomConstants.maxPDULength
     public var associationAccepted:Bool = false
     public var abstractSyntax:String = "1.2.840.10008.1.1"
     
@@ -43,27 +102,39 @@ public class DicomAssociation : NSObject {
     var isPending:Bool = false
     
     
-    public init(_ callingAET:DicomEntity, calledAET:DicomEntity, socket:Socket) {
-        self.calledAET = calledAET
+    /*
+     Initialize an Association for a Local to Remote connection, i.e. send to a remote DICOM entity
+     */
+    public init(socket:Socket, callingAET:DicomEntity, calledAET:DicomEntity, origin: Origin = .Local) {
+        self.calledAET  = calledAET
         self.callingAET = callingAET
-        self.socket = socket
-        
-        
+        self.socket     = socket
     }
     
     
-    public func addPresentationContext(abstractSyntax: String) {
+    /*
+     Initialize an Association for a Remote to Local connection, i.e. received from a remote DICOM entity
+     */
+    public init(socket:Socket, calledAET:DicomEntity, origin: Origin = .Remote) {
+        self.calledAET  = calledAET
+        self.socket     = socket
+    }
+    
+    
+    public func addPresentationContext(abstractSyntax: String, result:UInt8? = nil) {
         let ctID = self.getNextContextID()
-        let pc = PresentationContext(abstractSyntax: abstractSyntax, contextID: ctID)
+        let pc = PresentationContext(abstractSyntax: abstractSyntax, contextID: ctID, result: result)
         self.presentationContexts[ctID] = pc
     }
     
     
-    public func request(completion: PDUCompletion) {
+    public func request(completion: @escaping PDUCompletion) {
         if let message = PDUEncoder.shared.createAssocMessage(pduType: .associationRQ, association: self) as? PDUMessage {
             message.debugDescription = "\n  -> Application Context Name: \(DicomConstants.applicationContextName)\n"
             message.debugDescription.append("  -> Called Application Entity: \(calledAET.fullname())\n")
-            message.debugDescription.append("  -> Calling Application Entity: \(callingAET.fullname())\n")
+            if let caet = callingAET {
+                message.debugDescription.append("  -> Calling Application Entity: \(caet.fullname())\n")
+            }
             message.debugDescription.append("  -> Local Max PDU: \(self.maxPDULength)\n")
             message.debugDescription.append("  -> Presentation Contexts:\n")
             for (_, pc) in self.presentationContexts {
@@ -83,6 +154,86 @@ public class DicomAssociation : NSObject {
     }
     
     
+    public func acknowledge() -> Bool {
+        // read ASSOCIATION-RQ
+        if let associationRQ = self.readMessage() as? AssociationRQ {
+            // check AETs are properly defined
+            if associationRQ.remoteCallingAETitle == nil || self.calledAET.title != associationRQ.remoteCalledAETitle {
+                Logger.error("Called AE title not recognized")
+                
+                // send ASSOCIATION-RJ
+                self.reject(withResult: .RejectedPermanent,
+                            source: .DICOMULServiceUser,
+                            reason: DicomAssociation.UserReason.CalledAETitleNotRecognized.rawValue)
+                
+                return false
+            }
+            
+            // Build calling AET Dicom Entity
+            self.callingAET = DicomEntity(title: associationRQ.remoteCallingAETitle!, hostname: self.socket!.remoteHostname, port: Int(self.socket!.remotePort))
+            
+            // check presentation contexts ?
+            
+            // send ASSOCIATION-AC
+            if let associationAC = PDUEncoder.shared.createAssocMessage(pduType: .associationAC, association: self) as? AssociationAC {
+                self.write(message: associationAC, readResponse: false, completion: nil)
+            }
+            
+            self.associationAccepted = true
+            
+            return true
+        }
+        
+        return false
+    }
+    
+    
+    
+    public func listen(withCompletion completion:((_ socket:Socket) -> Void)?) {
+        //var listen = true
+        var message = self.readMessage()
+
+        while message != nil {
+            if let response = message?.handleRequest() {
+                self.write(message: response)
+            }
+            
+            message = self.readMessage()
+            
+//            if !listen {
+//                break
+//            }
+        }
+        
+        Logger.debug("Association ended")
+        completion?(self.socket)
+    }
+    
+    
+    
+    public func reject(withResult result: RejectResult, source: RejectSource, reason: UInt8) {
+        if self.socket.isConnected {
+            do {
+                // send A-Association-RJ message
+                if let message = PDUEncoder.shared.createAssocMessage(pduType: .associationRJ, association: self) as? AssociationRJ {
+                    message.result = result
+                    message.source = source
+                    message.reason = reason
+                    
+                    let data = message.data()
+                    
+                    Logger.info("SEND A-ASSOCIATION-RJ")
+                    
+                    try socket.write(from: data)
+                }
+                
+            } catch let e {
+                print(e)
+            }
+        }
+    }
+    
+    
     public func close() {
         if self.socket.isConnected && self.associationAccepted {
             do {
@@ -90,12 +241,9 @@ public class DicomAssociation : NSObject {
                 if let message = PDUEncoder.shared.createAssocMessage(pduType: .releaseRQ, association: self) {
                     let data = message.data()
                     
-                    Logger.info("==================== SEND A-RELEASE-RQ ====================")
-                    Logger.debug("A-RELEASE-RQ DATA : \(data.toHex().separate(every: 2, with: " "))")
+                    Logger.info("SEND A-RELEASE-RQ", "Association")
                     
                     try socket.write(from: data)
-                    var readData = Data()
-                    try _ = socket.read(into: &readData)
                 }
 
             } catch let e {
@@ -111,12 +259,9 @@ public class DicomAssociation : NSObject {
             if let message = PDUEncoder.shared.createAssocMessage(pduType: .abort, association: self) {
                 let data = message.data()
                 
-                Logger.info("==================== SEND A-ABORT ====================")
-                Logger.debug("A-ABORT DATA : \(data.toHex().separate(every: 2, with: " "))")
+                Logger.info("SEND A-ABORT", "Association")
                 
                 try socket.write(from: data)
-                var readData = Data()
-                try _ = socket.read(into: &readData)
             }
         } catch let e {
             print(e)
@@ -124,39 +269,36 @@ public class DicomAssociation : NSObject {
     }
     
     
-    public func write(message:PDUMessage, readResponse:Bool = false, completion: PDUCompletion) {
+    public func write(message:PDUMessage, readResponse:Bool = false, completion: PDUCompletion? = nil) {
         do {
             let data = message.data()
             try socket.write(from: data)
             
-            print("==================== SEND \(message.messageName() ) ====================")
-            //Logger.debug("HEX DATA : \(data.toHex().separate(every: 2, with: " "))")
-            print(message.debugDescription)
+            Logger.info("SEND \(message.messageName() )")
+            Logger.debug(message.debugDescription)
             
             for messageData in message.messagesData() {
-                print("==================== SEND \(message.messageName())-DATA ====================")
-                //SwiftyBeaver.debug("HEX DATA : \(messageData.toHex().separate(every: 2, with: " "))")
+                Logger.info("SEND \(message.messageName())-DATA")
                 if messageData.count > 0 {
                     try socket.write(from: messageData)
                 }
             }
             
             if !readResponse {
-                completion(true, nil, nil)
+                completion?(true, nil, nil)
                 return
             }
             
             let response = self.readResponse(forMessage: message, completion: completion)
             
-            print("==================== RECEIVE \(response?.messageName() ?? "UNKNOW-DIMSE") ====================")
-            //Logger.debug("HEX DATA : \(data.toHex().separate(every: 2, with: " "))")
-            print(message.debugDescription)
+            Logger.info("RECEIVE \(response?.messageName() ?? "UNKNOW-DIMSE")")
+            Logger.debug(message.debugDescription)
             
             // Special case: Only one « Unsupported Abstract Syntaxes (Result: 0x3) » in returned accepted presentation contexts
             if self.acceptedPresentationContexts.count == 1 {
                 for (_,v) in self.acceptedPresentationContexts {
                     if v.result == 0x3 {
-                        completion(false, response, DicomError(description: "Unsupported Abstract Syntaxes",
+                        completion?(false, response, DicomError(description: "Unsupported Abstract Syntaxes",
                                                                       level: .error,
                                                                       realm: .custom))
                         self.close()
@@ -164,17 +306,55 @@ public class DicomAssociation : NSObject {
                 }
             }
             
-            completion(true, response, nil)
+            completion?(true, response, nil)
         } catch let e {
             print(e)
-            completion(false, nil, nil)
+            completion?(false, nil, nil)
         }
     }
     
     
     
+    private func readMessage() -> PDUMessage? {
+        var message:PDUMessage? = nil
+        var readData = Data()
+        
+        do {
+            let bytesRead = try socket.read(into: &readData)
+            
+            if bytesRead > 0 {
+                if let f = readData.first, PDUType.isSupported(f) {
+                    if let pt = PDUType(rawValue: f) {
+                        if PDUType(rawValue: f) == PDUType.dataTF {
+                            let commandData = readData.subdata(in: 12..<readData.count)
+                            if commandData.count > 0 {
+                                if let dataset = DataSet(withData: commandData, readHeader: false) {
+                                    if dataset.loadData() {
+                                        if let command = dataset.element(forTagName: "CommandField") {
+                                            let c = command.data.toUInt16(byteOrder: .LittleEndian)
+                                            if let cf = CommandField(rawValue: c) {
+                                                message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, commandField: cf, association: self) as? PDUMessage
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            message = PDUDecoder.shared.receiveAssocMessage(data: readData, pduType: pt, association: self) as? PDUMessage
+                        }
+                    }
+                }
+            }
+        }
+        catch let error {
+            print(error)
+        }
+        
+        return message
+    }
     
-    public func readResponse(forMessage message:PDUMessage, completion: PDUCompletion) -> PDUMessage? {
+    
+    private func readResponse(forMessage message:PDUMessage, completion: PDUCompletion?) -> PDUMessage? {
         var response:PDUMessage? = nil
         var readData = Data()
         
@@ -220,7 +400,7 @@ public class DicomAssociation : NSObject {
                     }
                     
                     // read message and check pending status
-                    if let r = message.handleResponse(data: messageData, completion: completion) {
+                    if let r = message.handleResponse(data: messageData) {
                         response = r
                         
                         if response?.pduType == PDUType.associationAC {
@@ -251,7 +431,7 @@ public class DicomAssociation : NSObject {
             
         } catch let e {
             print(e)
-            completion(false, response, nil)
+            return nil
         }
         
         return response

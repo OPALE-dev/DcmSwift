@@ -63,13 +63,12 @@ public class CStoreRQ: DataTF {
     public override func messagesData() -> [Data] {
         var datas:[Data] = []
         
-        
         if let sopClassUID = dicomFile?.dataset.string(forTag: "SOPClassUID") {
             let pcs:[PresentationContext] = self.association.acceptedPresentationContexts(forSOPClassUID: sopClassUID)
             
             if !pcs.isEmpty {
-                if let dataset = dicomFile?.dataset {                    
-                    var fileData = dataset.DIMSEData()
+                if let dataset = dicomFile?.dataset {
+                    let fileData = dataset.DIMSEData()
                     
                     let chunks = fileData.chunck(into: 16372)
                     var index = 0
@@ -96,43 +95,7 @@ public class CStoreRQ: DataTF {
                         
                         datas.append(data)
                         index += 1
-                }
-                
-//                if let filePath = dicomFile?.filepath {
-//                    do {
-//                        // read file data
-//                        let fileData = try Data(contentsOf: URL(fileURLWithPath: filePath))
-//                        let chunks = fileData.chunck(into: 16372)
-//
-//                        var index = 0
-//
-//                        for chunkData in chunks {
-//                            var data = Data()
-//                            var pdvData2 = Data()
-//                            let pdvLength2 = chunkData.count + 2
-//
-//                            pdvData2.append(uint32: UInt32(pdvLength2), bigEndian: true)
-//                            pdvData2.append(uint8: pcs.first!.contextID, bigEndian: true) // Context
-//                            if chunkData == chunks.last {
-//                                pdvData2.append(byte: 0x02) // Flags : last fragment
-//                            } else {
-//                                pdvData2.append(byte: 0x00) // Flags : more fragment coming
-//                            }
-//                            pdvData2.append(chunkData)
-//
-//                            let pduLength2 = UInt32(pdvLength2 + 4)
-//                            data.append(uint8: self.pduType.rawValue, bigEndian: true)
-//                            data.append(byte: 0x00) // reserved
-//                            data.append(uint32: pduLength2, bigEndian: true)
-//                            data.append(pdvData2)
-//
-//                            datas.append(data)
-//                            index += 1
-//                        }
-//                    } catch {
-//                        print("File cannot be read")
-//                        return []
-//                    }
+                    }
                 }
             }
         }
@@ -140,14 +103,10 @@ public class CStoreRQ: DataTF {
         return datas
     }
     
-    public override func handleResponse(data: Data, completion: (Bool, PDUMessage?, DicomError?) -> Void) -> PDUMessage? {
-        print("handleResponse: \(data.subdata(in: 0..<1).toHex())")
-        print("self.pduType: \(self.pduType)")
+    public override func handleResponse(data: Data) -> PDUMessage? {
         if let command:UInt8 = data.first {
             if command == self.pduType.rawValue {
-                print("pduType")
                 if let message = PDUDecoder.shared.receiveDIMSEMessage(data: data, pduType: PDUType.dataTF, commandField: CommandField.C_STORE_RSP, association: self.association) as? PDUMessage {
-                    print(message)
                     return message
                 }
             }

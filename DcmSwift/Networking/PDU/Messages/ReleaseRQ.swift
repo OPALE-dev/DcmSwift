@@ -28,6 +28,14 @@ public class ReleaseRQ: PDUMessage {
     }
     
     public override func decodeData(data: Data) -> Bool {
-        return false
+        return true
+    }
+    
+    public override func handleRequest() -> PDUMessage? {
+        if let response = PDUEncoder.shared.createAssocMessage(pduType: .releaseRP, association: self.association) as? PDUMessage {
+            response.requestMessage = self
+            return response
+        }
+        return nil
     }
 }

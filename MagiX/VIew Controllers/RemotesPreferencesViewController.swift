@@ -7,8 +7,9 @@
 //
 
 import Cocoa
+import DcmSwift
 
-class EntitiesViewController: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
+class RemotesPreferencesViewController: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     @IBOutlet weak var tableView: NSTableView!
     public var remotes:[Remote] = []
     @IBOutlet weak var removeButton: NSButton!
@@ -18,6 +19,42 @@ class EntitiesViewController: NSViewController, NSTableViewDelegate, NSTableView
         super.viewDidLoad()
         // Do view setup here.
         self.remotes = DataController.shared.fetchRemotes()
+
+        NotificationCenter.default.addObserver(self, selector: #selector(didUpdateRemote(n:)), name: .didUpdateRemote, object: nil)
+//        tableView.doubleAction = #selector(SidebarViewController.editRemote(_:))
+        tableView.doubleAction = #selector(editOnDoubleClick(r:))
+        
+    }
+    
+
+
+    @objc func didUpdateRemote(n:Notification) {
+        if let r = n.object as? Remote
+        {
+            if !self.remotes.contains(r) {
+                self.remotes.append(r)
+            }
+            self.tableView.reloadData()
+        }
+    }
+
+    @objc func editOnDoubleClick(r: Any?) {
+        let selectedItem = selectedRow()
+        let remote = remotes[selectedItem]
+        if let remoteVC:RemoteEditViewController = NSStoryboard(name: "Main", bundle: nil).instantiateController(withIdentifier: "RemoteEditViewController") as? RemoteEditViewController {
+            remoteVC.remote = remote
+            self.presentAsSheet(remoteVC)
+        }
+
+    }
+
+
+    private func selectedRow() -> Int {
+        if self.tableView.clickedRow != -1 {
+            return self.tableView.clickedRow
+        }
+
+        return self.tableView.selectedRow
     }
 
 
@@ -55,22 +92,33 @@ class EntitiesViewController: NSViewController, NSTableViewDelegate, NSTableView
             view?.textField?.stringValue = String(integer)
         }
         else if tableColumn?.identifier.rawValue == "status" {
-            view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
-            let integer:Int32 = self.remotes[row].status
-            view?.textField?.stringValue = String(integer)
-
+            view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "StatusCell"), owner: self) as? NSTableCellView
+            let status:Int32 = self.remotes[row].status
+            
+            if status == 0 {
+                view?.imageView?.image = NSImage(named: NSImage.Name("NSStatusNone"))
+            }
+            else if status == 1 {
+                view?.imageView?.image = NSImage(named: NSImage.Name("NSStatusAvailable"))
+            }
+            else if status == 2 {
+                view?.imageView?.image = NSImage(named: NSImage.Name("NSStatusUnavailable"))
+            }
         }
         return view
     }
 
 
     @IBAction func removeButtonClicked(_ sender: Any) {
-        let index = tableView.selectedRow
+        let index = selectedRow()
+        if index <= 0 {
+            return
+        }
         let remote = remotes[index]
 
         DataController.shared.removeRemote(remote)
         self.remotes = DataController.shared.fetchRemotes()
-        
+
         self.tableView.reloadData()
     }
 }
