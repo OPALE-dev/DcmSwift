@@ -109,9 +109,7 @@ public struct DicomConstants {
     /**
      Verification SOP Class
      */
-    public static let verificationSOP               = "1.2.840.10008.1.1"
-    public static let ultrasoundImageStorageSOP     = "1.2.840.10008.5.1.4.1.1.6.1"
-    
+    public static let verificationSOP               = "1.2.840.10008.1.1"    
     
     
     /**

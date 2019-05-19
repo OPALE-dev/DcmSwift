@@ -148,13 +148,18 @@
 		4CECD64F22415F5A0087AF0D /* DicomService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CECD64E22415F5A0087AF0D /* DicomService.swift */; };
 		4CFBF6AF228C61C7006FE616 /* SendOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFBF6AE228C61C7006FE616 /* SendOperation.swift */; };
 		4CFBF6B222907A29006FE616 /* ServerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFBF6B122907A29006FE616 /* ServerController.swift */; };
+		4CFBF6B622908CC3006FE616 /* ListenerPreferencesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFBF6B522908CC3006FE616 /* ListenerPreferencesViewController.swift */; };
+		4CFBF6BC22917413006FE616 /* ServiceItemCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFBF6BB22917413006FE616 /* ServiceItemCellView.swift */; };
+		4CFBF6BE229195F6006FE616 /* StorageController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFBF6BD229195F6006FE616 /* StorageController.swift */; };
+		4CFBF6C02291A76E006FE616 /* StoragesPreferencesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFBF6BF2291A76E006FE616 /* StoragesPreferencesViewController.swift */; };
+		4CFBF6C22291AA1B006FE616 /* StorageCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFBF6C12291AA1B006FE616 /* StorageCellView.swift */; };
 		DA41828A228BF77100A79D54 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA418289228BF77100A79D54 /* Logger.swift */; };
 		DA41828D228C2B7200A79D54 /* PreferencesTabViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA41828B228C2B7200A79D54 /* PreferencesTabViewController.swift */; };
 		DA418290228C2C7700A79D54 /* PreferencesWindowViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA41828F228C2C7700A79D54 /* PreferencesWindowViewController.swift */; };
 		DABE9BC6228AEFBC0015655D /* Socket.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DABE9BC9228B07710015655D /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DABE9BC8228B07710015655D /* DateExtensions.swift */; };
-		DAE005A1228D852A002CCB47 /* EntitiesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE005A0228D852A002CCB47 /* EntitiesViewController.swift */; };
-		DAE005A8228DA929002CCB47 /* GeneralPreferencesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE005A6228DA929002CCB47 /* GeneralPreferencesController.swift */; };
+		DAE005A1228D852A002CCB47 /* RemotesPreferencesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE005A0228D852A002CCB47 /* RemotesPreferencesViewController.swift */; };
+		DAE005A8228DA929002CCB47 /* AdvancedPreferencesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE005A6228DA929002CCB47 /* AdvancedPreferencesController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -353,13 +358,18 @@
 		4CECD64E22415F5A0087AF0D /* DicomService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomService.swift; sourceTree = "<group>"; };
 		4CFBF6AE228C61C7006FE616 /* SendOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendOperation.swift; sourceTree = "<group>"; };
 		4CFBF6B122907A29006FE616 /* ServerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerController.swift; sourceTree = "<group>"; };
+		4CFBF6B522908CC3006FE616 /* ListenerPreferencesViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ListenerPreferencesViewController.swift; sourceTree = "<group>"; };
+		4CFBF6BB22917413006FE616 /* ServiceItemCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceItemCellView.swift; sourceTree = "<group>"; };
+		4CFBF6BD229195F6006FE616 /* StorageController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageController.swift; sourceTree = "<group>"; };
+		4CFBF6BF2291A76E006FE616 /* StoragesPreferencesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoragesPreferencesViewController.swift; sourceTree = "<group>"; };
+		4CFBF6C12291AA1B006FE616 /* StorageCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageCellView.swift; sourceTree = "<group>"; };
 		DA418289228BF77100A79D54 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		DA41828B228C2B7200A79D54 /* PreferencesTabViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesTabViewController.swift; sourceTree = "<group>"; };
 		DA41828F228C2C7700A79D54 /* PreferencesWindowViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesWindowViewController.swift; sourceTree = "<group>"; };
 		DABE9BC3228AEBEB0015655D /* README */ = {isa = PBXFileReference; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 		DABE9BC8228B07710015655D /* DateExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateExtensions.swift; sourceTree = "<group>"; };
-		DAE005A0228D852A002CCB47 /* EntitiesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitiesViewController.swift; sourceTree = "<group>"; };
-		DAE005A6228DA929002CCB47 /* GeneralPreferencesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralPreferencesController.swift; sourceTree = "<group>"; };
+		DAE005A0228D852A002CCB47 /* RemotesPreferencesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemotesPreferencesViewController.swift; sourceTree = "<group>"; };
+		DAE005A6228DA929002CCB47 /* AdvancedPreferencesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedPreferencesController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -404,9 +414,10 @@
 			children = (
 				4C53D6C32274E5150003724F /* App */,
 				4C53D6C52274E5280003724F /* View Controllers */,
+				4CFBF6B022907A09006FE616 /* Controllers */,
 				4C53D6C62274E5390003724F /* Core Data */,
 				4CFBF6AD228C61A1006FE616 /* Operations */,
-				4CFBF6B022907A09006FE616 /* Controllers */,
+				4CFBF6BA229173E1006FE616 /* TableCellView */,
 				4C53D6C72274E5470003724F /* Resources */,
 				4C3EF24F226E3AAD0062B5A3 /* Info.plist */,
 			);
@@ -438,8 +449,10 @@
 				4C53D6CC2275B4A90003724F /* OperationCellView.swift */,
 				DA41828B228C2B7200A79D54 /* PreferencesTabViewController.swift */,
 				DA41828F228C2C7700A79D54 /* PreferencesWindowViewController.swift */,
-				DAE005A0228D852A002CCB47 /* EntitiesViewController.swift */,
-				DAE005A6228DA929002CCB47 /* GeneralPreferencesController.swift */,
+				4CFBF6BF2291A76E006FE616 /* StoragesPreferencesViewController.swift */,
+				4CFBF6B522908CC3006FE616 /* ListenerPreferencesViewController.swift */,
+				DAE005A0228D852A002CCB47 /* RemotesPreferencesViewController.swift */,
+				DAE005A6228DA929002CCB47 /* AdvancedPreferencesController.swift */,
 			);
 			name = "View Controllers";
 			path = "VIew Controllers";
@@ -448,7 +461,6 @@
 		4C53D6C62274E5390003724F /* Core Data */ = {
 			isa = PBXGroup;
 			children = (
-				4C3EF259226E44D10062B5A3 /* DataController.swift */,
 				4C53D6DC2278F5F90003724F /* Remote.swift */,
 			);
 			path = "Core Data";
@@ -716,9 +728,20 @@
 		4CFBF6B022907A09006FE616 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				4C3EF259226E44D10062B5A3 /* DataController.swift */,
+				4CFBF6BD229195F6006FE616 /* StorageController.swift */,
 				4CFBF6B122907A29006FE616 /* ServerController.swift */,
 			);
 			path = Controllers;
+			sourceTree = "<group>";
+		};
+		4CFBF6BA229173E1006FE616 /* TableCellView */ = {
+			isa = PBXGroup;
+			children = (
+				4CFBF6BB22917413006FE616 /* ServiceItemCellView.swift */,
+				4CFBF6C12291AA1B006FE616 /* StorageCellView.swift */,
+			);
+			path = TableCellView;
 			sourceTree = "<group>";
 		};
 		4CFF024F1F960F0700E31D74 = {
@@ -979,7 +1002,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4C9125212282EA0E00210165 /* FindOperation.swift in Sources */,
-				DAE005A1228D852A002CCB47 /* EntitiesViewController.swift in Sources */,
+				DAE005A1228D852A002CCB47 /* RemotesPreferencesViewController.swift in Sources */,
 				4C9125252282F2A300210165 /* SmartDirectoryEditViewController.swift in Sources */,
 				4C53D6DE2278F5F90003724F /* Remote.swift in Sources */,
 				4C3EF246226E3AAC0062B5A3 /* DataViewController.swift in Sources */,
@@ -990,17 +1013,22 @@
 				4C53D6C22274E50D0003724F /* MetadataViewController.swift in Sources */,
 				4C53D6D22278F3AA0003724F /* RemoteViewController.swift in Sources */,
 				4C3EF244226E3AAC0062B5A3 /* AppDelegate.swift in Sources */,
+				4CFBF6BC22917413006FE616 /* ServiceItemCellView.swift in Sources */,
 				4C3EF249226E3AAC0062B5A3 /* MagiX.xcdatamodeld in Sources */,
+				4CFBF6C22291AA1B006FE616 /* StorageCellView.swift in Sources */,
 				4C53D6CD2275B4A90003724F /* OperationCellView.swift in Sources */,
 				4C53D6BF2274C5190003724F /* CollectionViewItem.swift in Sources */,
+				4CFBF6B622908CC3006FE616 /* ListenerPreferencesViewController.swift in Sources */,
 				4C53D6CB2275B3200003724F /* SidebarViewController.swift in Sources */,
 				4C53D712227E1CEE0003724F /* AppDicomError.swift in Sources */,
+				4CFBF6BE229195F6006FE616 /* StorageController.swift in Sources */,
+				4CFBF6C02291A76E006FE616 /* StoragesPreferencesViewController.swift in Sources */,
 				DA418290228C2C7700A79D54 /* PreferencesWindowViewController.swift in Sources */,
 				4C9125232282F14000210165 /* DirectoryEditViewController.swift in Sources */,
 				4C91251F2282E4A500210165 /* OperationsController.swift in Sources */,
 				4CFBF6B222907A29006FE616 /* ServerController.swift in Sources */,
 				4CFBF6AF228C61C7006FE616 /* SendOperation.swift in Sources */,
-				DAE005A8228DA929002CCB47 /* GeneralPreferencesController.swift in Sources */,
+				DAE005A8228DA929002CCB47 /* AdvancedPreferencesController.swift in Sources */,
 				4C53D6C92275A4EB0003724F /* LoadOperation.swift in Sources */,
 				4C53D6CF227760690003724F /* RemoteEditViewController.swift in Sources */,
 			);

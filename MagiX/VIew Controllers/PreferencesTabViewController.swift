@@ -13,13 +13,14 @@ class PreferencesTabViewController: NSTabViewController {
 
 
     override func viewWillAppear() {
+        self.preferredContentSize = NSMakeSize(self.view.frame.size.width, self.view.frame.size.height)
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do view setup here.
 
-        self.preferredContentSize = NSMakeSize(self.view.frame.size.width, self.view.frame.size.height)
+        //self.preferredContentSize = NSMakeSize(self.view.frame.size.width, self.view.frame.size.height)
     }
 
     override func viewDidAppear() {
