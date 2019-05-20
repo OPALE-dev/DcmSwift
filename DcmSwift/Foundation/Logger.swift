@@ -60,13 +60,14 @@ public class Logger {
     }
 
 
+
+    /**/
+
     public var targetName:String {
         get {
             return (Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String)
         }
     }
-
-
 
     private static var shared       = Logger()
     private var maxLevel: Int       = 6
@@ -75,15 +76,7 @@ public class Logger {
     public var outputs:[Output]     = [.Stdout]
     public var sizeLimit:UInt64     = 1_000_000
 
-
-
-    public static func path() -> URL? {
-        if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-            return dir.appendingPathComponent(Logger.shared.fileName)
-        }
-        return nil
-    }
-
+    /**/
 
 
     public static func notice(_ string:String, _ tag:String? = nil, _ file: String = #file, _ function: String = #function, line: Int = #line) {
@@ -128,6 +121,7 @@ public class Logger {
         }
     }
 
+
     /**
      Format the output
      Adds a newline for writting in file
@@ -156,7 +150,7 @@ public class Logger {
             case .Stdout:
                 consoleLog(message: outputString)
             case .File:
-                fileLog(message: outputString + "\n")
+                if fileLog(message: outputString + "\n") {}
             }
 
         }
@@ -175,19 +169,14 @@ public class Logger {
      Write in file. Creates a file if the file doesn't exist. Append at
      the end of the file.
      - parameter message: the log to be written in the file
+     - returns: true if filepath is correct
 
     */
     public func fileLog(message: String) -> Bool {
-        print("debug : \(self.fileName)")
-        print("SIZE \(self.getFileSize())")
-
-
-
         if let fileURL = filePath {
 
             if getFileSize() > self.sizeLimit {
                 do {
-                    print("chu dedans")
                     try FileManager.default.removeItem(at: fileURL)
                 }
                 catch {}
@@ -220,6 +209,7 @@ public class Logger {
      Set the destination for output : file (with name of file), console.
      Default log file is dicom.log
      - parameter destinations: all the destinations where the logs are outputted
+     - parameter filePath: path of the logfile
 
     */
     public static func setDestinations(_ destinations: [Output], filePath: String? = nil) {
@@ -229,13 +219,12 @@ public class Logger {
         }
     }
 
-
     /**
      Set the file path where the logs are printed
      By default, the path is ~/Documents/\(targetName).log
      - parameter withPath: path of the file, the filename is appended at the end
      if there is none
-     - returns: false is path is nil, else true
+     - returns: false is path is nil
 
      */
     public static func setFileDestination(_ withPath: String?) -> Bool {
@@ -251,15 +240,20 @@ public class Logger {
         return true
     }
 
-    public static func getFileDestination() -> String? {
-        return shared.filePath?.path
-    }
 
+    /**
+     Set the level of logs printed
+     - parameter at: the log level to be set
 
+    */
     public static func setMaxLevel(_ at: LogLevel) {
         if 0 <= at.rawValue && at.rawValue <= 5 {
             shared.maxLevel = at.rawValue
         }
+    }
+
+    public static func setLimitLogSize(_ at: UInt64) {
+        shared.sizeLimit = at
     }
 
     public static func addDestination(_ dest: Output) {
@@ -290,21 +284,25 @@ public class Logger {
         return fileSize
     }
 
-    public static func setLimitLogSize(_ at: UInt64) {
-        shared.sizeLimit = at
-    }
-
     public static func getSizeLimit() -> UInt64 {
         return shared.sizeLimit
     }
 
 
+    public static func getFileDestination() -> String? {
+        return shared.filePath?.path
+    }
 
 
 
 
 
 
+
+    /**
+     Set the logger according to the settings in UserDefaults
+     
+     */
     public static func setPreferences() {
         /* set the destinations output */
         var destinations:[Logger.Output] = []
