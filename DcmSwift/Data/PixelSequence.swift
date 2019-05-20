@@ -18,7 +18,9 @@ class PixelSequence: DataSequence {
     
     
     public override func toData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
-            
+        
+        print("PixelSequence toData")
+        
         var data = Data()
         
         // write SQ tag
