@@ -27,8 +27,6 @@ class GeneralPreferencesController: NSViewController {
         if let filePath = Logger.getFileDestination() {
             fileField.stringValue = filePath
         }
-
-        Logger.info("View did load")
     }
 
     /* Actions */
@@ -36,7 +34,6 @@ class GeneralPreferencesController: NSViewController {
         if let button = sender as? NSPopUpButton {
             if let level = Logger.LogLevel(rawValue: button.selectedTag()) {
                 Logger.setMaxLevel(level)
-                Logger.fatal("MAX LEVEL \(level)")
             }
         }
     }
@@ -49,7 +46,6 @@ class GeneralPreferencesController: NSViewController {
                 Logger.addDestination(Logger.Output.File)
             }
         }
-        Logger.debug("file log rule changed")
     }
 
     @IBAction func logsInConsoleChanged(_ sender: Any) {
@@ -60,7 +56,6 @@ class GeneralPreferencesController: NSViewController {
                 Logger.addDestination(Logger.Output.Stdout)
             }
         }
-        Logger.debug("console log rule changed")
     }
 
     @IBAction func chooseFile(_ sender: Any) {
@@ -72,13 +67,11 @@ class GeneralPreferencesController: NSViewController {
 
         let i = openPanel.runModal()
         if(i.rawValue == NSApplication.ModalResponse.OK.rawValue) {
-            Logger.fatal("\(String(describing: openPanel.url))")
 
             if let path = openPanel.url?.path {
                 if Logger.setFileDestination(path) {
                     // success
                 }
-                Logger.fatal("Après le setFileDestination")
                 fileField.stringValue = path
             }
 
