@@ -28,7 +28,7 @@ class GeneralPreferencesController: NSViewController {
             fileField.stringValue = filePath
         }
 
-        //cleanLogPeriods.selectItem(at: <#T##Int#>)
+        Logger.info("View did load")
     }
 
     /* Actions */
@@ -36,6 +36,7 @@ class GeneralPreferencesController: NSViewController {
         if let button = sender as? NSPopUpButton {
             if let level = Logger.LogLevel(rawValue: button.selectedTag()) {
                 Logger.setMaxLevel(level)
+                Logger.fatal("MAX LEVEL \(level)")
             }
         }
     }
@@ -85,7 +86,13 @@ class GeneralPreferencesController: NSViewController {
     }
 
 
-
+    @IBAction func limitCleanLogs(_ sender: Any) {
+        if let button = sender as? NSPopUpButton {
+            Logger.setLimitLogSize(UInt64(button.selectedTag()))
+        }
+        Logger.fatal(String(Logger.getSizeLimit()))
+    }
+    
 
     /**/
     func isSandboxingEnabled() -> Bool {

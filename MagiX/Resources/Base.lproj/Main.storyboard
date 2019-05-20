@@ -3012,18 +3012,19 @@ DQ
                                         </popUpButton>
                                         <popUpButton verticalHuggingPriority="750" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="pt5-8g-LIJ">
                                             <rect key="frame" x="179" y="32" width="173" height="26"/>
-                                            <popUpButtonCell key="cell" type="push" title="1 MB" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="KNP-Sr-vqW" id="l1b-Ge-NSw">
+                                            <popUpButtonCell key="cell" type="push" title="1 MB" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1000000" imageScaling="proportionallyDown" inset="2" selectedItem="KNP-Sr-vqW" id="l1b-Ge-NSw">
                                                 <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="menu"/>
                                                 <menu key="menu" id="3Mn-ZX-4JX">
                                                     <items>
-                                                        <menuItem title="1 MB" state="on" id="KNP-Sr-vqW"/>
-                                                        <menuItem title="10 MB" tag="1" id="mPm-KF-0P2"/>
-                                                        <menuItem title="100 MB" tag="2" id="jPr-1a-vfJ"/>
+                                                        <menuItem title="1 MB" state="on" tag="1000000" id="KNP-Sr-vqW"/>
+                                                        <menuItem title="10 MB" tag="10000000" id="mPm-KF-0P2"/>
+                                                        <menuItem title="100 MB" tag="100000000" id="jPr-1a-vfJ"/>
                                                     </items>
                                                 </menu>
                                             </popUpButtonCell>
                                             <connections>
+                                                <action selector="limitCleanLogs:" target="2fZ-b3-Xf4" id="ZfI-Ot-cus"/>
                                                 <binding destination="GC9-9q-b85" name="selectedTag" keyPath="values.clearLogPeriods" id="3dt-hl-WS1"/>
                                             </connections>
                                         </popUpButton>
