@@ -24,6 +24,9 @@ class GeneralPreferencesController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do view setup here.
+        if let filePath = Logger.getFileDestination() {
+            fileField.stringValue = filePath
+        }
     }
 
     /* Actions */

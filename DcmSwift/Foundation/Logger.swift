@@ -178,22 +178,13 @@ public class Logger {
     */
     public func fileLog(message: String) -> Bool {
         print("debug : \(self.fileName)")
-        if let p = filePath {
-            print("debug: \(p)")
-            let fileURL = p
-
-
-            /*if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-                let fileURL = dir.appendingPathComponent(fileName)
-                FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first.appendingPathComponent(fileName)
-            }*/
-
+        if let path = filePath {
+            let fileURL = path
 
             var isDirectory = ObjCBool(true)
             // if file doesn't exist we create it
             if !FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) {
                 FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
-                print("debug 2")
             }
 
             do {
@@ -245,12 +236,11 @@ public class Logger {
         }
         shared.filePath = URL(fileURLWithPath: path)
 
-        print("FILE = \(shared.filePath)")
         return true
     }
 
-    public static func getFileDestination() -> String {
-        return shared.fileName
+    public static func getFileDestination() -> String? {
+        return shared.filePath?.path
     }
 
 
