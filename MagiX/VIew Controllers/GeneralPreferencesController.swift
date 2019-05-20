@@ -27,6 +27,8 @@ class GeneralPreferencesController: NSViewController {
         if let filePath = Logger.getFileDestination() {
             fileField.stringValue = filePath
         }
+
+        //cleanLogPeriods.selectItem(at: <#T##Int#>)
     }
 
     /* Actions */

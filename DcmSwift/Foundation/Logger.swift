@@ -73,6 +73,7 @@ public class Logger {
     public lazy var fileName:String = targetName + ".log"
     lazy var filePath:URL? = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(fileName)
     public var outputs:[Output]     = [.Stdout]
+    public var sizeLimit:UInt64     = 1_000_000
 
 
 
@@ -178,6 +179,9 @@ public class Logger {
     */
     public func fileLog(message: String) -> Bool {
         print("debug : \(self.fileName)")
+        print("SIZE \(self.getFileSize())")
+
+
         if let path = filePath {
             let fileURL = path
 
@@ -256,6 +260,26 @@ public class Logger {
 
     public static func removeDestination(_ dest: Output) {
         shared.outputs = shared.outputs.filter{$0 != dest}
+    }
+
+
+    private func getFileSize() -> UInt64 {
+        var fileSize : UInt64 = 0
+
+        do {
+            if let path = filePath?.path {
+                let attr = try FileManager.default.attributesOfItem(atPath: path)
+                fileSize = attr[FileAttributeKey.size] as! UInt64
+
+                //if you convert to NSDictionary, you can get file size old way as well.
+                let dict = attr as NSDictionary
+                fileSize = dict.fileSize()
+            }
+        } catch {
+            print("Error: \(error)")
+        }
+
+        return fileSize
     }
 
 

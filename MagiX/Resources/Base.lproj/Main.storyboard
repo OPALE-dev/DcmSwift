@@ -3012,14 +3012,14 @@ DQ
                                         </popUpButton>
                                         <popUpButton verticalHuggingPriority="750" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="pt5-8g-LIJ">
                                             <rect key="frame" x="179" y="32" width="173" height="26"/>
-                                            <popUpButtonCell key="cell" type="push" title="minute" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="KNP-Sr-vqW" id="l1b-Ge-NSw">
+                                            <popUpButtonCell key="cell" type="push" title="1 MB" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="KNP-Sr-vqW" id="l1b-Ge-NSw">
                                                 <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="menu"/>
                                                 <menu key="menu" id="3Mn-ZX-4JX">
                                                     <items>
-                                                        <menuItem title="minute" state="on" id="KNP-Sr-vqW"/>
-                                                        <menuItem title="hour" id="mPm-KF-0P2"/>
-                                                        <menuItem title="day" id="jPr-1a-vfJ"/>
+                                                        <menuItem title="1 MB" state="on" id="KNP-Sr-vqW"/>
+                                                        <menuItem title="10 MB" tag="1" id="mPm-KF-0P2"/>
+                                                        <menuItem title="100 MB" tag="2" id="jPr-1a-vfJ"/>
                                                     </items>
                                                 </menu>
                                             </popUpButtonCell>
@@ -3028,8 +3028,8 @@ DQ
                                             </connections>
                                         </popUpButton>
                                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LDT-4L-cDL">
-                                            <rect key="frame" x="25" y="37" width="139" height="17"/>
-                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Reinitialize logs every:" id="7rb-ka-QWk">
+                                            <rect key="frame" x="25" y="37" width="122" height="17"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Reinitialize logs for:" id="7rb-ka-QWk">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
