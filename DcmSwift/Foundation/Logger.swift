@@ -71,8 +71,17 @@ public class Logger {
     private static var shared       = Logger()
     private var maxLevel: Int       = 6
     public lazy var fileName:String = targetName + ".log"
-    //public var filePath:String      = "/" + Logger.shared.fileName
+    lazy var filePath:URL? = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(fileName)
     public var outputs:[Output]     = [.Stdout]
+
+
+
+    public static func path() -> URL? {
+        if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            return dir.appendingPathComponent(Logger.shared.fileName)
+        }
+        return nil
+    }
 
 
 
@@ -169,27 +178,38 @@ public class Logger {
     */
     public func fileLog(message: String) -> Bool {
         print("debug : \(self.fileName)")
-        let fileURL = URL(fileURLWithPath: self.fileName)
+        if let p = filePath {
+            print("debug: \(p)")
+            let fileURL = p
 
-        var isDirectory = ObjCBool(true)
-        // if file doesn't exist we create it
-        if !FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) {
-            FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
-            print("debug 2")
-        }
 
-        do {
-            if let fileHandle = FileHandle(forWritingAtPath: fileURL.path) {
-                fileHandle.seekToEndOfFile()
-                let data:Data = message.data(using: String.Encoding.utf8, allowLossyConversion: false)!
-                fileHandle.write(data)
-            } else {
-                try message.write(to: fileURL, atomically: false, encoding: .utf8)
+            /*if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                let fileURL = dir.appendingPathComponent(fileName)
+                FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first.appendingPathComponent(fileName)
+            }*/
+
+
+            var isDirectory = ObjCBool(true)
+            // if file doesn't exist we create it
+            if !FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) {
+                FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
+                print("debug 2")
             }
-        }
-        catch {/* error handling here */}
 
-        return true
+            do {
+                if let fileHandle = FileHandle(forWritingAtPath: fileURL.path) {
+                    fileHandle.seekToEndOfFile()
+                    let data:Data = message.data(using: String.Encoding.utf8, allowLossyConversion: false)!
+                    fileHandle.write(data)
+                } else {
+                    try message.write(to: fileURL, atomically: false, encoding: .utf8)
+                }
+            }
+            catch {/* error handling here */}
+
+            return true
+        }
+        return false
     }
 
 
@@ -223,9 +243,9 @@ public class Logger {
         if !path.contains(self.shared.fileName) {
             path += "/" + self.shared.fileName
         }
-        shared.fileName = path
+        shared.filePath = URL(fileURLWithPath: path)
 
-        print("FILE = \(shared.fileName)")
+        print("FILE = \(shared.filePath)")
         return true
     }
 
