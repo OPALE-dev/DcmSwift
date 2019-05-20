@@ -71,6 +71,8 @@ public class DicomClient : DicomService, StreamDelegate {
             if accepted {
                 if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
                     association.write(message: message, readResponse: true, completion: completion)
+                    
+                    association.close()
                 }
             }
             else {
@@ -99,6 +101,8 @@ public class DicomClient : DicomService, StreamDelegate {
                     message.queryDataset = queryDataset
                     // send message
                     association.write(message: message, readResponse: true, completion: completion)
+                    //
+                    association.close()
                 }
             }
             else {
@@ -133,6 +137,8 @@ public class DicomClient : DicomService, StreamDelegate {
                         index += 1
                     }
                 }
+                
+                association.close()
             }
             else {
                 completion?(false, receivedMessage, error)
