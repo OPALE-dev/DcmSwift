@@ -182,8 +182,16 @@ public class Logger {
         print("SIZE \(self.getFileSize())")
 
 
-        if let path = filePath {
-            let fileURL = path
+
+        if let fileURL = filePath {
+
+            if getFileSize() > self.sizeLimit {
+                do {
+                    print("chu dedans")
+                    try FileManager.default.removeItem(at: fileURL)
+                }
+                catch {}
+            }
 
             var isDirectory = ObjCBool(true)
             // if file doesn't exist we create it
@@ -282,6 +290,14 @@ public class Logger {
         return fileSize
     }
 
+    public static func setLimitLogSize(_ at: UInt64) {
+        shared.sizeLimit = at
+    }
+
+    public static func getSizeLimit() -> UInt64 {
+        return shared.sizeLimit
+    }
+
 
 
 
@@ -305,5 +321,8 @@ public class Logger {
         
         /* set the maximum level of log output */
         Logger.setMaxLevel(Logger.LogLevel(rawValue: UserDefaults.standard.integer(forKey: "LogLevel"))!)
+
+        let i = UInt64(UserDefaults.standard.integer(forKey: "clearLogPeriods"))
+        Logger.setLimitLogSize(i)
     }
 }
