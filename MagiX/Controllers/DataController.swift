@@ -60,53 +60,6 @@ class DataController : NSObject {
     
     // MARK: - Public
     
-    public func load(fileURLs urls:[URL]) {
-        let loadOperation = LoadOperation(parentContext: self.context)
-        var flattenURLs:[URL] = []
-        var percent = 0
-        
-        loadOperation.numberOfFiles = urls.count
-
-        
-        loadOperation.addExecutionBlock {
-            for url in urls {
-                flattenURLs.append(contentsOf: self.getURLs(atURL: url))
-            }
-            
-            loadOperation.numberOfFiles = flattenURLs.count
-            
-            var count = 0
-            for url in flattenURLs {
-                self.loadFile(atURL: url, operation: loadOperation)
-                
-                count += 1
-                percent = Int((Float(count) / Float(loadOperation.numberOfFiles)) * 100)
-                
-                loadOperation.currentIndex = count
-                loadOperation.percents = percent
-                
-                DispatchQueue.main.async {
-                    NotificationCenter.default.post(name: .loadOperationUpdated, object: loadOperation)
-                }
-            }
-        }
-        
-        loadOperation.completionBlock = {
-            DispatchQueue.main.async {
-                // save background and main contexts
-                loadOperation.save()
-                self.save()
-                
-                OperationsController.shared.stopObserveOperation(loadOperation)
-                
-                NotificationCenter.default.post(name: .didLoadData, object: nil)
-            }
-        }
-    
-        OperationsController.shared.addOperation(loadOperation)
-    }
-    
-    
     
     public func removeStudy(_ study:Study) {
         self.context.delete(study)
@@ -134,7 +87,10 @@ class DataController : NSObject {
     public func fetchRemotes() -> [Remote] {
         return self.findEntities(withName: "Remote", predicate: nil) as? [Remote] ?? []
     }
-    
+
+    public func fetchStorages() -> [Storage] {
+        return self.findEntities(withName: "Storage", predicate: nil) as? [Storage] ?? []
+    }
     
     public func fetchPatients() -> [Patient] {
         return self.findEntities(withName: "Patient", predicate: nil) as? [Patient] ?? []
@@ -172,47 +128,7 @@ class DataController : NSObject {
     }
     
     
-    
-    // MARK: - Private
-    private func getURLs(atURL url:URL) -> [URL] {
-        var urls:[URL]      = []
-        var isDir:ObjCBool  = false
-        
-        
-        print("getURLs")
-        
-        if FileManager.default.fileExists(atPath: url.path, isDirectory:&isDir) {
-            if isDir.boolValue {
-                // file exists and is a directory
-                // list the content and loadFile(atURL) recursively
-                do {
-                    let URLs = try FileManager.default.contentsOfDirectory(
-                        at: url,
-                        includingPropertiesForKeys: nil,
-                        options: FileManager.DirectoryEnumerationOptions.skipsHiddenFiles)
-                    
-                    for u in URLs {
-                        urls.append(contentsOf: self.getURLs(atURL: u))
-                    }
-                    return urls
-                } catch {
-                    
-                }
-            } else {
-                // file exists and is not a directory
-                // check if it's a DICOM file
-                urls.append(url)
-            }
-        } else {
-            // file does not exist
-        }
-        
-        print(urls)
-        
-        return urls
-    }
-    
-    private func loadFile(atURL url:URL, operation: LoadOperation) {
+    public func loadFile(atURL url:URL, copy:Bool, inStorage storage:Storage, operation: LoadOperation) {
         var isDir : ObjCBool = false
         
         if FileManager.default.fileExists(atPath: url.path, isDirectory:&isDir) {
@@ -226,7 +142,7 @@ class DataController : NSObject {
                         options: FileManager.DirectoryEnumerationOptions.skipsHiddenFiles)
                     
                     for u in URLs {
-                        self.loadFile(atURL: u, operation: operation)
+                        self.loadFile(atURL: u, copy: copy, inStorage: storage, operation: operation)
                     }
                 } catch {
                     
@@ -235,7 +151,7 @@ class DataController : NSObject {
                 // file exists and is not a directory
                 // check if it's a DICOM file
                 if let df = DicomFile(forPath: url.path) {
-                    self.load(dicomFile:df, operation: operation)
+                    self.load(dicomFile:df, copy: copy, inStorage: storage, operation: operation)
                 }
             }
         } else {
@@ -244,12 +160,36 @@ class DataController : NSObject {
     }
     
     
-    private func load(dicomFile:DicomFile, operation: LoadOperation) {
+    
+    // MARK: - Private
+    
+    private func load(dicomFile:DicomFile, copy:Bool, inStorage storage:Storage, operation: LoadOperation) {
         if let patient = self.findOrCreatePatient(forDicomFile: dicomFile, operation: operation) {
+            patient.storage = storage
+            patient.copied = copy
+            
             if let study = self.findOrCreateStudy(forDicomFile: dicomFile, forPatient:patient, operation: operation) {
+                study.storage = storage
+                study.copied = copy
+                
                 if let serie = self.findOrCreateSeries(forDicomFile: dicomFile, forStudy:study, operation: operation) {
-                    _ = self.findOrCreateInstance(forDicomFile: dicomFile, forSerie:serie, operation: operation)
+                    serie.storage = storage
+                    serie.copied = copy
                     
+                    if let instance = self.findOrCreateInstance(forDicomFile: dicomFile, forSerie:serie, operation: operation) {
+                        instance.storage = storage
+                        instance.copied = copy
+                        
+                        if copy {
+                            StorageController.shared.copyDicomFile(dicomFile,
+                                                                   intoStorage: storage,
+                                                                   withPatient: patient,
+                                                                   withStudy: study,
+                                                                   withSerie: serie,
+                                                                   withInstance: instance)
+                        }
+                    }
+                
                     serie.numberOfInstances += 1
                     study.numberOfInstances += 1
                     

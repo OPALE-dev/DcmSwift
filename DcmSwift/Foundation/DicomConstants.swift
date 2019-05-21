@@ -76,7 +76,9 @@ public struct DicomConstants {
      */
     public static let dicomBytesOffset              = 132
     
+    public static let dicomDefaultPort:Int          = 11112
     public static let dicomTimeOut:UInt             = 480
+    public static let maxPDULength:Int              = 16384
     
     
     /**
@@ -107,9 +109,7 @@ public struct DicomConstants {
     /**
      Verification SOP Class
      */
-    public static let verificationSOP               = "1.2.840.10008.1.1"
-    public static let ultrasoundImageStorageSOP     = "1.2.840.10008.5.1.4.1.1.6.1"
-    
+    public static let verificationSOP               = "1.2.840.10008.1.1"    
     
     
     /**

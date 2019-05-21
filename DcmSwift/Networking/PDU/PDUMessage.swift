@@ -10,7 +10,8 @@ import Foundation
 
 
 public protocol PDUResponsable {
-    func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage?
+    func handleResponse(data:Data) -> PDUMessage?
+    func handleRequest() -> PDUMessage?
 }
 
 
@@ -23,6 +24,8 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     public var responseDataset:DataSet!
     public var errors:[DicomError] = []
     public var debugDescription:String = "No message description"
+    public var requestMessage:PDUMessage?
+    public var messageID = UInt16(1).bigEndian
     
     public init(pduType:PDUType, association:DicomAssociation) {
         self.pduType = pduType
@@ -77,9 +80,13 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     }
     
     
-    public func handleResponse(data:Data, completion: PDUCompletion) -> PDUMessage? {
+    public func handleResponse(data:Data) -> PDUMessage? {
         Logger.warning("Not implemented yet \(#function) \(self.pduType)")
-        completion(false, nil, nil)
         return nil
     }
+
+    public func handleRequest() -> PDUMessage? {
+        return nil
+    }
+    
 }
