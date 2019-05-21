@@ -53,12 +53,22 @@ public class Logger {
      Enumeration for type of output
      - Stdout: console
      - File: file
-    */
+     */
     public enum Output {
         case Stdout
         case File
     }
 
+    public enum TimeLimit: Int {
+        case Minute = 0
+        case Hour   = 1
+        case Day    = 2
+        case Month  = 3
+    }
+
+
+
+    /**/
 
     public var targetName:String {
         get {
@@ -66,14 +76,16 @@ public class Logger {
         }
     }
 
-
-
     private static var shared       = Logger()
     private var maxLevel: Int       = 6
     public lazy var fileName:String = targetName + ".log"
-    //public var filePath:String      = "/" + Logger.shared.fileName
+    lazy var filePath:URL? = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(fileName)
     public var outputs:[Output]     = [.Stdout]
+    public var sizeLimit:UInt64     = 1_000_000
+    public var timeLimit:TimeLimit  = .Minute
+    public var startDate:Date       = Date()
 
+    /**/
 
 
     public static func notice(_ string:String, _ tag:String? = nil, _ file: String = #file, _ function: String = #function, line: Int = #line) {
@@ -118,6 +130,7 @@ public class Logger {
         }
     }
 
+
     /**
      Format the output
      Adds a newline for writting in file
@@ -146,7 +159,7 @@ public class Logger {
             case .Stdout:
                 consoleLog(message: outputString)
             case .File:
-                fileLog(message: outputString + "\n")
+                if fileLog(message: outputString + "\n") {}
             }
 
         }
@@ -165,31 +178,41 @@ public class Logger {
      Write in file. Creates a file if the file doesn't exist. Append at
      the end of the file.
      - parameter message: the log to be written in the file
+     - returns: true if filepath is correct
 
-    */
+     */
     public func fileLog(message: String) -> Bool {
-        print("debug : \(self.fileName)")
-        let fileURL = URL(fileURLWithPath: self.fileName)
+        print("FILE LOG")
+        if let fileURL = filePath {
 
-        var isDirectory = ObjCBool(true)
-        // if file doesn't exist we create it
-        if !FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) {
-            FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
-            print("debug 2")
-        }
-
-        do {
-            if let fileHandle = FileHandle(forWritingAtPath: fileURL.path) {
-                fileHandle.seekToEndOfFile()
-                let data:Data = message.data(using: String.Encoding.utf8, allowLossyConversion: false)!
-                fileHandle.write(data)
-            } else {
-                try message.write(to: fileURL, atomically: false, encoding: .utf8)
+            if getFileSize() > self.sizeLimit {
+                do {
+                    try FileManager.default.removeItem(at: fileURL)
+                }
+                catch {}
             }
-        }
-        catch {/* error handling here */}
+            Logger.eraseFileByTime()
 
-        return true
+            var isDirectory = ObjCBool(true)
+            // if file doesn't exist we create it
+            if !FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) {
+                FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
+            }
+
+            do {
+                if let fileHandle = FileHandle(forWritingAtPath: fileURL.path) {
+                    fileHandle.seekToEndOfFile()
+                    let data:Data = message.data(using: String.Encoding.utf8, allowLossyConversion: false)!
+                    fileHandle.write(data)
+                } else {
+                    try message.write(to: fileURL, atomically: false, encoding: .utf8)
+                }
+            }
+            catch {/* error handling here */}
+
+            return true
+        }
+        return false
     }
 
 
@@ -197,8 +220,9 @@ public class Logger {
      Set the destination for output : file (with name of file), console.
      Default log file is dicom.log
      - parameter destinations: all the destinations where the logs are outputted
+     - parameter filePath: path of the logfile
 
-    */
+     */
     public static func setDestinations(_ destinations: [Output], filePath: String? = nil) {
         shared.outputs = destinations
         if let fileName:String = filePath {
@@ -206,13 +230,12 @@ public class Logger {
         }
     }
 
-
     /**
      Set the file path where the logs are printed
      By default, the path is ~/Documents/\(targetName).log
      - parameter withPath: path of the file, the filename is appended at the end
      if there is none
-     - returns: false is path is nil, else true
+     - returns: false is path is nil
 
      */
     public static func setFileDestination(_ withPath: String?) -> Bool {
@@ -223,21 +246,25 @@ public class Logger {
         if !path.contains(self.shared.fileName) {
             path += "/" + self.shared.fileName
         }
-        shared.fileName = path
+        shared.filePath = URL(fileURLWithPath: path)
 
-        print("FILE = \(shared.fileName)")
         return true
     }
 
-    public static func getFileDestination() -> String {
-        return shared.fileName
-    }
 
+    /**
+     Set the level of logs printed
+     - parameter at: the log level to be set
 
+     */
     public static func setMaxLevel(_ at: LogLevel) {
         if 0 <= at.rawValue && at.rawValue <= 5 {
             shared.maxLevel = at.rawValue
         }
+    }
+
+    public static func setLimitLogSize(_ at: UInt64) {
+        shared.sizeLimit = at
     }
 
     public static func addDestination(_ dest: Output) {
@@ -248,6 +275,90 @@ public class Logger {
         shared.outputs = shared.outputs.filter{$0 != dest}
     }
 
+    public static func setTimeLimit(_ at: TimeLimit) {
+        shared.timeLimit = at
+        shared.startDate = Date()/* the date is reset */
+        UserDefaults.standard.set(shared.startDate, forKey: "startDate")
+    }
+
+    /**
+     Erase the log file
+
+     */
+    public static func eraseFileByTime() {
+        let range = -Int(shared.startDate.timeIntervalSinceNow)
+        let t:Int
+
+        switch shared.timeLimit {
+        case .Minute:
+            t = range / 60
+        case .Hour:
+            t = range / 3600
+        case .Day:
+            t = range / 86400
+        case .Month:
+            t = range / 100000
+        }
+
+        print("\(range)")
+        print("\(t)")
+
+        if t >= 1 {
+            if let path = shared.filePath {
+                Logger.removeLogFile(path)
+                shared.startDate = Date()
+            }
+        }
+    }
+
+    /**
+     Delete the log file
+     - parameter at: the URL where the log file is
+
+     */
+    public static func removeLogFile(_ at: URL) {
+        do {
+            try FileManager.default.removeItem(at: at)
+        }
+        catch {}
+    }
+
+
+
+    /**/
+
+
+    private func getFileSize() -> UInt64 {
+        var fileSize : UInt64 = 0
+
+        do {
+            if let path = filePath?.path {
+                let attr = try FileManager.default.attributesOfItem(atPath: path)
+                fileSize = attr[FileAttributeKey.size] as! UInt64
+
+                //if you convert to NSDictionary, you can get file size old way as well.
+                let dict = attr as NSDictionary
+                fileSize = dict.fileSize()
+            }
+        } catch {
+            print("Error: \(error)")
+        }
+
+        return fileSize
+    }
+
+    public static func getSizeLimit() -> UInt64 {
+        return shared.sizeLimit
+    }
+
+
+    public static func getFileDestination() -> String? {
+        return shared.filePath?.path
+    }
+
+    public static func getTimeLimit() -> Int {
+        return shared.timeLimit.rawValue
+    }
 
 
 
@@ -255,6 +366,10 @@ public class Logger {
 
 
 
+    /**
+     Set the logger according to the settings in UserDefaults
+
+     */
     public static func setPreferences() {
         /* set the destinations output */
         var destinations:[Logger.Output] = []
@@ -268,8 +383,18 @@ public class Logger {
         if Logger.setFileDestination(UserDefaults.standard.string(forKey: "logFilePath")) {
             // success
         }
-        
+
         /* set the maximum level of log output */
         Logger.setMaxLevel(Logger.LogLevel(rawValue: UserDefaults.standard.integer(forKey: "LogLevel"))!)
+
+        let i = UInt64(UserDefaults.standard.integer(forKey: "clearLogPeriods"))
+        Logger.setLimitLogSize(i)
+
+        if let tl = TimeLimit.init(rawValue: UserDefaults.standard.integer(forKey: "timeLimitLogger")) {
+            Logger.shared.timeLimit = tl
+        }
+        if let date2 = UserDefaults.standard.object(forKey: "startDate") as? Date {
+            Logger.shared.startDate = date2
+        }
     }
 }
