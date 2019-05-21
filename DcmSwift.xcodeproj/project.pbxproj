@@ -129,6 +129,8 @@
 		4CA405211FA67DF3006F8053 /* DcmSwiftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA405201FA67DF3006F8053 /* DcmSwiftTests.swift */; };
 		4CA405231FA67DF3006F8053 /* DcmSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8D798E1F989EB1008300E3 /* DcmSwift.framework */; };
 		4CB9C9A11FB248C000C5356B /* ExportViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB9C9A01FB248C000C5356B /* ExportViewController.swift */; };
+		4CC932482292ED96001DFEB7 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA418289228BF77100A79D54 /* Logger.swift */; };
+		4CC932492292ED9B001DFEB7 /* DicomError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D70D227DAB4B0003724F /* DicomError.swift */; };
 		4CCF6B1A1F9FABBA000579C7 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCF6B191F9FABBA000579C7 /* AppDelegate.swift */; };
 		4CCF6B1C1F9FABBA000579C7 /* DatasetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCF6B1B1F9FABBA000579C7 /* DatasetViewController.swift */; };
 		4CCF6B1E1F9FABBA000579C7 /* DicomDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCF6B1D1F9FABBA000579C7 /* DicomDocument.swift */; };
@@ -1096,7 +1098,9 @@
 				4C5BF0871FABA5E80051F4FE /* DataItem.swift in Sources */,
 				4C5BF0881FABA5E80051F4FE /* DataTag.swift in Sources */,
 				4C5BF0891FABA5E80051F4FE /* PixelSequence.swift in Sources */,
+				4CC932482292ED96001DFEB7 /* Logger.swift in Sources */,
 				4C5BF08A1FABA5E80051F4FE /* DicomFile.swift in Sources */,
+				4CC932492292ED9B001DFEB7 /* DicomError.swift in Sources */,
 				4C5BF08B1FABA5E80051F4FE /* DicomImage.swift in Sources */,
 				4C5BF08C1FABA5E80051F4FE /* DicomDate.swift in Sources */,
 				4C5BF08D1FABA5E80051F4FE /* DicomData.swift in Sources */,
