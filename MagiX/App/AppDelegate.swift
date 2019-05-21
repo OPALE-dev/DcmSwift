@@ -49,9 +49,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // setup the Logger
-        Logger.setPreferences()
-        Logger.info("Application did finish launching")
-        Logger.info("IMPORTANT : \(Logger.getFileDestination())")
+        Logger.setMaxLevel(Logger.LogLevel.INFO)
         
         // select the default value format
         for mi in valueFormatMenu.items {
