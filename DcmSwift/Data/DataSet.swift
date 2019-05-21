@@ -296,11 +296,11 @@ public class DataSet: DicomObject {
     }
     
     
-    public func date(forTag tag:String ) -> Date! {
+    public func date(forTag tag:String ) -> Date? {
         for el in self.allElements {
             if el.name == tag {
-                if let dicomDateString = el.value as? String {
-                    return Date(dicomDate: dicomDateString)
+                if let str = el.value as? String {
+                    return Date(dicomDate: str)
                 }
             }
         }
@@ -308,13 +308,27 @@ public class DataSet: DicomObject {
     }
     
     
-    public func datetime(forTag tag:String ) -> Date {
-        return Date()
+    public func datetime(forTag tag:String ) -> Date? {
+        for el in self.allElements {
+            if el.name == tag {
+                if let str = el.value as? String {
+                    return Date(dicomDateTime: str)
+                }
+            }
+        }
+        return nil
     }
     
     
-    public func time(forTag tag:String ) -> Date {
-        return Date()
+    public func time(forTag tag:String ) -> Date? {
+        for el in self.allElements {
+            if el.name == tag {
+                if let str = el.value as? String {
+                    return Date(dicomTime: str)
+                }
+            }
+        }
+        return nil
     }
     
     

@@ -26,7 +26,14 @@ class MetadataViewController: NSViewController, NSOutlineViewDelegate, NSOutline
         // Do view setup here.
         
         NotificationCenter.default.addObserver(self, selector: #selector(dataSelectionDidChange(n:)), name: .dataSelectionDidChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(valueFormatChanged(n:)), name: .valueFormatChanged, object: nil)
     }
+    
+    
+    @objc func valueFormatChanged(n:Notification) {
+        self.datasetOutlineView.reloadData()
+    }
+    
     
     @objc func dataSelectionDidChange(n:Notification) {
         if let managedObject = n.object as? NSManagedObject {
@@ -184,12 +191,51 @@ class MetadataViewController: NSViewController, NSOutlineViewDelegate, NSOutline
             }
             else if (tableColumn?.identifier)!.rawValue == "ElementValue" {
                 if !(element.value is Data) {
-                    if element.vr == .UI {
-                        view?.textField?.objectValue = DicomSpec.shared.nameForUID(withUID: element.value as! String, append: true)
-                    } else {
+                    let valueFormat = UserDefaults.standard.integer(forKey: "ValueFormat")
+                    
+                    if valueFormat == ValueFormat.Original.rawValue {
                         view?.textField?.objectValue = element.value
                     }
-                    
+                    else  if valueFormat == ValueFormat.Formatted.rawValue {
+                        if element.vr == .DA {
+                            if let str = element.value as? String {
+                                if let date = Date(dicomDate: str) {
+                                    view?.textField?.objectValue = date.format(accordingTo: element.vr)
+                                }
+                            }
+                        }
+                        else if element.vr == .TM {
+                            if let str = element.value as? String {
+                                if let date = Date(dicomTime: str) {
+                                    view?.textField?.objectValue = date.format(accordingTo: element.vr)
+                                }
+                            }
+                        }
+                        else if element.vr == .DT {
+                            if let str = element.value as? String {
+                                if let date = Date(dicomDateTime: str) {
+                                    view?.textField?.objectValue = date.format(accordingTo: element.vr)
+                                }
+                            }
+                        }
+                        else if element.vr == .UI {
+                            view?.textField?.objectValue = DicomSpec.shared.nameForUID(withUID: element.value as! String, append: true)
+                        }
+                        else {
+                            view?.textField?.objectValue = element.value
+                        }
+                    }
+                    else  if valueFormat == ValueFormat.Hexa.rawValue {
+                        if element.data != nil {
+                            let end = element.data.count >= 50 ? 50 : element.data.count-1
+                            view?.textField?.stringValue = element.data[0..<end].toHex().separate(every: 2, with: " ").uppercased()
+                        }
+                    }
+                } else {
+                    if element.data != nil {
+                        let end = element.data.count >= 50 ? 50 : element.data.count-1
+                        view?.textField?.stringValue = element.data[0..<end].toHex().separate(every: 2, with: " ").uppercased()
+                    }
                 }
                 
             } else {

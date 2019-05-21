@@ -9,7 +9,7 @@
 import Cocoa
 import DcmSwift
 
-class EntitiesViewController: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
+class RemotesPreferencesViewController: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     @IBOutlet weak var tableView: NSTableView!
     public var remotes:[Remote] = []
     @IBOutlet weak var removeButton: NSButton!
@@ -92,10 +92,18 @@ class EntitiesViewController: NSViewController, NSTableViewDelegate, NSTableView
             view?.textField?.stringValue = String(integer)
         }
         else if tableColumn?.identifier.rawValue == "status" {
-            view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
-            let integer:Int32 = self.remotes[row].status
-            view?.textField?.stringValue = String(integer)
-
+            view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "StatusCell"), owner: self) as? NSTableCellView
+            let status:Int32 = self.remotes[row].status
+            
+            if status == 0 {
+                view?.imageView?.image = NSImage(named: NSImage.Name("NSStatusNone"))
+            }
+            else if status == 1 {
+                view?.imageView?.image = NSImage(named: NSImage.Name("NSStatusAvailable"))
+            }
+            else if status == 2 {
+                view?.imageView?.image = NSImage(named: NSImage.Name("NSStatusUnavailable"))
+            }
         }
         return view
     }

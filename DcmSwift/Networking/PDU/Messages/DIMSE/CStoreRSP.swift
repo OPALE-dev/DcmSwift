@@ -21,7 +21,7 @@ public class CStoreRSP: DataTF {
     }
     
     
-    public override func handleResponse(data: Data, completion: PDUCompletion) -> PDUMessage? {
+    public override func handleResponse(data: Data) -> PDUMessage? {
         return nil
     }
 }
