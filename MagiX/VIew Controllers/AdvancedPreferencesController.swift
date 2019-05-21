@@ -18,12 +18,17 @@ class AdvancedPreferencesController: NSViewController {
     @IBOutlet weak var checkConsoleDestination: NSButton!
     @IBOutlet weak var cleanLogPeriods: NSPopUpButton!
     @IBOutlet weak var fileField: NSTextField!
-
+    @IBOutlet weak var timeLimitLogger: NSPopUpButton!
+    
 
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do view setup here.
+        if let filePath = Logger.getFileDestination() {
+            fileField.stringValue = filePath
+        }
+        Logger.eraseFileByTime()
     }
 
     /* Actions */
@@ -43,7 +48,6 @@ class AdvancedPreferencesController: NSViewController {
                 Logger.addDestination(Logger.Output.File)
             }
         }
-        Logger.debug("file log rule changed")
     }
 
     @IBAction func logsInConsoleChanged(_ sender: Any) {
@@ -54,7 +58,6 @@ class AdvancedPreferencesController: NSViewController {
                 Logger.addDestination(Logger.Output.Stdout)
             }
         }
-        Logger.debug("console log rule changed")
     }
 
     @IBAction func chooseFile(_ sender: Any) {
@@ -66,13 +69,11 @@ class AdvancedPreferencesController: NSViewController {
 
         let i = openPanel.runModal()
         if(i.rawValue == NSApplication.ModalResponse.OK.rawValue) {
-            Logger.fatal("\(String(describing: openPanel.url))")
 
             if let path = openPanel.url?.path {
                 if Logger.setFileDestination(path) {
-                    // success
+                    print("\(String(describing: Logger.getFileDestination()))")
                 }
-                Logger.fatal("Après le setFileDestination")
                 fileField.stringValue = path
             }
 
@@ -80,7 +81,22 @@ class AdvancedPreferencesController: NSViewController {
     }
 
 
-
+    @IBAction func limitCleanLogs(_ sender: Any) {
+        if let button = sender as? NSPopUpButton {
+            Logger.setLimitLogSize(UInt64(button.selectedTag()))
+        }
+        Logger.fatal(String(Logger.getSizeLimit()))
+    }
+    
+    @IBAction func timeLimitChanged(_ sender: Any) {
+        if let button = sender as? NSPopUpButton {
+            guard let lt = Logger.TimeLimit.init(rawValue: button.selectedTag()) else {
+                return
+            }
+            Logger.setTimeLimit(lt)
+            Logger.info("TIME LIMIT CHANGED \(lt)")
+        }
+    }
 
     /**/
     func isSandboxingEnabled() -> Bool {
