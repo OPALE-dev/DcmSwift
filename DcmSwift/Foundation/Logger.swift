@@ -53,10 +53,17 @@ public class Logger {
      Enumeration for type of output
      - Stdout: console
      - File: file
-    */
+     */
     public enum Output {
         case Stdout
         case File
+    }
+
+    public enum TimeLimit: Int {
+        case Minute = 0
+        case Hour   = 1
+        case Day    = 2
+        case Month  = 3
     }
 
 
@@ -75,6 +82,8 @@ public class Logger {
     lazy var filePath:URL? = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(fileName)
     public var outputs:[Output]     = [.Stdout]
     public var sizeLimit:UInt64     = 1_000_000
+    public var timeLimit:TimeLimit  = .Minute
+    public var startDate:Date       = Date()
 
     /**/
 
@@ -171,8 +180,9 @@ public class Logger {
      - parameter message: the log to be written in the file
      - returns: true if filepath is correct
 
-    */
+     */
     public func fileLog(message: String) -> Bool {
+        print("FILE LOG")
         if let fileURL = filePath {
 
             if getFileSize() > self.sizeLimit {
@@ -181,6 +191,7 @@ public class Logger {
                 }
                 catch {}
             }
+            Logger.eraseFileByTime()
 
             var isDirectory = ObjCBool(true)
             // if file doesn't exist we create it
@@ -211,7 +222,7 @@ public class Logger {
      - parameter destinations: all the destinations where the logs are outputted
      - parameter filePath: path of the logfile
 
-    */
+     */
     public static func setDestinations(_ destinations: [Output], filePath: String? = nil) {
         shared.outputs = destinations
         if let fileName:String = filePath {
@@ -245,7 +256,7 @@ public class Logger {
      Set the level of logs printed
      - parameter at: the log level to be set
 
-    */
+     */
     public static func setMaxLevel(_ at: LogLevel) {
         if 0 <= at.rawValue && at.rawValue <= 5 {
             shared.maxLevel = at.rawValue
@@ -263,6 +274,58 @@ public class Logger {
     public static func removeDestination(_ dest: Output) {
         shared.outputs = shared.outputs.filter{$0 != dest}
     }
+
+    public static func setTimeLimit(_ at: TimeLimit) {
+        shared.timeLimit = at
+        shared.startDate = Date()/* the date is reset */
+        UserDefaults.standard.set(shared.startDate, forKey: "startDate")
+    }
+
+    /**
+     Erase the log file
+
+     */
+    public static func eraseFileByTime() {
+        let range = -Int(shared.startDate.timeIntervalSinceNow)
+        let t:Int
+
+        switch shared.timeLimit {
+        case .Minute:
+            t = range / 60
+        case .Hour:
+            t = range / 3600
+        case .Day:
+            t = range / 86400
+        case .Month:
+            t = range / 100000
+        }
+
+        print("\(range)")
+        print("\(t)")
+
+        if t >= 1 {
+            if let path = shared.filePath {
+                Logger.removeLogFile(path)
+                shared.startDate = Date()
+            }
+        }
+    }
+
+    /**
+     Delete the log file
+     - parameter at: the URL where the log file is
+
+     */
+    public static func removeLogFile(_ at: URL) {
+        do {
+            try FileManager.default.removeItem(at: at)
+        }
+        catch {}
+    }
+
+
+
+    /**/
 
 
     private func getFileSize() -> UInt64 {
@@ -293,6 +356,10 @@ public class Logger {
         return shared.filePath?.path
     }
 
+    public static func getTimeLimit() -> Int {
+        return shared.timeLimit.rawValue
+    }
+
 
 
 
@@ -301,7 +368,7 @@ public class Logger {
 
     /**
      Set the logger according to the settings in UserDefaults
-     
+
      */
     public static func setPreferences() {
         /* set the destinations output */
@@ -316,11 +383,18 @@ public class Logger {
         if Logger.setFileDestination(UserDefaults.standard.string(forKey: "logFilePath")) {
             // success
         }
-        
+
         /* set the maximum level of log output */
         Logger.setMaxLevel(Logger.LogLevel(rawValue: UserDefaults.standard.integer(forKey: "LogLevel"))!)
 
         let i = UInt64(UserDefaults.standard.integer(forKey: "clearLogPeriods"))
         Logger.setLimitLogSize(i)
+
+        if let tl = TimeLimit.init(rawValue: UserDefaults.standard.integer(forKey: "timeLimitLogger")) {
+            Logger.shared.timeLimit = tl
+        }
+        if let date2 = UserDefaults.standard.object(forKey: "startDate") as? Date {
+            Logger.shared.startDate = date2
+        }
     }
 }
