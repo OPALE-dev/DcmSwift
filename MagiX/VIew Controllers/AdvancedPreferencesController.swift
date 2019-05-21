@@ -18,7 +18,8 @@ class AdvancedPreferencesController: NSViewController {
     @IBOutlet weak var checkConsoleDestination: NSButton!
     @IBOutlet weak var cleanLogPeriods: NSPopUpButton!
     @IBOutlet weak var fileField: NSTextField!
-
+    @IBOutlet weak var timeLimitLogger: NSPopUpButton!
+    
 
 
     override func viewDidLoad() {
@@ -27,6 +28,7 @@ class AdvancedPreferencesController: NSViewController {
         if let filePath = Logger.getFileDestination() {
             fileField.stringValue = filePath
         }
+        Logger.eraseFileByTime()
     }
 
     /* Actions */
@@ -70,7 +72,7 @@ class AdvancedPreferencesController: NSViewController {
 
             if let path = openPanel.url?.path {
                 if Logger.setFileDestination(path) {
-                    // success
+                    print("\(String(describing: Logger.getFileDestination()))")
                 }
                 fileField.stringValue = path
             }
@@ -86,6 +88,15 @@ class AdvancedPreferencesController: NSViewController {
         Logger.fatal(String(Logger.getSizeLimit()))
     }
     
+    @IBAction func timeLimitChanged(_ sender: Any) {
+        if let button = sender as? NSPopUpButton {
+            guard let lt = Logger.TimeLimit.init(rawValue: button.selectedTag()) else {
+                return
+            }
+            Logger.setTimeLimit(lt)
+            Logger.info("TIME LIMIT CHANGED \(lt)")
+        }
+    }
 
     /**/
     func isSandboxingEnabled() -> Bool {

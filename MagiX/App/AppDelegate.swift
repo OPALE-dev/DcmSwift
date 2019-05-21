@@ -51,8 +51,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // setup the Logger
         Logger.setPreferences()
         Logger.info("Application did finish launching")
-        Logger.info("IMPORTANT : \(Logger.getFileDestination())")
-        
+
         // select the default value format
         for mi in valueFormatMenu.items {
             let savedFormat = UserDefaults.standard.integer(forKey: "ValueFormat")
@@ -77,6 +76,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ aNotification: Notification) {
         // Insert code here to tear down your application
         Logger.info("APPLICATION WILL TERMINATE")
+        UserDefaults.standard.set(Logger.getFileDestination(), forKey: "logFilePath")
     }
     
     
