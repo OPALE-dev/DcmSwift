@@ -58,6 +58,16 @@ class LoggerViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
         return view
     }
 
+    @IBAction func refresh(_ sender: Any) {
+        consoleTable.reloadData()
+    }
+
+    @IBAction func eraseLogs(_ sender: Any) {
+        logs = []
+        consoleTable.reloadData()
+    }
+
+
 
     func setLogInformation(_ withInput: LogInput) {
         logs.append(withInput)

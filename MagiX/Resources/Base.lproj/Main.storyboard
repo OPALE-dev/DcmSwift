@@ -9,12 +9,69 @@
         <!--Window Controller-->
         <scene sceneID="LWx-VJ-DUo">
             <objects>
-                <windowController id="P3Y-BW-uN4" sceneMemberID="viewController">
-                    <window key="window" title="Logger Console" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" id="YlS-2f-fR6">
+                <windowController showSeguePresentationStyle="single" id="P3Y-BW-uN4" sceneMemberID="viewController">
+                    <window key="window" title="Logger Console" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" titlebarAppearsTransparent="YES" id="YlS-2f-fR6">
                         <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
                         <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
                         <rect key="contentRect" x="294" y="372" width="480" height="270"/>
                         <rect key="screenRect" x="0.0" y="0.0" width="1920" height="1200"/>
+                        <toolbar key="toolbar" implicitIdentifier="091CCEA0-7C30-4089-BB70-8C718C30A969" autosavesConfiguration="NO" displayMode="iconOnly" sizeMode="regular" id="0m4-5P-Wa2">
+                            <allowedToolbarItems>
+                                <toolbarItem implicitItemIdentifier="NSToolbarSpaceItem" id="GQg-ft-jW1"/>
+                                <toolbarItem implicitItemIdentifier="C8BD7618-119A-48E2-9D8D-15FEAD306531" label="Refresh" paletteLabel="Refresh" image="NSRefreshTemplate" id="v5E-yR-tI5">
+                                    <nil key="toolTip"/>
+                                    <size key="minSize" width="35" height="25"/>
+                                    <size key="maxSize" width="35" height="25"/>
+                                    <button key="view" verticalHuggingPriority="750" id="5Ai-HI-Ag4">
+                                        <rect key="frame" x="7" y="14" width="35" height="25"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                        <buttonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" image="NSRefreshTemplate" imagePosition="overlaps" alignment="center" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Pey-7Q-NmI">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <connections>
+                                                <outlet property="representedObject" destination="P3Y-BW-uN4" id="57R-JG-fb4"/>
+                                            </connections>
+                                        </buttonCell>
+                                    </button>
+                                    <connections>
+                                        <action selector="refresh:" target="6Sh-ai-u1n" id="GrN-fR-t9S"/>
+                                    </connections>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="25245BF6-6B3D-4C9F-9731-7269528534CE" label="Search" paletteLabel="Search" sizingBehavior="auto" id="XiH-cH-992">
+                                    <nil key="toolTip"/>
+                                    <searchField key="view" wantsLayer="YES" verticalHuggingPriority="750" textCompletion="NO" id="yFJ-qa-Hhx">
+                                        <rect key="frame" x="0.0" y="14" width="172" height="22"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                        <searchFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" usesSingleLineMode="YES" bezelStyle="round" id="exb-A3-PbL">
+                                            <font key="font" metaFont="system"/>
+                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                        </searchFieldCell>
+                                    </searchField>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="NSToolbarFlexibleSpaceItem" id="QJ7-HI-sfb"/>
+                                <toolbarItem implicitItemIdentifier="F02C51A3-208B-4330-98D0-B976ADEB84F6" label="Erase" paletteLabel="Erase" image="NSTouchBarDeleteTemplate" sizingBehavior="auto" id="wy3-Ip-iUv">
+                                    <nil key="toolTip"/>
+                                    <button key="view" verticalHuggingPriority="750" id="OAa-4K-RIt">
+                                        <rect key="frame" x="0.0" y="14" width="47" height="32"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                        <buttonCell key="cell" type="push" bezelStyle="rounded" image="NSTouchBarDeleteTemplate" imagePosition="overlaps" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="gKS-lT-e2R">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                        </buttonCell>
+                                    </button>
+                                    <connections>
+                                        <action selector="eraseLogs:" target="6Sh-ai-u1n" id="8Zy-lE-3V7"/>
+                                    </connections>
+                                </toolbarItem>
+                            </allowedToolbarItems>
+                            <defaultToolbarItems>
+                                <toolbarItem reference="v5E-yR-tI5"/>
+                                <toolbarItem reference="wy3-Ip-iUv"/>
+                                <toolbarItem reference="QJ7-HI-sfb"/>
+                                <toolbarItem reference="XiH-cH-992"/>
+                            </defaultToolbarItems>
+                        </toolbar>
                         <connections>
                             <outlet property="delegate" destination="P3Y-BW-uN4" id="i9p-Az-Rhr"/>
                         </connections>
@@ -25,24 +82,24 @@
                 </windowController>
                 <customObject id="6Sh-ai-u1n" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-342" y="-1238"/>
+            <point key="canvasLocation" x="-441" y="-1307"/>
         </scene>
         <!--Logger View Controller-->
         <scene sceneID="8jG-TN-qJZ">
             <objects>
                 <viewController id="YR9-6Z-eMd" customClass="LoggerViewController" customModule="MagiX" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" id="K1D-Lr-uq6">
-                        <rect key="frame" x="0.0" y="0.0" width="699" height="622"/>
+                        <rect key="frame" x="0.0" y="0.0" width="1102" height="539"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
-                            <scrollView autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="FdL-bo-1uh">
-                                <rect key="frame" x="50" y="50" width="599" height="522"/>
+                            <scrollView borderType="none" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="FdL-bo-1uh">
+                                <rect key="frame" x="0.0" y="0.0" width="1102" height="540"/>
                                 <clipView key="contentView" id="h1k-12-V75">
-                                    <rect key="frame" x="1" y="0.0" width="597" height="521"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="1102" height="540"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnSelection="YES" multipleSelection="NO" autosaveColumns="NO" rowSizeStyle="automatic" headerView="aOo-dj-2vf" viewBased="YES" id="Igq-oY-yjO" userLabel="console Table">
-                                            <rect key="frame" x="0.0" y="0.0" width="597" height="498"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="1102" height="517"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <size key="intercellSpacing" width="3" height="2"/>
                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -147,7 +204,7 @@
                                                         </tableCellView>
                                                     </prototypeCellViews>
                                                 </tableColumn>
-                                                <tableColumn width="298" minWidth="10" maxWidth="3.4028234663852886e+38" id="KlF-I4-lzM">
+                                                <tableColumn width="803" minWidth="10" maxWidth="3.4028234663852886e+38" id="KlF-I4-lzM">
                                                     <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="Message">
                                                         <font key="font" metaFont="smallSystem"/>
                                                         <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
@@ -161,11 +218,11 @@
                                                     <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                     <prototypeCellViews>
                                                         <tableCellView id="a00-Ps-0pK">
-                                                            <rect key="frame" x="297" y="1" width="298" height="17"/>
+                                                            <rect key="frame" x="297" y="1" width="803" height="17"/>
                                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             <subviews>
                                                                 <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="evE-3o-UaU">
-                                                                    <rect key="frame" x="0.0" y="0.0" width="298" height="17"/>
+                                                                    <rect key="frame" x="0.0" y="0.0" width="803" height="17"/>
                                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
                                                                     <textFieldCell key="cell" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" id="LDo-C3-NLY">
                                                                         <font key="font" metaFont="system"/>
@@ -193,16 +250,16 @@
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <tableHeaderView key="headerView" id="aOo-dj-2vf">
-                                    <rect key="frame" x="0.0" y="0.0" width="597" height="23"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="1102" height="23"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </tableHeaderView>
                             </scrollView>
                         </subviews>
                         <constraints>
-                            <constraint firstAttribute="bottom" secondItem="FdL-bo-1uh" secondAttribute="bottom" constant="50" id="Y8U-4m-WSb"/>
-                            <constraint firstAttribute="trailing" secondItem="FdL-bo-1uh" secondAttribute="trailing" constant="50" id="c0d-eo-Nxc"/>
-                            <constraint firstItem="FdL-bo-1uh" firstAttribute="leading" secondItem="K1D-Lr-uq6" secondAttribute="leading" constant="50" id="pnJ-6f-Xlg"/>
-                            <constraint firstItem="FdL-bo-1uh" firstAttribute="top" secondItem="K1D-Lr-uq6" secondAttribute="top" constant="50" id="wHF-G9-af9"/>
+                            <constraint firstAttribute="bottom" secondItem="FdL-bo-1uh" secondAttribute="bottom" id="Y8U-4m-WSb"/>
+                            <constraint firstAttribute="trailing" secondItem="FdL-bo-1uh" secondAttribute="trailing" id="c0d-eo-Nxc"/>
+                            <constraint firstItem="FdL-bo-1uh" firstAttribute="leading" secondItem="K1D-Lr-uq6" secondAttribute="leading" id="pnJ-6f-Xlg"/>
+                            <constraint firstItem="FdL-bo-1uh" firstAttribute="top" secondItem="K1D-Lr-uq6" secondAttribute="top" constant="-1" id="wHF-G9-af9"/>
                         </constraints>
                     </view>
                     <connections>
@@ -211,7 +268,7 @@
                 </viewController>
                 <customObject id="pLo-CS-pc9" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-451.5" y="-1937"/>
+            <point key="canvasLocation" x="-250" y="-2010.5"/>
         </scene>
         <!--Application-->
         <scene sceneID="JPo-4y-FX3">
@@ -931,7 +988,7 @@
             <objects>
                 <windowController id="B8D-0N-5wS" sceneMemberID="viewController">
                     <window key="window" title="MagiX" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" titlebarAppearsTransparent="YES" titleVisibility="hidden" id="IQv-IB-iLA">
-                        <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+                        <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" texturedBackground="YES"/>
                         <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
                         <rect key="contentRect" x="196" y="240" width="1300" height="800"/>
                         <rect key="screenRect" x="0.0" y="0.0" width="1680" height="1027"/>
@@ -4272,8 +4329,10 @@ DQ
         <image name="NSFolder" width="32" height="32"/>
         <image name="NSNetwork" width="32" height="32"/>
         <image name="NSPreferencesGeneral" width="32" height="32"/>
+        <image name="NSRefreshTemplate" width="11" height="15"/>
         <image name="NSRemoveTemplate" width="11" height="11"/>
         <image name="NSStatusUnavailable" width="16" height="16"/>
+        <image name="NSTouchBarDeleteTemplate" width="15" height="30"/>
         <image name="TB_Inspector" width="17" height="17"/>
         <image name="TB_Sidebar" width="17" height="17"/>
     </resources>
