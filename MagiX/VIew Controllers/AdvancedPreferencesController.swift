@@ -72,7 +72,6 @@ class AdvancedPreferencesController: NSViewController {
 
             if let path = openPanel.url?.path {
                 if Logger.setFileDestination(path) {
-                    print("\(String(describing: Logger.getFileDestination()))")
                 }
                 fileField.stringValue = path
             }

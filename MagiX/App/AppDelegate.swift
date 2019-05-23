@@ -41,6 +41,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             "MaxPDU": 16384,
             "OnImportAction": OnImportAction.Copy.rawValue,
             "ValueFormat": ValueFormat.Formatted.rawValue,
+            "Print LogsInLogFile": "YES",
+            "logInConsole": "YES",
+            "logFilePath": "/Users/paul/Documents/MagiX.log",
+            "LogLevel": 5,
+            "clearLogPeriods": 1,
+            "timeLimitLogger": 0,
+            "startDate": "20 mai 2019 à 16:32:11",
         ])
         
         UserDefaults.standard.synchronize()
@@ -49,7 +56,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // setup the Logger
-        Logger.setPreferences()
+        setLoggerPreferences()
         Logger.info("Application did finish launching")
 
         // select the default value format
@@ -253,6 +260,50 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return .terminateNow
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     Set the logger according to the settings in UserDefaults
+
+     */
+    public func setLoggerPreferences() {
+        /* set the destinations output */
+        var destinations:[Logger.Output] = []
+        if UserDefaults.standard.bool(forKey: "Print LogsInLogFile") {
+            destinations.append(Logger.Output.Stdout)
+        }
+        if UserDefaults.standard.bool(forKey: "logInConsole") {
+            destinations.append(Logger.Output.File)
+        }
+        Logger.setDestinations(destinations)
+        if Logger.setFileDestination(UserDefaults.standard.string(forKey: "logFilePath")) {
+            // success
+        }
+
+        /* set the maximum level of log output */
+        Logger.setMaxLevel(Logger.LogLevel(rawValue: UserDefaults.standard.integer(forKey: "LogLevel"))!)
+
+        let i = UInt64(UserDefaults.standard.integer(forKey: "clearLogPeriods"))
+        Logger.setLimitLogSize(i)
+
+        if let tl = Logger.TimeLimit.init(rawValue: UserDefaults.standard.integer(forKey: "timeLimitLogger")) {
+            Logger.shared.timeLimit = tl
+        }
+        if let date2 = UserDefaults.standard.object(forKey: "startDate") as? Date {
+            Logger.shared.startDate = date2
+        }
+    }
 
 }
 

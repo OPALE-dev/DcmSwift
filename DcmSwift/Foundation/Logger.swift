@@ -76,7 +76,7 @@ public class Logger {
         }
     }
 
-    private static var shared       = Logger()
+    public static var shared       = Logger()
     private var maxLevel: Int       = 6
     public lazy var fileName:String = targetName + ".log"
     lazy var filePath:URL? = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(fileName)
@@ -182,7 +182,6 @@ public class Logger {
 
      */
     public func fileLog(message: String) -> Bool {
-        print("FILE LOG")
         if let fileURL = filePath {
 
             if getFileSize() > self.sizeLimit {
@@ -300,9 +299,6 @@ public class Logger {
             t = range / 100000
         }
 
-        print("\(range)")
-        print("\(t)")
-
         if t >= 1 {
             if let path = shared.filePath {
                 Logger.removeLogFile(path)
@@ -366,35 +362,5 @@ public class Logger {
 
 
 
-    /**
-     Set the logger according to the settings in UserDefaults
 
-     */
-    public static func setPreferences() {
-        /* set the destinations output */
-        var destinations:[Logger.Output] = []
-        if UserDefaults.standard.bool(forKey: "Print LogsInLogFile") {
-            destinations.append(Logger.Output.Stdout)
-        }
-        if UserDefaults.standard.bool(forKey: "logInConsole") {
-            destinations.append(Logger.Output.File)
-        }
-        Logger.setDestinations(destinations)
-        if Logger.setFileDestination(UserDefaults.standard.string(forKey: "logFilePath")) {
-            // success
-        }
-
-        /* set the maximum level of log output */
-        Logger.setMaxLevel(Logger.LogLevel(rawValue: UserDefaults.standard.integer(forKey: "LogLevel"))!)
-
-        let i = UInt64(UserDefaults.standard.integer(forKey: "clearLogPeriods"))
-        Logger.setLimitLogSize(i)
-
-        if let tl = TimeLimit.init(rawValue: UserDefaults.standard.integer(forKey: "timeLimitLogger")) {
-            Logger.shared.timeLimit = tl
-        }
-        if let date2 = UserDefaults.standard.object(forKey: "startDate") as? Date {
-            Logger.shared.startDate = date2
-        }
-    }
 }
