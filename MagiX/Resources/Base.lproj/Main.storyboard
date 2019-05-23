@@ -18,25 +18,6 @@
                         <toolbar key="toolbar" implicitIdentifier="091CCEA0-7C30-4089-BB70-8C718C30A969" autosavesConfiguration="NO" displayMode="iconOnly" sizeMode="regular" id="0m4-5P-Wa2">
                             <allowedToolbarItems>
                                 <toolbarItem implicitItemIdentifier="NSToolbarSpaceItem" id="GQg-ft-jW1"/>
-                                <toolbarItem implicitItemIdentifier="C8BD7618-119A-48E2-9D8D-15FEAD306531" label="Refresh" paletteLabel="Refresh" image="NSRefreshTemplate" id="v5E-yR-tI5">
-                                    <nil key="toolTip"/>
-                                    <size key="minSize" width="35" height="25"/>
-                                    <size key="maxSize" width="35" height="25"/>
-                                    <button key="view" verticalHuggingPriority="750" id="5Ai-HI-Ag4">
-                                        <rect key="frame" x="7" y="14" width="35" height="25"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                        <buttonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" image="NSRefreshTemplate" imagePosition="overlaps" alignment="center" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Pey-7Q-NmI">
-                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                            <font key="font" metaFont="system"/>
-                                            <connections>
-                                                <outlet property="representedObject" destination="P3Y-BW-uN4" id="57R-JG-fb4"/>
-                                            </connections>
-                                        </buttonCell>
-                                    </button>
-                                    <connections>
-                                        <action selector="refresh:" target="6Sh-ai-u1n" id="GrN-fR-t9S"/>
-                                    </connections>
-                                </toolbarItem>
                                 <toolbarItem implicitItemIdentifier="25245BF6-6B3D-4C9F-9731-7269528534CE" label="Search" paletteLabel="Search" sizingBehavior="auto" id="XiH-cH-992">
                                     <nil key="toolTip"/>
                                     <searchField key="view" wantsLayer="YES" verticalHuggingPriority="750" textCompletion="NO" id="yFJ-qa-Hhx">
@@ -53,12 +34,14 @@
                                     </connections>
                                 </toolbarItem>
                                 <toolbarItem implicitItemIdentifier="NSToolbarFlexibleSpaceItem" id="QJ7-HI-sfb"/>
-                                <toolbarItem implicitItemIdentifier="F02C51A3-208B-4330-98D0-B976ADEB84F6" label="Erase" paletteLabel="Erase" image="NSTouchBarDeleteTemplate" sizingBehavior="auto" id="wy3-Ip-iUv">
+                                <toolbarItem implicitItemIdentifier="F02C51A3-208B-4330-98D0-B976ADEB84F6" label="Erase" paletteLabel="Erase" image="ConsoleTrash" id="wy3-Ip-iUv">
                                     <nil key="toolTip"/>
+                                    <size key="minSize" width="47" height="32"/>
+                                    <size key="maxSize" width="47" height="32"/>
                                     <button key="view" verticalHuggingPriority="750" id="OAa-4K-RIt">
                                         <rect key="frame" x="0.0" y="14" width="47" height="32"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                        <buttonCell key="cell" type="push" bezelStyle="rounded" image="NSTouchBarDeleteTemplate" imagePosition="overlaps" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="gKS-lT-e2R">
+                                        <buttonCell key="cell" type="push" bezelStyle="rounded" image="ConsoleTrash" imagePosition="overlaps" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="gKS-lT-e2R">
                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                             <font key="font" metaFont="system"/>
                                         </buttonCell>
@@ -69,7 +52,6 @@
                                 </toolbarItem>
                             </allowedToolbarItems>
                             <defaultToolbarItems>
-                                <toolbarItem reference="v5E-yR-tI5"/>
                                 <toolbarItem reference="wy3-Ip-iUv"/>
                                 <toolbarItem reference="QJ7-HI-sfb"/>
                                 <toolbarItem reference="XiH-cH-992"/>
@@ -4325,6 +4307,7 @@ DQ
         </scene>
     </scenes>
     <resources>
+        <image name="ConsoleTrash" width="16" height="16"/>
         <image name="NSAddTemplate" width="11" height="11"/>
         <image name="NSAdvanced" width="32" height="32"/>
         <image name="NSComputer" width="32" height="32"/>
@@ -4332,10 +4315,8 @@ DQ
         <image name="NSFolder" width="32" height="32"/>
         <image name="NSNetwork" width="32" height="32"/>
         <image name="NSPreferencesGeneral" width="32" height="32"/>
-        <image name="NSRefreshTemplate" width="11" height="15"/>
         <image name="NSRemoveTemplate" width="11" height="11"/>
         <image name="NSStatusUnavailable" width="16" height="16"/>
-        <image name="NSTouchBarDeleteTemplate" width="15" height="30"/>
         <image name="TB_Inspector" width="17" height="17"/>
         <image name="TB_Sidebar" width="17" height="17"/>
     </resources>
