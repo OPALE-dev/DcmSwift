@@ -48,6 +48,9 @@
                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                         </searchFieldCell>
                                     </searchField>
+                                    <connections>
+                                        <action selector="searchLogs:" target="6Sh-ai-u1n" id="BWI-U1-JM9"/>
+                                    </connections>
                                 </toolbarItem>
                                 <toolbarItem implicitItemIdentifier="NSToolbarFlexibleSpaceItem" id="QJ7-HI-sfb"/>
                                 <toolbarItem implicitItemIdentifier="F02C51A3-208B-4330-98D0-B976ADEB84F6" label="Erase" paletteLabel="Erase" image="NSTouchBarDeleteTemplate" sizingBehavior="auto" id="wy3-Ip-iUv">
