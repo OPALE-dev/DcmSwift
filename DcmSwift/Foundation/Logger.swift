@@ -8,6 +8,37 @@
 
 import Foundation
 
+
+public protocol LoggerProtocol {
+
+    func setLogInformation(_ withInput: LogInput)
+
+}
+
+public class LogInput {
+
+    public var level:   Logger.LogLevel
+    public var time:    Date
+    public var tag:     String
+    public var message: String
+
+    public init(_ level: Logger.LogLevel, _ date: Date, _ tag: String, _ message: String) {
+        self.level   = level
+        self.time    = date
+        self.tag     = tag
+        self.message = message
+    }
+}
+
+
+
+
+
+
+
+
+
+
 /**
  This class is for printing log, either in the console or in a file.
  Log can have different type of severity, and different type of output as
@@ -29,7 +60,7 @@ public class Logger {
         case DEBUG   = 5
         case VERBOSE = 6
 
-        var description: String {
+        public var description: String {
             switch self {
             case .FATAL:
                 return "FATAL"
@@ -57,6 +88,7 @@ public class Logger {
     public enum Output {
         case Stdout
         case File
+        case Console
     }
 
     public enum TimeLimit: Int {
@@ -76,14 +108,16 @@ public class Logger {
         }
     }
 
-    public static var shared       = Logger()
+    public static var shared        = Logger()
     private var maxLevel: Int       = 6
     public lazy var fileName:String = targetName + ".log"
     lazy var filePath:URL? = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(fileName)
-    public var outputs:[Output]     = [.Stdout]
+    public var outputs:[Output]     = [.Stdout, .File, .Console]
     public var sizeLimit:UInt64     = 1_000_000
     public var timeLimit:TimeLimit  = .Minute
     public var startDate:Date       = Date()
+
+    public var loggerProtocol: LoggerProtocol?
 
     /**/
 
@@ -160,10 +194,22 @@ public class Logger {
                 consoleLog(message: outputString)
             case .File:
                 if fileLog(message: outputString + "\n") {}
+            case .Console:
+                let l = LogInput.init(severity, date, tagName, string)
+
+                DispatchQueue.main.async {
+                    self.loggerProtocol?.setLogInformation(l)
+                }
             }
 
         }
     }
+
+
+
+
+
+
 
     /**
      Prints to the console
