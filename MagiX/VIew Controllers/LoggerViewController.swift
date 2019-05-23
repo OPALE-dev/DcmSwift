@@ -51,6 +51,8 @@ class LoggerViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
             array = logs
         }
 
+        view?.textField?.font = NSFont(name: "Menlo", size: 11)
+
         if tableColumn?.title == "Time" {
             let df = DateFormatter()
             df.dateFormat = "yyyy/MM/dd HH:mm:ss"
@@ -87,13 +89,14 @@ class LoggerViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
         if sf.stringValue.isEmpty {
             searching = false
             consoleTable.reloadData()
+            self.scrollToBottom()
             return
         }
 
         setFilteredArray(sf.stringValue)
         searching = true
         consoleTable.reloadData()
-
+        self.scrollToBottom()
     }
 
 
@@ -101,10 +104,27 @@ class LoggerViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
     func setLogInformation(_ withInput: LogInput) {
         logs.append(withInput)
         consoleTable.reloadData()
+        self.scrollToBottom()
+    }
+
+
+    func scrollToBottom() {
+        DispatchQueue.main.async {
+            //            let indexPath = NSIndexPath(index: )
+            //consoleTable.scrollToRowAtIndexPath(indexPath, atScrollPosition: .Bottom, animated: true)
+            self.consoleTable.scrollRowToVisible(self.getMessages().count-1)
+        }
+    }
+
+
+    func getMessages() -> [LogInput] {
+        if searching {
+            return filteredLogs
+        }
+        return logs
     }
 
     func setFilteredArray(_ withText: String) /*-> [Int]*/ {
-        //var indexesArray: [Int] = []
         filteredLogs = []
 
         for row in 0..<logs.count {
@@ -112,24 +132,19 @@ class LoggerViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
             df.dateFormat = "yyyy/MM/dd HH:mm:ss"
             if df.string(from: logs[row].time).contains(withText) {
                 filteredLogs.append(logs[row])
-//                indexesArray.append(row)
                 continue
             } else if logs[row].level.description.contains(withText) {
                 filteredLogs.append(logs[row])
-//                indexesArray.append(row)
                 continue
             } else if logs[row].tag.contains(withText) {
                 filteredLogs.append(logs[row])
-//                indexesArray.append(row)
                 continue
             } else if logs[row].message.contains(withText) {
                 filteredLogs.append(logs[row])
-//                indexesArray.append(row)
                 continue
             }
         }
 
-        //return indexesArray
     }
 
     
