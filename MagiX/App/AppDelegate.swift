@@ -41,7 +41,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             "MaxPDU": 16384,
             "OnImportAction": OnImportAction.Copy.rawValue,
             "ValueFormat": ValueFormat.Formatted.rawValue,
-            "Print LogsInLogFile": "YES",
+            "PrintLogsInLogFile": "YES",
             "logInConsole": "YES",
             "logFilePath": "/Users/paul/Documents/MagiX.log",
             "LogLevel": 5,
@@ -279,8 +279,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
      */
     public func setLoggerPreferences() {
         /* set the destinations output */
-        var destinations:[Logger.Output] = []
-        if UserDefaults.standard.bool(forKey: "Print LogsInLogFile") {
+        var destinations:[Logger.Output] = [Logger.Output.Console]
+        if UserDefaults.standard.bool(forKey: "PrintLogsInLogFile") {
             destinations.append(Logger.Output.Stdout)
         }
         if UserDefaults.standard.bool(forKey: "logInConsole") {
