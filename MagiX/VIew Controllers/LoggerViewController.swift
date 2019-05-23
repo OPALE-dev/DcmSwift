@@ -84,36 +84,33 @@ class LoggerViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
             return
         }
 
-        print(sf.stringValue)
-
         if sf.stringValue.isEmpty {
             searching = false
-            consoleTable.reloadData()
-            self.scrollToBottom()
-            return
+        } else {
+            setFilteredArray(sf.stringValue)
+            searching = true
         }
-
-        setFilteredArray(sf.stringValue)
-        searching = true
-        consoleTable.reloadData()
-        self.scrollToBottom()
+        
+        reloadAndScroll()
     }
 
 
 
     func setLogInformation(_ withInput: LogInput) {
         logs.append(withInput)
-        consoleTable.reloadData()
-        self.scrollToBottom()
+        reloadAndScroll()
     }
 
 
     func scrollToBottom() {
         DispatchQueue.main.async {
-            //            let indexPath = NSIndexPath(index: )
-            //consoleTable.scrollToRowAtIndexPath(indexPath, atScrollPosition: .Bottom, animated: true)
-            self.consoleTable.scrollRowToVisible(self.getMessages().count-1)
+            self.consoleTable.scrollRowToVisible(self.getMessages().count - 1)
         }
+    }
+
+    func reloadAndScroll() {
+        self.consoleTable.reloadData()
+        self.scrollToBottom()
     }
 
 
