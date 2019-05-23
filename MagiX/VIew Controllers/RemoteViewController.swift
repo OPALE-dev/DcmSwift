@@ -157,7 +157,7 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
         var view: NSTableCellView?
 
         let df = DateFormatter()
-        df.dateFormat = "yyyy/MM/dd HH:mm:ss"
+        df.dateFormat = "dd/MM/yyyy HH:mm:ss"
 
         if let study = self.studies[row] as? [String:[String:Any]] {
             if tableColumn?.title == "Date" {
@@ -179,6 +179,7 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
                 guard let tc = tableColumn else {
                     return view
                 }
+                Logger.info("RemoteView Controller 182")
 
                 view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "TextCell"), owner: self) as? NSTableCellView
                 if let el = self.tag[tc.title] {
@@ -199,8 +200,9 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
                 /*********************/
                 self.studies = self.studies.sorted { (one, two) -> Bool in
                     if let s1 = one as? [String:[String:Any]], let s2 = two as? [String:[String:Any]] {
-                        if let name = s1[self.tag[key] ?? "name"], let name2 = s2[self.tag[key] ?? ""] {
+                        if let name = s1[self.tag[key] ?? "name"], let name2 = s2[self.tag[key] ?? "name"] {
                             if let n = name["value"] as? String, let n2 = name2["value"] as? String {
+                                Logger.info("Tri RMV 205")
                                 if !fDescriptor.ascending {
                                     return n < n2
                                 } else {
