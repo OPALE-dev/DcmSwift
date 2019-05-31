@@ -50,9 +50,60 @@
                                         <action selector="eraseLogs:" target="6Sh-ai-u1n" id="8Zy-lE-3V7"/>
                                     </connections>
                                 </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="37778DE6-8254-41D8-957E-4B4B2D6C7264" label="Logger Level" paletteLabel="Logger Level" sizingBehavior="auto" id="Z37-Ra-aal">
+                                    <nil key="toolTip"/>
+                                    <popUpButton key="view" verticalHuggingPriority="750" id="ZQi-fq-TbK">
+                                        <rect key="frame" x="0.0" y="14" width="100" height="28"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                        <popUpButtonCell key="cell" type="roundTextured" title="Fatal" bezelStyle="texturedRounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="RUP-kf-gTM" id="iSS-LV-SLt">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="menu"/>
+                                            <menu key="menu" id="w7v-fa-hho">
+                                                <items>
+                                                    <menuItem title="Fatal" state="on" id="RUP-kf-gTM"/>
+                                                    <menuItem title="Error" tag="1" id="H3r-lk-ucB">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                    </menuItem>
+                                                    <menuItem title="Warning" tag="2" id="LTQ-Zi-Yxe"/>
+                                                    <menuItem title="Info" tag="3" id="c5G-zY-uln"/>
+                                                    <menuItem title="Notice" tag="4" id="KZU-oc-a4h">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                    </menuItem>
+                                                    <menuItem title="Debug" tag="5" id="7j5-JO-Qfa">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                    </menuItem>
+                                                    <menuItem title="Verbose" tag="6" id="HSS-bN-96I">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                    </menuItem>
+                                                </items>
+                                            </menu>
+                                        </popUpButtonCell>
+                                    </popUpButton>
+                                    <connections>
+                                        <action selector="changeLogLevel:" target="6Sh-ai-u1n" id="bPJ-L3-12b"/>
+                                    </connections>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="6C20E165-7F3F-42E2-97D5-8FC3469AA5A9" label="Refresh" paletteLabel="Refresh" image="NSRefreshTemplate" id="PNl-2N-IoO">
+                                    <nil key="toolTip"/>
+                                    <size key="minSize" width="44" height="32"/>
+                                    <size key="maxSize" width="44" height="32"/>
+                                    <button key="view" verticalHuggingPriority="750" id="1f3-NS-2lk">
+                                        <rect key="frame" x="2" y="14" width="44" height="32"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                        <buttonCell key="cell" type="push" bezelStyle="rounded" image="NSRefreshTemplate" imagePosition="only" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="jPd-LH-VeG">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                        </buttonCell>
+                                    </button>
+                                    <connections>
+                                        <action selector="resetLogConsole:" target="6Sh-ai-u1n" id="AK7-DN-qnn"/>
+                                    </connections>
+                                </toolbarItem>
                             </allowedToolbarItems>
                             <defaultToolbarItems>
                                 <toolbarItem reference="wy3-Ip-iUv"/>
+                                <toolbarItem reference="Z37-Ra-aal"/>
+                                <toolbarItem reference="PNl-2N-IoO"/>
                                 <toolbarItem reference="QJ7-HI-sfb"/>
                                 <toolbarItem reference="XiH-cH-992"/>
                             </defaultToolbarItems>
@@ -74,17 +125,17 @@
             <objects>
                 <viewController id="YR9-6Z-eMd" customClass="LoggerViewController" customModule="MagiX" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" id="K1D-Lr-uq6">
-                        <rect key="frame" x="0.0" y="0.0" width="1102" height="539"/>
+                        <rect key="frame" x="0.0" y="0.0" width="678" height="331"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <scrollView borderType="none" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="FdL-bo-1uh">
-                                <rect key="frame" x="0.0" y="0.0" width="1102" height="540"/>
+                                <rect key="frame" x="0.0" y="0.0" width="678" height="332"/>
                                 <clipView key="contentView" id="h1k-12-V75">
-                                    <rect key="frame" x="0.0" y="0.0" width="1102" height="540"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="678" height="332"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnSelection="YES" multipleSelection="NO" autosaveColumns="NO" rowSizeStyle="automatic" headerView="aOo-dj-2vf" viewBased="YES" id="Igq-oY-yjO" userLabel="console Table">
-                                            <rect key="frame" x="0.0" y="0.0" width="1102" height="517"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="678" height="309"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <size key="intercellSpacing" width="3" height="2"/>
                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -189,7 +240,7 @@
                                                         </tableCellView>
                                                     </prototypeCellViews>
                                                 </tableColumn>
-                                                <tableColumn width="803" minWidth="10" maxWidth="3.4028234663852886e+38" id="KlF-I4-lzM">
+                                                <tableColumn width="379" minWidth="10" maxWidth="3.4028234663852886e+38" id="KlF-I4-lzM">
                                                     <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="Message">
                                                         <font key="font" metaFont="smallSystem"/>
                                                         <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
@@ -203,11 +254,11 @@
                                                     <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                     <prototypeCellViews>
                                                         <tableCellView id="a00-Ps-0pK">
-                                                            <rect key="frame" x="297" y="1" width="803" height="17"/>
+                                                            <rect key="frame" x="297" y="1" width="379" height="17"/>
                                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             <subviews>
                                                                 <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="evE-3o-UaU">
-                                                                    <rect key="frame" x="0.0" y="0.0" width="803" height="17"/>
+                                                                    <rect key="frame" x="0.0" y="0.0" width="379" height="17"/>
                                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
                                                                     <textFieldCell key="cell" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" id="LDo-C3-NLY">
                                                                         <font key="font" metaFont="system"/>
@@ -235,7 +286,7 @@
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <tableHeaderView key="headerView" id="aOo-dj-2vf">
-                                    <rect key="frame" x="0.0" y="0.0" width="1102" height="23"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="678" height="23"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </tableHeaderView>
                             </scrollView>
@@ -253,7 +304,7 @@
                 </viewController>
                 <customObject id="pLo-CS-pc9" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-250" y="-2010.5"/>
+            <point key="canvasLocation" x="-580" y="-2347.5"/>
         </scene>
         <!--Application-->
         <scene sceneID="JPo-4y-FX3">
@@ -4315,6 +4366,7 @@ DQ
         <image name="NSFolder" width="32" height="32"/>
         <image name="NSNetwork" width="32" height="32"/>
         <image name="NSPreferencesGeneral" width="32" height="32"/>
+        <image name="NSRefreshTemplate" width="11" height="15"/>
         <image name="NSRemoveTemplate" width="11" height="11"/>
         <image name="NSStatusUnavailable" width="16" height="16"/>
         <image name="TB_Inspector" width="17" height="17"/>

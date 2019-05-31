@@ -8,15 +8,29 @@
 
 import Foundation
 
+/**
+ Protocol used to communicate log information between the Logger and a
+ controller.
 
+ */
 public protocol LoggerProtocol {
 
+    /**
+     Communicates log information to a controller
+     - parameter withInput: the log to communicate
+    */
     func setLogInformation(_ withInput: LogInput)
 
 }
 
+
+/**
+ Class containing all log information: level, date, tag and message.
+
+ */
 public class LogInput {
 
+    /* Attributes */
     public var level:   Logger.LogLevel
     public var time:    Date
     public var tag:     String
@@ -31,14 +45,6 @@ public class LogInput {
 }
 
 
-
-
-
-
-
-
-
-
 /**
  This class is for printing log, either in the console or in a file.
  Log can have different type of severity, and different type of output as
@@ -47,7 +53,7 @@ public class LogInput {
  */
 public class Logger {
 
-
+    /* Enumeration */
     /**
      Enumeration for severity level
      */
@@ -91,6 +97,10 @@ public class Logger {
         case Console
     }
 
+    /**
+     Enumeration for time limit: the period which erases the logs
+
+    */
     public enum TimeLimit: Int {
         case Minute = 0
         case Hour   = 1
@@ -98,10 +108,7 @@ public class Logger {
         case Month  = 3
     }
 
-
-
-    /**/
-
+    /* Attributes */
     public var targetName:String {
         get {
             return (Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String)
@@ -111,17 +118,14 @@ public class Logger {
     public static var shared        = Logger()
     private var maxLevel: Int       = 6
     public lazy var fileName:String = targetName + ".log"
-    lazy var filePath:URL? = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(fileName)
     public var outputs:[Output]     = [.Stdout, .File, .Console]
     public var sizeLimit:UInt64     = 1_000_000
     public var timeLimit:TimeLimit  = .Minute
     public var startDate:Date       = Date()
-
+    lazy var filePath:URL? = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(fileName)
     public var loggerProtocol: LoggerProtocol?
 
-    /**/
-
-
+    /* Methods */
     public static func notice(_ string:String, _ tag:String? = nil, _ file: String = #file, _ function: String = #function, line: Int = #line) {
         if LogLevel.NOTICE.rawValue <= shared.maxLevel {
             shared.output(string: string, tag, file, function, line: line, severity: LogLevel.NOTICE)
@@ -164,7 +168,6 @@ public class Logger {
         }
     }
 
-
     /**
      Format the output
      Adds a newline for writting in file
@@ -201,15 +204,8 @@ public class Logger {
                     self.loggerProtocol?.setLogInformation(l)
                 }
             }
-
         }
     }
-
-
-
-
-
-
 
     /**
      Prints to the console
@@ -260,6 +256,7 @@ public class Logger {
         return false
     }
 
+    /**/
 
     /**
      Set the destination for output : file (with name of file), console.
@@ -327,10 +324,11 @@ public class Logger {
     }
 
     /**
-     Erase the log file
+     Erase the log file according to a time period (minute, hour...)
 
      */
     public static func eraseFileByTime() {
+        /* timeIntervalSinceNow returns negative integer! */
         let range = -Int(shared.startDate.timeIntervalSinceNow)
         let t:Int
 
@@ -342,7 +340,7 @@ public class Logger {
         case .Day:
             t = range / 86400
         case .Month:
-            t = range / 100000
+            t = range / 2628000
         }
 
         if t >= 1 {
@@ -365,10 +363,7 @@ public class Logger {
         catch {}
     }
 
-
-
     /**/
-
 
     private func getFileSize() -> UInt64 {
         var fileSize : UInt64 = 0
@@ -393,7 +388,6 @@ public class Logger {
         return shared.sizeLimit
     }
 
-
     public static func getFileDestination() -> String? {
         return shared.filePath?.path
     }
@@ -401,12 +395,4 @@ public class Logger {
     public static func getTimeLimit() -> Int {
         return shared.timeLimit.rawValue
     }
-
-
-
-
-
-
-
-
 }
