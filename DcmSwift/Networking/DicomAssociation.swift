@@ -244,6 +244,8 @@ public class DicomAssociation : NSObject {
                     Logger.info("SEND A-RELEASE-RQ", "Association")
                     
                     try socket.write(from: data)
+                    
+                    self.socket.close()
                 }
 
             } catch let e {

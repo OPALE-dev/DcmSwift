@@ -139,9 +139,9 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         case .LT:
             return 10240
         case .OD:
-            return Int(2E32-8)
+            return 0
         case .OF:
-            return Int(2E32-4)
+            return 0
         case .PN:
             return 64
         case .SH:
@@ -151,7 +151,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         case .TM:
             return 64
         case .UT:
-            return Int(2E32-8)
+            return 0
         default:
             return 0
         }

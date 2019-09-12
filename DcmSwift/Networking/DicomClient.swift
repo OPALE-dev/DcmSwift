@@ -28,11 +28,12 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     public func connect(completion: ConnectCompletion) {
-        if self.socket == nil {
-            self.socket = try! Socket.create()
-        }
-        
         do {
+            if self.socket == nil {
+                self.socket = try Socket.create()
+            }
+            
+        
             try self.socket.setBlocking(mode: true)
             
             try self.socket.connect(to: self.remoteEntity.hostname, port: Int32(self.remoteEntity.port))
@@ -71,6 +72,8 @@ public class DicomClient : DicomService, StreamDelegate {
             if accepted {
                 if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
                     association.write(message: message, readResponse: true, completion: completion)
+                    
+                    association.close()
                 }
             }
             else {
@@ -99,6 +102,8 @@ public class DicomClient : DicomService, StreamDelegate {
                     message.queryDataset = queryDataset
                     // send message
                     association.write(message: message, readResponse: true, completion: completion)
+                    //
+                    association.close()
                 }
             }
             else {
@@ -133,6 +138,8 @@ public class DicomClient : DicomService, StreamDelegate {
                         index += 1
                     }
                 }
+                
+                association.close()
             }
             else {
                 completion?(false, receivedMessage, error)

@@ -427,6 +427,8 @@ public class DataElement : DicomObject {
     
     
     
+    
+    
     override public func toJSONArray() -> Any {
         var val:Any = ""
         

@@ -27,7 +27,7 @@
         <attribute name="patientID" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="patientName" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="patientSex" optional="YES" attributeType="String" syncable="YES"/>
-        <relationship name="studies" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Study" inverseName="patient" inverseEntity="Study" syncable="YES"/>
+        <relationship name="studies" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Study" inverseName="patient" inverseEntity="Study" syncable="YES"/>
     </entity>
     <entity name="PrivateDirectory" representedClassName="PrivateDirectory" parentEntity="Directory" syncable="YES" codeGenerationType="class">
         <relationship name="studies" optional="YES" toMany="YES" deletionRule="Nullify" ordered="YES" destinationEntity="Study" inverseName="directories" inverseEntity="Study" syncable="YES"/>
@@ -47,7 +47,7 @@
         <attribute name="seriesInstanceUID" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="seriesNumber" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="transferSyntaxUID" optional="YES" attributeType="String" syncable="YES"/>
-        <relationship name="instances" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Instance" inverseName="serie" inverseEntity="Instance" syncable="YES"/>
+        <relationship name="instances" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Instance" inverseName="serie" inverseEntity="Instance" syncable="YES"/>
         <relationship name="study" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Study" inverseName="series" inverseEntity="Study" syncable="YES"/>
     </entity>
     <entity name="SmartDirectory" representedClassName="SmartDirectory" parentEntity="Directory" syncable="YES" codeGenerationType="class"/>
@@ -67,20 +67,20 @@
         <attribute name="studyID" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="studyInstanceUID" optional="YES" attributeType="String" syncable="YES"/>
         <relationship name="directories" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="PrivateDirectory" inverseName="studies" inverseEntity="PrivateDirectory" syncable="YES"/>
-        <relationship name="patient" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Patient" inverseName="studies" inverseEntity="Patient" syncable="YES"/>
-        <relationship name="series" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Serie" inverseName="study" inverseEntity="Serie" syncable="YES"/>
+        <relationship name="patient" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="Patient" inverseName="studies" inverseEntity="Patient" syncable="YES"/>
+        <relationship name="series" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Serie" inverseName="study" inverseEntity="Serie" syncable="YES"/>
     </entity>
     <elements>
         <element name="Directory" positionX="-54" positionY="108" width="128" height="60"/>
         <element name="Instance" positionX="-27" positionY="99" width="128" height="180"/>
+        <element name="IOD" positionX="-36" positionY="126" width="128" height="90"/>
         <element name="Item" positionX="-36" positionY="135" width="128" height="60"/>
         <element name="Patient" positionX="-63" positionY="-18" width="128" height="120"/>
         <element name="PrivateDirectory" positionX="-45" positionY="126" width="128" height="60"/>
         <element name="Remote" positionX="-27" positionY="144" width="128" height="105"/>
         <element name="Serie" positionX="-36" positionY="63" width="128" height="195"/>
         <element name="SmartDirectory" positionX="-18" positionY="153" width="128" height="45"/>
-        <element name="Study" positionX="-54" positionY="18" width="128" height="195"/>
         <element name="Storage" positionX="-45" positionY="117" width="128" height="120"/>
-        <element name="IOD" positionX="-36" positionY="126" width="128" height="90"/>
+        <element name="Study" positionX="-54" positionY="18" width="128" height="195"/>
     </elements>
 </model>

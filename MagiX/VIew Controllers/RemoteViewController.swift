@@ -107,8 +107,8 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
                                         }
                                     }
                                 } else {
-                                    if let alert = findError?.alert() {
-                                        DispatchQueue.main.async {
+                                    DispatchQueue.main.async {
+                                        if let alert = findError?.alert() {
                                             self.studies = []
                                             self.queryTableView.reloadData()
                                             alert.runModal()
@@ -117,11 +117,13 @@ class RemoteViewController: NSViewController, NSTableViewDelegate, NSTableViewDa
                                 }
                             }
                         } else {
-                            if let alert = error?.alert() {
-                                DispatchQueue.main.async {
-                                    self.studies = []
-                                    self.queryTableView.reloadData()
-                                    alert.runModal()
+                            DispatchQueue.main.async {
+                                if let alert = error?.alert() {
+                                    DispatchQueue.main.async {
+                                        self.studies = []
+                                        self.queryTableView.reloadData()
+                                        alert.runModal()
+                                    }
                                 }
                             }
                         }
