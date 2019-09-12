@@ -45,6 +45,14 @@ class OperationsController: NSObject {
     }
     
     
+    public func operation(atIndex index:Int) -> Operation? {
+        if index <= self.operationQueue.operations.count-1 {
+            return self.operationQueue.operations[index]
+        }
+        return nil
+    }
+    
+    
     
     
     // MARK: - Observer

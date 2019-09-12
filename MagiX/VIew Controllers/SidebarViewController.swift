@@ -148,7 +148,6 @@ class SidebarViewController:    NSViewController,
     }
     
     @IBAction func newRemote(_ sender: Any) {
-        print("newRemote")
         if let remoteVC:NSViewController = NSStoryboard(name: "Main", bundle: nil).instantiateController(withIdentifier: "RemoteEditViewController") as? RemoteEditViewController {
             self.presentAsSheet(remoteVC)
         }
@@ -273,7 +272,7 @@ class SidebarViewController:    NSViewController,
         }
         else if let remote = item as? Remote {
             view = outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "DataCell"), owner: self) as? NSTableCellView
-
+            
             if remote.status == 0 {
                 view?.imageView?.image = NSImage(named: NSImage.Name("NSStatusNone"))
             }
@@ -385,20 +384,20 @@ class SidebarViewController:    NSViewController,
         
         view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "OperationCellView"), owner: self) as? OperationCellView
         
-//        if let laodOperation = OperationsController.shared.operationQueue.operations[row] as? LoadOperation {
-//            view?.progressBar.isIndeterminate = false
-//            view?.textField?.stringValue = "Load files: \(laodOperation.currentIndex)/\(laodOperation.numberOfFiles)"
-//            view?.progressBar.doubleValue = Double(laodOperation.percents)
-//        }
-//        else if let _ = OperationsController.shared.operationQueue.operations[row] as? FindOperation {
-//            view?.progressBar.isIndeterminate = true
-//            view?.textField?.stringValue = "Find studies…"
-//        }
-//        else if let op = OperationsController.shared.operationQueue.operations[row] as? SendOperation {
-//            view?.progressBar.isIndeterminate = false
-//            view?.textField?.stringValue = "Send files: \(op.currentIndex)/\(op.numberOfFiles)"
-//            view?.progressBar.doubleValue = Double(op.percents)
-//        }
+        if let laodOperation = OperationsController.shared.operation(atIndex: row) as? LoadOperation {
+            view?.progressBar.isIndeterminate = false
+            view?.textField?.stringValue = "Load files: \(laodOperation.currentIndex)/\(laodOperation.numberOfFiles)"
+            view?.progressBar.doubleValue = Double(laodOperation.percents)
+        }
+        else if let _ = OperationsController.shared.operation(atIndex: row) as? FindOperation {
+            view?.progressBar.isIndeterminate = true
+            view?.textField?.stringValue = "Find studies…"
+        }
+        else if let op = OperationsController.shared.operation(atIndex: row) as? SendOperation {
+            view?.progressBar.isIndeterminate = false
+            view?.textField?.stringValue = "Send files: \(op.currentIndex)/\(op.numberOfFiles)"
+            view?.progressBar.doubleValue = Double(op.percents)
+        }
         
         return view
     }

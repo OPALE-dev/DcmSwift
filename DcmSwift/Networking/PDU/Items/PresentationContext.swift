@@ -70,6 +70,7 @@ public class PresentationContext {
         
         // parse transfer syntaxes
         var tsType = data.subdata(in: offset..<offset+1).toInt8(byteOrder: .BigEndian)
+        // print("tsType: \(data.subdata(in: offset..<offset+1).toHex())")
         while tsType == 0x40 {
             offset += 2
             
