@@ -28,11 +28,12 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     public func connect(completion: ConnectCompletion) {
-        if self.socket == nil {
-            self.socket = try! Socket.create()
-        }
-        
         do {
+            if self.socket == nil {
+                self.socket = try Socket.create()
+            }
+            
+        
             try self.socket.setBlocking(mode: true)
             
             try self.socket.connect(to: self.remoteEntity.hostname, port: Int32(self.remoteEntity.port))
