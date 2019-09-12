@@ -76,7 +76,6 @@
 		4C5BF08F1FABA5E80051F4FE /* DicomSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8D79A71F98A69B008300E3 /* DicomSpec.swift */; };
 		4C5BF0911FABB4730051F4FE /* DicomString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5BF0901FABB4730051F4FE /* DicomString.swift */; };
 		4C5BF0921FABB4730051F4FE /* DicomString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5BF0901FABB4730051F4FE /* DicomString.swift */; };
-		4C5F9B382248DC5E0076DA82 /* Socket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; };
 		4C5F9B3C2248E3870076DA82 /* EntitiesPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B3B2248E3870076DA82 /* EntitiesPrefViewController.swift */; };
 		4C5F9B3E224911E30076DA82 /* GeneralPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B3D224911E30076DA82 /* GeneralPrefViewController.swift */; };
 		4C5F9B40224913A10076DA82 /* NetworkPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B3F224913A10076DA82 /* NetworkPrefViewController.swift */; };
@@ -120,6 +119,20 @@
 		4C9125212282EA0E00210165 /* FindOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9125202282EA0E00210165 /* FindOperation.swift */; };
 		4C9125232282F14000210165 /* DirectoryEditViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9125222282F14000210165 /* DirectoryEditViewController.swift */; };
 		4C9125252282F2A300210165 /* SmartDirectoryEditViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9125242282F2A300210165 /* SmartDirectoryEditViewController.swift */; };
+		4C948B69232A4E870063DE71 /* SocketSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C948B68232A4E870063DE71 /* SocketSwift.framework */; };
+		4C948B6A232A4E870063DE71 /* SocketSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C948B68232A4E870063DE71 /* SocketSwift.framework */; };
+		4C948B6B232A4E870063DE71 /* SocketSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C948B68232A4E870063DE71 /* SocketSwift.framework */; };
+		4C948B6C232A4E870063DE71 /* SocketSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C948B68232A4E870063DE71 /* SocketSwift.framework */; };
+		4C948B6E232A61AD0063DE71 /* Socket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C948B6D232A61AC0063DE71 /* Socket.framework */; };
+		4C948B6F232A61AD0063DE71 /* Socket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C948B6D232A61AC0063DE71 /* Socket.framework */; };
+		4C948B70232A61AD0063DE71 /* Socket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C948B6D232A61AC0063DE71 /* Socket.framework */; };
+		4C948B71232A61AD0063DE71 /* Socket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C948B6D232A61AC0063DE71 /* Socket.framework */; };
+		4C948B72232A61C10063DE71 /* Socket.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C948B6D232A61AC0063DE71 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4C948B73232A61C90063DE71 /* Socket.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4C948B6D232A61AC0063DE71 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4C948B74232A61FC0063DE71 /* SocketSwift.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C948B68232A4E870063DE71 /* SocketSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4C948B75232A62100063DE71 /* SocketSwift.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4C948B68232A4E870063DE71 /* SocketSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4C948B76232AA0A70063DE71 /* Socket.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4C948B6D232A61AC0063DE71 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4C948B77232AA0A70063DE71 /* SocketSwift.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4C948B68232A4E870063DE71 /* SocketSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4C99796F1FA71DEF00C90494 /* PixelSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99796E1FA71DEF00C90494 /* PixelSequence.swift */; };
 		4C9979901FA75B3600C90494 /* DicomObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99798F1FA75B3600C90494 /* DicomObject.swift */; };
 		4C9979971FA7720300C90494 /* DicomImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9979961FA7720300C90494 /* DicomImage.swift */; };
@@ -140,8 +153,6 @@
 		4CCF6B2D1F9FABDF000579C7 /* DcmSwift.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8D798E1F989EB1008300E3 /* DcmSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4CCF6B2F1F9FB285000579C7 /* WindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCF6B2E1F9FB285000579C7 /* WindowController.swift */; };
 		4CCF8FA0224AAAE60032325C /* ExportDICOMViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCF8F9F224AAAE60032325C /* ExportDICOMViewController.swift */; };
-		4CCF8FA2224AB0B20032325C /* Socket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; };
-		4CCF8FA5224AB1440032325C /* Socket.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4CD0BEE42242A63A0024C357 /* DicomAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE32242A63A0024C357 /* DicomAssociation.swift */; };
 		4CD0BEE62242B15B0024C357 /* DicomEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE52242B15B0024C357 /* DicomEntity.swift */; };
 		4CD0BEE8224401670024C357 /* DicomConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE7224401670024C357 /* DicomConstants.swift */; };
@@ -158,7 +169,6 @@
 		DA41828A228BF77100A79D54 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA418289228BF77100A79D54 /* Logger.swift */; };
 		DA41828D228C2B7200A79D54 /* PreferencesTabViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA41828B228C2B7200A79D54 /* PreferencesTabViewController.swift */; };
 		DA418290228C2C7700A79D54 /* PreferencesWindowViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA41828F228C2C7700A79D54 /* PreferencesWindowViewController.swift */; };
-		DABE9BC6228AEFBC0015655D /* Socket.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 4C5F9B372248DC5E0076DA82 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DABE9BC9228B07710015655D /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DABE9BC8228B07710015655D /* DateExtensions.swift */; };
 		DAE005A1228D852A002CCB47 /* RemotesPreferencesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE005A0228D852A002CCB47 /* RemotesPreferencesViewController.swift */; };
 		DAE005A8228DA929002CCB47 /* AdvancedPreferencesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE005A6228DA929002CCB47 /* AdvancedPreferencesController.swift */; };
@@ -188,6 +198,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				4C948B75232A62100063DE71 /* SocketSwift.framework in CopyFiles */,
+				4C948B73232A61C90063DE71 /* Socket.framework in CopyFiles */,
 				4C3EF258226E3AE20062B5A3 /* DcmSwift.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -198,7 +210,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				DABE9BC6228AEFBC0015655D /* Socket.framework in Copy Frameworks */,
 			);
 			name = "Copy Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -209,6 +220,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				4C948B74232A61FC0063DE71 /* SocketSwift.framework in Copy Frameworks */,
+				4C948B72232A61C10063DE71 /* Socket.framework in Copy Frameworks */,
 				4CCF6B2D1F9FABDF000579C7 /* DcmSwift.framework in Copy Frameworks */,
 			);
 			name = "Copy Frameworks";
@@ -220,7 +233,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				4CCF8FA5224AB1440032325C /* Socket.framework in CopyFiles */,
+				4C948B76232AA0A70063DE71 /* Socket.framework in CopyFiles */,
+				4C948B77232AA0A70063DE71 /* SocketSwift.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -288,7 +302,6 @@
 		4C5793001FB8AA65003B1279 /* PreferencesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesViewController.swift; sourceTree = "<group>"; };
 		4C5BF0901FABB4730051F4FE /* DicomString.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomString.swift; sourceTree = "<group>"; };
 		4C5F9B362248DBCD0076DA82 /* Cartfile */ = {isa = PBXFileReference; lastKnownFileType = text; path = Cartfile; sourceTree = "<group>"; };
-		4C5F9B372248DC5E0076DA82 /* Socket.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Socket.framework; path = Carthage/Build/Mac/Socket.framework; sourceTree = "<group>"; };
 		4C5F9B3B2248E3870076DA82 /* EntitiesPrefViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitiesPrefViewController.swift; sourceTree = "<group>"; };
 		4C5F9B3D224911E30076DA82 /* GeneralPrefViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralPrefViewController.swift; sourceTree = "<group>"; };
 		4C5F9B3F224913A10076DA82 /* NetworkPrefViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkPrefViewController.swift; sourceTree = "<group>"; };
@@ -330,6 +343,8 @@
 		4C9125202282EA0E00210165 /* FindOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindOperation.swift; sourceTree = "<group>"; };
 		4C9125222282F14000210165 /* DirectoryEditViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectoryEditViewController.swift; sourceTree = "<group>"; };
 		4C9125242282F2A300210165 /* SmartDirectoryEditViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartDirectoryEditViewController.swift; sourceTree = "<group>"; };
+		4C948B68232A4E870063DE71 /* SocketSwift.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SocketSwift.framework; path = Carthage/Build/Mac/SocketSwift.framework; sourceTree = "<group>"; };
+		4C948B6D232A61AC0063DE71 /* Socket.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Socket.framework; path = Carthage/Build/Mac/Socket.framework; sourceTree = "<group>"; };
 		4C99796E1FA71DEF00C90494 /* PixelSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelSequence.swift; sourceTree = "<group>"; };
 		4C99798F1FA75B3600C90494 /* DicomObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomObject.swift; sourceTree = "<group>"; };
 		4C9979961FA7720300C90494 /* DicomImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomImage.swift; sourceTree = "<group>"; };
@@ -379,7 +394,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C948B6F232A61AD0063DE71 /* Socket.framework in Frameworks */,
 				4C3EF256226E3AD70062B5A3 /* DcmSwift.framework in Frameworks */,
+				4C948B6A232A4E870063DE71 /* SocketSwift.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -387,7 +404,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4C5F9B382248DC5E0076DA82 /* Socket.framework in Frameworks */,
+				4C948B6B232A4E870063DE71 /* SocketSwift.framework in Frameworks */,
+				4C948B70232A61AD0063DE71 /* Socket.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -395,8 +413,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C948B71232A61AD0063DE71 /* Socket.framework in Frameworks */,
 				4CA405231FA67DF3006F8053 /* DcmSwift.framework in Frameworks */,
-				4CCF8FA2224AB0B20032325C /* Socket.framework in Frameworks */,
+				4C948B6C232A4E870063DE71 /* SocketSwift.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -404,7 +423,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C948B6E232A61AD0063DE71 /* Socket.framework in Frameworks */,
 				4CCF6B2B1F9FABC7000579C7 /* DcmSwift.framework in Frameworks */,
+				4C948B69232A4E870063DE71 /* SocketSwift.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -564,7 +585,8 @@
 		4C8D799E1F989EF4008300E3 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				4C5F9B372248DC5E0076DA82 /* Socket.framework */,
+				4C948B6D232A61AC0063DE71 /* Socket.framework */,
+				4C948B68232A4E870063DE71 /* SocketSwift.framework */,
 				4C9979991FA78EF800C90494 /* AppKit.framework */,
 			);
 			name = Frameworks;
@@ -1187,6 +1209,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/Mac",
+				);
 				INFOPLIST_FILE = MagiX/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
@@ -1208,6 +1234,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/Mac",
+				);
 				INFOPLIST_FILE = MagiX/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
@@ -1330,6 +1360,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = JSVJHJ78QE;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/Mac",
+				);
 				INFOPLIST_FILE = DicomiX/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
@@ -1349,6 +1383,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = JSVJHJ78QE;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/Mac",
+				);
 				INFOPLIST_FILE = DicomiX/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.11;

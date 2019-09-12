@@ -385,20 +385,20 @@ class SidebarViewController:    NSViewController,
         
         view = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "OperationCellView"), owner: self) as? OperationCellView
         
-        if let laodOperation = OperationsController.shared.operationQueue.operations[row] as? LoadOperation {
-            view?.progressBar.isIndeterminate = false
-            view?.textField?.stringValue = "Load files: \(laodOperation.currentIndex)/\(laodOperation.numberOfFiles)"
-            view?.progressBar.doubleValue = Double(laodOperation.percents)
-        }
-        else if let _ = OperationsController.shared.operationQueue.operations[row] as? FindOperation {
-            view?.progressBar.isIndeterminate = true
-            view?.textField?.stringValue = "Find studies…"
-        }
-        else if let op = OperationsController.shared.operationQueue.operations[row] as? SendOperation {
-            view?.progressBar.isIndeterminate = false
-            view?.textField?.stringValue = "Send files: \(op.currentIndex)/\(op.numberOfFiles)"
-            view?.progressBar.doubleValue = Double(op.percents)
-        }
+//        if let laodOperation = OperationsController.shared.operationQueue.operations[row] as? LoadOperation {
+//            view?.progressBar.isIndeterminate = false
+//            view?.textField?.stringValue = "Load files: \(laodOperation.currentIndex)/\(laodOperation.numberOfFiles)"
+//            view?.progressBar.doubleValue = Double(laodOperation.percents)
+//        }
+//        else if let _ = OperationsController.shared.operationQueue.operations[row] as? FindOperation {
+//            view?.progressBar.isIndeterminate = true
+//            view?.textField?.stringValue = "Find studies…"
+//        }
+//        else if let op = OperationsController.shared.operationQueue.operations[row] as? SendOperation {
+//            view?.progressBar.isIndeterminate = false
+//            view?.textField?.stringValue = "Send files: \(op.currentIndex)/\(op.numberOfFiles)"
+//            view?.progressBar.doubleValue = Double(op.percents)
+//        }
         
         return view
     }
@@ -505,16 +505,16 @@ class SidebarViewController:    NSViewController,
                                     }
                                 }
                             } else {
-                                if let alert = findError?.alert() {
-                                    DispatchQueue.main.async {
+                                DispatchQueue.main.async {
+                                    if let alert = findError?.alert() {
                                         alert.runModal()
                                     }
                                 }
                             }
                         })
                     } else {
-                        if let alert = error?.alert() {
-                            DispatchQueue.main.async {
+                        DispatchQueue.main.async {
+                            if let alert = error?.alert() {
                                 alert.runModal()
                             }
                         }
