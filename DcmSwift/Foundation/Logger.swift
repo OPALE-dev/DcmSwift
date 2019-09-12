@@ -118,7 +118,7 @@ public class Logger {
         }
     }
     
-    private static var shared       = Logger()
+    public static var shared       = Logger()
     private var maxLevel: Int       = 6
     public lazy var fileName:String = targetName + ".log"
     public var outputs:[Output]     = [.Stdout, .File, .Console]

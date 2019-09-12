@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="14460.31" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="14490.70" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14460.31"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14490.70"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -222,11 +222,11 @@
                                         </tableView>
                                     </subviews>
                                 </clipView>
-                                <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="mE9-u8-r4M">
+                                <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="mE9-u8-r4M">
                                     <rect key="frame" x="1" y="140" width="408" height="16"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
-                                <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="mR1-Uo-ALI">
+                                <scroller key="verticalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="mR1-Uo-ALI">
                                     <rect key="frame" x="224" y="17" width="15" height="102"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
@@ -948,7 +948,7 @@
                                         <menuItem title="Show Sidebar" keyEquivalent="s" id="kIP-vf-haE">
                                             <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                                             <connections>
-                                                <action selector="toggleSourceList:" target="Ady-hI-5gd" id="iwa-gc-5KM"/>
+                                                <action selector="toggleSidebar:" target="Ady-hI-5gd" id="iwa-gc-5KM"/>
                                             </connections>
                                         </menuItem>
                                         <menuItem title="Enter Full Screen" keyEquivalent="f" id="4J7-dP-txa">
@@ -1753,11 +1753,11 @@ DQ
                                     <constraint firstAttribute="width" relation="lessThanOrEqual" constant="350" id="JQL-fY-vuu"/>
                                     <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="201" id="xcc-iA-hWV"/>
                                 </constraints>
-                                <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="Hc4-gg-aeJ">
+                                <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="Hc4-gg-aeJ">
                                     <rect key="frame" x="0.0" y="438" width="201" height="16"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
-                                <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="NO" id="yC5-X1-wXv">
+                                <scroller key="verticalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="yC5-X1-wXv">
                                     <rect key="frame" x="224" y="17" width="15" height="102"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
@@ -1825,15 +1825,15 @@ DQ
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="o1w-aJ-WX6">
                                 <rect key="frame" x="0.0" y="30" width="436" height="143"/>
                                 <clipView key="contentView" drawsBackground="NO" id="oSy-k8-2tA">
-                                    <rect key="frame" x="0.0" y="0.0" width="421" height="143"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="436" height="143"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <textView editable="NO" importsGraphics="NO" richText="NO" verticallyResizable="YES" findStyle="panel" allowsCharacterPickerTouchBarItem="NO" allowsNonContiguousLayout="YES" textCompletion="NO" id="h3t-5G-Hjp">
-                                            <rect key="frame" x="0.0" y="0.0" width="421" height="143"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="436" height="143"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                            <size key="minSize" width="421" height="143"/>
+                                            <size key="minSize" width="436" height="143"/>
                                             <size key="maxSize" width="582" height="10000000"/>
                                             <color key="insertionPointColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                             <connections>
@@ -1842,12 +1842,12 @@ DQ
                                         </textView>
                                     </subviews>
                                 </clipView>
-                                <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="YES" id="z0S-Db-CBe">
+                                <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="YES" id="z0S-Db-CBe">
                                     <rect key="frame" x="-100" y="-100" width="87" height="18"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
-                                <scroller key="verticalScroller" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="LXm-3d-qD6">
-                                    <rect key="frame" x="421" y="0.0" width="15" height="143"/>
+                                <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="LXm-3d-qD6">
+                                    <rect key="frame" x="420" y="0.0" width="16" height="143"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
@@ -2264,11 +2264,11 @@ DQ
                                                         </outlineView>
                                                     </subviews>
                                                 </clipView>
-                                                <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="Aha-Gw-IlF">
+                                                <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="Aha-Gw-IlF">
                                                     <rect key="frame" x="0.0" y="707" width="851" height="16"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                 </scroller>
-                                                <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="NO" id="9sZ-TK-ODH">
+                                                <scroller key="verticalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="9sZ-TK-ODH">
                                                     <rect key="frame" x="835" y="23" width="16" height="0.0"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                 </scroller>
@@ -2486,11 +2486,11 @@ DQ
                                                         </tableView>
                                                     </subviews>
                                                 </clipView>
-                                                <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="h5j-Za-PaL">
+                                                <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="h5j-Za-PaL">
                                                     <rect key="frame" x="1" y="83" width="849" height="16"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                 </scroller>
-                                                <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="NO" id="w2S-8L-PO6">
+                                                <scroller key="verticalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="w2S-8L-PO6">
                                                     <rect key="frame" x="224" y="17" width="15" height="102"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                 </scroller>
@@ -2691,7 +2691,7 @@ DQ
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" horizontalScrollElasticity="none" verticalScrollElasticity="none" translatesAutoresizingMaskIntoConstraints="NO" id="GJA-9U-ZpH">
                                 <rect key="frame" x="0.0" y="0.0" width="280" height="806"/>
                                 <clipView key="contentView" id="dlR-kW-Rcs">
-                                    <rect key="frame" x="0.0" y="0.0" width="265" height="806"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="280" height="806"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qEX-Qz-3dZ" customClass="FlippedStackView" customModule="DicomiX" customModuleProvider="target">
@@ -3350,12 +3350,12 @@ DQ
                                     </constraints>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </clipView>
-                                <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="W1V-Kc-fFe">
+                                <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="W1V-Kc-fFe">
                                     <rect key="frame" x="-100" y="-100" width="281" height="16"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
-                                <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="yKc-Kb-dBM">
-                                    <rect key="frame" x="265" y="0.0" width="15" height="806"/>
+                                <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="yKc-Kb-dBM">
+                                    <rect key="frame" x="264" y="0.0" width="16" height="806"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
@@ -3408,11 +3408,11 @@ DQ
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" horizontalScrollElasticity="none" translatesAutoresizingMaskIntoConstraints="NO" id="dlA-Fq-5hJ">
                                 <rect key="frame" x="0.0" y="0.0" width="295" height="383"/>
                                 <clipView key="contentView" id="LyN-nx-X1I">
-                                    <rect key="frame" x="0.0" y="0.0" width="280" height="383"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="295" height="383"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="OLp-hB-Tbc" customClass="FlippedStackView" customModule="DicomiX" customModuleProvider="target">
-                                            <rect key="frame" x="0.0" y="0.0" width="280" height="367"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="295" height="367"/>
                                             <subviews>
                                                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="Ghh-86-gl9">
                                                     <rect key="frame" x="0.0" y="223" width="280" height="144"/>
@@ -3582,10 +3582,10 @@ DQ
                                                     </constraints>
                                                 </customView>
                                                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="TDK-kS-Wm6">
-                                                    <rect key="frame" x="0.0" y="0.0" width="280" height="223"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="295" height="223"/>
                                                     <subviews>
                                                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Gtv-uj-0op">
-                                                            <rect key="frame" x="4" y="206" width="278" height="17"/>
+                                                            <rect key="frame" x="4" y="206" width="293" height="17"/>
                                                             <constraints>
                                                                 <constraint firstAttribute="height" constant="17" id="RzG-PA-E4k"/>
                                                             </constraints>
@@ -3608,7 +3608,7 @@ DQ
                                                             </textFieldCell>
                                                         </textField>
                                                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bM0-6o-xH8">
-                                                            <rect key="frame" x="104" y="184" width="159" height="14"/>
+                                                            <rect key="frame" x="119" y="184" width="159" height="14"/>
                                                             <constraints>
                                                                 <constraint firstAttribute="height" constant="14" id="gCv-cb-0fg"/>
                                                                 <constraint firstAttribute="width" constant="155" id="nOQ-Zv-wIP"/>
@@ -3636,7 +3636,7 @@ DQ
                                                             </textFieldCell>
                                                         </textField>
                                                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eWe-pj-GQ9">
-                                                            <rect key="frame" x="104" y="161" width="159" height="14"/>
+                                                            <rect key="frame" x="119" y="161" width="159" height="14"/>
                                                             <constraints>
                                                                 <constraint firstAttribute="width" constant="155" id="pJB-kO-jyD"/>
                                                                 <constraint firstAttribute="height" constant="14" id="q44-JQ-Xaj"/>
@@ -3660,7 +3660,7 @@ DQ
                                                             </textFieldCell>
                                                         </textField>
                                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="9H6-oB-IYK">
-                                                            <rect key="frame" x="106" y="29" width="165" height="92"/>
+                                                            <rect key="frame" x="121" y="29" width="165" height="92"/>
                                                             <constraints>
                                                                 <constraint firstAttribute="height" constant="92" id="qdZ-EJ-Aqz"/>
                                                                 <constraint firstAttribute="width" constant="165" id="txN-b3-whu"/>
@@ -3687,7 +3687,7 @@ DQ
                                                             </textFieldCell>
                                                         </textField>
                                                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="MKq-84-c7J">
-                                                            <rect key="frame" x="104" y="138" width="159" height="14"/>
+                                                            <rect key="frame" x="119" y="138" width="159" height="14"/>
                                                             <constraints>
                                                                 <constraint firstAttribute="height" constant="14" id="5tF-Nf-pwe"/>
                                                                 <constraint firstAttribute="width" constant="155" id="KYm-0S-FA4"/>
@@ -3699,10 +3699,10 @@ DQ
                                                             </textFieldCell>
                                                         </textField>
                                                         <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="Yx9-oT-8lg">
-                                                            <rect key="frame" x="12" y="127" width="259" height="5"/>
+                                                            <rect key="frame" x="12" y="127" width="274" height="5"/>
                                                         </box>
                                                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ZgI-6x-wkn">
-                                                            <rect key="frame" x="104" y="7" width="169" height="14"/>
+                                                            <rect key="frame" x="119" y="7" width="169" height="14"/>
                                                             <constraints>
                                                                 <constraint firstAttribute="width" constant="165" id="dii-Z1-NbB"/>
                                                                 <constraint firstAttribute="height" constant="14" id="m6d-F8-D4l"/>
@@ -3765,12 +3765,12 @@ DQ
                                     </constraints>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </clipView>
-                                <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="t6t-f7-vaS">
+                                <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="t6t-f7-vaS">
                                     <rect key="frame" x="-100" y="-100" width="281" height="16"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
-                                <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="D7p-1H-3Kn">
-                                    <rect key="frame" x="280" y="0.0" width="15" height="383"/>
+                                <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="D7p-1H-3Kn">
+                                    <rect key="frame" x="279" y="0.0" width="16" height="383"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
@@ -3810,11 +3810,11 @@ DQ
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" horizontalScrollElasticity="none" translatesAutoresizingMaskIntoConstraints="NO" id="sgI-28-aeY">
                                 <rect key="frame" x="0.0" y="0.0" width="295" height="516"/>
                                 <clipView key="contentView" id="9xU-8Z-d6L">
-                                    <rect key="frame" x="0.0" y="0.0" width="280" height="516"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="295" height="516"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="mIT-bh-wrI" customClass="FlippedStackView" customModule="DicomiX" customModuleProvider="target">
-                                            <rect key="frame" x="0.0" y="0.0" width="280" height="407"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="295" height="407"/>
                                             <subviews>
                                                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="EHB-aq-pcA">
                                                     <rect key="frame" x="0.0" y="127" width="280" height="280"/>
@@ -3943,12 +3943,12 @@ DQ
                                     </constraints>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </clipView>
-                                <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="QuA-0o-vUw">
+                                <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="QuA-0o-vUw">
                                     <rect key="frame" x="-100" y="-100" width="281" height="16"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
-                                <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="8qi-iE-UgY">
-                                    <rect key="frame" x="280" y="0.0" width="15" height="516"/>
+                                <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="8qi-iE-UgY">
+                                    <rect key="frame" x="279" y="0.0" width="16" height="516"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
