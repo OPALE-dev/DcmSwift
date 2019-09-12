@@ -72,10 +72,13 @@ public class Logger {
 
     public var targetName:String {
         get {
-            return (Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String)
+            if let bundleName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String {
+                return bundleName
+            }
+            return "DcmSwift"
         }
     }
-
+    
     private static var shared       = Logger()
     private var maxLevel: Int       = 6
     public lazy var fileName:String = targetName + ".log"

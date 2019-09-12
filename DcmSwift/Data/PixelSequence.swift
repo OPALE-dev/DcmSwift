@@ -49,26 +49,42 @@ class PixelSequence: DataSequence {
         
         
         // write tag code
-        data.append(self.tag.data(withByteOrder: inByteOrder))
-
-
+        //print("self.tag : (\(self.tag.group),\(self.tag.element))")
+        //data.append(self.tag.data(withByteOrder: inByteOrder))
+        data.append(contentsOf: [0xE0, 0x7f, 0x10, 0x00])
+        
         // write VR (only explicit)
         if inVrMethod == .Explicit  {
             let vrString = "\(self.vr)"
             let vrData = vrString.data(using: .ascii)
             data.append(vrData!)
-            data.append(Data(repeating: 0x00, count: 2))
+            
+            data.append(contentsOf: [0x00, 0x00, 0xff, 0xff, 0xff, 0xff])
+            
+//            if self.vr == .SQ {
+//                data.append(Data(repeating: 0x00, count: 2))
+//            }
+//            else if self.vr == .OB ||
+//                self.vr == .OW ||
+//                self.vr == .OF ||
+//                self.vr == .SQ ||
+//                self.vr == .UT ||
+//                self.vr == .UN {
+//                data.append(Data(repeating: 0x00, count: 2))
+//            }
         }
         
         
+        
+        
         // write length (no length for pixel sequence, only 0xffffffff ?
-        // http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_A.4.html)
-        let itemsLength = UInt32(itemsData.count + 4)
-        var convertedNumber = inByteOrder == .LittleEndian ?
-            itemsLength.littleEndian : itemsLength.bigEndian
-
-        let lengthData = Data(bytes: &convertedNumber, count: 4)
-        data.append(lengthData)
+//        // http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_A.4.html)
+//        let itemsLength = UInt32(itemsData.count + 4)
+//        var convertedNumber = inByteOrder == .LittleEndian ?
+//            itemsLength.littleEndian : itemsLength.bigEndian
+//
+//        let lengthData = Data(bytes: &convertedNumber, count: 4)
+//        data.append(lengthData)
         //data.append(Data(repeating: 0xff, count: 4))
         
         
