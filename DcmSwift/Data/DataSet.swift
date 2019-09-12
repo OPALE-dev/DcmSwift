@@ -187,6 +187,8 @@ public class DataSet: DicomObject {
             finalOrder = inByteOrder
         }
         
+        sortElements()
+        
         for element in self.datasetElements {
             data.append(element.toData(vrMethod: finalVR, byteOrder: finalOrder))
         }

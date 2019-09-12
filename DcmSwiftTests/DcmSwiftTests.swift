@@ -221,8 +221,6 @@ class DcmSwiftTests: XCTestCase {
 
         assert(dd2 == nil)
 
-
-
         let ds3 = "255009"
         let dd3 = Date(dicomTime: ds3)
 

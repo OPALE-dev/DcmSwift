@@ -111,11 +111,14 @@ public class Logger {
     /* Attributes */
     public var targetName:String {
         get {
-            return (Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String)
+            if let bundleName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String {
+                return bundleName
+            }
+            return "DcmSwift"
         }
     }
-
-    public static var shared        = Logger()
+    
+    private static var shared       = Logger()
     private var maxLevel: Int       = 6
     public lazy var fileName:String = targetName + ".log"
     public var outputs:[Output]     = [.Stdout, .File, .Console]
@@ -224,6 +227,7 @@ public class Logger {
 
      */
     public func fileLog(message: String) -> Bool {
+        //print("FILE LOG")
         if let fileURL = filePath {
 
             if getFileSize() > self.sizeLimit {
@@ -342,6 +346,9 @@ public class Logger {
         case .Month:
             t = range / 2628000
         }
+
+//        print("\(range)")
+//        print("\(t)")
 
         if t >= 1 {
             if let path = shared.filePath {

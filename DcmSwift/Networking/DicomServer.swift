@@ -96,6 +96,7 @@ public class DicomServer: DicomService {
         // setup accepted presentation contexts
         association.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP, result: 0x00)
         association.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND, result: 0x00)
+        
         for sop in DicomConstants.storageSOPClasses {
             association.addPresentationContext(abstractSyntax: sop, result: 0x00)
         }
