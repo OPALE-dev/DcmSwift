@@ -193,13 +193,13 @@ public class DataElement : DicomObject {
         else if self.vr == .AT ||
                 self.vr == .OB ||
                 self.vr == .OW {
-            return self.data
+            return self.data as Any
         }
         else if self.vr == .SQ {
             return ""
         }
         
-        return self.data
+        return self.data as Any
     }
     
     
