@@ -9,6 +9,9 @@
 import Foundation
 
 
+
+// https://stackoverflow.com/questions/38023838/round-trip-swift-number-types-to-from-data
+
 extension Data {
     public func toString() -> String {
         if let string = String(data: self, encoding: String.Encoding.utf8) {

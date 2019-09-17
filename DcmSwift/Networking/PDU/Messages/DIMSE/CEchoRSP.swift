@@ -19,7 +19,7 @@ public class CEchoRSP: DataTF {
         if let pc = self.association.acceptedPresentationContexts.values.first {
             let pdvDataset = DataSet()
             _ = pdvDataset.set(value: CommandField.C_ECHO_RSP.rawValue.bigEndian, forTagName: "CommandField")
-            _ = pdvDataset.set(value: pc.abstractSyntax, forTagName: "AffectedSOPClassUID")
+            _ = pdvDataset.set(value: pc.abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
             if let request = self.requestMessage {
                 _ = pdvDataset.set(value: request.messageID, forTagName: "MessageIDBeingRespondedTo")
             }

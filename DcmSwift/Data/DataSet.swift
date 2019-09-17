@@ -402,13 +402,13 @@ public class DataSet: DicomObject {
     
     
     public func remove(dataElement element:DataElement) -> DataElement {
-        if let index = self.allElements.index(where: {$0 === element}) {
+        if let index = self.allElements.firstIndex(where: {$0 === element}) {
             self.allElements.remove(at: index)
         }
-        if let index = self.metaInformationHeaderElements.index(where: {$0 === element}) {
+        if let index = self.metaInformationHeaderElements.firstIndex(where: {$0 === element}) {
             self.metaInformationHeaderElements.remove(at: index)
         }
-        if let index = self.datasetElements.index(where: {$0 === element}) {
+        if let index = self.datasetElements.firstIndex(where: {$0 === element}) {
             self.datasetElements.remove(at: index)
         }
         return element
@@ -598,7 +598,7 @@ public class DataSet: DicomObject {
             if element.vr == .SQ {
                 let bytes:Data = self.data.subdata(in: os..<os+4)
                 
-                if bytes == Data(bytes: [0xff, 0xff, 0xff, 0xff]) {
+                if bytes == Data([0xff, 0xff, 0xff, 0xff]) {
                     length = -1
                 } else {
                     length = Int(data.subdata(in: os..<os+4).toInt32(byteOrder: order))
@@ -775,7 +775,7 @@ public class DataSet: DicomObject {
                 sequence.items.append(item)
                 
                 // Undefined Length data elements (ffffffff)
-                if subdata == Data(bytes: [0xff, 0xff, 0xff, 0xff]) {
+                if subdata == Data([0xff, 0xff, 0xff, 0xff]) {
                     var reachEnd = false
                     
                     while(reachEnd == false) {
