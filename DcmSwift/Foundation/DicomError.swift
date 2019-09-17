@@ -122,7 +122,13 @@ public class DicomError: NSObject {
     
     
     public override var description: String {
-        return "\(self.errorLevel) -> [\(self.errorRealm)] (\(self.errorCode)) \(self.errorMeaning)"
+        var str = ""
+        if  let el = self.errorLevel,
+            let er = self.errorRealm,
+            let ec = self.errorCode {
+            str = "\(el) -> [\(er)] (\(ec)) \(self.errorMeaning)"
+        }
+        return str
     }
 }
 

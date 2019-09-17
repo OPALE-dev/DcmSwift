@@ -167,10 +167,16 @@ public class DataElement : DicomObject {
         else if self.vr == .FD {
             return self.data.toFloat64(byteOrder: self.byteOrder)
         }
-        else if self.vr == .DA ||
-                self.vr == .DT ||
-                self.vr == .TM ||
-                self.vr == .UI ||
+        else if self.vr == .DA {
+            return Date(dicomDate: self.data.toString()) as Any
+        }
+        else if self.vr == .DT {
+            return Date(dicomDateTime: self.data.toString()) as Any
+        }
+        else if self.vr == .TM {
+            return Date(dicomTime: self.data.toString()) as Any
+        }
+        else if self.vr == .UI ||
                 self.vr == .SH ||
                 self.vr == .AS ||
                 self.vr == .CS ||

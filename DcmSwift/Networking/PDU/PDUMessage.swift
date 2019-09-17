@@ -63,25 +63,33 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     }
     
     public func messagesData() -> [Data] {
-        Logger.warning("Not implemented yet \(#function) \(self.pduType)")
+        if let p = self.pduType {
+            Logger.warning("Not implemented yet \(#function) \(p)")
+        }
         return []
     }
     
     
     public func data() -> Data {
-        Logger.warning("Not implemented yet \(#function) \(self.pduType)")
+        if let p = self.pduType {
+            Logger.warning("Not implemented yet \(#function) \(p)")
+        }
         return Data()
     }
     
     
     public func decodeData(data:Data) -> Bool {
-        Logger.warning("Not implemented yet \(#function) \(self.pduType)")
+        if let p = self.pduType {
+            Logger.warning("Not implemented yet \(#function) \(p)")
+        }
         return false
     }
     
     
     public func handleResponse(data:Data) -> PDUMessage? {
-        Logger.warning("Not implemented yet \(#function) \(self.pduType)")
+        if let p = self.pduType {
+            Logger.warning("Not implemented yet \(#function) \(p)")
+        }
         return nil
     }
 
