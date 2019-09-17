@@ -80,6 +80,7 @@ public class CStoreRQ: DataTF {
                         
                         pdvData2.append(uint32: UInt32(pdvLength2), bigEndian: true)
                         pdvData2.append(uint8: pcs.first!.contextID, bigEndian: true) // Context
+                        
                         if chunkData == chunks.last {
                             pdvData2.append(byte: 0x02) // Flags : last fragment
                         } else {
