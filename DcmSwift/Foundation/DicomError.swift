@@ -9,8 +9,13 @@
 import Foundation
 import Socket
 
-
+/**
+DicomError represents common errors defined by the DICOM specification
+*/
 public class DicomError: NSObject {
+    /**
+     The ErrorLevel enum defines the severity of the error
+     */
     public enum ErrorLevel:Int {
         case notice     = 1
         case warning    = 2
@@ -19,6 +24,9 @@ public class DicomError: NSObject {
         case refused    = 5
     }
     
+    /**
+    The realm of the error, as a meta category
+    */
     public enum ErrorRealm:Int {
         case custom     = 0
         case general    = 1
@@ -26,13 +34,24 @@ public class DicomError: NSObject {
         case socket     = 3
     }
 
-    public var errorCode:Int!
-    public var errorLevel:ErrorLevel!
-    public var errorRealm:ErrorRealm!
-    public var customDescription:String?
+    /// the internal error code of the error, depending of the internal error realm
+    private var errorCode:Int!
+    /// the internal error level
+    private var errorLevel:ErrorLevel!
+    /// the internal error realm
+    private var errorRealm:ErrorRealm!
+    /// custom description used for custom realm
+    private var customDescription:String?
     
+    /// Unknow error default string
+    private let unknowErrorString = "Unknow error"
+    
+    /**
+     Create error with code, level and realm
+     Realm is `.general` by default
+     */
     public init(code:Int, level:ErrorLevel, realm:ErrorRealm = .general) {
-        self.errorCode = code
+        self.errorCode  = code
         self.errorLevel = level
         self.errorRealm = realm
     }
@@ -96,7 +115,7 @@ public class DicomError: NSObject {
             case 531:
                 return "Resource limitation"
             default:
-                return "Unknow error"
+                return self.unknowErrorString
             }
         }
         else if self.errorRealm == .network {
@@ -110,14 +129,14 @@ public class DicomError: NSObject {
             case 7:
                 return "Called AE Title not recognized"
             default:
-                return "Unknow error"
+                return self.unknowErrorString
             }
         }
         else if self.errorRealm == .custom || self.errorRealm == .socket {
-            return self.customDescription ?? "Unknow error"
+            return self.customDescription ?? self.unknowErrorString
         }
         
-        return "Unknow error"
+        return self.unknowErrorString
     }
     
     
