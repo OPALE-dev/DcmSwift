@@ -20,10 +20,7 @@ public class DicomFile {
     
     
     // MARK: - Public methods
-
     public init?(forPath filepath: String) {
-        
-        
         if !FileManager.default.fileExists(atPath: filepath) {
             Logger.error("No such file at \(filepath)")
             return nil

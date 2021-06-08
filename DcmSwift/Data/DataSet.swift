@@ -24,7 +24,7 @@ extension Dictionary {
 
 public class DataSet: DicomObject {
     public var fileMetaInformationGroupLength:Int32 = 0
-    public var transferSyntax:String                = DicomConstants.explicitVRLittleEndian
+    public var transferSyntax:String                = DicomConstants.implicitVRLittleEndian
     public var vrMethod:DicomConstants.VRMethod          = .Explicit
     public var byteOrder:DicomConstants.ByteOrder        = .LittleEndian
     public var forceExplicit:Bool                   = false

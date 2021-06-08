@@ -49,8 +49,8 @@ class ConsoleViewController: NSViewController, NSTextViewDelegate {
     
     private func reloadTextView() {
         self.textView.string = ""
-        DispatchQueue.global(qos: .background).async {
-            if let document:DicomDocument = self.representedObject as? DicomDocument {
+        if let document:DicomDocument = self.representedObject as? DicomDocument {
+            DispatchQueue.global(qos: .background).async {
                 if document.dicomFile != nil {
                     self.dicomFile  = document.dicomFile
                     

@@ -2,7 +2,7 @@
 //  Logger.swift
 //  DcmSwift
 //
-//  Created by paul on 15/05/2019.
+//  Created by Paul Repain on 15/05/2019.
 //  Copyright © 2019 Read-Write.fr. All rights reserved.
 //
 

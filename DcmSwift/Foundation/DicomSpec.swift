@@ -357,7 +357,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /**
      Check if the given SOP Class is supported
      by the spec
-     - Parameter transferSyntax: DICOM SOP Class
+     - Parameter sopClass: DICOM SOP Class
      - Returns: true if the SOP is supported by the spec
      */
     public func isSupported(sopClass sc:String) -> Bool {
@@ -370,6 +370,12 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     }
     
     
+    /**
+    Check if the given Transfer Syntax is retired
+    by the spec
+    - Parameter transferSyntax: DICOM SOP Class
+    - Returns: true if the SOP is retired by the spec
+    */
     public func isRetired(transferSyntax sc:String) -> Bool {
         for tss in self.transferSyntaxes() {
             if sc == tss["uid"] {
@@ -382,7 +388,12 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     }
     
     
-    
+    /**
+    Check if the given SOP Class is retired
+    by the spec
+    - Parameter sopClass: DICOM SOP Class
+    - Returns: true if theSOP Class is retired by the spec
+    */
     public func isRetired(sopClass sc:String) -> Bool {
         for scs in self.sopClasses() {
             if sc == scs["uid"] {
@@ -395,7 +406,12 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     }
     
     
-    
+    /**
+    Check if the given Data Tag is retired
+    by the spec
+    - Parameter tag: DICOM DataTag Class
+    - Returns: true if the Data Tag is retired by the spec
+    */
     public func isRetired(tag dataTag:DataTag) -> Bool {
         if let tag = self.tagsByName[dataTag.name] {
             if tag["retired"] != nil {
@@ -444,7 +460,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     
     
     
-    // MARK: - Private Methods
+    // MARK: - Validation Methods
     public func validate(file:DicomFile) -> [ValidationResult] {
         var results:[ValidationResult] = []
         
@@ -529,7 +545,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
 
 /**
  ValidationResults are used by the validation process of the DicomSpec
- to store results alongside severity level and informations message
+ to store results alongside severity level and corresponding informations message
  */
 public class ValidationResult : CustomStringConvertible, Comparable {
     public enum Severity:Int {

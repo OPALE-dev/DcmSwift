@@ -9,6 +9,27 @@
 /* Begin PBXBuildFile section */
 		4C00FB541FC621BB00E76466 /* Bridge-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 4C00FB521FC6205500E76466 /* Bridge-Header.h */; };
 		4C18DBCA2282062E000D105A /* RemoteQueryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C18DBC92282062E000D105A /* RemoteQueryViewController.swift */; };
+		4C24CB00266F57E60001CEFD /* Test Files in Resources */ = {isa = PBXBuildFile; fileRef = 4C24CAFF266F57E60001CEFD /* Test Files */; };
+		4C24CB09266FC0150001CEFD /* DcmSwiftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C24CB08266FC0150001CEFD /* DcmSwiftTests.swift */; };
+		4C24CB11266FE80A0001CEFD /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C24CB10266FE80A0001CEFD /* main.swift */; };
+		4C24CB1A266FEBF50001CEFD /* DataSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3CD47A1F96981300323E8A /* DataSet.swift */; };
+		4C24CB1B266FEBF50001CEFD /* DataElement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3CD47C1F96981D00323E8A /* DataElement.swift */; };
+		4C24CB1C266FEBF50001CEFD /* DataSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8D79851F97D84A008300E3 /* DataSequence.swift */; };
+		4C24CB1D266FEBF50001CEFD /* DataItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8D79871F97D859008300E3 /* DataItem.swift */; };
+		4C24CB1E266FEBF50001CEFD /* DataTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7B78D41FA23FAC005BB2A2 /* DataTag.swift */; };
+		4C24CB1F266FEBF50001CEFD /* PixelSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99796E1FA71DEF00C90494 /* PixelSequence.swift */; };
+		4C24CB20266FEBF50001CEFD /* DicomFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3CD4781F9697DC00323E8A /* DicomFile.swift */; };
+		4C24CB21266FEBF50001CEFD /* DicomDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7B78D01FA1485B005BB2A2 /* DicomDate.swift */; };
+		4C24CB22266FEBF50001CEFD /* DicomData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C783E6A1F969DC500E46F30 /* DicomData.swift */; };
+		4C24CB23266FEBF50001CEFD /* DicomString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5BF0901FABB4730051F4FE /* DicomString.swift */; };
+		4C24CB24266FEBF50001CEFD /* DicomObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99798F1FA75B3600C90494 /* DicomObject.swift */; };
+		4C24CB25266FEBF50001CEFD /* DicomError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C53D70D227DAB4B0003724F /* DicomError.swift */; };
+		4C24CB26266FEBF50001CEFD /* DicomSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8D79A71F98A69B008300E3 /* DicomSpec.swift */; };
+		4C24CB27266FEBF50001CEFD /* DicomConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE7224401670024C357 /* DicomConstants.swift */; };
+		4C24CB28266FEBF50001CEFD /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA418289228BF77100A79D54 /* Logger.swift */; };
+		4C24CB29266FEBF50001CEFD /* DicomImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9979961FA7720300C90494 /* DicomImage.swift */; };
+		4C24CB2A266FECEE0001CEFD /* Socket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C948B6D232A61AC0063DE71 /* Socket.framework */; };
+		4C24CB2B266FECEE0001CEFD /* Socket.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4C948B6D232A61AC0063DE71 /* Socket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4C38D7741FA0817D00633A5D /* MainSplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7731FA0817D00633A5D /* MainSplitViewController.swift */; };
 		4C38D7761FA0922300633A5D /* InspectorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7751FA0922300633A5D /* InspectorViewController.swift */; };
 		4C38D7791FA0B9B200633A5D /* FileViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7771FA0B9B200633A5D /* FileViewController.swift */; };
@@ -82,29 +103,6 @@
 		4C5F9B42224913C00076DA82 /* DicomPrefViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B41224913C00076DA82 /* DicomPrefViewController.swift */; };
 		4C5F9B44224935530076DA82 /* SendViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5F9B43224935530076DA82 /* SendViewController.swift */; };
 		4C76A9E722480F5E0057350E /* DicomConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0BEE7224401670024C357 /* DicomConstants.swift */; };
-		4C76AA00224814F60057350E /* CR-MONO1-10-chest in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9E9224814F30057350E /* CR-MONO1-10-chest */; };
-		4C76AA01224814F60057350E /* MR-MONO2-16-knee in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9EA224814F30057350E /* MR-MONO2-16-knee */; };
-		4C76AA02224814F60057350E /* NM-MONO2-16-13x-heart in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9EB224814F30057350E /* NM-MONO2-16-13x-heart */; };
-		4C76AA03224814F60057350E /* CT-MONO2-16-ort in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9EC224814F30057350E /* CT-MONO2-16-ort */; };
-		4C76AA04224814F60057350E /* MR-MONO2-12-angio-an1 in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9ED224814F30057350E /* MR-MONO2-12-angio-an1 */; };
-		4C76AA05224814F60057350E /* OT-MONO2-8-hip in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9EE224814F30057350E /* OT-MONO2-8-hip */; };
-		4C76AA06224814F60057350E /* OT-PAL-8-face in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9EF224814F30057350E /* OT-PAL-8-face */; };
-		4C76AA07224814F60057350E /* US-PAL-8-10x-echo in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F0224814F40057350E /* US-PAL-8-10x-echo */; };
-		4C76AA08224814F60057350E /* OT-MONO2-8-colon in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F1224814F40057350E /* OT-MONO2-8-colon */; };
-		4C76AA09224814F60057350E /* US-RGB-8-epicard in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F2224814F40057350E /* US-RGB-8-epicard */; };
-		4C76AA0A224814F60057350E /* MR-MONO2-12-an2 in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F3224814F40057350E /* MR-MONO2-12-an2 */; };
-		4C76AA0B224814F60057350E /* CT-MONO2-16-chest in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F4224814F40057350E /* CT-MONO2-16-chest */; };
-		4C76AA0C224814F60057350E /* CT-MONO2-12-lomb-an2 in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F5224814F40057350E /* CT-MONO2-12-lomb-an2 */; };
-		4C76AA0D224814F60057350E /* US-MONO2-8-8x-execho in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F6224814F50057350E /* US-MONO2-8-8x-execho */; };
-		4C76AA0E224814F60057350E /* CT-MONO2-16-brain in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F7224814F50057350E /* CT-MONO2-16-brain */; };
-		4C76AA0F224814F60057350E /* US-RGB-8-esopecho in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F8224814F50057350E /* US-RGB-8-esopecho */; };
-		4C76AA10224814F60057350E /* MR-MONO2-8-16x-heart in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9F9224814F50057350E /* MR-MONO2-8-16x-heart */; };
-		4C76AA11224814F60057350E /* OT-MONO2-8-a7 in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9FA224814F50057350E /* OT-MONO2-8-a7 */; };
-		4C76AA12224814F60057350E /* MR-MONO2-16-head in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9FB224814F50057350E /* MR-MONO2-16-head */; };
-		4C76AA13224814F60057350E /* XA-MONO2-8-12x-catheter in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9FC224814F50057350E /* XA-MONO2-8-12x-catheter */; };
-		4C76AA14224814F60057350E /* CT-MONO2-8-abdo in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9FD224814F60057350E /* CT-MONO2-8-abdo */; };
-		4C76AA15224814F60057350E /* MR-MONO2-12-shoulder in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9FE224814F60057350E /* MR-MONO2-12-shoulder */; };
-		4C76AA16224814F60057350E /* CT-MONO2-16-ankle in Resources */ = {isa = PBXBuildFile; fileRef = 4C76A9FF224814F60057350E /* CT-MONO2-16-ankle */; };
 		4C7B78D11FA1485B005BB2A2 /* DicomDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7B78D01FA1485B005BB2A2 /* DicomDate.swift */; };
 		4C7B78D61FA28002005BB2A2 /* DataTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7B78D41FA23FAC005BB2A2 /* DataTag.swift */; };
 		4C8D79921F989EB1008300E3 /* DcmSwift.h in Headers */ = {isa = PBXBuildFile; fileRef = 4C8D79901F989EB1008300E3 /* DcmSwift.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -139,7 +137,6 @@
 		4CA0717A2283693B006227E1 /* CStoreRQ.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA071792283693B006227E1 /* CStoreRQ.swift */; };
 		4CA0717C22836946006227E1 /* CStoreRSP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA0717B22836946006227E1 /* CStoreRSP.swift */; };
 		4CA0717E22836BC9006227E1 /* DicomServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA0717D22836BC9006227E1 /* DicomServer.swift */; };
-		4CA405211FA67DF3006F8053 /* DcmSwiftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA405201FA67DF3006F8053 /* DcmSwiftTests.swift */; };
 		4CA405231FA67DF3006F8053 /* DcmSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8D798E1F989EB1008300E3 /* DcmSwift.framework */; };
 		4CB9C9A11FB248C000C5356B /* ExportViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB9C9A01FB248C000C5356B /* ExportViewController.swift */; };
 		4CC932482292ED96001DFEB7 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA418289228BF77100A79D54 /* Logger.swift */; };
@@ -193,6 +190,26 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		4C24CB0C266FE80A0001CEFD /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		4C24CB2C266FECEE0001CEFD /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				4C24CB2B266FECEE0001CEFD /* Socket.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4C3EF257226E3AD90062B5A3 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -244,6 +261,10 @@
 /* Begin PBXFileReference section */
 		4C00FB521FC6205500E76466 /* Bridge-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Bridge-Header.h"; sourceTree = "<group>"; };
 		4C18DBC92282062E000D105A /* RemoteQueryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteQueryViewController.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
+		4C24CAFF266F57E60001CEFD /* Test Files */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Test Files"; sourceTree = "<group>"; };
+		4C24CB08266FC0150001CEFD /* DcmSwiftTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DcmSwiftTests.swift; sourceTree = "<group>"; };
+		4C24CB0E266FE80A0001CEFD /* DcmTestFileOrganizer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DcmTestFileOrganizer; sourceTree = BUILT_PRODUCTS_DIR; };
+		4C24CB10266FE80A0001CEFD /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		4C38D7731FA0817D00633A5D /* MainSplitViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainSplitViewController.swift; sourceTree = "<group>"; };
 		4C38D7751FA0922300633A5D /* InspectorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorViewController.swift; sourceTree = "<group>"; };
 		4C38D7771FA0B9B200633A5D /* FileViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileViewController.swift; sourceTree = "<group>"; };
@@ -308,29 +329,6 @@
 		4C5F9B3F224913A10076DA82 /* NetworkPrefViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkPrefViewController.swift; sourceTree = "<group>"; };
 		4C5F9B41224913C00076DA82 /* DicomPrefViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomPrefViewController.swift; sourceTree = "<group>"; };
 		4C5F9B43224935530076DA82 /* SendViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendViewController.swift; sourceTree = "<group>"; };
-		4C76A9E9224814F30057350E /* CR-MONO1-10-chest */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CR-MONO1-10-chest"; sourceTree = "<group>"; };
-		4C76A9EA224814F30057350E /* MR-MONO2-16-knee */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-16-knee"; sourceTree = "<group>"; };
-		4C76A9EB224814F30057350E /* NM-MONO2-16-13x-heart */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NM-MONO2-16-13x-heart"; sourceTree = "<group>"; };
-		4C76A9EC224814F30057350E /* CT-MONO2-16-ort */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-16-ort"; sourceTree = "<group>"; };
-		4C76A9ED224814F30057350E /* MR-MONO2-12-angio-an1 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-12-angio-an1"; sourceTree = "<group>"; };
-		4C76A9EE224814F30057350E /* OT-MONO2-8-hip */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OT-MONO2-8-hip"; sourceTree = "<group>"; };
-		4C76A9EF224814F30057350E /* OT-PAL-8-face */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OT-PAL-8-face"; sourceTree = "<group>"; };
-		4C76A9F0224814F40057350E /* US-PAL-8-10x-echo */ = {isa = PBXFileReference; lastKnownFileType = file; path = "US-PAL-8-10x-echo"; sourceTree = "<group>"; };
-		4C76A9F1224814F40057350E /* OT-MONO2-8-colon */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OT-MONO2-8-colon"; sourceTree = "<group>"; };
-		4C76A9F2224814F40057350E /* US-RGB-8-epicard */ = {isa = PBXFileReference; lastKnownFileType = file; path = "US-RGB-8-epicard"; sourceTree = "<group>"; };
-		4C76A9F3224814F40057350E /* MR-MONO2-12-an2 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-12-an2"; sourceTree = "<group>"; };
-		4C76A9F4224814F40057350E /* CT-MONO2-16-chest */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-16-chest"; sourceTree = "<group>"; };
-		4C76A9F5224814F40057350E /* CT-MONO2-12-lomb-an2 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-12-lomb-an2"; sourceTree = "<group>"; };
-		4C76A9F6224814F50057350E /* US-MONO2-8-8x-execho */ = {isa = PBXFileReference; lastKnownFileType = file; path = "US-MONO2-8-8x-execho"; sourceTree = "<group>"; };
-		4C76A9F7224814F50057350E /* CT-MONO2-16-brain */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-16-brain"; sourceTree = "<group>"; };
-		4C76A9F8224814F50057350E /* US-RGB-8-esopecho */ = {isa = PBXFileReference; lastKnownFileType = file; path = "US-RGB-8-esopecho"; sourceTree = "<group>"; };
-		4C76A9F9224814F50057350E /* MR-MONO2-8-16x-heart */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-8-16x-heart"; sourceTree = "<group>"; };
-		4C76A9FA224814F50057350E /* OT-MONO2-8-a7 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OT-MONO2-8-a7"; sourceTree = "<group>"; };
-		4C76A9FB224814F50057350E /* MR-MONO2-16-head */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-16-head"; sourceTree = "<group>"; };
-		4C76A9FC224814F50057350E /* XA-MONO2-8-12x-catheter */ = {isa = PBXFileReference; lastKnownFileType = file; path = "XA-MONO2-8-12x-catheter"; sourceTree = "<group>"; };
-		4C76A9FD224814F60057350E /* CT-MONO2-8-abdo */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-8-abdo"; sourceTree = "<group>"; };
-		4C76A9FE224814F60057350E /* MR-MONO2-12-shoulder */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MR-MONO2-12-shoulder"; sourceTree = "<group>"; };
-		4C76A9FF224814F60057350E /* CT-MONO2-16-ankle */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CT-MONO2-16-ankle"; sourceTree = "<group>"; };
 		4C783E6A1F969DC500E46F30 /* DicomData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomData.swift; sourceTree = "<group>"; };
 		4C7B78D01FA1485B005BB2A2 /* DicomDate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomDate.swift; sourceTree = "<group>"; };
 		4C7B78D41FA23FAC005BB2A2 /* DataTag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataTag.swift; sourceTree = "<group>"; };
@@ -355,7 +353,6 @@
 		4CA0717D22836BC9006227E1 /* DicomServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomServer.swift; sourceTree = "<group>"; };
 		4CA36BFB2256922F0024313B /* MyPlayground.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = MyPlayground.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		4CA4051E1FA67DF3006F8053 /* DcmSwiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DcmSwiftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		4CA405201FA67DF3006F8053 /* DcmSwiftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DcmSwiftTests.swift; sourceTree = "<group>"; };
 		4CA405221FA67DF3006F8053 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4CB9C9A01FB248C000C5356B /* ExportViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportViewController.swift; sourceTree = "<group>"; };
 		4CCF6B171F9FABBA000579C7 /* DicomiX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DicomiX.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -392,6 +389,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		4C24CB0B266FE80A0001CEFD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C24CB2A266FECEE0001CEFD /* Socket.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4C3EF23E226E3AAC0062B5A3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -434,6 +439,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4C24CB0F266FE80A0001CEFD /* DcmTestFileOrganizer */ = {
+			isa = PBXGroup;
+			children = (
+				4C24CB10266FE80A0001CEFD /* main.swift */,
+			);
+			path = DcmTestFileOrganizer;
+			sourceTree = "<group>";
+		};
 		4C3EF242226E3AAC0062B5A3 /* MagiX */ = {
 			isa = PBXGroup;
 			children = (
@@ -646,42 +659,12 @@
 		4CA4051F1FA67DF3006F8053 /* DcmSwiftTests */ = {
 			isa = PBXGroup;
 			children = (
-				4CA4052D1FA67FF3006F8053 /* Test Files */,
+				4C24CB08266FC0150001CEFD /* DcmSwiftTests.swift */,
+				4C24CAFF266F57E60001CEFD /* Test Files */,
 				4C00FB521FC6205500E76466 /* Bridge-Header.h */,
-				4CA405201FA67DF3006F8053 /* DcmSwiftTests.swift */,
 				4CA405221FA67DF3006F8053 /* Info.plist */,
 			);
 			path = DcmSwiftTests;
-			sourceTree = "<group>";
-		};
-		4CA4052D1FA67FF3006F8053 /* Test Files */ = {
-			isa = PBXGroup;
-			children = (
-				4C76A9E9224814F30057350E /* CR-MONO1-10-chest */,
-				4C76A9FD224814F60057350E /* CT-MONO2-8-abdo */,
-				4C76A9F5224814F40057350E /* CT-MONO2-12-lomb-an2 */,
-				4C76A9FF224814F60057350E /* CT-MONO2-16-ankle */,
-				4C76A9F7224814F50057350E /* CT-MONO2-16-brain */,
-				4C76A9F4224814F40057350E /* CT-MONO2-16-chest */,
-				4C76A9EC224814F30057350E /* CT-MONO2-16-ort */,
-				4C76A9F9224814F50057350E /* MR-MONO2-8-16x-heart */,
-				4C76A9F3224814F40057350E /* MR-MONO2-12-an2 */,
-				4C76A9ED224814F30057350E /* MR-MONO2-12-angio-an1 */,
-				4C76A9FE224814F60057350E /* MR-MONO2-12-shoulder */,
-				4C76A9FB224814F50057350E /* MR-MONO2-16-head */,
-				4C76A9EA224814F30057350E /* MR-MONO2-16-knee */,
-				4C76A9EB224814F30057350E /* NM-MONO2-16-13x-heart */,
-				4C76A9FA224814F50057350E /* OT-MONO2-8-a7 */,
-				4C76A9F1224814F40057350E /* OT-MONO2-8-colon */,
-				4C76A9EE224814F30057350E /* OT-MONO2-8-hip */,
-				4C76A9EF224814F30057350E /* OT-PAL-8-face */,
-				4C76A9F6224814F50057350E /* US-MONO2-8-8x-execho */,
-				4C76A9F0224814F40057350E /* US-PAL-8-10x-echo */,
-				4C76A9F2224814F40057350E /* US-RGB-8-epicard */,
-				4C76A9F8224814F50057350E /* US-RGB-8-esopecho */,
-				4C76A9FC224814F50057350E /* XA-MONO2-8-12x-catheter */,
-			);
-			path = "Test Files";
 			sourceTree = "<group>";
 		};
 		4CB832681FA2916100103A94 /* Header */ = {
@@ -779,6 +762,7 @@
 				4C3EF242226E3AAC0062B5A3 /* MagiX */,
 				4C8D798F1F989EB1008300E3 /* DcmSwift */,
 				4CA4051F1FA67DF3006F8053 /* DcmSwiftTests */,
+				4C24CB0F266FE80A0001CEFD /* DcmTestFileOrganizer */,
 				4CFF02591F960F0700E31D74 /* Products */,
 				4C8D799E1F989EF4008300E3 /* Frameworks */,
 				4C5F9B362248DBCD0076DA82 /* Cartfile */,
@@ -792,6 +776,7 @@
 				4CCF6B171F9FABBA000579C7 /* DicomiX.app */,
 				4CA4051E1FA67DF3006F8053 /* DcmSwiftTests.xctest */,
 				4C3EF241226E3AAC0062B5A3 /* MagiX.app */,
+				4C24CB0E266FE80A0001CEFD /* DcmTestFileOrganizer */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -826,6 +811,24 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		4C24CB0D266FE80A0001CEFD /* DcmTestFileOrganizer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4C24CB12266FE80A0001CEFD /* Build configuration list for PBXNativeTarget "DcmTestFileOrganizer" */;
+			buildPhases = (
+				4C24CB0A266FE80A0001CEFD /* Sources */,
+				4C24CB0B266FE80A0001CEFD /* Frameworks */,
+				4C24CB0C266FE80A0001CEFD /* CopyFiles */,
+				4C24CB2C266FECEE0001CEFD /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DcmTestFileOrganizer;
+			productName = DcmTestFileOrganizer;
+			productReference = 4C24CB0E266FE80A0001CEFD /* DcmTestFileOrganizer */;
+			productType = "com.apple.product-type.tool";
+		};
 		4C3EF240226E3AAC0062B5A3 /* MagiX */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4C3EF251226E3AAD0062B5A3 /* Build configuration list for PBXNativeTarget "MagiX" */;
@@ -908,10 +911,14 @@
 		4CFF02501F960F0700E31D74 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 1010;
+				LastSwiftUpdateCheck = 1150;
 				LastUpgradeCheck = 1010;
 				ORGANIZATIONNAME = "Read-Write.fr";
 				TargetAttributes = {
+					4C24CB0D266FE80A0001CEFD = {
+						CreatedOnToolsVersion = 11.5;
+						ProvisioningStyle = Automatic;
+					};
 					4C3EF240226E3AAC0062B5A3 = {
 						CreatedOnToolsVersion = 10.1;
 						ProvisioningStyle = Automatic;
@@ -928,7 +935,7 @@
 					};
 					4CA4051D1FA67DF3006F8053 = {
 						CreatedOnToolsVersion = 9.0.1;
-						LastSwiftMigration = 1030;
+						LastSwiftMigration = 1150;
 						ProvisioningStyle = Automatic;
 					};
 					4CCF6B161F9FABBA000579C7 = {
@@ -960,6 +967,7 @@
 				4C3EF240226E3AAC0062B5A3 /* MagiX */,
 				4C8D798D1F989EB1008300E3 /* DcmSwift */,
 				4CA4051D1FA67DF3006F8053 /* DcmSwiftTests */,
+				4C24CB0D266FE80A0001CEFD /* DcmTestFileOrganizer */,
 			);
 		};
 /* End PBXProject section */
@@ -986,29 +994,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4C76AA11224814F60057350E /* OT-MONO2-8-a7 in Resources */,
-				4C76AA0B224814F60057350E /* CT-MONO2-16-chest in Resources */,
-				4C76AA05224814F60057350E /* OT-MONO2-8-hip in Resources */,
-				4C76AA08224814F60057350E /* OT-MONO2-8-colon in Resources */,
-				4C76AA04224814F60057350E /* MR-MONO2-12-angio-an1 in Resources */,
-				4C76AA07224814F60057350E /* US-PAL-8-10x-echo in Resources */,
-				4C76AA16224814F60057350E /* CT-MONO2-16-ankle in Resources */,
-				4C76AA10224814F60057350E /* MR-MONO2-8-16x-heart in Resources */,
-				4C76AA0A224814F60057350E /* MR-MONO2-12-an2 in Resources */,
-				4C76AA03224814F60057350E /* CT-MONO2-16-ort in Resources */,
-				4C76AA14224814F60057350E /* CT-MONO2-8-abdo in Resources */,
-				4C76AA12224814F60057350E /* MR-MONO2-16-head in Resources */,
-				4C76AA00224814F60057350E /* CR-MONO1-10-chest in Resources */,
-				4C76AA01224814F60057350E /* MR-MONO2-16-knee in Resources */,
-				4C76AA0F224814F60057350E /* US-RGB-8-esopecho in Resources */,
-				4C76AA06224814F60057350E /* OT-PAL-8-face in Resources */,
-				4C76AA13224814F60057350E /* XA-MONO2-8-12x-catheter in Resources */,
-				4C76AA15224814F60057350E /* MR-MONO2-12-shoulder in Resources */,
-				4C76AA09224814F60057350E /* US-RGB-8-epicard in Resources */,
-				4C76AA02224814F60057350E /* NM-MONO2-16-13x-heart in Resources */,
-				4C76AA0E224814F60057350E /* CT-MONO2-16-brain in Resources */,
-				4C76AA0C224814F60057350E /* CT-MONO2-12-lomb-an2 in Resources */,
-				4C76AA0D224814F60057350E /* US-MONO2-8-8x-execho in Resources */,
+				4C24CB00266F57E60001CEFD /* Test Files in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1024,6 +1010,30 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		4C24CB0A266FE80A0001CEFD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C24CB1F266FEBF50001CEFD /* PixelSequence.swift in Sources */,
+				4C24CB1D266FEBF50001CEFD /* DataItem.swift in Sources */,
+				4C24CB1C266FEBF50001CEFD /* DataSequence.swift in Sources */,
+				4C24CB24266FEBF50001CEFD /* DicomObject.swift in Sources */,
+				4C24CB1A266FEBF50001CEFD /* DataSet.swift in Sources */,
+				4C24CB23266FEBF50001CEFD /* DicomString.swift in Sources */,
+				4C24CB1B266FEBF50001CEFD /* DataElement.swift in Sources */,
+				4C24CB29266FEBF50001CEFD /* DicomImage.swift in Sources */,
+				4C24CB28266FEBF50001CEFD /* Logger.swift in Sources */,
+				4C24CB25266FEBF50001CEFD /* DicomError.swift in Sources */,
+				4C24CB1E266FEBF50001CEFD /* DataTag.swift in Sources */,
+				4C24CB22266FEBF50001CEFD /* DicomData.swift in Sources */,
+				4C24CB21266FEBF50001CEFD /* DicomDate.swift in Sources */,
+				4C24CB20266FEBF50001CEFD /* DicomFile.swift in Sources */,
+				4C24CB27266FEBF50001CEFD /* DicomConstants.swift in Sources */,
+				4C24CB11266FE80A0001CEFD /* main.swift in Sources */,
+				4C24CB26266FEBF50001CEFD /* DicomSpec.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4C3EF23D226E3AAC0062B5A3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1117,11 +1127,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4CA405211FA67DF3006F8053 /* DcmSwiftTests.swift in Sources */,
 				4C5BF0841FABA5E80051F4FE /* DataSet.swift in Sources */,
 				4C5BF0851FABA5E80051F4FE /* DataElement.swift in Sources */,
 				4C5BF0861FABA5E80051F4FE /* DataSequence.swift in Sources */,
 				4C5BF0871FABA5E80051F4FE /* DataItem.swift in Sources */,
+				4C24CB09266FC0150001CEFD /* DcmSwiftTests.swift in Sources */,
 				4C5BF0881FABA5E80051F4FE /* DataTag.swift in Sources */,
 				4C5BF0891FABA5E80051F4FE /* PixelSequence.swift in Sources */,
 				4CC932482292ED96001DFEB7 /* Logger.swift in Sources */,
@@ -1204,6 +1214,43 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		4C24CB13266FE80A0001CEFD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 9SG97FHRB8;
+				ENABLE_HARDENED_RUNTIME = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/Mac",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		4C24CB14266FE80A0001CEFD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 9SG97FHRB8;
+				ENABLE_HARDENED_RUNTIME = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/Mac",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 		4C3EF252226E3AAD0062B5A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1318,6 +1365,7 @@
 		4CA405261FA67DF3006F8053 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -1331,6 +1379,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.read-write.DcmSwiftTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "DcmSwiftTests/Bridge-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -1338,6 +1388,7 @@
 		4CA405271FA67DF3006F8053 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -1351,6 +1402,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.read-write.DcmSwiftTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "DcmSwiftTests/Bridge-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -1514,6 +1566,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		4C24CB12266FE80A0001CEFD /* Build configuration list for PBXNativeTarget "DcmTestFileOrganizer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C24CB13266FE80A0001CEFD /* Debug */,
+				4C24CB14266FE80A0001CEFD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		4C3EF251226E3AAD0062B5A3 /* Build configuration list for PBXNativeTarget "MagiX" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

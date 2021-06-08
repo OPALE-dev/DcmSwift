@@ -76,6 +76,9 @@ public struct DicomConstants {
      */
     public static let dicomBytesOffset              = 132
     
+    /**
+     Network related constants
+     */
     public static let dicomDefaultPort:Int          = 11112
     public static let dicomTimeOut:UInt             = 480
     public static let maxPDULength:Int              = 16384

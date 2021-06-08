@@ -11,13 +11,12 @@ import Cocoa
 import DcmSwift
 
 
-
 class DcmSwiftTests: XCTestCase {
     // Configure the test suite
-    private static var testDicomDateAndTime     = false
+    private static var testDicomDateAndTime     = true
     private static var testDicomFileIO          = true
     private static var testDicomDataSet         = true
-    private static var testDicomImage           = false
+    private static var testDicomImage           = true
     
     public var filePath:String!
     
@@ -51,7 +50,7 @@ class DcmSwiftTests: XCTestCase {
         let suite = XCTestSuite(forTestCaseClass: DcmSwiftTests.self)
         
         let bundle = Bundle(for: DcmSwiftTests.self)
-        let paths = bundle.paths(forResourcesOfType: "", inDirectory: nil)
+        let paths = bundle.paths(forResourcesOfType: "dcm", inDirectory: "Test Files")
         
         if testDicomDateAndTime {
             suite.addTest(DcmSwiftTests(selector: #selector(readDicomDate)))
@@ -64,7 +63,6 @@ class DcmSwiftTests: XCTestCase {
             suite.addTest(DcmSwiftTests(selector: #selector(writeDicomTime)))
             suite.addTest(DcmSwiftTests(selector: #selector(combineDateAndTime)))
             suite.addTest(DcmSwiftTests(selector: #selector(readWriteDicomRange)))
-
         }
         
         
@@ -75,11 +73,23 @@ class DcmSwiftTests: XCTestCase {
              of DcmSwift work properly.
              */
             paths.forEach { path in
-                print(path)
-                // Generate a test for our specific selector
-                let test = DcmSwiftTests(selector: #selector(readWriteTest))
+                let block: @convention(block) (DcmSwiftTests) -> Void = { t in
+                    t.readWriteTest()
+                }
                 
-                // Each test will take the size argument and use the instance variable in the test
+                var fileName = String((path as NSString).deletingPathExtension.split(separator: "/").last!)
+                fileName = (fileName as NSString).replacingOccurrences(of: "-", with: "_")
+                
+                /// with help of ObjC runtime we add new test method to class
+                let implementation = imp_implementationWithBlock(block)
+                let selectorName = "test_FileIO_\(fileName)"
+                let selector = NSSelectorFromString(selectorName)
+                                
+                class_addMethod(DcmSwiftTests.self, selector, implementation, "v@:")
+                
+                // Generate a test for our specific selector
+                let test = DcmSwiftTests(selector: selector)
+                
                 test.filePath = path
                 
                 // Add it to the suite, and the defaults handle the rest
@@ -89,11 +99,23 @@ class DcmSwiftTests: XCTestCase {
         
         if testDicomDataSet {
             paths.forEach { path in
-                print(path)
-                // Generate a test for our specific selector
-                let test = DcmSwiftTests(selector: #selector(readUpdateWriteTest))
+                let block: @convention(block) (DcmSwiftTests) -> Void = { t in
+                    t.readUpdateWriteTest()
+                }
                 
-                // Each test will take the size argument and use the instance variable in the test
+                var fileName = String((path as NSString).deletingPathExtension.split(separator: "/").last!)
+                fileName = (fileName as NSString).replacingOccurrences(of: "-", with: "_")
+                
+                /// with help of ObjC runtime we add new test method to class
+                let implementation = imp_implementationWithBlock(block)
+                let selectorName = "test_DataSet_\(fileName)"
+                let selector = NSSelectorFromString(selectorName)
+                                
+                class_addMethod(DcmSwiftTests.self, selector, implementation, "v@:")
+                
+                // Generate a test for our specific selector
+                let test = DcmSwiftTests(selector: selector)
+                
                 test.filePath = path
                 
                 // Add it to the suite, and the defaults handle the rest
@@ -103,9 +125,22 @@ class DcmSwiftTests: XCTestCase {
         
         if testDicomImage {
             paths.forEach { path in
-                print(path)
+                let block: @convention(block) (DcmSwiftTests) -> Void = { t in
+                    t.readImageTest()
+                }
+                
+                var fileName = String((path as NSString).deletingPathExtension.split(separator: "/").last!)
+                fileName = (fileName as NSString).replacingOccurrences(of: "-", with: "_")
+                
+                /// with help of ObjC runtime we add new test method to class
+                let implementation = imp_implementationWithBlock(block)
+                let selectorName = "test_DicomImage_\(fileName)"
+                let selector = NSSelectorFromString(selectorName)
+                                
+                class_addMethod(DcmSwiftTests.self, selector, implementation, "v@:")
+                
                 // Generate a test for our specific selector
-                let test = DcmSwiftTests(selector: #selector(readImageTest))
+                let test = DcmSwiftTests(selector: selector)
                 
                 // Each test will take the size argument and use the instance variable in the test
                 test.filePath = path
@@ -129,13 +164,13 @@ class DcmSwiftTests: XCTestCase {
         df.dateFormat = "yyyy/MM/dd HH:mm:ss"
         let expected_res = "2000/12/01 00:00:00"
 
-        assert(expected_res == df.string(from: dd1!))
+        XCTAssert(expected_res == df.string(from: dd1!))
         
         // ACR-NEMA date format
         let ds2 = "2000.12.01"
         let dd2 = Date(dicomDate: ds2)
 
-        assert(expected_res == df.string(from: dd2!))
+        XCTAssert(expected_res == df.string(from: dd2!))
     }
     
     
@@ -147,7 +182,7 @@ class DcmSwiftTests: XCTestCase {
         let d1  = dateFormatter.date(from: ds1)
         let dd1 = d1!.dicomDateString()
         
-        assert(dd1 == "20120124")
+        XCTAssert(dd1 == "20120124")
     }
 
     public func dicomDateWrongLength() {
@@ -160,7 +195,7 @@ class DcmSwiftTests: XCTestCase {
             }
 
             let dd = Date(dicomDate: ds)
-            assert(dd == nil)
+            XCTAssert(dd == nil)
 
             ds += "1"
         }
@@ -175,7 +210,7 @@ class DcmSwiftTests: XCTestCase {
         let ds1 = "143250"
         let dd1 = Date(dicomTime: ds1)
 
-        assert(expected_res == df.string(from: dd1!))
+        XCTAssert(expected_res == df.string(from: dd1!))
 
 
 
@@ -183,7 +218,7 @@ class DcmSwiftTests: XCTestCase {
         let ds2 = "14:32:50"
         let dd2 = Date(dicomTime: ds2)
 
-        assert(expected_res == df.string(from: dd2!))
+        XCTAssert(expected_res == df.string(from: dd2!))
     }
 
 
@@ -191,21 +226,22 @@ class DcmSwiftTests: XCTestCase {
         let ds1 = "240000"
         let dd1 = Date(dicomTime: ds1)
 
-        assert(dd1 == nil)
+        XCTAssert(dd1 == nil)
 
         // ACR-NEMA time format
         let ds2 = "24:00:00"
         let dd2 = Date(dicomTime: ds2)
 
-        assert(dd2 == nil)
+        XCTAssert(dd2 == nil)
     }
 
 
     public func dicomTimeWrongLength() {
         var ds1 = "1"
         for _ in 0...3 {
+            print("ds1  \(ds1)")
             let dd1 = Date(dicomTime: ds1)
-            assert(dd1 == nil)
+            XCTAssert(dd1 == nil)
             ds1 += "11"
         }
     }
@@ -214,17 +250,17 @@ class DcmSwiftTests: XCTestCase {
         let ds1 = "236000"
         let dd1 = Date(dicomTime: ds1)
 
-        assert(dd1 == nil)
+        XCTAssert(dd1 == nil)
 
         let ds2 = "235099"
         let dd2 = Date(dicomTime: ds2)
 
-        assert(dd2 == nil)
+        XCTAssert(dd2 == nil)
 
         let ds3 = "255009"
         let dd3 = Date(dicomTime: ds3)
 
-        assert(dd3 == nil)
+        XCTAssert(dd3 == nil)
     }
     
     public func writeDicomTime() {
@@ -235,7 +271,7 @@ class DcmSwiftTests: XCTestCase {
         let d1  = dateFormatter.date(from: ds1)
         let dd1 = d1!.dicomTimeString()
         
-        assert(dd1 == "143250.00000")
+        XCTAssert(dd1 == "143250.00000")
     }
 
     
@@ -249,7 +285,7 @@ class DcmSwiftTests: XCTestCase {
         
         let dateAndTime = Date(dicomDate: ds1, dicomTime: ts1)
 
-        assert(expected_res == df.string(from: dateAndTime!))
+        XCTAssert(expected_res == df.string(from: dateAndTime!))
     }
     
     
@@ -262,8 +298,8 @@ class DcmSwiftTests: XCTestCase {
         let dicomRange = "\(ds1)-\(ds2)"
         let dateRange = DateRange(dicomRange: dicomRange, type: DicomConstants.VR.DA)
         
-        assert(dateRange!.range     == .between)
-        assert(dateRange!.description   == "20001201-20021201")
+        XCTAssert(dateRange!.range          == .between)
+        XCTAssert(dateRange!.description    == "20001201-20021201")
     }
     
     
@@ -352,7 +388,10 @@ class DcmSwiftTests: XCTestCase {
     
     
     
-    
+    /**
+     This test reads a source DICOM file, updates its PatientName attribute, then writes a DICOM file copy.
+     Then it re-reads the just updated DICOM file to set back its original PatientName and then checks data integrity against the source DICOM file using MD5
+     */
     private func readUpdateWriteFile(withPath path:String, checksum:Bool = true) -> Bool {
         let fileName = path.components(separatedBy: "/").last!.replacingOccurrences(of: ".dcm", with: "")
         let writePath = "\(self.finderTestDir)/\(fileName)-rwu-test.dcm"
@@ -369,28 +408,63 @@ class DcmSwiftTests: XCTestCase {
             
             Logger.info("# Read succeeded")
             
+            let oldPatientName = dicomFile.dataset.string(forTag: "PatientName")
+            
             if dicomFile.dataset.set(value: "Dicomix", forTagName: "PatientName") != nil {
                 Logger.info("# Update succeeded")
             } else {
-                Logger.info("# Update failed")
+                Logger.error("# Update failed")
             }
             
             if (dicomFile.write(atPath: writePath)) {
                 Logger.info("# Write succeeded")
                 Logger.info("#")
                 
-                if DicomFile(forPath: writePath) != nil {
+                if let newDicomFile = DicomFile(forPath: writePath) {
                     Logger.info("# Re-read updated file read succeeded !!!")
                     Logger.info("#")
+                    
+                    if oldPatientName == nil {
+                        Logger.error("# DICOM object do not provide a PatientName")
+                        return false
+                    }
+                
+                    if newDicomFile.dataset.set(value: oldPatientName!, forTagName: "PatientName") != nil {
+                        Logger.error("# Restore PatientName failed")
+                        return false
+                    }
+                    
+                    if !newDicomFile.write(atPath: writePath) {
+                        Logger.error("# Cannot write restored DICOM object")
+                        return false
+                    }
+                    
+                    let originalSum = shell(launchPath: "/sbin/md5", arguments: ["-q", path]).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+                    let savedSum = shell(launchPath: "/sbin/md5", arguments: ["-q", writePath]).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+                    
+                    Logger.info("# Source file MD5 : \(originalSum)")
+                    Logger.info("# Dest. file MD5  : \(savedSum)")
+                    Logger.info("#")
+                    
+                    if originalSum == savedSum {
+                        Logger.info("# Checksum succeeded: \(originalSum) == \(savedSum)")
+                    }
+                    else {
+                        Logger.info("# Error: wrong checksum: \(originalSum) != \(savedSum)")
+                        Logger.info("#")
+                        Logger.info("#########################################################")
+                        return false
+                    }
+                    
                 } else {
-                    Logger.info("# Re-read updated file read failed…")
+                    Logger.error("# Re-read updated file read failed…")
                     Logger.info("#")
                     Logger.info("#########################################################")
                     return false
                 }
             }
             else {
-                Logger.info("# Error: while writing file: \(writePath)")
+                Logger.error("# Error: while writing file: \(writePath)")
                 Logger.info("#")
                 Logger.info("#########################################################")
                 return false
