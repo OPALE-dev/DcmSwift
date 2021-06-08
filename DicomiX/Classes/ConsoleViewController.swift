@@ -68,7 +68,8 @@ class ConsoleViewController: NSViewController, NSTextViewDelegate {
                                 
                                 let hexString = chunk.toHex().separate(every: 2, with: " ").uppercased()
                                 let attrs: [NSAttributedString.Key: Any] = [
-                                    .font : NSFont(name: "Courier", size: 14) as Any
+                                    .font : NSFont(name: "Courier", size: 14) as Any,
+                                    .foregroundColor: NSColor.labelColor
                                 ]
                                 DispatchQueue.main.async {
                                     self.textView.textStorage?.append(NSAttributedString(string: hexString, attributes: attrs))
