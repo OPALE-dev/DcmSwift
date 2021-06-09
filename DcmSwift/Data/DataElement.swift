@@ -387,7 +387,9 @@ public class DataElement : DicomObject {
             data.append(self.data)
         }
         else if self.vr == .FD {
-            data.append(self.data)
+            if self.data != nil {
+                data.append(self.data)
+            }
         }
         else if self.vr == .SL {
             data.append(self.data)

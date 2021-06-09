@@ -109,7 +109,6 @@ public class DataSet: DicomObject {
                     self.vrMethod  = .Explicit
                     self.byteOrder = .LittleEndian
                 }
-                
             }
             
             // append to sub-datasets
@@ -586,7 +585,7 @@ public class DataSet: DicomObject {
             if element.element == "0000" {
                 element.vr = .UL
             }
-                // else we take the VR from the spec
+            // else we take the VR from the spec
             else {
                 // TODO: manage VR couples (ex: "OB/OW" in xml spec)
                 element.vr = DicomSpec.shared.vrForTag(withCode:element.tag.code)
@@ -628,10 +627,11 @@ public class DataSet: DicomObject {
             let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) overflows (\(length))"
             return self.readError(forLength: Int(length), element: element, message: message)
         }
-        if length < -1 {
-            let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) cannot be negative (\(length))"
-            return self.readError(forLength: Int(length), element: element, message: message)
-        }
+        
+//        if length <= -1 {
+//            let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) cannot be negative (\(length))"
+//            return self.readError(forLength: Int(length), element: element, message: message)
+//        }
         
         // MISSING VR FOR IMPLICIT ELEMENT
         // TODO: if VR is implicit, do we need to use the correpsonding tag VR ?
@@ -646,7 +646,10 @@ public class DataSet: DicomObject {
                 sequence.startOffset    = element.startOffset
                 sequence.dataOffset     = element.dataOffset
                 element                 = sequence
-                os = seqOffset
+                
+                // this +5 is very weird, but it works for some JPEGBaseline multiframe file
+                os = seqOffset + 5
+                
             }
             else {
                 element.data = data.subdata(in: os..<os+Int(length))
@@ -668,23 +671,21 @@ public class DataSet: DicomObject {
         }
         else {
             // TODO: manage default value better ?
-            if length > 0 {
+            if length > 0 && (os + length < data.count) {
                 element.data = data.subdata(in: os..<os+Int(length))
+            } else {
+                //element.data = data.subdata(in: os..<data.count)
             }
         }
         
         element.length = Int(length)
         
-        if element.vr != .SQ {
-            //element.value = value
-        }
-        
         os += Int(length)
         
         // is Pixel Data reached
-        if element.tagCode() == "7fe00010" {
-            os = data.count
-        }
+//        if element.tagCode() == "7fe00010" {
+//            os = data.count
+//        }
         
         element.endOffset = os
         
@@ -849,7 +850,7 @@ public class DataSet: DicomObject {
         // read item tag
         var itemTag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
         os += 4
-        
+                
         while itemTag.code != "fffee0dd" {
             // read item
             let item            = DataItem(withTag: itemTag)
@@ -861,6 +862,7 @@ public class DataSet: DicomObject {
             
             // read item length
             let itemLength = data.subdata(in: os..<os+4).toInt32(byteOrder: byteOrder)
+            
             os += 4
             
             // CHECK FOR INVALID LENGTH

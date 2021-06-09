@@ -13,10 +13,11 @@ import DcmSwift
 
 class DcmSwiftTests: XCTestCase {
     // Configure the test suite
-    private static var testDicomDateAndTime     = true
-    private static var testDicomFileIO          = true
-    private static var testDicomDataSet         = true
-    private static var testDicomImage           = true
+    private static var testDicomDateAndTime     = false
+    private static var testDicomFileRead        = false
+    private static var testDicomFileWrite       = true
+    private static var testDicomDataSet         = false
+    private static var testDicomImage           = false
     
     public var filePath:String!
     
@@ -66,7 +67,18 @@ class DcmSwiftTests: XCTestCase {
         }
         
         
-        if testDicomFileIO {
+        if testDicomFileRead {
+            paths.forEach { path in
+                let block: @convention(block) (DcmSwiftTests) -> Void = { t in
+                    _ = t.readFile(withPath: path)
+                }
+                
+                DcmSwiftTests.addFileTest(withName: "FileRead", inSuite: suite, withPath:path, block: block)
+            }
+        }
+        
+        
+        if testDicomFileWrite {
             /**
              This test suite performs a read/write on a set of DICOM files without
              modifying them, them check the MD5 checksum to ensure the I/O features
@@ -77,25 +89,11 @@ class DcmSwiftTests: XCTestCase {
                     t.readWriteTest()
                 }
                 
-                var fileName = String((path as NSString).deletingPathExtension.split(separator: "/").last!)
-                fileName = (fileName as NSString).replacingOccurrences(of: "-", with: "_")
-                
-                /// with help of ObjC runtime we add new test method to class
-                let implementation = imp_implementationWithBlock(block)
-                let selectorName = "test_FileIO_\(fileName)"
-                let selector = NSSelectorFromString(selectorName)
-                                
-                class_addMethod(DcmSwiftTests.self, selector, implementation, "v@:")
-                
-                // Generate a test for our specific selector
-                let test = DcmSwiftTests(selector: selector)
-                
-                test.filePath = path
-                
-                // Add it to the suite, and the defaults handle the rest
-                suite.addTest(test)
+                DcmSwiftTests.addFileTest(withName: "FileWrite", inSuite: suite, withPath:path, block: block)
             }
         }
+        
+        
         
         if testDicomDataSet {
             paths.forEach { path in
@@ -103,23 +101,7 @@ class DcmSwiftTests: XCTestCase {
                     t.readUpdateWriteTest()
                 }
                 
-                var fileName = String((path as NSString).deletingPathExtension.split(separator: "/").last!)
-                fileName = (fileName as NSString).replacingOccurrences(of: "-", with: "_")
-                
-                /// with help of ObjC runtime we add new test method to class
-                let implementation = imp_implementationWithBlock(block)
-                let selectorName = "test_DataSet_\(fileName)"
-                let selector = NSSelectorFromString(selectorName)
-                                
-                class_addMethod(DcmSwiftTests.self, selector, implementation, "v@:")
-                
-                // Generate a test for our specific selector
-                let test = DcmSwiftTests(selector: selector)
-                
-                test.filePath = path
-                
-                // Add it to the suite, and the defaults handle the rest
-                suite.addTest(test)
+                DcmSwiftTests.addFileTest(withName: "DataSet", inSuite: suite, withPath:path, block: block)
             }
         }
         
@@ -129,30 +111,34 @@ class DcmSwiftTests: XCTestCase {
                     t.readImageTest()
                 }
                 
-                var fileName = String((path as NSString).deletingPathExtension.split(separator: "/").last!)
-                fileName = (fileName as NSString).replacingOccurrences(of: "-", with: "_")
-                
-                /// with help of ObjC runtime we add new test method to class
-                let implementation = imp_implementationWithBlock(block)
-                let selectorName = "test_DicomImage_\(fileName)"
-                let selector = NSSelectorFromString(selectorName)
-                                
-                class_addMethod(DcmSwiftTests.self, selector, implementation, "v@:")
-                
-                // Generate a test for our specific selector
-                let test = DcmSwiftTests(selector: selector)
-                
-                // Each test will take the size argument and use the instance variable in the test
-                test.filePath = path
-                
-                // Add it to the suite, and the defaults handle the rest
-                suite.addTest(test)
+                DcmSwiftTests.addFileTest(withName: "DicomImage", inSuite: suite, withPath:path, block: block)
             }
         }
         
         return suite
     }
     
+    
+    private class func addFileTest(withName name: String, inSuite suite: XCTestSuite, withPath path:String, block: Any) {
+        var fileName = String((path as NSString).deletingPathExtension.split(separator: "/").last!)
+        fileName = (fileName as NSString).replacingOccurrences(of: "-", with: "_")
+        
+        // with help of ObjC runtime we add new test method to class
+        let implementation = imp_implementationWithBlock(block)
+        let selectorName = "test_\(name)_\(fileName)"
+        let selector = NSSelectorFromString(selectorName)
+                        
+        class_addMethod(DcmSwiftTests.self, selector, implementation, "v@:")
+        
+        // Generate a test for our specific selector
+        let test = DcmSwiftTests(selector: selector)
+        
+        // Each test will take the size argument and use the instance variable in the test
+        test.filePath = path
+        
+        // Add it to the suite, and the defaults handle the rest
+        suite.addTest(test)
+    }
     
     
     
@@ -304,24 +290,24 @@ class DcmSwiftTests: XCTestCase {
     
     
 
-
-    
-    
-    
     public func readWriteTest() {
         //print(self.filePath)
         XCTAssert(self.readWriteFile(withPath: self.filePath))
     }
     
     
+    
+    public func readTest() {
+        XCTAssert(self.readFile(withPath: self.filePath))
+    }
+    
+    
     public func readUpdateWriteTest() {
-        //print(self.filePath)
         XCTAssert(self.readUpdateWriteFile(withPath: self.filePath))
     }
     
     
     public func readImageTest() {
-        //print(self.filePath)
         XCTAssert(self.readImageFile(withPath: self.filePath))
     }
     
@@ -533,6 +519,32 @@ class DcmSwiftTests: XCTestCase {
                 return false
             }
             
+            Logger.info("#")
+            Logger.info("#########################################################")
+            
+            return true
+        }
+        
+        return true
+    }
+    
+    
+    
+    private func readFile(withPath path:String, checksum:Bool = true) -> Bool {
+        let fileName = path.components(separatedBy: "/").last!.replacingOccurrences(of: ".dcm", with: "")
+        let writePath = "\(self.finderTestDir)/\(fileName)-rw-test.dcm"
+        
+        Logger.info("#########################################################")
+        Logger.info("# READ/WRITE INTEGRITY TEST")
+        Logger.info("#")
+        Logger.info("# Source file : \(path)")
+        Logger.info("# Destination file : \(writePath)")
+        Logger.info("#")
+        
+        if let dicomFile = DicomFile(forPath: path) {
+            if printDatasets { Logger.info("\(dicomFile.dataset.description )") }
+            
+            Logger.info("# Read succeeded")
             Logger.info("#")
             Logger.info("#########################################################")
             
