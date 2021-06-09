@@ -659,10 +659,10 @@
 		4CA4051F1FA67DF3006F8053 /* DcmSwiftTests */ = {
 			isa = PBXGroup;
 			children = (
-				4C24CB08266FC0150001CEFD /* DcmSwiftTests.swift */,
-				4C24CAFF266F57E60001CEFD /* Test Files */,
 				4C00FB521FC6205500E76466 /* Bridge-Header.h */,
+				4C24CB08266FC0150001CEFD /* DcmSwiftTests.swift */,
 				4CA405221FA67DF3006F8053 /* Info.plist */,
+				4C24CAFF266F57E60001CEFD /* Test Files */,
 			);
 			path = DcmSwiftTests;
 			sourceTree = "<group>";
