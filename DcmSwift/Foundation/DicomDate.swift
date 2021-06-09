@@ -39,7 +39,7 @@ extension Date {
 
         // 8 or 10 bytes fixed
         if dicomDate.count != 8 && dicomDate.count != 10 {
-            print("Wrong length of string")
+            print("Wrong length of string: [\(dicomDate)], 8 or 10 char. expected")
             return nil
         }
 
