@@ -22,7 +22,15 @@ class WindowController: NSWindowController, NSToolbarDelegate {
         window?.titleVisibility = .hidden
         
         self.splitViewController = self.contentViewController as? MainSplitViewController
-        self.hideSidebar(self)
+        
+        if UserDefaults.standard.bool(forKey: "SidebarExpanded") {
+            sidebarSplitViewExpanded()
+        } else {
+            sidebarSplitViewCollapsed()
+        }
+        
+        // update addRemoveSegmentedControl regarding current AllowDICOMEditing setting
+        self.updateAddRemoveButton()
         
         // Observe splitviews state
         NotificationCenter.default.addObserver(self, selector: #selector(sidebarSplitViewCollapsed(notification:)), name: NSNotification.Name(rawValue: "sidebarSplitViewCollapsed"), object: nil)
@@ -43,33 +51,56 @@ class WindowController: NSWindowController, NSToolbarDelegate {
             selector: #selector(elementSelectionDidChange(notification:) ) ,
             name: .elementSelectionDidChange,
             object: nil)
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(didBecomeKeyNotification(notification:) ) ,
+            name: NSWindow.didBecomeKeyNotification,
+            object: nil)
     }
     
-
+    
+    
     
     
     // MARK: - Notifications
-    @objc func sidebarSplitViewCollapsed(notification:Notification) {
-        viewsSegmentedControl.setSelected(false, forSegment: 0)
-        
-        if let menu = NSApp.mainMenu?.items[4] {
-            if let item = menu.submenu?.item(withTag: 10) {
-                item.title = "Show Sidebar"
-                item.action = #selector(showSidebar(_:))
+    @objc func didBecomeKeyNotification(notification:Notification) {
+        if let window = notification.object as? NSWindow, window == self.window {
+            /// we update DICOM editing buttons when window changed
+            self.updateAddRemoveButton()
+            
+            if let splitViewItem = self.splitViewController.splitViewItems.first {
+                viewsSegmentedControl.setSelected(!splitViewItem.isCollapsed, forSegment: 0)
+            }
+            
+            if let consoleSplitViewController = self.splitViewController.splitViewItems[1].viewController as? ConsoleSplitViewController {
+                if let datasetViewController = consoleSplitViewController.splitViewItems.first?.viewController as? DatasetViewController {
+                    if let datasetSplitView = datasetViewController.splitView {
+                        viewsSegmentedControl.setSelected(!datasetSplitView.isSubviewCollapsed(datasetSplitView.subviews[1]), forSegment: 1)
+                    }
+                }
+                
+                if let splitViewItem = consoleSplitViewController.splitViewItems.last {
+                    viewsSegmentedControl.setSelected(!splitViewItem.isCollapsed, forSegment: 2)
+                }
+            }
+            
+            if let splitViewItem = self.splitViewController.splitViewItems.last {
+                viewsSegmentedControl.setSelected(!splitViewItem.isCollapsed, forSegment: 3)
             }
         }
     }
     
-    @objc func sidebarSplitViewExpanded(notification:Notification) {
-        viewsSegmentedControl.setSelected(true, forSegment: 0)
-        
-        if let menu = NSApp.mainMenu?.items[4] {
-            if let item = menu.submenu?.item(withTag: 10) {
-                item.title = "Hide Sidebar"
-                item.action = #selector(hideSidebar(_:))
-            }
-        }
+    
+    @objc func sidebarSplitViewCollapsed(notification:Notification) {
+        self.sidebarSplitViewCollapsed()
     }
+    
+    
+    @objc func sidebarSplitViewExpanded(notification:Notification) {
+        self.sidebarSplitViewExpanded()
+    }
+
     
     
     
@@ -150,10 +181,14 @@ class WindowController: NSWindowController, NSToolbarDelegate {
     
     
     @objc func elementSelectionDidChange(notification:Notification) {
-        if (notification.object as? Array<Any>) != nil {
-            addRemoveSegmentedControl.setEnabled(true, forSegment: 1)
-        } else {
-            addRemoveSegmentedControl.setEnabled(false, forSegment: 1)
+        self.updateAddRemoveButton()
+        
+        if UserDefaults.standard.bool(forKey: "AllowDICOMEditing") {
+            if (notification.object as? Array<Any>) != nil {
+                addRemoveSegmentedControl.setEnabled(true, forSegment: 1)
+            } else {
+                addRemoveSegmentedControl.setEnabled(false, forSegment: 1)
+            }
         }
     }
 
@@ -295,6 +330,42 @@ class WindowController: NSWindowController, NSToolbarDelegate {
         else if(segue.identifier == "Export") {
             if let c = segue.destinationController as? ExportViewController {
                 c.representedObject = self.document
+            }
+        }
+    }
+    
+    
+    
+    // MARK: -
+    
+    private func updateAddRemoveButton() {
+        addRemoveSegmentedControl.setEnabled(UserDefaults.standard.bool(forKey: "AllowDICOMEditing"), forSegment: 0)
+        addRemoveSegmentedControl.setEnabled(UserDefaults.standard.bool(forKey: "AllowDICOMEditing"), forSegment: 1)
+    }
+    
+    
+    private func sidebarSplitViewCollapsed() {
+        viewsSegmentedControl.setSelected(false, forSegment: 0)
+        
+        UserDefaults.standard.set(false, forKey: "SidebarExpanded")
+        
+        if let menu = NSApp.mainMenu?.items[4] {
+            if let item = menu.submenu?.item(withTag: 10) {
+                item.title = "Show Sidebar"
+                item.action = #selector(showSidebar(_:))
+            }
+        }
+    }
+    
+    private func sidebarSplitViewExpanded() {
+        viewsSegmentedControl.setSelected(true, forSegment: 0)
+        
+        UserDefaults.standard.set(true, forKey: "SidebarExpanded")
+        
+        if let menu = NSApp.mainMenu?.items[4] {
+            if let item = menu.submenu?.item(withTag: 10) {
+                item.title = "Hide Sidebar"
+                item.action = #selector(hideSidebar(_:))
             }
         }
     }
