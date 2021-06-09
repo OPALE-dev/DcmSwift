@@ -27,6 +27,7 @@ class ElementViewController: NSViewController, NSControlTextEditingDelegate {
     @IBOutlet weak var editableTextField: NSTextField!
     
     private var element:DataElement!
+    private var value:DataValue!
     
     
     // MARK: - Constructors
@@ -49,6 +50,9 @@ class ElementViewController: NSViewController, NSControlTextEditingDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do view setup here.
+        
+        self.valueTextField.isEditable  = false
+        self.editableTextField.isHidden = false
         
         self.updateUI()
     }
@@ -90,22 +94,37 @@ class ElementViewController: NSViewController, NSControlTextEditingDelegate {
                 self.lengthTextField.stringValue            = "\(self.element.length)"
                 self.dataOffsetTextField.stringValue        = "\(self.element.dataOffset)"
                 
-                if let data = self.element.value as? Data {
-                    self.valueTextField.objectValue = data.toHexString()
-                }
-                else {
-                    if element.vr == .DA || element.vr == .DT || element.vr == .TM {
-                        if let date = self.element?.value as! Date? {
-                            self.valueTextField.objectValue = date.format(accordingTo: element.vr)
-                        }
+                // empty the field first
+                self.valueTextField.objectValue = nil
+                
+                // display value of a multiple item element
+                if self.value != nil {
+                    self.valueTextField.objectValue = self.value.value
+                    
+                } else {
+                    // display value of data element
+                    if let data = self.element.value as? Data {
+                        self.valueTextField.objectValue = data.toHexString()
                     }
                     else {
-                        self.valueTextField.objectValue = self.element.value
+                        if element.vr == .DA || element.vr == .DT || element.vr == .TM {
+                            if let val = self.element?.value, let date = val as? Date {
+                                self.valueTextField.objectValue = date.format(accordingTo: element.vr)
+                            }
+                        } else {
+                            self.valueTextField.objectValue = self.element.value
+                        }
                     }
                 }
                 
-                self.valueTextField.isEditable  = self.element.isEditable
-                self.editableTextField.isHidden = self.element.isEditable
+                // manage editable
+                self.valueTextField.isEditable  = false
+                self.editableTextField.isHidden = false
+                
+                if UserDefaults.standard.bool(forKey: "AllowDICOMEditing") {
+                    self.valueTextField.isEditable  = self.element.isEditable
+                    self.editableTextField.isHidden = self.element.isEditable
+                }
             }
         }
     }
@@ -130,7 +149,13 @@ class ElementViewController: NSViewController, NSControlTextEditingDelegate {
             let doc = array[1] as? DicomDocument
             
             if doc == self.representedObject as? DicomDocument {
-                self.element = el
+                self.element    = el
+                
+                // we receive a DataValue in the notification payload
+                if array.count == 3 {
+                    self.value = array[2] as? DataValue
+                }
+                
                 self.updateUI()
             }
         }

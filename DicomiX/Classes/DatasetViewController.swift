@@ -503,7 +503,20 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     
     func outlineViewSelectionDidChange(_ notification: Notification) {
         if let selectedItem = self.datasetOutlineView.item(atRow: self.datasetOutlineView.selectedRow) {
-            NotificationCenter.default.post(name: .elementSelectionDidChange, object: [selectedItem, self.representedObject!])
+            var selectedElement = selectedItem as? DataElement
+            let selectedValue   = selectedItem as? DataValue
+            
+            if selectedValue != nil {
+                // if a value of a multiple DataElement is selected,
+                // we take its parent in the outline view as element
+                selectedElement = self.datasetOutlineView.parent(forItem: selectedItem) as? DataElement
+            }
+            
+            if selectedElement != nil {
+                let payload = [selectedElement!, self.representedObject!, selectedValue as Any]
+                
+                NotificationCenter.default.post(name: .elementSelectionDidChange, object: payload)
+            }
         }
     }
     

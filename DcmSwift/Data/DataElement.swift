@@ -218,11 +218,19 @@ public class DataElement : DicomObject {
             return false
         }
         
+        if self.isMultiple {
+            return false
+        }
+        
         if  self.vr == .AT ||
             self.vr == .OB ||
+            self.vr == .DA ||
+            self.vr == .DT ||
+            self.vr == .TM ||
             self.vr == .OW {
             return false
         }
+        
         return true
     }
     

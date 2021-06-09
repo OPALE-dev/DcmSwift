@@ -18,7 +18,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Default preferences
         UserDefaults.standard.register(defaults: [
             "LocalAET": "DICOMIX",
-            "MaxPDU": 16384
+            "MaxPDU": 16384,
+            "AllowDICOMEditing": false,
+            "SidebarExpanded": true
         ])
         
         DocumentController.canOpenUntitledDocument = true
