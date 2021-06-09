@@ -488,8 +488,17 @@ class DcmSwiftTests: XCTestCase {
                 Logger.info("# Write succeeded")
                 Logger.info("#")
                 
-                Logger.info("# Source file size : \(self.fileSize(filePath: path))")
-                Logger.info("# Dest. file size  : \(self.fileSize(filePath: writePath))")
+                let sourceFileSize  = self.fileSize(filePath: path)
+                let destFileSize    = self.fileSize(filePath: writePath)
+                let deviationPercents = (Double(sourceFileSize) - Double(destFileSize)) / Double(sourceFileSize) * 100.0
+                
+                Logger.info("# Source file size : \(sourceFileSize) bytes")
+                Logger.info("# Dest. file size  : \(destFileSize) bytes")
+                
+                if deviationPercents > 0.0 {
+                    Logger.info("# Size deviation   : \(String(format:"%.8f", deviationPercents))%")
+                }
+                
                 Logger.info("#")
                 
                 Logger.info("# Calculating checksum...")
