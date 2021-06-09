@@ -93,7 +93,7 @@ public class AssociationAC: PDUMessage {
         
         // parse app context
         let acLength = Int(data.subdata(in: offset+2..<offset+4).toInt16(byteOrder: .BigEndian))
-        var acData = data.subdata(in: offset..<offset+acLength+4)
+        let acData = data.subdata(in: offset..<offset+acLength+4)
         guard let applicationContext = ApplicationContext(data: acData) else {
             Logger.error("Missing application context. Abort.")
             return false
