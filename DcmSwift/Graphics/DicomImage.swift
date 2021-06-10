@@ -18,56 +18,9 @@ import UIKit
 #endif
 
 
-
-extension NSImage {
-    var jpegData: Data? {
-        guard let tiffRepresentation = tiffRepresentation, let bitmapImage = NSBitmapImageRep(data: tiffRepresentation) else { return nil }
-        return bitmapImage.representation(using: .jpeg2000, properties: [:])
-    }
-    func jpegWrite(to url: URL, options: Data.WritingOptions = .atomic) -> Bool {
-        do {
-            try jpegData?.write(to: url, options: options)
-            return true
-        } catch {
-            print(error.localizedDescription)
-            return false
-        }
-    }
-    
-    func writeToFile(file: String, atomically: Bool, usingType type: NSBitmapImageRep.FileType) -> Bool {
-        let properties = [NSBitmapImageRep.PropertyKey.compressionFactor: 1.0]
-        guard
-            let imageData = tiffRepresentation,
-            let imageRep = NSBitmapImageRep(data: imageData),
-            let fileData = imageRep.representation(using: type, properties: properties) else {
-                return false
-        }
-        
-        do {
-            try fileData.write(to: URL(fileURLWithPath: file))
-            return true
-        } catch {
-            print(error.localizedDescription)
-            return false
-        }
-    }
-}
-
-
-extension CGBitmapInfo {
-    public static var byteOrder16Host: CGBitmapInfo {
-        return CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue) ? .byteOrder16Little : .byteOrder16Big
-    }
-    
-    public static var byteOrder32Host: CGBitmapInfo {
-        return CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue) ? .byteOrder32Little : .byteOrder32Big
-    }
-}
-
-
-
-
-
+/**
+ DicomImage is a wrapper that provides images related features for the DICOM standard.
+ */
 public class DicomImage {
     public enum PhotometricInterpretation {
         case MONOCHROME1
@@ -306,7 +259,7 @@ public class DicomImage {
             decode: nil,
             shouldInterpolate: true,
             intent: .defaultIntent
-            ) {
+        ) {
             return cgim
         }
         
@@ -338,8 +291,8 @@ public class DicomImage {
             let low = windowCenter - windowWidth / 2
             let high = windowCenter + windowWidth / 2
             
-            Logger.verbose("  -> low : \(low)")
-            Logger.verbose("  -> low : \(low)")
+            Logger.verbose("  -> low  : \(low)")
+            Logger.verbose("  -> high : \(high)")
 
             for i in 0..<output.count {
                 if output[i] < low {

@@ -37,6 +37,10 @@
 		4C38D77E1FA11A7400633A5D /* ElementViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D77D1FA11A7400633A5D /* ElementViewController.swift */; };
 		4C38D7801FA12B1B00633A5D /* ConsoleSplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D77F1FA12B1B00633A5D /* ConsoleSplitViewController.swift */; };
 		4C38D7841FA1333200633A5D /* ConsoleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C38D7831FA1333200633A5D /* ConsoleViewController.swift */; };
+		4C3D72212672A3E10003E6D9 /* Dictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D72202672A3E10003E6D9 /* Dictionary.swift */; };
+		4C3D72222672A3E40003E6D9 /* Dictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D72202672A3E10003E6D9 /* Dictionary.swift */; };
+		4C3D72232672A3E40003E6D9 /* Dictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D72202672A3E10003E6D9 /* Dictionary.swift */; };
+		4C3D72252672A8C80003E6D9 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D72242672A8C80003E6D9 /* Image.swift */; };
 		4C3EF244226E3AAC0062B5A3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF243226E3AAC0062B5A3 /* AppDelegate.swift */; };
 		4C3EF246226E3AAC0062B5A3 /* DataViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF245226E3AAC0062B5A3 /* DataViewController.swift */; };
 		4C3EF249226E3AAC0062B5A3 /* MagiX.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF247226E3AAC0062B5A3 /* MagiX.xcdatamodeld */; };
@@ -275,6 +279,8 @@
 		4C3CD4781F9697DC00323E8A /* DicomFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomFile.swift; sourceTree = "<group>"; };
 		4C3CD47A1F96981300323E8A /* DataSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSet.swift; sourceTree = "<group>"; };
 		4C3CD47C1F96981D00323E8A /* DataElement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataElement.swift; sourceTree = "<group>"; };
+		4C3D72202672A3E10003E6D9 /* Dictionary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dictionary.swift; sourceTree = "<group>"; };
+		4C3D72242672A8C80003E6D9 /* Image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
 		4C3EF241226E3AAC0062B5A3 /* MagiX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MagiX.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C3EF243226E3AAC0062B5A3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		4C3EF245226E3AAC0062B5A3 /* DataViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataViewController.swift; sourceTree = "<group>"; };
@@ -447,6 +453,15 @@
 			path = DcmTestFileOrganizer;
 			sourceTree = "<group>";
 		};
+		4C3D721F2672A3CD0003E6D9 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				4C3D72202672A3E10003E6D9 /* Dictionary.swift */,
+				4C3D72242672A8C80003E6D9 /* Image.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
 		4C3EF242226E3AAC0062B5A3 /* MagiX */ = {
 			isa = PBXGroup;
 			children = (
@@ -593,6 +608,7 @@
 				4CECD652224165AC0087AF0D /* Foundation */,
 				4CB832691FA2917300103A94 /* Networking */,
 				4CECD653224165CF0087AF0D /* Graphics */,
+				4C3D721F2672A3CD0003E6D9 /* Extensions */,
 				4CA36BFB2256922F0024313B /* MyPlayground.playground */,
 			);
 			path = DcmSwift;
@@ -857,6 +873,7 @@
 				4C8D798B1F989EB1008300E3 /* Headers */,
 				4C8D798C1F989EB1008300E3 /* Resources */,
 				4C5F9B392248E1D80076DA82 /* Copy Frameworks */,
+				4C3D721E26726AE30003E6D9 /* Run swiftlint */,
 			);
 			buildRules = (
 			);
@@ -1009,6 +1026,27 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		4C3D721E26726AE30003E6D9 /* Run swiftlint */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Run swiftlint";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#if which swiftlint >/dev/null; then\n#  swiftlint\n#else\n#  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\n#fi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		4C24CB0A266FE80A0001CEFD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -1019,6 +1057,7 @@
 				4C24CB1C266FEBF50001CEFD /* DataSequence.swift in Sources */,
 				4C24CB24266FEBF50001CEFD /* DicomObject.swift in Sources */,
 				4C24CB1A266FEBF50001CEFD /* DataSet.swift in Sources */,
+				4C3D72232672A3E40003E6D9 /* Dictionary.swift in Sources */,
 				4C24CB23266FEBF50001CEFD /* DicomString.swift in Sources */,
 				4C24CB1B266FEBF50001CEFD /* DataElement.swift in Sources */,
 				4C24CB29266FEBF50001CEFD /* DicomImage.swift in Sources */,
@@ -1101,6 +1140,7 @@
 				4CD0BEE42242A63A0024C357 /* DicomAssociation.swift in Sources */,
 				DA41828A228BF77100A79D54 /* Logger.swift in Sources */,
 				4C53D706227CB8B20003724F /* CFindRQ.swift in Sources */,
+				4C3D72252672A8C80003E6D9 /* Image.swift in Sources */,
 				4C53D6F6227CB1100003724F /* AssociationRQ.swift in Sources */,
 				4C53D704227CB83A0003724F /* CEchoRQ.swift in Sources */,
 				4C53D702227CB79C0003724F /* PDUDecoder.swift in Sources */,
@@ -1117,6 +1157,7 @@
 				4C53D6E2227B5BB50003724F /* ApplicationContext.swift in Sources */,
 				4C53D6FE227CB4480003724F /* DataTF.swift in Sources */,
 				4C53D700227CB4650003724F /* Abort.swift in Sources */,
+				4C3D72212672A3E10003E6D9 /* Dictionary.swift in Sources */,
 				4C8D79AA1F98AB0D008300E3 /* DicomSpec.swift in Sources */,
 				4C53D6FA227CB3900003724F /* AssociationRJ.swift in Sources */,
 				4CD0BEE62242B15B0024C357 /* DicomEntity.swift in Sources */,
@@ -1132,6 +1173,7 @@
 				4C5BF0861FABA5E80051F4FE /* DataSequence.swift in Sources */,
 				4C5BF0871FABA5E80051F4FE /* DataItem.swift in Sources */,
 				4C24CB09266FC0150001CEFD /* DcmSwiftTests.swift in Sources */,
+				4C3D72222672A3E40003E6D9 /* Dictionary.swift in Sources */,
 				4C5BF0881FABA5E80051F4FE /* DataTag.swift in Sources */,
 				4C5BF0891FABA5E80051F4FE /* PixelSequence.swift in Sources */,
 				4CC932482292ED96001DFEB7 /* Logger.swift in Sources */,

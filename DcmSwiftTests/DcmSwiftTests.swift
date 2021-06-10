@@ -36,7 +36,7 @@ class DcmSwiftTests: XCTestCase {
     private static var testDicomDataSet         = false
     
     /// Run tests to read image(s) (rely on embedded test files, dynamically generated)
-    private static var testDicomImage           = false
+    private static var testDicomImage           = true
     
     
     internal var filePath:String!
@@ -314,7 +314,6 @@ class DcmSwiftTests: XCTestCase {
     
 
     public func readWriteTest() {
-        //print(self.filePath)
         XCTAssert(self.readWriteFile(withPath: self.filePath))
     }
     

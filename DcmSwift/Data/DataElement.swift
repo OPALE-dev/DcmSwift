@@ -483,9 +483,6 @@ public class DataElement : DicomObject {
     
     
     // MARK: - Private
-    
-    
-    
     private func recalculateParentsLength() {
         var p = self.parent
         
