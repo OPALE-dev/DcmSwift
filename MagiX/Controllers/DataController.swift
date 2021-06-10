@@ -3,7 +3,7 @@
 //  MagiX
 //
 //  Created by Rafael Warnault on 22/04/2019.
-//  Copyright © 2019 Read-Write.fr. All rights reserved.
+//  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
