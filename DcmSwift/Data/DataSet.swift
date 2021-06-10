@@ -8,25 +8,11 @@
 
 import Foundation
 
-
-
-extension Dictionary {
-    var jsonStringRepresentaiton: String? {
-        guard let theJSONData = try? JSONSerialization.data(withJSONObject: self,
-                                                            options: []) else {
-                                                                return nil
-        }
-        
-        return String(data: theJSONData, encoding: .utf8)
-    }
-}
-
-
 public class DataSet: DicomObject {
     public var fileMetaInformationGroupLength:Int32 = 0
     public var transferSyntax:String                = DicomConstants.implicitVRLittleEndian
-    public var vrMethod:DicomConstants.VRMethod          = .Explicit
-    public var byteOrder:DicomConstants.ByteOrder        = .LittleEndian
+    public var vrMethod:DicomConstants.VRMethod     = .Explicit
+    public var byteOrder:DicomConstants.ByteOrder   = .LittleEndian
     public var forceExplicit:Bool                   = false
     public var prefixHeader:Bool                    = true
     internal var isCorrupted:Bool                   = false
@@ -41,17 +27,15 @@ public class DataSet: DicomObject {
     
     
     public override init() {
-        self.prefixHeader = false
+        prefixHeader = false
         
         
     }
     
     
     public init?(withData data:Data, readHeader:Bool = true) {
-        
-        
-        self.data               = data
-        self.prefixHeader       = readHeader
+        self.data           = data
+        self.prefixHeader   = readHeader
     }
     
     
@@ -59,11 +43,12 @@ public class DataSet: DicomObject {
     override public var description: String {
         var string = ""
         
-        self.sortElements()
+        sortElements()
         
-        for e in self.allElements {
+        for e in allElements {
             string += e.description + "\n"
         }
+        
         return string
     }
     
@@ -73,64 +58,64 @@ public class DataSet: DicomObject {
     public func loadData(_ withData:Data? = nil) -> Bool {
         var offset = 0
         
-        if self.prefixHeader {
+        if prefixHeader {
             offset = DicomConstants.dicomBytesOffset
         }
         
         if withData != nil {
-            self.data = withData
+            data = withData
         }
         
         // reset elements arrays
-        self.metaInformationHeaderElements  = []
-        self.datasetElements                = []
-        self.allElements                    = []
+        metaInformationHeaderElements  = []
+        datasetElements                = []
+        allElements                    = []
         
-        while(offset < data.count && !self.isCorrupted) {
-            let (newElement, elementOffset) = self.readDataElement(offset: offset)
+        while(offset < data.count && !isCorrupted) {
+            let (newElement, elementOffset) = readDataElement(offset: offset)
                         
             if newElement.name == "FileMetaInformationGroupLength" {
-                self.fileMetaInformationGroupLength = newElement.value as! Int32
+                fileMetaInformationGroupLength = newElement.value as! Int32
             }
             
             // determine transfer syntax
             if newElement.name == "TransferSyntaxUID" {
-                self.transferSyntax = newElement.value as! String
+                transferSyntax = newElement.value as! String
                 
-                if self.transferSyntax == DicomConstants.implicitVRLittleEndian {
-                    self.vrMethod  = .Implicit
-                    self.byteOrder = .LittleEndian
+                if transferSyntax == DicomConstants.implicitVRLittleEndian {
+                    vrMethod  = .Implicit
+                    byteOrder = .LittleEndian
                 }
-                else if self.transferSyntax == DicomConstants.explicitVRBigEndian {
-                    self.vrMethod  = .Explicit
-                    self.byteOrder = .BigEndian
+                else if transferSyntax == DicomConstants.explicitVRBigEndian {
+                    vrMethod  = .Explicit
+                    byteOrder = .BigEndian
                 }
                 else {
-                    self.vrMethod  = .Explicit
-                    self.byteOrder = .LittleEndian
+                    vrMethod  = .Explicit
+                    byteOrder = .LittleEndian
                 }
             }
             
             // append to sub-datasets
-            if !self.isCorrupted {
+            if !isCorrupted {
                 //Logger.debug(newElement)
                 
                 if newElement.group != DicomConstants.metaInformationGroup {
-                    self.datasetElements.append(newElement)
+                    datasetElements.append(newElement)
                 }
                 else {
-                    self.metaInformationHeaderElements.append(newElement)
+                    metaInformationHeaderElements.append(newElement)
                     
                 }
                 
-                self.allElements.append(newElement)
+                allElements.append(newElement)
             }
             
             offset = elementOffset
         }
         
         // be sure to sort all dataset elements by group, then element
-        self.sortElements()
+        sortElements()
         
         return true
     }
@@ -142,17 +127,17 @@ public class DataSet: DicomObject {
      public override func toData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
         var newData = Data()
         
-        var finalVR     = self.vrMethod
-        var finalOrder  = self.byteOrder
+        var finalVR     = vrMethod
+        var finalOrder  = byteOrder
         
-        if self.vrMethod != inVrMethod {
+        if vrMethod != inVrMethod {
             finalVR = inVrMethod
         }
-        if self.byteOrder != inByteOrder {
+        if byteOrder != inByteOrder {
             finalOrder = inByteOrder
         }
         
-        if self.prefixHeader {
+        if prefixHeader {
             // write 128 bytes preamble
             newData.append(Data(repeating: 0x00, count: 128))
             
@@ -161,12 +146,12 @@ public class DataSet: DicomObject {
         }
         
         // be sure element are sorted properly before write
-        self.sortElements()
+        sortElements()
         
         // append meta header elements as binary data
-        for element in self.allElements {
+        for element in allElements {
             //print(type(of: element))
-            newData.append(self.write(dataElement: element, vrMethod:finalVR, byteOrder:finalOrder))
+            newData.append(write(dataElement: element, vrMethod:finalVR, byteOrder:finalOrder))
         }
         
         return newData
@@ -176,19 +161,19 @@ public class DataSet: DicomObject {
     public func DIMSEData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
         var data = Data()
         
-        var finalVR     = self.vrMethod
-        var finalOrder  = self.byteOrder
+        var finalVR     = vrMethod
+        var finalOrder  = byteOrder
         
-        if self.vrMethod != inVrMethod {
+        if vrMethod != inVrMethod {
             finalVR = inVrMethod
         }
-        if self.byteOrder != inByteOrder {
+        if byteOrder != inByteOrder {
             finalOrder = inByteOrder
         }
         
         sortElements()
         
-        for element in self.datasetElements {
+        for element in datasetElements {
             data.append(element.toData(vrMethod: finalVR, byteOrder: finalOrder))
         }
         
@@ -202,7 +187,7 @@ public class DataSet: DicomObject {
         
         xml += "<NativeDicomModel xml:space=\"preserve\">"
         
-        for element in self.allElements {
+        for element in allElements {
             xml += element.toXML()
         }
         
@@ -215,9 +200,9 @@ public class DataSet: DicomObject {
     override public func toJSONArray() -> Any {
         var json:[String:[String:Any]] = [:]
         
-        self.sortElements()
+        sortElements()
         
-        for element in self.allElements {
+        for element in allElements {
             
             var val:Any = ""
             
@@ -254,7 +239,7 @@ public class DataSet: DicomObject {
     
     
     public func value(forTag tag:String ) -> Any? {
-        for el in self.allElements {
+        for el in allElements {
             if el.name == tag {
                 return el.value
             }
@@ -264,7 +249,7 @@ public class DataSet: DicomObject {
     
     
     public func string(forTag tag:String ) -> String? {
-        for el in self.allElements {
+        for el in allElements {
             if el.name == tag {
                 return (el.value as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
             }
@@ -274,7 +259,7 @@ public class DataSet: DicomObject {
     
     
     public func integer32(forTag tag:String ) -> Int32? {
-        for el in self.allElements {
+        for el in allElements {
             if el.name == tag {
                 if let v = el.value as? Int32 {
                     return v
@@ -286,7 +271,7 @@ public class DataSet: DicomObject {
     
     
     public func integer16(forTag tag:String ) -> Int16? {
-        for el in self.allElements {
+        for el in allElements {
             if el.name == tag {
                 if let v = el.value as? Int16 {
                     return v
@@ -298,7 +283,7 @@ public class DataSet: DicomObject {
     
     
     public func date(forTag tag:String ) -> Date? {
-        for el in self.allElements {
+        for el in allElements {
             if el.name == tag {
                 if let str = el.value as? String {
                     return Date(dicomDate: str)
@@ -310,7 +295,7 @@ public class DataSet: DicomObject {
     
     
     public func datetime(forTag tag:String ) -> Date? {
-        for el in self.allElements {
+        for el in allElements {
             if el.name == tag {
                 if let str = el.value as? String {
                     return Date(dicomDateTime: str)
@@ -322,7 +307,7 @@ public class DataSet: DicomObject {
     
     
     public func time(forTag tag:String ) -> Date? {
-        for el in self.allElements {
+        for el in allElements {
             if el.name == tag {
                 if let str = el.value as? String {
                     return Date(dicomTime: str)
@@ -336,43 +321,43 @@ public class DataSet: DicomObject {
     
     
     public func set(value:Any, toElement element:DataElement) -> Bool {
-        if self.isCorrupted {
+        if isCorrupted {
             return false
         }
         
         let ret = element.setValue(value)
         
-        self.recalculateOffsets()
+        recalculateOffsets()
         
         return ret
     }
     
     
     public func set(value:Any, forTagName name:String) -> DataElement? {
-        if self.isCorrupted {
+        if isCorrupted {
             return nil
         }
         
         // element already exists in dataset
-        if let element = self.element(forTagName: name) {
-            return self.set(value: value, toElement: element) ? element : nil
+        if let element = element(forTagName: name) {
+            return set(value: value, toElement: element) ? element : nil
         }
         
         // element does not already exist in dataset
         if let element = DataElement(withTagName: name, dataset: self) {
 
             if element.setValue(value) {
-                self.allElements.append(element)
+                allElements.append(element)
                 
                 if (element.group == "0002") {
-                    self.metaInformationHeaderElements.append(element)
+                    metaInformationHeaderElements.append(element)
                 }
                 else {
-                    self.datasetElements.append(element)
+                    datasetElements.append(element)
                 }
                 
-                self.sortElements()
-                self.recalculateOffsets()
+                sortElements()
+                recalculateOffsets()
                 
                 return element
             }
@@ -384,13 +369,13 @@ public class DataSet: DicomObject {
     
     
     public func hasElement(forTagName name:String) -> Bool {
-        return self.element(forTagName: name) != nil
+        return element(forTagName: name) != nil
     }
     
     
     
     public func element(forTagName name:String) -> DataElement? {
-        for el in self.allElements {
+        for el in allElements {
             if el.name == name {
                 return el
             }
@@ -401,14 +386,14 @@ public class DataSet: DicomObject {
     
     
     public func remove(dataElement element:DataElement) -> DataElement {
-        if let index = self.allElements.firstIndex(where: {$0 === element}) {
-            self.allElements.remove(at: index)
+        if let index = allElements.firstIndex(where: {$0 === element}) {
+            allElements.remove(at: index)
         }
-        if let index = self.metaInformationHeaderElements.firstIndex(where: {$0 === element}) {
-            self.metaInformationHeaderElements.remove(at: index)
+        if let index = metaInformationHeaderElements.firstIndex(where: {$0 === element}) {
+            metaInformationHeaderElements.remove(at: index)
         }
-        if let index = self.datasetElements.firstIndex(where: {$0 === element}) {
-            self.datasetElements.remove(at: index)
+        if let index = datasetElements.firstIndex(where: {$0 === element}) {
+            datasetElements.remove(at: index)
         }
         return element
     }
@@ -418,9 +403,13 @@ public class DataSet: DicomObject {
     
     
     
-    public func write(atPath path:String, vrMethod inVrMethod:DicomConstants.VRMethod? = nil, byteOrder inByteOrder:DicomConstants.ByteOrder? = nil) -> Bool {
-        var finalVR     = self.vrMethod
-        var finalOrder  = self.byteOrder
+    public func write(
+        atPath path:String,
+        vrMethod inVrMethod:DicomConstants.VRMethod? = nil,
+        byteOrder inByteOrder:DicomConstants.ByteOrder? = nil
+    ) -> Bool {
+        var finalVR     = vrMethod
+        var finalOrder  = byteOrder
         
         if let inVR = inVrMethod {
             finalVR = inVR
@@ -429,7 +418,7 @@ public class DataSet: DicomObject {
             finalOrder = inOrder
         }
         
-        let data = self.toData(vrMethod: finalVR, byteOrder: finalOrder)
+        let data = toData(vrMethod: finalVR, byteOrder: finalOrder)
         
         // overwrite file
         if FileManager.default.fileExists(atPath: path) {
@@ -444,21 +433,15 @@ public class DataSet: DicomObject {
         // write file to FS        
         return FileManager.default.createFile(atPath: path, contents: data, attributes: nil)
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    // MARK: - Private methods
-    
+}
+
+// MARK: - Private DataSet methods
+extension DataSet {
     private func recalculateOffsets() {
-//        if let f = self.allElements.first {
+//        if let f = allElements.first {
 //            var offset = f.startOffset
 //
-//            for e in self.allElements {
+//            for e in allElements {
 //                e.startOffset = offset
 //                e.dataOffset = offset + 4
 //
@@ -477,21 +460,21 @@ public class DataSet: DicomObject {
     
     
     private func sortElements() {
-        self.allElements = self.allElements.sorted(by: { (a, b) -> Bool in
+        allElements = allElements.sorted(by: { (a, b) -> Bool in
             if a.group != b.group {
                 return a.group < b.group
             }
             return a.element < b.element
         })
         
-        self.metaInformationHeaderElements = self.metaInformationHeaderElements.sorted(by: { (a, b) -> Bool in
+        metaInformationHeaderElements = metaInformationHeaderElements.sorted(by: { (a, b) -> Bool in
             if a.group != b.group {
                 return a.group < b.group
             }
             return a.element < b.element
         })
         
-        self.datasetElements = self.datasetElements.sorted(by: { (a, b) -> Bool in
+        datasetElements = datasetElements.sorted(by: { (a, b) -> Bool in
             if a.group != b.group {
                 return a.group < b.group
             }
@@ -510,17 +493,16 @@ public class DataSet: DicomObject {
         var length:Int                          = 0
         var os                                  = offset
 
-        
         // set local byte order to enforce Little Endian for Prefix Header elements
-        if self.byteOrder == .BigEndian && os >= self.fileMetaInformationGroupLength+144 {
+        if byteOrder == .BigEndian && os >= fileMetaInformationGroupLength+144 {
             order = .BigEndian
         } else {
             order = .LittleEndian
         }
 
-        if self.prefixHeader {
+        if prefixHeader {
             // set local VR Method to enforce Explicit for Prefix Header elements
-            if self.vrMethod == .Implicit && os >= self.fileMetaInformationGroupLength+144 {
+            if vrMethod == .Implicit && os >= fileMetaInformationGroupLength+144 {
                 localVRMethod = .Implicit
             } else {
                 localVRMethod = .Explicit
@@ -530,7 +512,7 @@ public class DataSet: DicomObject {
             localVRMethod = .Implicit
         }
         
-        if self.forceExplicit {
+        if forceExplicit {
             localVRMethod = .Explicit
         }
         
@@ -538,10 +520,10 @@ public class DataSet: DicomObject {
 //            let msg = "Fatal, next tag is not readable: unknow offset error"
 //            let v = ValidationResult(self, message: msg, severity: .Fatal)
 //
-//            self.internalValidations.append(v)
+//            internalValidations.append(v)
 //            Logger.error(msg)
 //
-//            self.isCorrupted = true
+//            isCorrupted = true
 //
 //            return (nil, data.count)
 //        }
@@ -595,7 +577,7 @@ public class DataSet: DicomObject {
         // read length
         if localVRMethod == .Explicit {
             if element.vr == .SQ {
-                let bytes:Data = self.data.subdata(in: os..<os+4)
+                let bytes:Data = data.subdata(in: os..<os+4)
                 
                 if bytes == Data([0xff, 0xff, 0xff, 0xff]) {
                     length = -1
@@ -625,12 +607,12 @@ public class DataSet: DicomObject {
         // CHECK FOR INVALID LENGTH
         if length > data.count {
             let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) overflows (\(length))"
-            return self.readError(forLength: Int(length), element: element, message: message)
+            return readError(forLength: Int(length), element: element, message: message)
         }
         
 //        if length <= -1 {
 //            let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) cannot be negative (\(length))"
-//            return self.readError(forLength: Int(length), element: element, message: message)
+//            return readError(forLength: Int(length), element: element, message: message)
 //        }
         
         // MISSING VR FOR IMPLICIT ELEMENT
@@ -640,7 +622,7 @@ public class DataSet: DicomObject {
         // read value data
         if element.vr == .OW || element.vr == .OB {
             if element.name == "PixelData" && length == -1 {
-                let (sequence, seqOffset) = self.readPixelSequence(tag: tag, offset: os, byteOrder: order)
+                let (sequence, seqOffset) = readPixelSequence(tag: tag, offset: os, byteOrder: order)
                 sequence.parent         = element
                 sequence.vr             = element.vr
                 sequence.startOffset    = element.startOffset
@@ -656,7 +638,7 @@ public class DataSet: DicomObject {
             }
         }
         else if element.vr == .SQ {
-            let (sequence, seqOffset) = self.readDataSequence(tag:element.tag, offset: os, length: Int(length), byteOrder:order)
+            let (sequence, seqOffset) = readDataSequence(tag:element.tag, offset: os, length: Int(length), byteOrder:order)
             sequence.parent         = element
             sequence.vr             = element.vr
             sequence.startOffset    = element.startOffset
@@ -697,8 +679,8 @@ public class DataSet: DicomObject {
     private func readError(forLength length:Int, element: DataElement, message:String) -> (DataElement, Int) {
         let v = ValidationResult(element, message: message, severity: .Fatal)
         
-        self.internalValidations.append(v)
-        self.isCorrupted = true
+        internalValidations.append(v)
+        isCorrupted = true
         
         Logger.error(message)
         
@@ -727,11 +709,11 @@ public class DataSet: DicomObject {
                 // CHECK FOR INVALID LENGTH
                 if itemLength > data.count {
                     let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) overflows (\(itemLength))"
-                    return self.readError(forLength: Int(itemLength), element: sequence, message: message) as! (DataSequence, Int)
+                    return readError(forLength: Int(itemLength), element: sequence, message: message) as! (DataSequence, Int)
                 }
                 if itemLength < -1 {
                     let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) cannot be negative (\(itemLength))"
-                    return self.readError(forLength: Int(itemLength), element: sequence, message: message) as! (DataSequence, Int)
+                    return readError(forLength: Int(itemLength), element: sequence, message: message) as! (DataSequence, Int)
                 }
                 
                 let item         = DataItem(withTag:tag, parent: sequence)
@@ -743,14 +725,14 @@ public class DataSet: DicomObject {
                 // item data elements
                 var itemBytesRead = 0
                 while(itemLength > itemBytesRead) {
-                    let (newElement, elementOffset) = self.readDataElement(offset: os)
+                    let (newElement, elementOffset) = readDataElement(offset: os)
                     newElement.parent = item
                     item.elements.append(newElement)
                     
                     itemBytesRead += elementOffset - os
                     bytesRead += elementOffset - os
                     
-                    os = elementOffset                    
+                    os = elementOffset
                 }
                 item.endOffset = os
             }
@@ -783,7 +765,7 @@ public class DataSet: DicomObject {
                         let subtag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
                         
                         if subtag.code != "fffee00d" {
-                            let (newElement, elementOffset) = self.readDataElement(offset: os)
+                            let (newElement, elementOffset) = readDataElement(offset: os)
                             newElement.parent = item
                             os = elementOffset
                             
@@ -808,7 +790,7 @@ public class DataSet: DicomObject {
                     
                     var itemBytesRead = 0
                     while(itemLength > itemBytesRead) {
-                        let (newElement, elementOffset) = self.readDataElement(offset: os)
+                        let (newElement, elementOffset) = readDataElement(offset: os)
                         newElement.parent = item
                         item.elements.append(newElement)
                         
@@ -868,11 +850,11 @@ public class DataSet: DicomObject {
             // CHECK FOR INVALID LENGTH
             if itemLength > data.count {
                 let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) overflows (\(itemLength))"
-                return self.readError(forLength: Int(itemLength), element: pixelSequence, message: message) as! (PixelSequence, Int)
+                return readError(forLength: Int(itemLength), element: pixelSequence, message: message) as! (PixelSequence, Int)
             }
             if itemLength < -1 {
                 let message = "Fatal, cannot read length properly, decoded length cannot be negative (\(itemLength))"
-                return self.readError(forLength: Int(itemLength), element: pixelSequence, message: message) as! (PixelSequence, Int)
+                return readError(forLength: Int(itemLength), element: pixelSequence, message: message) as! (PixelSequence, Int)
             }
             
             item.length = Int(itemLength)
@@ -883,7 +865,7 @@ public class DataSet: DicomObject {
             }
             
             // read next again
-            if os < self.data.count {
+            if os < data.count {
                 itemTag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
                 os += 4
             }
@@ -902,13 +884,13 @@ public class DataSet: DicomObject {
         var order:DicomConstants.ByteOrder = .LittleEndian
         
         // set local byte order to enforce Little Endian for Prefix Header elements
-        if self.byteOrder == .BigEndian && element.endOffset > self.fileMetaInformationGroupLength+144 {
+        if byteOrder == .BigEndian && element.endOffset > fileMetaInformationGroupLength+144 {
             order = .BigEndian
         }
         
-        if self.prefixHeader {
+        if prefixHeader {
             // set local VR Method to enforce Explicit for Prefix Header elements
-            if self.vrMethod == .Implicit && element.endOffset > self.fileMetaInformationGroupLength+144 {
+            if vrMethod == .Implicit && element.endOffset > fileMetaInformationGroupLength+144 {
                 localVRMethod = .Implicit
             }
         } else {
