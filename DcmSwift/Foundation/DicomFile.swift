@@ -19,8 +19,7 @@ public class DicomFile {
     public var filepath:String!
     /// The parsed dataset containing all the DICOM attributes
     public var dataset:DataSet!
-    /// Define if the file has a standard DICOM prefix header.
-    /// If yes, parsing witll start at 132 bytes offset, else at 0.
+    /// Define if the file has a standard DICOM prefix header. If yes, parsing witll start at 132 bytes offset, else at 0.
     public var hasPrefixHeader:Bool = true
     /// A flag that informs if the file is a DICOM encapsulated PDF
     public var isEncapsulatedPDF = false

@@ -3,7 +3,7 @@
 //  DicomiX
 //
 //  Created by Rafael Warnault on 26/03/2019.
-//  Copyright © 2019 Read-Write.fr. All rights reserved.
+//  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Cocoa
