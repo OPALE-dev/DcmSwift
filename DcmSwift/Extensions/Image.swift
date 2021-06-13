@@ -7,9 +7,14 @@
 //
 
 import Foundation
+#if os(macOS)
+import AppKit
+#elseif os(iOS)
+import UIKit
+#endif
 
 #if os(macOS)
-extension NSImage {
+public extension NSImage {
     var jpegData: Data? {
         guard let tiffRepresentation = tiffRepresentation, let bitmapImage = NSBitmapImageRep(data: tiffRepresentation) else { return nil }
         return bitmapImage.representation(using: .jpeg2000, properties: [:])

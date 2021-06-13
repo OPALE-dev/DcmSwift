@@ -36,7 +36,7 @@ class DcmSwiftTests: XCTestCase {
     private static var testDicomDataSet         = false
     
     /// Run tests to read image(s) (rely on embedded test files, dynamically generated)
-    private static var testDicomImage           = true
+    private static var testDicomImage           = false
     
     
     internal var filePath:String!
