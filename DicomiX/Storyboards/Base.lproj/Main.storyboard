@@ -93,7 +93,7 @@
                                         <textField key="contentView" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="vgC-cC-evW">
                                             <rect key="frame" x="-2" y="0.0" width="280" height="28"/>
                                             <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" id="7N5-rE-jYc">
-                                                <font key="font" metaFont="message" size="11"/>
+                                                <font key="font" metaFont="label" size="11"/>
                                                 <string key="title">DICOM files are not supposed to be edited manually.
 Be carefull when using this feature.</string>
                                                 <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
@@ -326,7 +326,7 @@ Be carefull when using this feature.</string>
                                     <constraint firstAttribute="height" constant="17" id="pEw-kU-hQy"/>
                                 </constraints>
                                 <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" id="966-HA-KH6">
-                                    <font key="font" metaFont="message" size="11"/>
+                                    <font key="font" metaFont="label" size="11"/>
                                     <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
@@ -1058,7 +1058,7 @@ Be carefull when using this feature.</string>
                 <customObject id="UFB-aA-FxK" customClass="DocumentController" customModule="DicomiX" customModuleProvider="target"/>
                 <customObject id="Ady-hI-5gd" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="48" y="-58"/>
+            <point key="canvasLocation" x="-59" y="-210"/>
         </scene>
         <!--Window Controller-->
         <scene sceneID="R2V-B0-nI4">
@@ -1067,7 +1067,7 @@ Be carefull when using this feature.</string>
                     <window key="window" title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="DocumentWindow" animationBehavior="default" tabbingMode="preferred" titleVisibility="hidden" id="Ckk-yw-fiv">
                         <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
                         <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
-                        <rect key="contentRect" x="-24" y="519" width="1202" height="270"/>
+                        <rect key="contentRect" x="-24" y="439" width="1202" height="539"/>
                         <rect key="screenRect" x="0.0" y="0.0" width="1680" height="1027"/>
                         <toolbar key="toolbar" implicitIdentifier="9E515CEB-B154-4835-B952-944966E04D51" autosavesConfiguration="NO" displayMode="iconOnly" sizeMode="regular" id="sjg-WB-8t8">
                             <allowedToolbarItems>
@@ -1101,12 +1101,8 @@ Be carefull when using this feature.</string>
                                             <segments>
                                                 <segment toolTip="Show/hide sidebar" image="TB_Sidebar" width="32" selected="YES"/>
                                                 <segment toolTip="Show/hide validation" image="TB_Validation" width="32" selected="YES" tag="1"/>
-                                                <segment toolTip="Show/hide binary view" image="TB_Console" selected="YES" tag="2">
-                                                    <nil key="label"/>
-                                                </segment>
-                                                <segment toolTip="Show/hide inspector" image="TB_Inspector" selected="YES" tag="3">
-                                                    <nil key="label"/>
-                                                </segment>
+                                                <segment toolTip="Show/hide binary view" image="TB_Console" selected="YES" tag="2"/>
+                                                <segment toolTip="Show/hide inspector" image="TB_Inspector" selected="YES" tag="3"/>
                                             </segments>
                                         </segmentedCell>
                                         <connections>
@@ -1168,21 +1164,6 @@ Be carefull when using this feature.</string>
                                         <segue destination="KG9-0z-bgO" kind="sheet" identifier="Export" id="AUX-LE-iDC"/>
                                     </connections>
                                 </toolbarItem>
-                                <toolbarItem implicitItemIdentifier="23D23286-3A56-471A-8246-DF176098534C" label="Hex Data" paletteLabel="Hex Data" toolTip="Show Hex Data" image="TB_HexData" id="HvV-ae-BK5">
-                                    <size key="minSize" width="38" height="28"/>
-                                    <size key="maxSize" width="38" height="32"/>
-                                    <button key="view" verticalHuggingPriority="750" id="tbn-Fk-srV">
-                                        <rect key="frame" x="9" y="14" width="38" height="28"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                        <buttonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" image="TB_HexData" imagePosition="only" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="uK9-LL-0f2">
-                                            <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
-                                            <font key="font" metaFont="system"/>
-                                        </buttonCell>
-                                        <connections>
-                                            <action selector="toggleHexData:" target="jGA-0Y-lOj" id="oun-fO-VwO"/>
-                                        </connections>
-                                    </button>
-                                </toolbarItem>
                                 <toolbarItem implicitItemIdentifier="04A6A920-BDF9-4A3D-ACCF-55422839D46D" label="Data Element" paletteLabel="Data Element" tag="-1" id="eIR-gg-ISe">
                                     <nil key="toolTip"/>
                                     <size key="minSize" width="137" height="12"/>
@@ -1207,6 +1188,24 @@ Be carefull when using this feature.</string>
                                         <segue destination="GnN-1g-3ka" kind="sheet" id="k0E-7f-KSA"/>
                                     </connections>
                                 </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="A49C4EE7-C280-42C3-BC30-70ABB3676A9C" explicitItemIdentifier="Format" label="Format" paletteLabel="Format" sizingBehavior="auto" id="Lc9-hm-STO">
+                                    <nil key="toolTip"/>
+                                    <segmentedControl key="view" verticalHuggingPriority="750" id="JrU-nc-dmX">
+                                        <rect key="frame" x="0.0" y="14" width="104" height="24"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                        <segmentedCell key="cell" borderStyle="border" alignment="left" style="texturedRounded" trackingMode="selectOne" id="Lsi-zC-ReQ">
+                                            <font key="font" metaFont="system"/>
+                                            <segments>
+                                                <segment toolTip="Human format" image="TB_FormattedData" width="32" selected="YES"/>
+                                                <segment toolTip="Raw format" image="InspectorFile" width="32" tag="1"/>
+                                                <segment toolTip="Binary format" image="TB_HexData" width="32"/>
+                                            </segments>
+                                        </segmentedCell>
+                                        <connections>
+                                            <action selector="updateValueFormat:" target="jGA-0Y-lOj" id="RcJ-uc-ckh"/>
+                                        </connections>
+                                    </segmentedControl>
+                                </toolbarItem>
                             </allowedToolbarItems>
                             <defaultToolbarItems>
                                 <toolbarItem reference="tRo-2a-FRi"/>
@@ -1214,7 +1213,7 @@ Be carefull when using this feature.</string>
                                 <toolbarItem reference="vrS-vn-Gya"/>
                                 <toolbarItem reference="dyS-C8-zrf"/>
                                 <toolbarItem reference="6i7-A1-VzD"/>
-                                <toolbarItem reference="HvV-ae-BK5"/>
+                                <toolbarItem reference="Lc9-hm-STO"/>
                                 <toolbarItem reference="hbq-da-WSe"/>
                                 <toolbarItem reference="eIR-gg-ISe"/>
                                 <toolbarItem reference="hbq-da-WSe"/>
@@ -1237,7 +1236,7 @@ Be carefull when using this feature.</string>
                 </windowController>
                 <customObject id="6f7-a7-6o1" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-59" y="229"/>
+            <point key="canvasLocation" x="-82" y="207"/>
         </scene>
         <!--Add Element Controller-->
         <scene sceneID="UEq-SF-WXg">
@@ -1356,7 +1355,7 @@ Gw
                                 <rect key="frame" x="121" y="54" width="439" height="14"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" id="SSa-Kf-6Ih">
-                                    <font key="font" metaFont="message" size="11"/>
+                                    <font key="font" metaFont="label" size="11"/>
                                     <color key="textColor" red="0.43529411759999997" green="0.4431372549" blue="0.47450980390000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
@@ -1866,15 +1865,15 @@ DQ
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="o1w-aJ-WX6">
                                 <rect key="frame" x="0.0" y="30" width="436" height="143"/>
                                 <clipView key="contentView" drawsBackground="NO" id="oSy-k8-2tA">
-                                    <rect key="frame" x="0.0" y="0.0" width="436" height="143"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="421" height="143"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <textView editable="NO" importsGraphics="NO" richText="NO" verticallyResizable="YES" findStyle="panel" allowsCharacterPickerTouchBarItem="NO" allowsNonContiguousLayout="YES" textCompletion="NO" id="h3t-5G-Hjp">
-                                            <rect key="frame" x="0.0" y="0.0" width="436" height="143"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="421" height="143"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                            <size key="minSize" width="436" height="143"/>
+                                            <size key="minSize" width="421" height="143"/>
                                             <size key="maxSize" width="582" height="10000000"/>
                                             <color key="insertionPointColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                             <connections>
@@ -1888,7 +1887,7 @@ DQ
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="LXm-3d-qD6">
-                                    <rect key="frame" x="420" y="0.0" width="16" height="143"/>
+                                    <rect key="frame" x="421" y="0.0" width="15" height="143"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
@@ -2056,7 +2055,7 @@ DQ
                                                                                         <constraint firstAttribute="height" constant="17" id="coT-0A-r5h"/>
                                                                                     </constraints>
                                                                                     <textFieldCell key="cell" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" id="ZGD-32-8gG">
-                                                                                        <font key="font" metaFont="message" size="11"/>
+                                                                                        <font key="font" metaFont="label" size="11"/>
                                                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                                                     </textFieldCell>
@@ -2356,7 +2355,7 @@ DQ
                                                         <rect key="frame" x="107" y="7" width="172" height="14"/>
                                                         <autoresizingMask key="autoresizingMask"/>
                                                         <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" id="z0c-U0-PhK">
-                                                            <font key="font" metaFont="message" size="11"/>
+                                                            <font key="font" metaFont="label" size="11"/>
                                                             <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                         </textFieldCell>
@@ -2423,7 +2422,7 @@ DQ
                                                                         <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
                                                                     </tableHeaderCell>
                                                                     <textFieldCell key="dataCell" controlSize="small" lineBreakMode="truncatingTail" selectable="YES" editable="YES" title="Text Cell" id="210-25-Wbq">
-                                                                        <font key="font" metaFont="message" size="11"/>
+                                                                        <font key="font" metaFont="label" size="11"/>
                                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                         <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                     </textFieldCell>
@@ -2451,7 +2450,7 @@ DQ
                                                                         <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
                                                                     </tableHeaderCell>
                                                                     <textFieldCell key="dataCell" controlSize="small" lineBreakMode="truncatingTail" selectable="YES" editable="YES" title="Text Cell" id="bri-9D-9Om">
-                                                                        <font key="font" metaFont="message" size="11"/>
+                                                                        <font key="font" metaFont="label" size="11"/>
                                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                         <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                     </textFieldCell>
@@ -2465,7 +2464,7 @@ DQ
                                                                                     <rect key="frame" x="0.0" y="0.0" width="206" height="14"/>
                                                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
                                                                                     <textFieldCell key="cell" controlSize="small" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" title="Table View Cell" id="vbm-7c-0wR">
-                                                                                        <font key="font" metaFont="message" size="11"/>
+                                                                                        <font key="font" metaFont="label" size="11"/>
                                                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                                                     </textFieldCell>
@@ -2483,7 +2482,7 @@ DQ
                                                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                     </tableHeaderCell>
                                                                     <textFieldCell key="dataCell" controlSize="small" lineBreakMode="truncatingTail" selectable="YES" editable="YES" alignment="left" title="Text Cell" id="9kk-G5-u67">
-                                                                        <font key="font" metaFont="message" size="11"/>
+                                                                        <font key="font" metaFont="label" size="11"/>
                                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                         <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                     </textFieldCell>
@@ -2497,7 +2496,7 @@ DQ
                                                                                     <rect key="frame" x="0.0" y="0.0" width="596" height="14"/>
                                                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
                                                                                     <textFieldCell key="cell" controlSize="small" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" title="Table View Cell" id="xT9-Z8-yFA">
-                                                                                        <font key="font" metaFont="message" size="11"/>
+                                                                                        <font key="font" metaFont="label" size="11"/>
                                                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                                                     </textFieldCell>
@@ -2722,7 +2721,7 @@ DQ
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" horizontalScrollElasticity="none" verticalScrollElasticity="none" translatesAutoresizingMaskIntoConstraints="NO" id="GJA-9U-ZpH">
                                 <rect key="frame" x="0.0" y="0.0" width="280" height="806"/>
                                 <clipView key="contentView" id="dlR-kW-Rcs">
-                                    <rect key="frame" x="0.0" y="0.0" width="280" height="806"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="265" height="806"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qEX-Qz-3dZ" customClass="FlippedStackView" customModule="DicomiX" customModuleProvider="target">
@@ -2759,7 +2758,7 @@ DQ
                                                                 <constraint firstAttribute="width" constant="155" id="MJU-jk-YOQ"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" lineBreakMode="truncatingTail" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="WVF-TC-dpV">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -2781,7 +2780,7 @@ DQ
                                                                 <constraint firstAttribute="width" constant="155" id="luN-Po-8Kx"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="kRp-fc-Pj7">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -2803,7 +2802,7 @@ DQ
                                                                 <constraint firstAttribute="width" constant="155" id="MZL-tE-b6X"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="Ndo-1s-7Xz">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -2825,7 +2824,7 @@ DQ
                                                                 <constraint firstAttribute="width" constant="155" id="lJn-Rs-mVm"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="qnm-bx-Mjy">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -2856,7 +2855,7 @@ DQ
                                                             <rect key="frame" x="91" y="10" width="148" height="52"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" lineBreakMode="charWrapping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="KHG-ZK-V5U">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -2923,7 +2922,7 @@ DQ
                                                                 <constraint firstAttribute="width" constant="155" id="tu5-FX-93L"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" lineBreakMode="truncatingTail" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="asM-Yc-34m">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -2935,7 +2934,7 @@ DQ
                                                                 <constraint firstAttribute="width" constant="155" id="kyx-mi-n4x"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="Qak-D9-VuZ">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -2958,7 +2957,7 @@ DQ
                                                                 <constraint firstAttribute="height" constant="14" id="UF7-OW-uEv"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="mr0-fu-9k4">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -2981,7 +2980,7 @@ DQ
                                                                 <constraint firstAttribute="width" constant="155" id="Sdu-mn-7JD"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="bfL-FT-oaK">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3059,7 +3058,7 @@ DQ
                                                             <rect key="frame" x="104" y="83" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="WWf-Xy-rV6">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3077,7 +3076,7 @@ DQ
                                                             <rect key="frame" x="104" y="60" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="FOu-4e-9g7">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3095,7 +3094,7 @@ DQ
                                                             <rect key="frame" x="104" y="37" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="ODb-yb-O6D">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3113,7 +3112,7 @@ DQ
                                                             <rect key="frame" x="104" y="14" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="2bX-xp-ACM">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3151,7 +3150,7 @@ DQ
                                                             <rect key="frame" x="104" y="104" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="v4W-rP-YFA">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3169,7 +3168,7 @@ DQ
                                                             <rect key="frame" x="104" y="81" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="xpb-Pj-jsA">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3187,7 +3186,7 @@ DQ
                                                             <rect key="frame" x="104" y="58" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="eeM-nX-g4B">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3205,7 +3204,7 @@ DQ
                                                             <rect key="frame" x="104" y="35" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="l3P-8x-cjQ">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3223,7 +3222,7 @@ DQ
                                                             <rect key="frame" x="103" y="12" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="RMf-kX-RfY">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3282,7 +3281,7 @@ DQ
                                                             <rect key="frame" x="104" y="83" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="B0B-PY-76m">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3300,7 +3299,7 @@ DQ
                                                             <rect key="frame" x="104" y="60" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="sKy-Kp-3kj">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3318,7 +3317,7 @@ DQ
                                                             <rect key="frame" x="104" y="37" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="B3T-hX-NlW">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3340,7 +3339,7 @@ DQ
                                                             <rect key="frame" x="104" y="14" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="L6K-f8-BdI">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3386,7 +3385,7 @@ DQ
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="yKc-Kb-dBM">
-                                    <rect key="frame" x="264" y="0.0" width="16" height="806"/>
+                                    <rect key="frame" x="265" y="0.0" width="15" height="806"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
@@ -3439,7 +3438,7 @@ DQ
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" horizontalScrollElasticity="none" translatesAutoresizingMaskIntoConstraints="NO" id="dlA-Fq-5hJ">
                                 <rect key="frame" x="0.0" y="0.0" width="295" height="383"/>
                                 <clipView key="contentView" id="LyN-nx-X1I">
-                                    <rect key="frame" x="0.0" y="0.0" width="295" height="383"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="280" height="383"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="OLp-hB-Tbc" customClass="FlippedStackView" customModule="DicomiX" customModuleProvider="target">
@@ -3466,7 +3465,7 @@ DQ
                                                                 <constraint firstAttribute="height" constant="14" id="vd6-46-hnR"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" lineBreakMode="truncatingTail" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" placeholderString="Not selected" id="CYi-Fs-OJq">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3490,7 +3489,7 @@ DQ
                                                                 <constraint firstAttribute="width" constant="155" id="hDb-WW-jRX"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" placeholderString="Not selected" id="nbK-hR-K1v">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3514,7 +3513,7 @@ DQ
                                                                 <constraint firstAttribute="height" constant="14" id="qSb-mm-CHa"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" placeholderString="Not selected" id="SdZ-Kk-9Ro">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3538,7 +3537,7 @@ DQ
                                                                 <constraint firstAttribute="height" constant="14" id="Kl4-gx-IXT"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" lineBreakMode="truncatingTail" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" placeholderString="Not selected" id="mbf-gT-hyD">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3562,7 +3561,7 @@ DQ
                                                                 <constraint firstAttribute="height" constant="14" id="Ymu-q6-zZb"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" lineBreakMode="truncatingTail" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" placeholderString="Not selected" id="fFV-3A-iGo">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3645,7 +3644,7 @@ DQ
                                                                 <constraint firstAttribute="width" constant="155" id="nOQ-Zv-wIP"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" placeholderString="Not selected" id="urE-wV-0SP">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3673,7 +3672,7 @@ DQ
                                                                 <constraint firstAttribute="height" constant="14" id="q44-JQ-Xaj"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" placeholderString="Not selected" id="9h3-9t-lKk">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3697,7 +3696,7 @@ DQ
                                                                 <constraint firstAttribute="width" constant="165" id="txN-b3-whu"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="Empty selection" drawsBackground="YES" id="jKs-UI-7ml">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3724,7 +3723,7 @@ DQ
                                                                 <constraint firstAttribute="width" constant="155" id="KYm-0S-FA4"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" placeholderString="Not selected" id="cGk-fd-Q5g">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3739,7 +3738,7 @@ DQ
                                                                 <constraint firstAttribute="height" constant="14" id="m6d-F8-D4l"/>
                                                             </constraints>
                                                             <textFieldCell key="cell" lineBreakMode="clipping" title="Not editable" id="E2O-bi-RDf">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" white="0.66666666669999997" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3801,7 +3800,7 @@ DQ
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="D7p-1H-3Kn">
-                                    <rect key="frame" x="279" y="0.0" width="16" height="383"/>
+                                    <rect key="frame" x="280" y="0.0" width="15" height="383"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
@@ -3841,7 +3840,7 @@ DQ
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" horizontalScrollElasticity="none" translatesAutoresizingMaskIntoConstraints="NO" id="sgI-28-aeY">
                                 <rect key="frame" x="0.0" y="0.0" width="295" height="516"/>
                                 <clipView key="contentView" id="9xU-8Z-d6L">
-                                    <rect key="frame" x="0.0" y="0.0" width="295" height="516"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="280" height="516"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="mIT-bh-wrI" customClass="FlippedStackView" customModule="DicomiX" customModuleProvider="target">
@@ -3892,7 +3891,7 @@ DQ
                                                             <rect key="frame" x="110" y="88" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="V9s-a1-a5u">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3910,7 +3909,7 @@ DQ
                                                             <rect key="frame" x="110" y="66" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="G44-5k-pNj">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3928,7 +3927,7 @@ DQ
                                                             <rect key="frame" x="110" y="43" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="Vap-kH-4VI">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3946,7 +3945,7 @@ DQ
                                                             <rect key="frame" x="110" y="20" width="159" height="14"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" id="VoI-Zz-bPs">
-                                                                <font key="font" metaFont="message" size="11"/>
+                                                                <font key="font" metaFont="label" size="11"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
@@ -3979,7 +3978,7 @@ DQ
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="8qi-iE-UgY">
-                                    <rect key="frame" x="279" y="0.0" width="16" height="516"/>
+                                    <rect key="frame" x="280" y="0.0" width="15" height="516"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
@@ -4097,6 +4096,7 @@ DQ
         <image name="NSShareTemplate" width="11" height="16"/>
         <image name="TB_Console" width="17" height="17"/>
         <image name="TB_Export" width="16" height="16"/>
+        <image name="TB_FormattedData" width="16" height="16"/>
         <image name="TB_HexData" width="16" height="16"/>
         <image name="TB_Inspector" width="17" height="17"/>
         <image name="TB_Sidebar" width="17" height="17"/>

@@ -233,8 +233,8 @@ class WindowController: NSWindowController, NSToolbarDelegate {
         }
     }
     
-    @IBAction func toggleHexData(_ sender: Any) {
-        self.splitViewController.toggleHexData(sender)
+    @IBAction func updateValueFormat(_ sender: Any) {
+        self.splitViewController.updateValueFormat(sender)
     }
     
     @IBAction func export(_ sender: Any) {
