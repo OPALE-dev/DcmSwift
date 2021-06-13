@@ -41,6 +41,11 @@
 		4C3D72222672A3E40003E6D9 /* Dictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D72202672A3E10003E6D9 /* Dictionary.swift */; };
 		4C3D72232672A3E40003E6D9 /* Dictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D72202672A3E10003E6D9 /* Dictionary.swift */; };
 		4C3D72252672A8C80003E6D9 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D72242672A8C80003E6D9 /* Image.swift */; };
+		4C3D72272672B4910003E6D9 /* DicomInputStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D72262672B4910003E6D9 /* DicomInputStream.swift */; };
+		4C3D722826736EED0003E6D9 /* DicomInputStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D72262672B4910003E6D9 /* DicomInputStream.swift */; };
+		4C3D722926736EEE0003E6D9 /* DicomInputStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D72262672B4910003E6D9 /* DicomInputStream.swift */; };
+		4C3D722A2673B09E0003E6D9 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D72242672A8C80003E6D9 /* Image.swift */; };
+		4C3D722B2673B09F0003E6D9 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D72242672A8C80003E6D9 /* Image.swift */; };
 		4C3EF244226E3AAC0062B5A3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF243226E3AAC0062B5A3 /* AppDelegate.swift */; };
 		4C3EF246226E3AAC0062B5A3 /* DataViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF245226E3AAC0062B5A3 /* DataViewController.swift */; };
 		4C3EF249226E3AAC0062B5A3 /* MagiX.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 4C3EF247226E3AAC0062B5A3 /* MagiX.xcdatamodeld */; };
@@ -281,6 +286,7 @@
 		4C3CD47C1F96981D00323E8A /* DataElement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataElement.swift; sourceTree = "<group>"; };
 		4C3D72202672A3E10003E6D9 /* Dictionary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dictionary.swift; sourceTree = "<group>"; };
 		4C3D72242672A8C80003E6D9 /* Image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
+		4C3D72262672B4910003E6D9 /* DicomInputStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomInputStream.swift; sourceTree = "<group>"; };
 		4C3EF241226E3AAC0062B5A3 /* MagiX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MagiX.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C3EF243226E3AAC0062B5A3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		4C3EF245226E3AAC0062B5A3 /* DataViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataViewController.swift; sourceTree = "<group>"; };
@@ -720,6 +726,7 @@
 			isa = PBXGroup;
 			children = (
 				4C3CD4781F9697DC00323E8A /* DicomFile.swift */,
+				4C3D72262672B4910003E6D9 /* DicomInputStream.swift */,
 				4C7B78D01FA1485B005BB2A2 /* DicomDate.swift */,
 				4C783E6A1F969DC500E46F30 /* DicomData.swift */,
 				4C5BF0901FABB4730051F4FE /* DicomString.swift */,
@@ -1053,6 +1060,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4C24CB1F266FEBF50001CEFD /* PixelSequence.swift in Sources */,
+				4C3D722926736EEE0003E6D9 /* DicomInputStream.swift in Sources */,
 				4C24CB1D266FEBF50001CEFD /* DataItem.swift in Sources */,
 				4C24CB1C266FEBF50001CEFD /* DataSequence.swift in Sources */,
 				4C24CB24266FEBF50001CEFD /* DicomObject.swift in Sources */,
@@ -1060,6 +1068,7 @@
 				4C3D72232672A3E40003E6D9 /* Dictionary.swift in Sources */,
 				4C24CB23266FEBF50001CEFD /* DicomString.swift in Sources */,
 				4C24CB1B266FEBF50001CEFD /* DataElement.swift in Sources */,
+				4C3D722B2673B09F0003E6D9 /* Image.swift in Sources */,
 				4C24CB29266FEBF50001CEFD /* DicomImage.swift in Sources */,
 				4C24CB28266FEBF50001CEFD /* Logger.swift in Sources */,
 				4C24CB25266FEBF50001CEFD /* DicomError.swift in Sources */,
@@ -1128,6 +1137,7 @@
 				4C53D6F3227CAFB20003724F /* AssociationAC.swift in Sources */,
 				4C53D6E8227B6D0D0003724F /* UserInfo.swift in Sources */,
 				4C7B78D11FA1485B005BB2A2 /* DicomDate.swift in Sources */,
+				4C3D72272672B4910003E6D9 /* DicomInputStream.swift in Sources */,
 				4C8D79991F989EDD008300E3 /* DicomData.swift in Sources */,
 				4C53D6EF227C8B940003724F /* CommandField.swift in Sources */,
 				4C8D79961F989EDD008300E3 /* DataItem.swift in Sources */,
@@ -1169,6 +1179,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4C5BF0841FABA5E80051F4FE /* DataSet.swift in Sources */,
+				4C3D722826736EED0003E6D9 /* DicomInputStream.swift in Sources */,
 				4C5BF0851FABA5E80051F4FE /* DataElement.swift in Sources */,
 				4C5BF0861FABA5E80051F4FE /* DataSequence.swift in Sources */,
 				4C5BF0871FABA5E80051F4FE /* DataItem.swift in Sources */,
@@ -1176,6 +1187,7 @@
 				4C3D72222672A3E40003E6D9 /* Dictionary.swift in Sources */,
 				4C5BF0881FABA5E80051F4FE /* DataTag.swift in Sources */,
 				4C5BF0891FABA5E80051F4FE /* PixelSequence.swift in Sources */,
+				4C3D722A2673B09E0003E6D9 /* Image.swift in Sources */,
 				4CC932482292ED96001DFEB7 /* Logger.swift in Sources */,
 				4C5BF08A1FABA5E80051F4FE /* DicomFile.swift in Sources */,
 				4CC932492292ED9B001DFEB7 /* DicomError.swift in Sources */,

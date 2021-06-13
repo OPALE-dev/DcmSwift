@@ -85,8 +85,9 @@ import DcmSwift
 
 /** A SIMPLE FILE TESTER */
 
-let filePath = "/Users/nark/Development/Opale/Cocoa/DcmSwift/DcmSwiftTests/Test Files/US_JPEGBaseline1_MULTI_YBR_FULL_422_8_GEVingmedUltrasound_NULL_NULL_VividE9113.1.3_2.dcm"
+let filePath1 = "/Users/nark/Development/Opale/Cocoa/DcmSwift/DcmSwiftTests/Test Files/US_JPEGBaseline1_MULTI_YBR_FULL_422_8_GEVingmedUltrasound_NULL_NULL_VividE9113.1.3_2.dcm"
+let filePath2 = "/Users/nark/Development/Opale/Cocoa/DcmSwift/DcmSwiftTests/Test Files/US_JPEGBaseline1_MULTI_YBR_FULL_422_8_GEVingmedUltrasound_NULL_ECHOPAC_203_VividE95203.66.6_16.dcm"
 
-if let dicomFile = DicomFile(forPath: filePath) {
-    
+if let dicomFile = DicomFile(forPath: filePath2) {
+    print("\(dicomFile.dataset)")
 }

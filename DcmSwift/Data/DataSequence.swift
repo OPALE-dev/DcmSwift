@@ -46,6 +46,7 @@ public class DataSequence: DataElement {
         
         return json
     }
+    
 
     
     public override func toData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
