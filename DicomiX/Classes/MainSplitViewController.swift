@@ -64,9 +64,9 @@ class MainSplitViewController: NSSplitViewController {
     }
     
     
-    @IBAction func toggleHexData(_ sender: Any) {
+    @IBAction func updateValueFormat(_ sender: Any) {
         if let vc:ConsoleSplitViewController = self.children[1] as? ConsoleSplitViewController {
-            vc.toggleHexData(sender)
+            vc.updateValueFormat(sender)
         }
     }
     

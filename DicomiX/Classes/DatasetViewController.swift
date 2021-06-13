@@ -16,6 +16,12 @@ extension Notification.Name {
 
 
 class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineViewDataSource, NSMenuDelegate, NSTableViewDelegate, NSTableViewDataSource, NSSplitViewDelegate {
+    private enum ValueFormat {
+        case human
+        case raw
+        case binary
+    }
+    
     @IBOutlet weak var splitView: NSSplitView!
     @IBOutlet weak var validationView: NSView!
     @IBOutlet weak var validationToggleButton: NSButton!
@@ -32,7 +38,7 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     public var validationResults:[ValidationResult] = []
     public var filteredValidationResults:[ValidationResult] = []
     
-    private var showHexData:Bool = false
+    private var valueFormat:ValueFormat = .human
     private var nbError:Int = 0
     private var nbWarning:Int = 0
     
@@ -169,10 +175,24 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     
     
     
-    @IBAction func toggleHexData(_ sender: Any) {
-        if let button = sender as? NSButton {
-            self.showHexData = button.state == NSControl.StateValue.on ? true : false
+    @IBAction func updateValueFormat(_ sender: Any) {
+        if let segmentedControl  = sender as? NSSegmentedControl {
+            
+            switch segmentedControl.selectedSegment {
+            case 0:
+                self.valueFormat = .human
+            case 1:
+                self.valueFormat = .raw
+            case 2:
+                self.valueFormat = .binary
+            default:
+                self.valueFormat = .human
+            }
+            
             self.datasetOutlineView.reloadData()
+            
+//            self.showHexData = button.state == NSControl.StateValue.on ? true : false
+//            self.datasetOutlineView.reloadData()
         }
     }
     
@@ -446,16 +466,26 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             }
             else if identifier == "ElementValue" {
                 if !(element.value is Data) {
-                    if !self.showHexData {                        
+                    switch self.valueFormat {
+                    case .human:
                         if element.vr == .DA || element.vr == .TM || element.vr == .DT {
-
                             if let date = element.value as? Date {
                                 view?.textField?.objectValue = date.format(accordingTo: element.vr)
+                            }
+                        } else if element.vr == .UI {
+                            if let uui = element.value as? String {
+                                view?.textField?.objectValue = DicomSpec.shared.nameForUID(withUID: uui)
                             }
                         } else {
                             view?.textField?.objectValue = element.value
                         }
-                    } else {
+                    case .raw:
+                        if element.data != nil {
+                            view?.textField?.objectValue = String(bytes: element.data, encoding: .utf8)
+                        } else {
+                            view?.textField?.objectValue = element.value
+                        }
+                    case .binary:
                         if element.data != nil {
                             //view?.textField?.stringValue = element.data.toHex()
                             let end = element.data.count >= 50 ? 50 : element.data.count-1
