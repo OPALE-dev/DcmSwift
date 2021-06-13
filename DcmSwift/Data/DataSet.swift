@@ -24,7 +24,7 @@ public class DataSet: DicomObject {
     public var internalValidations:[ValidationResult]       = []
     
     private var data:Data!
-    
+    private var stream:DicomInputStream!
     
     public override init() {
         prefixHeader = false
@@ -66,52 +66,53 @@ public class DataSet: DicomObject {
             data = withData
         }
         
+        stream = DicomInputStream(dataset: self, data: data)
+        stream.forward(by: offset)
+        
         // reset elements arrays
         metaInformationHeaderElements  = []
         datasetElements                = []
         allElements                    = []
         
-        while(offset < data.count && !isCorrupted) {
-            let (newElement, elementOffset) = readDataElement(offset: offset)
-                        
-            if newElement.name == "FileMetaInformationGroupLength" {
-                fileMetaInformationGroupLength = newElement.value as! Int32
-            }
-            
-            // determine transfer syntax
-            if newElement.name == "TransferSyntaxUID" {
-                transferSyntax = newElement.value as! String
+        while(stream.hasBytesAvailable && !isCorrupted) {
+            if let newElement = stream.readDataElement(dataset: self, parent: nil) {
+                if newElement.name == "FileMetaInformationGroupLength" {
+                    fileMetaInformationGroupLength = newElement.value as! Int32
+                }
                 
-                if transferSyntax == DicomConstants.implicitVRLittleEndian {
-                    vrMethod  = .Implicit
-                    byteOrder = .LittleEndian
-                }
-                else if transferSyntax == DicomConstants.explicitVRBigEndian {
-                    vrMethod  = .Explicit
-                    byteOrder = .BigEndian
-                }
-                else {
-                    vrMethod  = .Explicit
-                    byteOrder = .LittleEndian
-                }
-            }
-            
-            // append to sub-datasets
-            if !isCorrupted {
-                //Logger.debug(newElement)
-                
-                if newElement.group != DicomConstants.metaInformationGroup {
-                    datasetElements.append(newElement)
-                }
-                else {
-                    metaInformationHeaderElements.append(newElement)
+                // determine transfer syntax
+                if newElement.name == "TransferSyntaxUID" {
+                    transferSyntax = newElement.value as! String
                     
+                    if transferSyntax == DicomConstants.implicitVRLittleEndian {
+                        vrMethod  = .Implicit
+                        byteOrder = .LittleEndian
+                    }
+                    else if transferSyntax == DicomConstants.explicitVRBigEndian {
+                        vrMethod  = .Explicit
+                        byteOrder = .BigEndian
+                    }
+                    else {
+                        vrMethod  = .Explicit
+                        byteOrder = .LittleEndian
+                    }
                 }
                 
-                allElements.append(newElement)
+                // append to sub-datasets
+                if !isCorrupted {
+                    //Logger.debug(newElement)
+                    
+                    if newElement.group != DicomConstants.metaInformationGroup {
+                        datasetElements.append(newElement)
+                    }
+                    else {
+                        metaInformationHeaderElements.append(newElement)
+                        
+                    }
+                    
+                    allElements.append(newElement)
+                }
             }
-            
-            offset = elementOffset
         }
         
         // be sure to sort all dataset elements by group, then element
@@ -877,7 +878,7 @@ extension DataSet {
     
     
     
-    
+    // MARK : -
     private func write(dataElement element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit, byteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
         var data = Data()
         var localVRMethod:DicomConstants.VRMethod = .Explicit

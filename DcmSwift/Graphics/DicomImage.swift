@@ -333,7 +333,9 @@ public class DicomImage {
                     }
                 } else {
                     // solo image
-                    self.frames.append(pixelDataElement.data)
+                    if pixelDataElement.data != nil {
+                        self.frames.append(pixelDataElement.data)
+                    }
                 }
             }
         }
