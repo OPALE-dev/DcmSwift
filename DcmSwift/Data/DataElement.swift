@@ -52,7 +52,7 @@ public class DataElement : DicomObject {
     }
     
     
-    init(withTag tag:DataTag, dataset:DataSet, parent:DataElement? = nil) {
+    init(withTag tag:DataTag, dataset:DataSet? = nil, parent:DataElement? = nil) {
         self.dataset    = dataset
         self.tag        = tag
         
