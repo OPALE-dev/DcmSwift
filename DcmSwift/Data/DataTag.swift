@@ -162,7 +162,7 @@ public class DataTag : DicomObject {
             let elem2       = self.data.subdata(in: 3..<4).toHex()
             
             self.group      = group1 + group2
-            self.element    = elem1 + elem2
+            self.element    = elem1  + elem2
         } else {
             let group1      = self.data.subdata(in: 0..<1).toHex()
             let group2      = self.data.subdata(in: 1..<2).toHex()

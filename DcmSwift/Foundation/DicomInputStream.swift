@@ -72,6 +72,8 @@ public class DicomInputStream {
             return nil
         }
         
+        print("tag : \(tag)")
+        
         let startOffset = offset
         
         var element = DataElement(withTag:tag, dataset: dataset, parent: parent)
@@ -150,38 +152,41 @@ public class DicomInputStream {
     private func readVR(element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit) -> DicomConstants.VR {
         var vr:DicomConstants.VR = .UL
         
+        if element.tagCode() == "00080000" {
+            return .UL
+        }
+                
         if vrMethod == .Explicit {
             vr = DicomSpec.vr(for: read(length: 2).toString())
             
-            // 0000H reserved VR bytes
-            // http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.5.html
-            if vr == .SQ {
-                self.forward(by: 2)
-            }
             // Table 7.1-1. Data Element with Explicit VR of OB, OW, OF, SQ, UT or UN
             // http://dicom.nema.org/Dicom/2013/output/chtml/part05/chapter_7.html
-            else if vr == .OB ||
-                    vr == .OW ||
-                    vr == .OF ||
-                    vr == .SQ ||
-                    vr == .UT ||
-                    vr == .UN {
+            // 0000H reserved VR bytes
+            // http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.5.html
+            if     vr == .SQ ||
+                   vr == .OB ||
+                   vr == .OW ||
+                   vr == .OF ||
+                   vr == .SQ ||
+                   vr == .UT ||
+                   vr == .UN {
                 self.forward(by: 2)
             }
-        }
-        else {
+        } else {
             // if it's an implicit element group length
             // we set the VR as undefined
             if element.element == "0000" {
+                print("force UL")
                 vr = .UL
             }
             // else we take the VR from the spec
             else {
+                print("spec VR")
                 // TODO: manage VR couples (ex: "OB/OW" in xml spec)
                 vr = DicomSpec.shared.vrForTag(withCode:element.tag.code)
             }
         }
-        
+                
         return vr
     }
     
@@ -241,7 +246,7 @@ public class DicomInputStream {
         byteOrder:DicomConstants.ByteOrder,
         parent: DataElement? = nil
     ) -> DataSequence? {
-        let sequence:DataSequence = DataSequence(withTag:tag)
+        let sequence:DataSequence = DataSequence(withTag:tag, parent: parent)
         var bytesRead = 0
                 
         if length > 0 {
