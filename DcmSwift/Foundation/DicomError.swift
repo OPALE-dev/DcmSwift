@@ -37,7 +37,7 @@ public class DicomError: NSObject {
     /// the internal error code of the error, depending of the internal error realm
     private var errorCode:Int!
     /// the internal error level
-    private var errorLevel:ErrorLevel!
+    public var errorLevel:ErrorLevel!
     /// the internal error realm
     private var errorRealm:ErrorRealm!
     /// custom description used for custom realm
