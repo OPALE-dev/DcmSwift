@@ -64,7 +64,7 @@ public class DataElement : DicomObject {
     
     init?(withTagName name:String, dataset:DataSet, parent:DataElement? = nil) {
         if let t = DicomSpec.shared.dataTag(forName: name) {
-            self.vr     = DicomSpec.shared.vrForTag(withCode: t.code)
+            self.vr     = DicomSpec.shared.vrForTag(withCode: t.code)!
             self.tag    = t
         } else {
             return nil
@@ -284,7 +284,7 @@ public class DataElement : DicomObject {
     
     
     override public var description: String {
-        return "\(self.startOffset) \(self.tag) \(self.vr)[\(self.length)] \t \(self.name) \(self.dataOffset) [\(self.value)] \(self.endOffset)"
+        return "\(self.startOffset) \(self.tag) \(self.vr)[\(self.value)] \t \(self.name) \(self.dataOffset) [\(self.length)] \(self.endOffset)"
     }
     
     

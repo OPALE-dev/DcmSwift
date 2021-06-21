@@ -30,7 +30,7 @@ public class DataTF: PDUMessage {
         
         if commandData.count > 0 {
             if self.flags == 0x03 {
-                if let dataset = DataSet(withData: commandData, readHeader: false) {
+                if let dataset = DataSet(withData: commandData, hasPreamble: false) {
                     if dataset.loadData() {
                         // decode DIMSE status
                         if let status = dataset.element(forTagName: "Status") {

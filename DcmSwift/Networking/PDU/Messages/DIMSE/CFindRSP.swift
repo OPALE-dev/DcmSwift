@@ -23,8 +23,8 @@ public class CFindRSP: DataTF {
         
         if commandData.count > 0 {
             if self.flags == 0x02 {
-                if let dataset = DataSet(withData: commandData, readHeader: false) {
-                    dataset.prefixHeader = false
+                if let dataset = DataSet(withData: commandData, hasPreamble: false) {
+                    dataset.hasPreamble = false
                     dataset.forceExplicit = true
                     if dataset.loadData() {
                         responseDataset = dataset

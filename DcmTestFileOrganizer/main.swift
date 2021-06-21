@@ -91,6 +91,10 @@ let filePath1 = "/Users/nark/Development/Opale/Cocoa/DcmSwift/DcmSwiftTests/Test
 
 let filePath2 = "/Users/nark/Development/Opale/Cocoa/DcmSwift/DcmSwiftTests/Test Files/US_JPEGBaseline1_MULTI_YBR_FULL_422_8_GEVingmedUltrasound_NULL_ECHOPAC_203_VividE95203.66.6_16.dcm"
 
-if let dicomFile = DicomFile(forPath: filePath0) {
-    //print("\(dicomFile.dataset)")
+let filePath3 = "/Users/nark/Development/Opale/Cocoa/DcmSwift/DcmSwiftTests/Test Files/CR_ImplicitVRLittleEndian_SINGLE_MONOCHROME1_16_FUJIPHOTOFILMCO.LTD._NULL_NULL_NULL_22.dcm"
+
+let filePath4 = "/Users/nark/Development/Opale/Cocoa/DcmSwift/DcmSwiftTests/Test Files/US_JPEGBaseline1_MULTI_YBR_FULL_8_GEHealthcare_NULL_GDCM2.8.9_LOGIQE10R1.5.1_28.dcm"
+
+if let dicomFile = DicomFile(forPath: filePath1) {
+    print("\(dicomFile.dataset!)")
 }

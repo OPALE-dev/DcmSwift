@@ -171,7 +171,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Parameter vr: VR enum
      
      */
-    public static func vr(for vr:String) -> DicomConstants.VR {
+    public static func vr(for vr:String) -> DicomConstants.VR? {
         switch vr {
         case "AE":
             return .AE
@@ -234,7 +234,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         case "OB/OW":
             return .OB
         default:
-            return .UN
+            return nil
         }
     }
     
@@ -307,7 +307,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Parameter code: string composed of DICOM group and element
      - Returns: en VR enum
      */
-    public func vrForTag(withCode code: String) -> DicomConstants.VR {
+    public func vrForTag(withCode code: String) -> DicomConstants.VR? {
         if tags.keys.contains(code) {
             if let t = tags[code] {
                 if let v = t["vr"] {
@@ -316,7 +316,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             }
         }
         
-        return .UN
+        return nil
     }
     
     
@@ -465,7 +465,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         var results:[ValidationResult] = []
         
         // TODO: more file/dataset level validation
-        if !file.hasPrefixHeader {
+        if !file.hasPreamble {
             results.append(ValidationResult(file, message: "No prefix header was found", severity: .Notice))
         }
         

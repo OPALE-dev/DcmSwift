@@ -330,7 +330,7 @@ public class DicomAssociation : NSObject {
                         if PDUType(rawValue: f) == PDUType.dataTF {
                             let commandData = readData.subdata(in: 12..<readData.count)
                             if commandData.count > 0 {
-                                if let dataset = DataSet(withData: commandData, readHeader: false) {
+                                if let dataset = DataSet(withData: commandData, hasPreamble: false) {
                                     if dataset.loadData() {
                                         if let command = dataset.element(forTagName: "CommandField") {
                                             let c = command.data.toUInt16(byteOrder: .LittleEndian)

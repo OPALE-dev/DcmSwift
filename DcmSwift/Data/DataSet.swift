@@ -9,12 +9,12 @@
 import Foundation
 
 public class DataSet: DicomObject {
-    public var fileMetaInformationGroupLength:Int32 = 0
+    public var fileMetaInformationGroupLength       = 0
     public var transferSyntax:String                = DicomConstants.implicitVRLittleEndian
     public var vrMethod:DicomConstants.VRMethod     = .Explicit
     public var byteOrder:DicomConstants.ByteOrder   = .LittleEndian
     public var forceExplicit:Bool                   = false
-    public var prefixHeader:Bool                    = true
+    public var hasPreamble:Bool                    = true
     internal var isCorrupted:Bool                   = false
     
     public var metaInformationHeaderElements:[DataElement]  = []
@@ -27,15 +27,13 @@ public class DataSet: DicomObject {
     private var stream:DicomInputStream!
     
     public override init() {
-        prefixHeader = false
-        
-        
+        hasPreamble = false
     }
     
     
-    public init?(withData data:Data, readHeader:Bool = true) {
+    public init?(withData data:Data, hasPreamble:Bool = true) {
         self.data           = data
-        self.prefixHeader   = readHeader
+        self.hasPreamble    = hasPreamble
     }
     
     
@@ -45,7 +43,15 @@ public class DataSet: DicomObject {
         
         sortElements()
         
-        for e in allElements {
+        string += "# Dicom-Meta-Information-Header\n"
+        string += "# Used TransferSyntax: \(DicomConstants.VRMethod.Explicit)\n"
+        for e in metaInformationHeaderElements {
+            string += e.description + "\n"
+        }
+        string += "\n"
+        string += "# Dicom-Meta-Information-Header\n"
+        string += "# Used TransferSyntax: \(self.transferSyntax)\n"
+        for e in datasetElements {
             string += e.description + "\n"
         }
         
@@ -58,10 +64,12 @@ public class DataSet: DicomObject {
     public func loadData(_ withData:Data? = nil) -> Bool {
         var offset = 0
         
-        if prefixHeader {
+        if hasPreamble {
             offset = DicomConstants.dicomBytesOffset
+        } else {
+            vrMethod  = .Implicit
         }
-        
+                
         if withData != nil {
             data = withData
         }
@@ -75,9 +83,9 @@ public class DataSet: DicomObject {
         allElements                    = []
         
         while(stream.hasBytesAvailable && !isCorrupted) {
-            if let newElement = stream.readDataElement(dataset: self, parent: nil) {
+            if let newElement = stream.readDataElement(dataset: self, parent: nil, vrMethod: vrMethod, order: byteOrder) {
                 if newElement.name == "FileMetaInformationGroupLength" {
-                    fileMetaInformationGroupLength = newElement.value as! Int32
+                    fileMetaInformationGroupLength = Int(newElement.value as! Int32)
                 }
                 
                 // determine transfer syntax
@@ -97,7 +105,7 @@ public class DataSet: DicomObject {
                         byteOrder = .LittleEndian
                     }
                 }
-                
+                                            
                 // append to sub-datasets
                 if !isCorrupted {
                     //Logger.debug(newElement)
@@ -138,7 +146,7 @@ public class DataSet: DicomObject {
             finalOrder = inByteOrder
         }
         
-        if prefixHeader {
+        if hasPreamble {
             // write 128 bytes preamble
             newData.append(Data(repeating: 0x00, count: 128))
             
@@ -488,395 +496,6 @@ extension DataSet {
     
     
     
-    private func readDataElement(offset:Int) -> (DataElement, Int) {
-        var order:DicomConstants.ByteOrder           = .LittleEndian
-        var localVRMethod:DicomConstants.VRMethod    = .Explicit
-        var length:Int                          = 0
-        var os                                  = offset
-
-        // set local byte order to enforce Little Endian for Prefix Header elements
-        if byteOrder == .BigEndian && os >= fileMetaInformationGroupLength+144 {
-            order = .BigEndian
-        } else {
-            order = .LittleEndian
-        }
-
-        if prefixHeader {
-            // set local VR Method to enforce Explicit for Prefix Header elements
-            if vrMethod == .Implicit && os >= fileMetaInformationGroupLength+144 {
-                localVRMethod = .Implicit
-            } else {
-                localVRMethod = .Explicit
-            }
-        } else {
-            // force implicit if no header (truncated DICOM file, ACR-NEMA, etc)
-            localVRMethod = .Implicit
-        }
-        
-        if forceExplicit {
-            localVRMethod = .Explicit
-        }
-        
-//        if os < 0 || os+4 > data.count {
-//            let msg = "Fatal, next tag is not readable: unknow offset error"
-//            let v = ValidationResult(self, message: msg, severity: .Fatal)
-//
-//            internalValidations.append(v)
-//            Logger.error(msg)
-//
-//            isCorrupted = true
-//
-//            return (nil, data.count)
-//        }
-        
-        // read tag
-        let tagData = data.subdata(in: os..<os+4)
-        let tag = DataTag(withData:tagData, byteOrder:order)
-        
-        os += 4
-    
-        // create new data element
-        var element:DataElement = DataElement(withTag:tag, dataset: self)
-        element.startOffset = os
-        element.byteOrder = order
-        
-        // read VR
-        if localVRMethod == .Explicit {
-            element.vr = DicomSpec.vr(for: data.subdata(in: os..<os+2).toString())
-            
-            // 0000H reserved VR bytes
-            // http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.5.html
-            if element.vr == .SQ {
-                os += 4
-            }
-            // Table 7.1-1. Data Element with Explicit VR of OB, OW, OF, SQ, UT or UN
-            // http://dicom.nema.org/Dicom/2013/output/chtml/part05/chapter_7.html
-            else if element.vr == .OB ||
-                element.vr == .OW ||
-                element.vr == .OF ||
-                element.vr == .SQ ||
-                element.vr == .UT ||
-                element.vr == .UN {
-                os += 4
-            } else {
-                os += 2
-            }
-        }
-        else {
-            // if it's an implicit element group length
-            // we set the VR as undefined
-            if element.element == "0000" {
-                element.vr = .UL
-            }
-            // else we take the VR from the spec
-            else {
-                // TODO: manage VR couples (ex: "OB/OW" in xml spec)
-                element.vr = DicomSpec.shared.vrForTag(withCode:element.tag.code)
-            }
-        }
-        
-        // read length
-        if localVRMethod == .Explicit {
-            if element.vr == .SQ {
-                let bytes:Data = data.subdata(in: os..<os+4)
-                
-                if bytes == Data([0xff, 0xff, 0xff, 0xff]) {
-                    length = -1
-                } else {
-                    length = Int(data.subdata(in: os..<os+4).toInt32(byteOrder: order))
-                }
-                os += 4
-            } else if element.vr == .OB ||
-                element.vr == .OW ||
-                element.vr == .OF ||
-                element.vr == .SQ ||
-                element.vr == .UT ||
-                element.vr == .UN {
-                length = Int(data.subdata(in: os..<os+4).toInt32(byteOrder: order))
-                os += 4
-            } else {
-                length = Int(data.subdata(in: os..<os+2).toInt16(byteOrder: order))
-                os += 2
-            }
-        }
-        else {
-            // implicit length
-            length = Int(data.subdata(in: os..<os+4).toInt32(byteOrder: order))
-            os += 4
-        }
-                
-        // CHECK FOR INVALID LENGTH
-        if length > data.count {
-            let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) overflows (\(length))"
-            return readError(forLength: Int(length), element: element, message: message)
-        }
-        
-//        if length <= -1 {
-//            let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) cannot be negative (\(length))"
-//            return readError(forLength: Int(length), element: element, message: message)
-//        }
-        
-        // MISSING VR FOR IMPLICIT ELEMENT
-        // TODO: if VR is implicit, do we need to use the correpsonding tag VR ?
-        element.dataOffset = os
-        
-        // read value data
-        if element.vr == .OW || element.vr == .OB {
-            if element.name == "PixelData" && length == -1 {
-                let (sequence, seqOffset) = readPixelSequence(tag: tag, offset: os, byteOrder: order)
-                sequence.parent         = element
-                sequence.vr             = element.vr
-                sequence.startOffset    = element.startOffset
-                sequence.dataOffset     = element.dataOffset
-                element                 = sequence
-                
-                // this +5 is very weird, but it works for some JPEGBaseline multiframe file
-                os = seqOffset + 5
-                
-            }
-            else {
-                element.data = data.subdata(in: os..<os+Int(length))
-            }
-        }
-        else if element.vr == .SQ {
-            let (sequence, seqOffset) = readDataSequence(tag:element.tag, offset: os, length: Int(length), byteOrder:order)
-            sequence.parent         = element
-            sequence.vr             = element.vr
-            sequence.startOffset    = element.startOffset
-            sequence.dataOffset     = element.dataOffset
-            element                 = sequence
-            
-            if sequence.vrMethod == .Implicit {
-                length = 0
-            }
-            
-            os = seqOffset
-        }
-        else {
-            // TODO: manage default value better ?
-            if length > 0 && (os + length < data.count) {
-                element.data = data.subdata(in: os..<os+Int(length))
-            } else {
-                //element.data = data.subdata(in: os..<data.count)
-            }
-        }
-        
-        element.length = Int(length)
-        
-        os += Int(length)
-        
-        // is Pixel Data reached
-//        if element.tagCode() == "7fe00010" {
-//            os = data.count
-//        }
-        
-        element.endOffset = os
-        
-        return (element, os)
-    }
-    
-    
-    
-    private func readError(forLength length:Int, element: DataElement, message:String) -> (DataElement, Int) {
-        let v = ValidationResult(element, message: message, severity: .Fatal)
-        
-        internalValidations.append(v)
-        isCorrupted = true
-        
-        Logger.error(message)
-        
-        return (element, data.count)
-    }
-    
-    
-    
-    
-    private func readDataSequence(tag:DataTag, offset:Int, length:Int, byteOrder:DicomConstants.ByteOrder) -> (DataSequence, Int) {
-        let sequence:DataSequence = DataSequence(withTag:tag)
-        var bytesRead = 0
-        var os = offset
-        
-        if length > 0 {
-            // data items
-            while (length > bytesRead) {
-                let tag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
-                bytesRead       += 4
-                os              += 4
-                
-                let itemLength   = data.subdata(in: os..<os+4).toInt32(byteOrder: byteOrder)
-                bytesRead       += 4
-                os              += 4
-                
-                // CHECK FOR INVALID LENGTH
-                if itemLength > data.count {
-                    let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) overflows (\(itemLength))"
-                    return readError(forLength: Int(itemLength), element: sequence, message: message) as! (DataSequence, Int)
-                }
-                if itemLength < -1 {
-                    let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) cannot be negative (\(itemLength))"
-                    return readError(forLength: Int(itemLength), element: sequence, message: message) as! (DataSequence, Int)
-                }
-                
-                let item         = DataItem(withTag:tag, parent: sequence)
-                item.length      = Int(itemLength)
-                item.startOffset = os - 12
-                item.dataOffset  = os
-                sequence.items.append(item)
-                
-                // item data elements
-                var itemBytesRead = 0
-                while(itemLength > itemBytesRead) {
-                    let (newElement, elementOffset) = readDataElement(offset: os)
-                    newElement.parent = item
-                    item.elements.append(newElement)
-                    
-                    itemBytesRead += elementOffset - os
-                    bytesRead += elementOffset - os
-                    
-                    os = elementOffset
-                }
-                item.endOffset = os
-            }
-        }
-            // Undefined Length data items (length == FFFFFFFF)
-        else if length == -1 {
-            sequence.vrMethod = .Implicit
-            
-            var tag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
-            os += 4
-            
-            while(tag.code == "fffee000") {
-                let subdata = data.subdata(in: os..<os+4)
-                var itemLength:Int16 = 0
-                
-                os += 4
-                
-                let item            = DataItem(withTag:tag, parent: sequence)
-                item.startOffset    = os - 8
-                item.dataOffset     = os
-                item.vrMethod       = .Implicit
-                
-                sequence.items.append(item)
-                
-                // Undefined Length data elements (ffffffff)
-                if subdata == Data([0xff, 0xff, 0xff, 0xff]) {
-                    var reachEnd = false
-                    
-                    while(reachEnd == false) {
-                        let subtag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
-                        
-                        if subtag.code != "fffee00d" {
-                            let (newElement, elementOffset) = readDataElement(offset: os)
-                            newElement.parent = item
-                            os = elementOffset
-                            
-                            item.elements.append(newElement)
-                        } else {
-                            reachEnd = true
-                            os += 8
-                        }
-                    }
-                    
-                    if tag.code == "fffee0dd" {
-                        os += 4
-                    }
-                    
-                    tag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
-                    os += 4
-                }
-                // Length defined data elements
-                else {
-                    itemLength  = subdata.toInt16(byteOrder: byteOrder)
-                    item.length = Int(itemLength)
-                    
-                    var itemBytesRead = 0
-                    while(itemLength > itemBytesRead) {
-                        let (newElement, elementOffset) = readDataElement(offset: os)
-                        newElement.parent = item
-                        item.elements.append(newElement)
-                        
-                        itemBytesRead += elementOffset - os
-                        bytesRead += elementOffset - os
-                        
-                        os = elementOffset
-                    }
-                    
-                    tag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
-                    os += 4
-                }
-                
-                item.endOffset = os
-            }
-            
-            os += 4
-            
-            // in order to return the good offset
-            return (sequence, os)
-        }
-        // empty sequence
-        else if length == 0 {
-            // TODO: fix issue when a empty sequence is the element of an item
-            //print("empty seq")
-            //print(sequence)
-        }
-        
-        return (sequence, offset)
-    }
-    
-    
-    
-    
-    private func readPixelSequence(tag:DataTag, offset:Int, byteOrder:DicomConstants.ByteOrder) -> (PixelSequence, Int) {
-        let pixelSequence = PixelSequence(withTag: tag)
-        var os = offset
-        
-        // read item tag
-        var itemTag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
-        os += 4
-                
-        while itemTag.code != "fffee0dd" {
-            // read item
-            let item            = DataItem(withTag: itemTag)
-            item.startOffset    = os - 4
-            item.dataOffset     = os
-            item.vrMethod       = .Explicit
-            
-            pixelSequence.items.append(item)
-            
-            // read item length
-            let itemLength = data.subdata(in: os..<os+4).toInt32(byteOrder: byteOrder)
-            
-            os += 4
-            
-            // CHECK FOR INVALID LENGTH
-            if itemLength > data.count {
-                let message = "Fatal, cannot read length properly, decoded length at offset(\(os-4)) overflows (\(itemLength))"
-                return readError(forLength: Int(itemLength), element: pixelSequence, message: message) as! (PixelSequence, Int)
-            }
-            if itemLength < -1 {
-                let message = "Fatal, cannot read length properly, decoded length cannot be negative (\(itemLength))"
-                return readError(forLength: Int(itemLength), element: pixelSequence, message: message) as! (PixelSequence, Int)
-            }
-            
-            item.length = Int(itemLength)
-            
-            if itemLength > 0 {
-                item.data = data.subdata(in: os..<os+Int(itemLength))
-                os += Int(itemLength)
-            }
-            
-            // read next again
-            if os < data.count {
-                itemTag = DataTag(withData: data.subdata(in: os..<os+4), byteOrder: byteOrder)
-                os += 4
-            }
-        }
-        
-        return (pixelSequence, os)
-    }
-    
-    
-    
     
     // MARK : -
     private func write(dataElement element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit, byteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
@@ -889,7 +508,7 @@ extension DataSet {
             order = .BigEndian
         }
         
-        if prefixHeader {
+        if hasPreamble {
             // set local VR Method to enforce Explicit for Prefix Header elements
             if vrMethod == .Implicit && element.endOffset > fileMetaInformationGroupLength+144 {
                 localVRMethod = .Implicit

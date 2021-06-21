@@ -20,7 +20,7 @@ public class DicomFile {
     /// The parsed dataset containing all the DICOM attributes
     public var dataset:DataSet!
     /// Define if the file has a standard DICOM prefix header. If yes, parsing witll start at 132 bytes offset, else at 0.
-    public var hasPrefixHeader:Bool = true
+    public var hasPreamble:Bool = true
     /// A flag that informs if the file is a DICOM encapsulated PDF
     public var isEncapsulatedPDF = false
     
@@ -234,7 +234,7 @@ extension DicomFile {
             let magic:String            = subdata.toString()
             
             if magic != "DICM" {
-                Logger.error("DICM magic word not found. Try without prefix-header (ACR-NEMA)")
+                Logger.error("DICM magic word not found. Try without 128 bytes preamble (ACR-NEMA)")
                 
                 // maybe try to catch no prefix header file (ACR-NEMA)
                 let range:Range<Data.Index> = 0..<8
@@ -246,13 +246,13 @@ extension DicomFile {
                     return false
                 }
                 
-                self.hasPrefixHeader = false
+                self.hasPreamble = false
             }
             
-            Logger.debug("  -> Meta-Information Header : \(!self.hasPrefixHeader)")
+            Logger.debug("  -> Meta-Information Header : \(!self.hasPreamble)")
             
             // read dataset and load data
-            self.dataset = DataSet(withData: data, readHeader: self.hasPrefixHeader)
+            self.dataset = DataSet(withData: data, hasPreamble: self.hasPreamble)
             let rez = self.dataset.loadData()
             
             Logger.debug("  -> Transfer Syntax : \(self.dataset.transferSyntax)")

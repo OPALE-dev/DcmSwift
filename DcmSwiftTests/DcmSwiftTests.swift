@@ -24,13 +24,13 @@ class DcmSwiftTests: XCTestCase {
     // Configure the test suite with the following boolean attributes
     
     /// Run tests on DICOM Date and Time
-    private static var testDicomDateAndTime     = true
+    private static var testDicomDateAndTime     = false
     
     /// Run tests to read files (rely on embedded test files, dynamically generated)
     private static var testDicomFileRead        = true
     
     /// Run tests to write files (rely on embedded test files, dynamically generated)
-    private static var testDicomFileWrite       = true
+    private static var testDicomFileWrite       = false
     
     /// Run tests to update dataset (rely on embedded test files, dynamically generated)
     private static var testDicomDataSet         = false
@@ -577,6 +577,13 @@ class DcmSwiftTests: XCTestCase {
             
             Logger.info("# Read succeeded")
             Logger.info("#")
+            
+            if dicomFile.isCorrupted() {
+                Logger.info("# WARNING : File is corrupted")
+                Logger.info("#")
+                return false
+            }
+            
             Logger.info("#########################################################")
             
             return true
