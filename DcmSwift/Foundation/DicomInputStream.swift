@@ -30,17 +30,7 @@ public class DicomInputStream {
     
     
     // MARK: -
-    public func read(length: Int) -> Data {
-        if offset + length > data.count {
-            return Data()
-        }
-        
-        let chunk = data.subdata(in: offset..<(offset + length))
-        
-        offset += length
-        
-        return chunk
-    }
+
     
     public func forward(by bytes: Int) {
         offset += bytes
@@ -51,17 +41,8 @@ public class DicomInputStream {
     }
     
     
-    // MARK: -
-    public func readDataTag(order:DicomConstants.ByteOrder = .LittleEndian) -> DataTag? {
-        let tagData = self.read(length: 4)
-        
-        if tagData.count < 4 {
-            return nil
-        }
-        
-        return DataTag(withData:tagData, byteOrder:order)
-    }
     
+    // MARK: -
     
     public func readDataElement(
         dataset:DataSet?                    = nil,
@@ -149,6 +130,30 @@ public class DicomInputStream {
         return element
     }
     
+    
+    
+    // MARK: -
+    private func readDataTag(order:DicomConstants.ByteOrder = .LittleEndian) -> DataTag? {
+        let tagData = self.read(length: 4)
+        
+        if tagData.count < 4 {
+            return nil
+        }
+        
+        return DataTag(withData:tagData, byteOrder:order)
+    }
+    
+    private func read(length: Int) -> Data {
+        if offset + length > data.count {
+            return Data()
+        }
+        
+        let chunk = data.subdata(in: offset..<(offset + length))
+        
+        offset += length
+        
+        return chunk
+    }
     
     private func readError(forLength length:Int, element: DataElement, message:String) -> DataElement {
         let v = ValidationResult(element, message: message, severity: .Fatal)

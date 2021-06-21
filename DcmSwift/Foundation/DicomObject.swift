@@ -8,6 +8,16 @@
 
 import Foundation
 
+
+public protocol DicomObjectProtocol {
+    var description: String { get }
+    func toData(vrMethod inVrMethod:DicomConstants.VRMethod, byteOrder inByteOrder:DicomConstants.ByteOrder) -> Data
+    func toXML() -> String
+    func toJSONArray() -> Any
+    func toJSON() -> String
+}
+
+
 /**
  The DicomObject class defines the structure and associated methods
  of a standard DICOM object.
@@ -18,7 +28,7 @@ import Foundation
  It also exposes data output and formatting methods common to
  its children classes.
  */
-public class DicomObject: CustomStringConvertible {
+public class DicomObject: CustomStringConvertible, DicomObjectProtocol {
     /**
      A string description of the DICOM object
      */
