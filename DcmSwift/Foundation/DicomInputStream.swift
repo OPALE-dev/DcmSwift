@@ -12,6 +12,11 @@ public class DicomInputStream {
     var dataset:DataSet!
     var data:Data!
     var offset:Int = 0
+    var bytesAvailable: Int {
+        get {
+            return data.count - offset
+        }
+    }
     var hasBytesAvailable: Bool {
         get {
             return offset < data.count
@@ -54,9 +59,7 @@ public class DicomInputStream {
             return nil
         }
         
-        let tag = DataTag(withData:tagData, byteOrder:order)
-                        
-        return tag
+        return DataTag(withData:tagData, byteOrder:order)
     }
     
     
@@ -66,27 +69,35 @@ public class DicomInputStream {
         vrMethod:DicomConstants.VRMethod    = .Explicit,
         order:DicomConstants.ByteOrder      = .LittleEndian
     ) -> DataElement? {
+        let startOffset = offset
+        
         guard let tag = readDataTag(order: order) else {
             Logger.error("Cannot read tag at offset at \(self.offset)")
             
             return nil
         }
         
-        print("tag : \(tag)")
-        
-        let startOffset = offset
-        
+        // ignore delimitation items
+        if tag.code == "fffee0dd" {
+            return nil
+        }
+        else if tag.code == "fffee00d" {
+            return nil
+        }
+                                
         var element = DataElement(withTag:tag, dataset: dataset, parent: parent)
         
         element.startOffset = startOffset
-        element.byteOrder   = order
-        element.vr          = readVR(element:element, vrMethod: vrMethod)
-        element.length      = readLength(vrMethod: vrMethod, vr: element.vr, order: order)
+        element.vrMethod    = element.group == "0002" ? .Explicit : vrMethod
+        element.byteOrder   = element.group == "0002" ? .LittleEndian : order
+        element.vr          = readVR(element:element, vrMethod: element.vrMethod)
+        element.length      = readLength(vrMethod: element.vrMethod, vr: element.vr, order: element.byteOrder)
         element.dataOffset  = offset
+        
         
         // check for invalid
         if element.length > data.count {
-            let message = "Fatal, cannot read length properly, decoded length at offset(\(offset-4)) overflows (\(element.length))"
+            let message = "Fatal, cannot read length properly, decoded \(tag) length at offset(\(offset-4)) overflows (\(element.length))"
             return readError(forLength: Int(element.length), element: element, message: message)
         }
                 
@@ -128,11 +139,13 @@ public class DicomInputStream {
         else {
             // TODO: manage default value better ?
             element.data        = readValue(length: Int(element.length))
-            element.endOffset   = offset
+            //element.endOffset   = offset
         }
         
-        print("element \(element)")
-                
+        element.endOffset = offset
+        
+        // print("\(offset) element \(element.vrMethod) \(element)")
+                        
         return element
     }
     
@@ -150,44 +163,38 @@ public class DicomInputStream {
     
     
     private func readVR(element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit) -> DicomConstants.VR {
-        var vr:DicomConstants.VR = .UL
+        var vr:DicomConstants.VR? = nil
         
-        if element.tagCode() == "00080000" {
-            return .UL
-        }
-                
-        if vrMethod == .Explicit {
-            vr = DicomSpec.vr(for: read(length: 2).toString())
+        vr = DicomSpec.vr(for: read(length: 2).toString())
+        
+        if vr == nil {
+            backward(by: 2)
             
-            // Table 7.1-1. Data Element with Explicit VR of OB, OW, OF, SQ, UT or UN
-            // http://dicom.nema.org/Dicom/2013/output/chtml/part05/chapter_7.html
-            // 0000H reserved VR bytes
-            // http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.5.html
-            if     vr == .SQ ||
-                   vr == .OB ||
-                   vr == .OW ||
-                   vr == .OF ||
-                   vr == .SQ ||
-                   vr == .UT ||
-                   vr == .UN {
+            vr = DicomSpec.shared.vrForTag(withCode: element.tagCode())
+        }
+        
+        if element.element == "0000" {
+            vr = .UL
+        }
+        
+        if vr == nil {
+            vr = .UN
+        }
+        
+        if     vr == .SQ ||
+               vr == .OB ||
+               vr == .OW ||
+               vr == .OF ||
+               vr == .SQ ||
+               vr == .UT ||
+               vr == .UN {
+            // read empty bytes
+            if vrMethod == .Explicit {
                 self.forward(by: 2)
             }
-        } else {
-            // if it's an implicit element group length
-            // we set the VR as undefined
-            if element.element == "0000" {
-                print("force UL")
-                vr = .UL
-            }
-            // else we take the VR from the spec
-            else {
-                print("spec VR")
-                // TODO: manage VR couples (ex: "OB/OW" in xml spec)
-                vr = DicomSpec.shared.vrForTag(withCode:element.tag.code)
-            }
         }
-                
-        return vr
+        
+        return vr!
     }
     
     private func readLength(
@@ -196,7 +203,7 @@ public class DicomInputStream {
         order:DicomConstants.ByteOrder = .LittleEndian
     ) -> Int {
         var length:Int = 0
-        
+                
         if vrMethod == .Explicit {
             if vr == .SQ {
                 let bytes:Data = read(length: 4)
@@ -223,7 +230,7 @@ public class DicomInputStream {
             // implicit length
             length = Int(read(length: 4).toInt32(byteOrder: order))
         }
-        
+                
         return length
     }
     
@@ -231,7 +238,7 @@ public class DicomInputStream {
     
     private func readValue(length:Int ) -> Data? {
         // TODO: manage default value better ?
-        if length > 0 && (offset + length < data.count) {
+        if length > 0 && (offset + length <= data.count) {
             return read(length: length)
         }
         
@@ -254,20 +261,20 @@ public class DicomInputStream {
             while (length > bytesRead) {
                 let tag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
                 bytesRead += 4
-                
+
                 let itemLength = read(length: 4).toInt32(byteOrder: byteOrder)
                 bytesRead += 4
-                
+
                 // CHECK FOR INVALID LENGTH
                 if itemLength > data.count {
-                    let message = "Fatal, cannot read length properly, decoded length at offset(\(offset-4)) overflows (\(itemLength))"
+                    let message = "Fatal, cannot read length properly, decoded \(tag) length at offset(\(offset-4)) overflows (\(itemLength))"
                     return readError(forLength: Int(itemLength), element: sequence, message: message) as? DataSequence
                 }
                 if itemLength < -1 {
-                    let message = "Fatal, cannot read length properly, decoded length at offset(\(offset-4)) cannot be negative (\(itemLength))"
+                    let message = "Fatal, cannot read length properly, decoded \(tag) length at offset(\(offset-4)) cannot be negative (\(itemLength))"
                     return readError(forLength: Int(itemLength), element: sequence, message: message) as? DataSequence
                 }
-                
+
                 let item         = DataItem(withTag:tag, parent: sequence)
                 item.length      = Int(itemLength)
                 item.startOffset = offset - 12
@@ -278,101 +285,88 @@ public class DicomInputStream {
                 var itemBytesRead = 0
                 
                 while(itemLength > itemBytesRead) {
+                    let oldOffset = offset
+                    
                     guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: .Explicit, order: byteOrder) else {
                         Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
                         return nil
                     }
-                    
+
                     item.elements.append(newElement)
-                                        
-                    itemBytesRead   += newElement.length + 8
-                    bytesRead       += newElement.length + 8
+
+                    itemBytesRead   += offset - oldOffset
+                    bytesRead       += offset - oldOffset
                 }
-                
+
                 item.endOffset = offset
             }
         }
         // Undefined Length data items (length == FFFFFFFF)
         else if length == -1 {
             sequence.vrMethod = .Implicit
-            
-            var tag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
-            
-            while(tag.code == "fffee000") {
-                let subdata = read(length: 4)
-                var itemLength:Int16 = 0
-                
-                let item            = DataItem(withTag:tag, parent: sequence)
-                item.startOffset    = offset - 8
-                item.dataOffset     = offset
-                item.vrMethod       = .Implicit
-                
-                sequence.items.append(item)
-                
-                // Undefined Length data elements (ffffffff)
-                if subdata == Data([0xff, 0xff, 0xff, 0xff]) {
-                    var reachEnd = false
-                    
-                    while(reachEnd == false) {
-                        let subtag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
                         
-                        if subtag.code != "fffee00d" {
+            // undefined length sequence loop
+            while true {
+                let tag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
+                
+                // break sequence loop
+                if tag.code == "fffee0dd" {
+                    forward(by: 4)
+                    break
+                }
+                else if tag.code == "fffee000" {
+                    let item            = DataItem(withTag:tag, parent: sequence)
+                    
+                    // read item length
+                    let itemLength      = Int(read(length: 4).toInt32(byteOrder: byteOrder))
+                    item.length         = itemLength
+                    item.startOffset    = offset - 8
+                    item.dataOffset     = offset
+                    item.vrMethod       = .Implicit
+                    
+                    // undefined length item
+                    if item.length == -1 {
+                        while true {
+                            let itemTag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
+                                                        
+                            if itemTag.code == "fffee00d" {
+                                forward(by: 4)
+                                break
+                            }
+                            
+                            backward(by: 4)
+                            
                             guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: .Explicit, order: byteOrder) else {
                                 Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
                                 return nil
                             }
-                                                        
+                            
                             item.elements.append(newElement)
-                        } else {
-                            reachEnd = true
-                            forward(by: 8)
-                        }
-                    }
-                    
-                    if tag.code == "fffee0dd" {
-                        forward(by: 4)
-                    }
-                    
-                    if let t = readDataTag(order: byteOrder) {
-                        tag = t
-                    }
-                }
-                // Length defined data elements
-                else {
-                    itemLength  = subdata.toInt16(byteOrder: byteOrder)
-                    item.length = Int(itemLength)
-                    
-                    var itemBytesRead = 0
-                    while(itemLength > itemBytesRead) {
-                        guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: .Explicit, order: byteOrder) else {
-                            Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
-                            return nil
                         }
                         
-                        item.elements.append(newElement)
+                        item.endOffset = offset
+                    } else {
+                        var itemBytesRead = 0
                         
-                        itemBytesRead   += newElement.length + 4
-                        bytesRead       += newElement.length + 4
-                    }
-                    
-                    if let t = readDataTag(order: byteOrder) {
-                        tag = t
+                        while(itemLength > itemBytesRead) {
+                            guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: .Explicit, order: byteOrder) else {
+                                Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
+                                return nil
+                            }
+
+                            item.elements.append(newElement)
+
+                            itemBytesRead += newElement.length + 10
+                        }
+
+                        item.endOffset = offset
                     }
                 }
-                
-                item.endOffset = offset
+                else if tag.code == "fffee00d" {
+                    forward(by: 4)
+                    break
+                }
             }
-            
-            forward(by: 4)
-            
-            // in order to return the good offset
-            return sequence
-        }
-        // empty sequence
-        else if length == 0 {
-            // TODO: fix issue when a empty sequence is the element of an item
-            //print("empty seq")
-            //print(sequence)
         }
         
         sequence.endOffset = offset
