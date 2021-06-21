@@ -14,7 +14,7 @@ public class DataSet: DicomObject {
     public var vrMethod:DicomConstants.VRMethod     = .Explicit
     public var byteOrder:DicomConstants.ByteOrder   = .LittleEndian
     public var forceExplicit:Bool                   = false
-    public var hasPreamble:Bool                    = true
+    public var hasPreamble:Bool                     = true
     internal var isCorrupted:Bool                   = false
     
     public var metaInformationHeaderElements:[DataElement]  = []
@@ -61,7 +61,7 @@ public class DataSet: DicomObject {
     
     
     // MARK: - Public methods
-    public func loadData(_ withData:Data? = nil) -> Bool {
+    public func loadData(_ withData:Data? = nil, _ withPreamble:Bool = true) -> Bool {
         var offset = 0
         
         if hasPreamble {
