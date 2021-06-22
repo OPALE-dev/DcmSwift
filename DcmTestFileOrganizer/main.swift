@@ -96,5 +96,5 @@ let filePath3 = "/Users/nark/Development/Opale/Cocoa/DcmSwift/DcmSwiftTests/Test
 let filePath4 = "/Users/nark/Development/Opale/Cocoa/DcmSwift/DcmSwiftTests/Test Files/US_JPEGBaseline1_MULTI_YBR_FULL_8_GEHealthcare_NULL_GDCM2.8.9_LOGIQE10R1.5.1_28.dcm"
 
 if let dicomFile = DicomFile(forPath: filePath1) {
-    print("\(dicomFile.dataset!)")
+    //print("\(dicomFile.dataset!)")
 }
