@@ -119,8 +119,7 @@ public class DicomInputStream {
         }
         else {
             // TODO: manage default value better ?
-            element.data        = readValue(length: Int(element.length))
-            //element.endOffset   = offset
+            element.data = readValue(length: Int(element.length))
         }
         
         element.endOffset = offset
@@ -286,30 +285,54 @@ public class DicomInputStream {
                 item.dataOffset  = offset
                 sequence.items.append(item)
                 
-                // item data elements
-                var itemBytesRead = 0
-                
-                while(itemLength > itemBytesRead) {
-                    let oldOffset = offset
+                if item.length == -1 {
+                    while true {
+                        let itemTag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
+                                                    
+                        if itemTag.code == "fffee00d" {
+                            forward(by: 4)
+                            break
+                        }
+                        
+                        backward(by: 4)
+                        
+                        guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: .Explicit, order: byteOrder) else {
+                            Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
+                            return nil
+                        }
+                        
+                        item.elements.append(newElement)
+                    }
                     
-                    guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: .Explicit, order: byteOrder) else {
-                        Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
-                        return nil
+                    item.endOffset = offset
+                } else {
+                    // item data elements
+                    var itemBytesRead = 0
+                    
+                    while(itemLength > itemBytesRead) {
+                        let oldOffset = offset
+                        
+                        guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: .Explicit, order: byteOrder) else {
+                            Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
+                            return nil
+                        }
+
+                        item.elements.append(newElement)
+
+                        itemBytesRead   += offset - oldOffset
+                        bytesRead       += offset - oldOffset
                     }
 
-                    item.elements.append(newElement)
-
-                    itemBytesRead   += offset - oldOffset
-                    bytesRead       += offset - oldOffset
+                    item.endOffset = offset
                 }
-
-                item.endOffset = offset
             }
         }
         // Undefined Length data items (length == FFFFFFFF)
         else if length == -1 {
             sequence.vrMethod = .Implicit
                         
+            print("sq length \(length) \(offset)")
+            
             // undefined length sequence loop
             while true {
                 let tag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
@@ -328,6 +351,9 @@ public class DicomInputStream {
                     item.startOffset    = offset - 8
                     item.dataOffset     = offset
                     item.vrMethod       = .Implicit
+                    sequence.items.append(item)
+                    
+                    print("item length \(item.length) \(offset)")
                     
                     // undefined length item
                     if item.length == -1 {
@@ -354,6 +380,9 @@ public class DicomInputStream {
                         var itemBytesRead = 0
                         
                         while(itemLength > itemBytesRead) {
+                            print("item")
+                            let oldOffset = offset
+                            
                             guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: .Explicit, order: byteOrder) else {
                                 Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
                                 return nil
@@ -361,7 +390,7 @@ public class DicomInputStream {
 
                             item.elements.append(newElement)
 
-                            itemBytesRead += newElement.length + 10
+                            itemBytesRead += offset - oldOffset
                         }
 
                         item.endOffset = offset
@@ -379,6 +408,15 @@ public class DicomInputStream {
         return sequence
     }
     
+    
+    
+    private func readItem(
+        length:Int,
+        byteOrder:DicomConstants.ByteOrder,
+        parent: DataElement? = nil
+    ) -> DataItem? {
+        return nil
+    }
     
     private func readPixelSequence(tag:DataTag, byteOrder:DicomConstants.ByteOrder) -> PixelSequence? {
         let pixelSequence = PixelSequence(withTag: tag)

@@ -366,13 +366,9 @@ public class DataElement : DicomObject {
         // write value
         if  self.vr == .UL {
             // TODO: fix empty data for UL VR, causing missing data on write !!!
-//            if let v = value as? UInt32 {
-//                var d = Data()
-//
-//                d.append(uint32: v, bigEndian: (self.byteOrder == .BigEndian) ? true : false)
-//
-//                data.append(d)
-//            }
+            if self.data != nil {
+                data.append(self.data)
+            }
         }
         else if self.vr == .OB {
             //print("OB \(type(of: self))")
