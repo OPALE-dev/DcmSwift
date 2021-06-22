@@ -38,16 +38,9 @@ public class DicomFile {
             return nil
         }
         
-        if !DicomFile.isDicomFile(filepath) {
-            Logger.error("Not a DICOM file at \(filepath)")
-            return nil
-        }
+        self.filepath = filepath
         
-        self.filepath   = filepath
-        
-        if !self.load() {
-            return nil
-        }
+        if !self.read() { return nil }
     }
     
 
@@ -185,8 +178,6 @@ public class DicomFile {
             _ = try inputStream.readDataset(withoutPixelData: true)
             
             return true
-        } catch DicomInputStream.StreamError.notADicomFile {
-            return false
         } catch _ {
             return false
         }
@@ -195,23 +186,33 @@ public class DicomFile {
 
 // MARK: - Private DicomFile methods
 extension DicomFile {
-    private func load() -> Bool {
-        let inputStream = DicomInputStream(filePath: self.filepath)
+    private func read() -> Bool {
+        let inputStream = DicomInputStream(filePath: filepath)
         
         do {
-            if let dataset = try? inputStream.readDataset() {
-                self.hasPreamble    = inputStream.hasPreamble
-                self.dataset        = dataset
+            if let dataset = try inputStream.readDataset() {
+                hasPreamble     = inputStream.hasPreamble
+                self.dataset    = dataset
                 
                 if let s = self.dataset.string(forTag: "MIMETypeOfEncapsulatedDocument") {
                     if s.trimmingCharacters(in: .whitespaces) == "application/pdf " {
                         Logger.debug("  -> MIMETypeOfEncapsulatedDocument : application/pdf")
-                        self.isEncapsulatedPDF = true
+                        isEncapsulatedPDF = true
                     }
                 }
                 
                 return true
             }
+        } catch DicomInputStream.StreamError.cannotOpenStream {
+            Logger.error("Cannot open stream to path: \(String(describing: filepath))")
+        } catch DicomInputStream.StreamError.cannotReadStream {
+            Logger.error("Cannot read stream to path: \(String(describing: filepath))")
+        } catch DicomInputStream.StreamError.notDicomFile {
+            Logger.error("Not a DICOM file at path: \(String(describing: filepath))")
+        } catch DicomInputStream.StreamError.datasetIsCorrupted {
+            Logger.error("Dataset is corrupted: \(String(describing: filepath))")
+        } catch {
+            Logger.error("Unknow error while reading: \(String(describing: filepath))")
         }
                 
         return false

@@ -10,9 +10,10 @@ import Foundation
 
 public class DicomInputStream {
     public enum StreamError: Error {
-        case notADicomFile
+        case notDicomFile
         case cannotOpenStream
         case cannotReadStream
+        case datasetIsCorrupted
     }
     
     private var dataset:DataSet!
@@ -31,18 +32,27 @@ public class DicomInputStream {
         }
     }
     
+    /**
+     Init a DicomInputStream with a file path
+     */
     public init(filePath:String) {
         dataset = DataSet()
         stream  = InputStream(fileAtPath: filePath)
         total   = Int(DicomFile.fileSize(path: filePath))
     }
     
+    /**
+    Init a DicomInputStream with a file URL
+    */
     public init(url:URL) {
         dataset = DataSet()
         stream  = InputStream(url: url)
         total   = Int(DicomFile.fileSize(path: url.path))
     }
     
+    /**
+    Init a DicomInputStream with a Data object
+    */
     public init(data:Data) {
         dataset = DataSet()
         stream  = InputStream(data: data)
@@ -84,7 +94,7 @@ public class DicomInputStream {
             if let  magicWord  = String(bytes: magic, encoding: .ascii),
                     magicWord != "DICM" {
                 Logger.error("Not a DICOM file, abort")
-                throw StreamError.notADicomFile
+                throw StreamError.notDicomFile
             }
                     
             hasPreamble = true
@@ -148,6 +158,8 @@ public class DicomInputStream {
                     }
                     
                     dataset.allElements.append(newElement)
+                } else {
+                    throw StreamError.datasetIsCorrupted
                 }
             }
         }
@@ -221,10 +233,13 @@ public class DicomInputStream {
         var element = DataElement(withTag:tag, dataset: dataset, parent: parent)
         
         element.startOffset     = startOffset
+        
         // enforce Explicit for group 0002 (Meta Info Header)
         element.vrMethod        = element.group == "0002" ? .Explicit : vrMethod
+        
         // enforce Little Endian for group 0002 (Meta Info Header)
         element.byteOrder       = element.group == "0002" ? .LittleEndian : order
+        
         
         guard let vr = readVR(element:element, vrMethod: element.vrMethod) else {
             Logger.error("Cannot read VR at offset at \(offset)")
