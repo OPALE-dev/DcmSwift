@@ -4,13 +4,13 @@ DcmSwift is a (partial, work in progress) DICOM implementation written in Swift.
 
 ## Requirements
 
-* MacOS 10.12
-* Xcode 10
+* MacOS 10.13
+* Xcode 11.5
 
 ## Dependencies
 
-* BlueSocket (networking)
-* SwiftyBeaver (logging)
+* BiAtoms/Socket (networking)
+* IBM-Swift/BlueSocket (networking)
 
 *Dependencies of the Xcode project are managed with Carthage.*
 
@@ -52,25 +52,37 @@ Otherwise, you can link the framework directly from a subproject. The only requi
 
 ### Read a DICOM file
 
-Check if the given file is readable as a DICOM file by the framework:
-
-	let filepath = "..."
-	
-	if DicomFile.isDicomFile(filepath) {
-		print("Yes !")
-	}
-
 Read a file in memory:
 
 	let dicomFile = DicomFile(forPath: filepath)
 
-Read a DICOM dataset attribute:
+Get a DICOM dataset attribute:
 
 	let patientName = dicomFile.dataset.string(forTag: "PatientName")
 
-Modify the DICOM dataset:
+Set a DICOM dataset attribute:
 
 	dicomFile.dataset.set(value:"John^Doe", forTagName: "PatientName")
+	
+For a lower memory footprint you can use the `DicomInputStream` class directly as below:
+
+	let inputStream = DicomInputStream(filePath: filepath)
+	
+	do {
+        if let dataset = try inputStream.readDataset(withoutPixelData: true) {
+        	print(dataset)
+        }
+    } catch DicomInputStream.StreamError.notDicomFile {
+
+    } catch DicomInputStream.StreamError.cannotOpenStream {
+
+    } catch DicomInputStream.StreamError.cannotReadStream {
+
+    } catch DicomInputStream.StreamError.datasetIsCorrupted {
+
+    } catch _ {
+
+    }
 
 ### Write a DICOM file
 
