@@ -38,10 +38,10 @@ public class DicomFile {
             return nil
         }
         
-        if !DicomFile.isDicomFile(filepath) {
-            Logger.error("Not a DICOM file at \(filepath)")
-            return nil
-        }
+//        if !DicomFile.isDicomFile(filepath) {
+//            Logger.error("Not a DICOM file at \(filepath)")
+//            return nil
+//        }
         
         self.filepath   = filepath
         
@@ -67,8 +67,12 @@ public class DicomFile {
     - Returns: the size in bytes of the current file path
     */
     public func fileSize() -> UInt64 {
+        return DicomFile.fileSize(path: self.filepath)
+    }
+    
+    public class func fileSize(path:String) -> UInt64 {
         do {
-            let attr = try FileManager.default.attributesOfItem(atPath: self.filepath)
+            let attr = try FileManager.default.attributesOfItem(atPath: path)
             return attr[FileAttributeKey.size] as! UInt64
         } catch {
             Logger.error("Error: \(error)")
@@ -213,56 +217,12 @@ public class DicomFile {
 // MARK: - Private DicomFile methods
 extension DicomFile {
     private func load() -> Bool {
-        let url = URL.init(fileURLWithPath: self.filepath)
- 
-        Logger.info("* Load file : \(self.fileName())")
-        Logger.debug("  -> File path : \(self.filepath ?? "")")
-        Logger.debug("  -> File size : \(self.fileSizeWithUnit())")
+        let inputStream = DicomInputStream(filePath: self.filepath)
         
-        do {
-            let data:Data   = try Data(contentsOf: url)
+        if let dataset = inputStream.readDataset() {
+            self.hasPreamble    = inputStream.hasPreamble
+            self.dataset        = dataset
             
-            // check wheather or not the header exists
-            if data.count <= 8 {
-                Logger.error("Not enought data in preamble, not a valid DICOM file.")
-                return false
-            }
-            
-            // check for DICOM file with header
-            let range:Range<Data.Index> = 128..<132
-            let subdata:Data            = data.subdata(in: range)
-            let magic:String            = subdata.toString()
-            
-            if magic != "DICM" {
-                Logger.error("DICM magic word not found. Try without 128 bytes preamble (ACR-NEMA)")
-                
-                // maybe try to catch no prefix header file (ACR-NEMA)
-                let range:Range<Data.Index> = 0..<8
-                let subdata:Data = data.subdata(in: range)
-                
-                // ultimate check for truncated DICOM file (ACR-NEMA magic bytes ?!)
-                if subdata != Data([0x08, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00]) {
-                    Logger.error("Enable to read the file header, abort!")
-                    return false
-                }
-                
-                self.hasPreamble = false
-            }
-            
-            Logger.debug("  -> Meta-Information Header : \(!self.hasPreamble)")
-            
-            // read dataset and load data
-            self.dataset = DataSet(withData: data, hasPreamble: self.hasPreamble)
-            let rez = self.dataset.loadData()
-            
-            Logger.debug("  -> Transfer Syntax : \(self.dataset.transferSyntax)")
-            Logger.debug("  -> Byte Order : \(self.dataset.byteOrder)")
-            
-            if !rez {
-               Logger.error("Enable to load file dataset, abort!")
-            }
-            
-            // check if the file is a DICOM encapsulated PDF
             if let s = self.dataset.string(forTag: "MIMETypeOfEncapsulatedDocument") {
                 if s.trimmingCharacters(in: .whitespaces) == "application/pdf " {
                     Logger.debug("  -> MIMETypeOfEncapsulatedDocument : application/pdf")
@@ -270,10 +230,9 @@ extension DicomFile {
                 }
             }
             
-            return rez
-        } catch {
-            Logger.error("Enable to load file data, abort!")
-            return false
+            return true
         }
+        
+        return false
     }
 }

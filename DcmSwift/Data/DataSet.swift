@@ -22,21 +22,7 @@ public class DataSet: DicomObject {
     public var allElements:[DataElement]                    = []
     
     public var internalValidations:[ValidationResult]       = []
-    
-    private var data:Data!
-    private var stream:DicomInputStream!
-    
-    public override init() {
-        hasPreamble = false
-    }
-    
-    
-    public init?(withData data:Data, hasPreamble:Bool = true) {
-        self.data           = data
-        self.hasPreamble    = hasPreamble
-    }
-    
-    
+            
     
     override public var description: String {
         var string = ""
@@ -49,7 +35,7 @@ public class DataSet: DicomObject {
             string += e.description + "\n"
         }
         string += "\n"
-        string += "# Dicom-Meta-Information-Header\n"
+        string += "# Dicom-Dataset\n"
         string += "# Used TransferSyntax: \(self.transferSyntax)\n"
         for e in datasetElements {
             string += e.description + "\n"
@@ -61,91 +47,19 @@ public class DataSet: DicomObject {
     
     
     // MARK: - Public methods
-    public func loadData(_ withData:Data? = nil, _ withPreamble:Bool = true) -> Bool {
-        var offset = 0
-        
-        if hasPreamble {
-            offset = DicomConstants.dicomBytesOffset
-        } else {
-            vrMethod  = .Implicit
-        }
-                
-        if withData != nil {
-            data = withData
-        }
-        
-        stream = DicomInputStream(dataset: self, data: data)
-        stream.forward(by: offset)
-        
-        // reset elements arrays
-        metaInformationHeaderElements  = []
-        datasetElements                = []
-        allElements                    = []
-        
-        while(stream.hasBytesAvailable && !isCorrupted) {
-            if let newElement = stream.readDataElement(dataset: self, parent: nil, vrMethod: vrMethod, order: byteOrder) {
-                if newElement.name == "FileMetaInformationGroupLength" {
-                    fileMetaInformationGroupLength = Int(newElement.value as! Int32)
-                }
-                
-                // determine transfer syntax
-                if newElement.name == "TransferSyntaxUID" {
-                    transferSyntax = newElement.value as! String
-                    
-                    if transferSyntax == DicomConstants.implicitVRLittleEndian {
-                        vrMethod  = .Implicit
-                        byteOrder = .LittleEndian
-                    }
-                    else if transferSyntax == DicomConstants.explicitVRBigEndian {
-                        vrMethod  = .Explicit
-                        byteOrder = .BigEndian
-                    }
-                    else {
-                        vrMethod  = .Explicit
-                        byteOrder = .LittleEndian
-                    }
-                }
-                                            
-                // append to sub-datasets
-                if !isCorrupted {
-                    //Logger.debug(newElement)
-                    
-                    if newElement.group != DicomConstants.metaInformationGroup {
-                        datasetElements.append(newElement)
-                    }
-                    else {
-                        metaInformationHeaderElements.append(newElement)
-                        
-                    }
-                    
-                    allElements.append(newElement)
-                }
-            }
-        }
-        
-        // be sure to sort all dataset elements by group, then element
-        sortElements()
-        
-        return true
-    }
-
-    
-    
-    
-    
-     public override func toData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
+    public override func toData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
         var newData = Data()
-        
+
         var finalVR     = vrMethod
         var finalOrder  = byteOrder
-        
+
         if vrMethod != inVrMethod {
             finalVR = inVrMethod
         }
         if byteOrder != inByteOrder {
             finalOrder = inByteOrder
         }
-        
+
         if hasPreamble {
             // write 128 bytes preamble
             newData.append(Data(repeating: 0x00, count: 128))
@@ -153,16 +67,16 @@ public class DataSet: DicomObject {
             // write DICM magic word
             newData.append(DicomConstants.dicomMagicWord.data(using: .utf8)!)
         }
-        
+
         // be sure element are sorted properly before write
         sortElements()
-        
+
         // append meta header elements as binary data
         for element in allElements {
             //print(type(of: element))
             newData.append(write(dataElement: element, vrMethod:finalVR, byteOrder:finalOrder))
         }
-        
+
         return newData
     }
     
@@ -468,7 +382,7 @@ extension DataSet {
     
     
     
-    private func sortElements() {
+    public func sortElements() {
         allElements = allElements.sorted(by: { (a, b) -> Bool in
             if a.group != b.group {
                 return a.group < b.group
