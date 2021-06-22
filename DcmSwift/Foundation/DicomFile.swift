@@ -38,10 +38,10 @@ public class DicomFile {
             return nil
         }
         
-//        if !DicomFile.isDicomFile(filepath) {
-//            Logger.error("Not a DICOM file at \(filepath)")
-//            return nil
-//        }
+        if !DicomFile.isDicomFile(filepath) {
+            Logger.error("Not a DICOM file at \(filepath)")
+            return nil
+        }
         
         self.filepath   = filepath
         
@@ -179,38 +179,17 @@ public class DicomFile {
      - Returns: A boolean value that indicates if the file is readable by DcmSwift
      */
     public static func isDicomFile(_ filepath: String) -> Bool {
-        let url = URL.init(fileURLWithPath: filepath)
-        var data:Data
+        let inputStream = DicomInputStream(filePath: filepath)
         
         do {
-            try data = Data(contentsOf: url)
-                        
-            if data.count <= 128 {
-                Logger.error("Not enought data in preamble, not a valid DICOM file, not a reagular DICOM file.")
-            }
+            _ = try inputStream.readDataset(withoutPixelData: true)
             
-            let range:Range<Data.Index> = 128..<132
-            let subdata:Data            = data.subdata(in: range)
-            let magic:String            = subdata.toString()
-            
-            if magic == "DICM" {
-                return true
-            } else {
-                /// maybe try to catch ACR-NEMA file header
-                let range:Range<Data.Index> = 0..<8
-                let subdata:Data = data.subdata(in: range)
-                // ACR-NEMA lol magic bytes ?
-                if subdata == Data([0x08, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00]) {
-                    return true
-                }
-                
-                Logger.error("DICM magic word not found, not a reagular DICOM file. Try to read Dataset anyway.")
-            }
-        } catch {
-            Logger.error("Enable to load file dataset, not a valid DICOM file: \(error)")
+            return true
+        } catch DicomInputStream.StreamError.notADicomFile {
+            return false
+        } catch _ {
             return false
         }
-        return false
     }
 }
 
@@ -219,20 +198,22 @@ extension DicomFile {
     private func load() -> Bool {
         let inputStream = DicomInputStream(filePath: self.filepath)
         
-        if let dataset = inputStream.readDataset() {
-            self.hasPreamble    = inputStream.hasPreamble
-            self.dataset        = dataset
-            
-            if let s = self.dataset.string(forTag: "MIMETypeOfEncapsulatedDocument") {
-                if s.trimmingCharacters(in: .whitespaces) == "application/pdf " {
-                    Logger.debug("  -> MIMETypeOfEncapsulatedDocument : application/pdf")
-                    self.isEncapsulatedPDF = true
+        do {
+            if let dataset = try? inputStream.readDataset() {
+                self.hasPreamble    = inputStream.hasPreamble
+                self.dataset        = dataset
+                
+                if let s = self.dataset.string(forTag: "MIMETypeOfEncapsulatedDocument") {
+                    if s.trimmingCharacters(in: .whitespaces) == "application/pdf " {
+                        Logger.debug("  -> MIMETypeOfEncapsulatedDocument : application/pdf")
+                        self.isEncapsulatedPDF = true
+                    }
                 }
+                
+                return true
             }
-            
-            return true
         }
-        
+                
         return false
     }
 }

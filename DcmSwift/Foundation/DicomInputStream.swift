@@ -9,6 +9,12 @@
 import Foundation
 
 public class DicomInputStream {
+    public enum StreamError: Error {
+        case notADicomFile
+        case cannotOpenStream
+        case cannotReadStream
+    }
+    
     private var dataset:DataSet!
     
     public var hasPreamble:Bool = false    
@@ -45,7 +51,12 @@ public class DicomInputStream {
     
     
     // MARK: -
-    public func readDataset(headerOnly:Bool = false, withoutPixelData:Bool = false) -> DataSet? {
+    public func readDataset(headerOnly:Bool = false, withoutPixelData:Bool = false) throws -> DataSet? {
+        if stream == nil {
+            Logger.error("Cannot open stream")
+            throw StreamError.cannotOpenStream
+        }
+        
         stream.open()
         
         // Read first tag : if first tag is 0000,0000 try to read
@@ -57,7 +68,7 @@ public class DicomInputStream {
         
         if tag == nil {
             Logger.error("Cannot read 4 first bytes")
-            return nil
+            throw StreamError.cannotReadStream
         }
                 
         // read DICOM preamble
@@ -65,13 +76,15 @@ public class DicomInputStream {
             // only the remaining bytes, we already read 4
             _ = read(length: 124)
             
-            // read the magic word
-            let magic = read(length: 4)
+            // read & check the magic word
+            guard let magic = read(length: 4) else {
+                throw StreamError.cannotReadStream
+            }
             
-            if let  magicWord = String(bytes: magic, encoding: .ascii),
+            if let  magicWord  = String(bytes: magic, encoding: .ascii),
                     magicWord != "DICM" {
                 Logger.error("Not a DICOM file, abort")
-                return nil
+                throw StreamError.notADicomFile
             }
                     
             hasPreamble = true
@@ -87,6 +100,7 @@ public class DicomInputStream {
             vrMethod = .Implicit
         }
                 
+        // read dataset elements
         while(stream.hasBytesAvailable && offset < total && !dataset.isCorrupted) {
             if let newElement = readDataElement(dataset: dataset, parent: nil, vrMethod: vrMethod, order: byteOrder) {
                 // header only option
@@ -106,7 +120,7 @@ public class DicomInputStream {
                     dataset.fileMetaInformationGroupLength = Int(newElement.value as! Int32)
                 }
                 
-                // determine transfer syntax
+                // determine file transfer syntax (used later to read the actual dataset part of the DICOM attributes)
                 if newElement.name == "TransferSyntaxUID" {
                     dataset.transferSyntax = newElement.value as! String
                     
@@ -124,16 +138,13 @@ public class DicomInputStream {
                     }
                 }
                                             
-                // append to sub-datasets
+                // append element to sub-datasets
                 if !dataset.isCorrupted {
-                    //Logger.debug(newElement)
-                    
                     if newElement.group != DicomConstants.metaInformationGroup {
                         dataset.datasetElements.append(newElement)
                     }
                     else {
                         dataset.metaInformationHeaderElements.append(newElement)
-                        
                     }
                     
                     dataset.allElements.append(newElement)
@@ -158,17 +169,25 @@ public class DicomInputStream {
     }
     
     
-    private func read(length:Int) -> Data {
-        var data = Data()
-        
+    private func read(length:Int) -> Data? {
+        // allocate memory buffer with given length
         let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: length)
         
+        // fill the buffer by reading bytes with given length
         let read = stream.read(buffer, maxLength: length)
         
-        data.append(buffer, count: read)
+        if read < 0 {
+            Logger.error("Cannot read \(length) bytes")
+            return nil
+        }
         
+        // create a Data object with filled buffer
+        let data = Data(bytes: buffer, count: length)
+        
+        // maintain local offset
         offset += read
         
+        // clean the memory
         buffer.deallocate()
         
         return data
@@ -185,10 +204,9 @@ public class DicomInputStream {
     ) -> DataElement? {
         let startOffset = offset
         
-        // if no tag given, we try to read the tag
+        // we try to read the tag only if no `inTag` given
         guard let tag = inTag ?? readDataTag(order: order) else {
-            Logger.error("Cannot read tag at offset at \(self.offset)")
-            
+            Logger.error("Cannot read tag at offset at \(offset)")
             return nil
         }
                 
@@ -202,12 +220,20 @@ public class DicomInputStream {
                                 
         var element = DataElement(withTag:tag, dataset: dataset, parent: parent)
         
-        element.startOffset = startOffset
-        element.vrMethod    = element.group == "0002" ? .Explicit : vrMethod
-        element.byteOrder   = element.group == "0002" ? .LittleEndian : order
-        element.vr          = readVR(element:element, vrMethod: element.vrMethod)
-        element.length      = readLength(vrMethod: element.vrMethod, vr: element.vr, order: element.byteOrder)
-        element.dataOffset  = offset
+        element.startOffset     = startOffset
+        // enforce Explicit for group 0002 (Meta Info Header)
+        element.vrMethod        = element.group == "0002" ? .Explicit : vrMethod
+        // enforce Little Endian for group 0002 (Meta Info Header)
+        element.byteOrder       = element.group == "0002" ? .LittleEndian : order
+        
+        guard let vr = readVR(element:element, vrMethod: element.vrMethod) else {
+            Logger.error("Cannot read VR at offset at \(offset)")
+            return nil
+        }
+        
+        element.vr              = vr
+        element.length          = readLength(vrMethod: element.vrMethod, vr: element.vr, order: element.byteOrder)
+        element.dataOffset      = offset
         
         
         // check for invalid
@@ -221,7 +247,7 @@ public class DicomInputStream {
         if tag.group != "0002" && (element.vr == .OW || element.vr == .OB) {
             if element.name == "PixelData" && element.length == -1 {
                 guard let sequence = readPixelSequence(tag: tag, byteOrder: order) else {
-                    Logger.error("Cannot read Pixel Sequence \(tag) at \(self.offset)")
+                    Logger.error("Cannot read Pixel Sequence \(tag) at \(offset)")
                     return nil
                 }
 
@@ -231,8 +257,7 @@ public class DicomInputStream {
                 sequence.dataOffset     = element.dataOffset
                 element                 = sequence
 
-                // this +5 is very weird, but it works for some JPEGBaseline multiframe file
-                // os = seqOffset + 5
+                // dead bytes
                 forward(by: 4)
 
             } else {
@@ -267,7 +292,9 @@ public class DicomInputStream {
     
     // MARK: -
     private func readDataTag(order:DicomConstants.ByteOrder = .LittleEndian) -> DataTag? {
-        let tagData = self.read(length: 4)
+        guard let tagData = self.read(length: 4) else {
+            return nil
+        }
         
         if tagData.count < 4 {
             return nil
@@ -290,11 +317,15 @@ public class DicomInputStream {
     }
     
     
-    private func readVR(element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit) -> DicomConstants.VR {
+    private func readVR(element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit) -> DicomConstants.VR? {
         var vr:DicomConstants.VR? = nil
         
+        guard let data = self.read(length: 2) else {
+            return nil
+        }
+        
         if vrMethod == .Explicit {
-            vr = DicomSpec.vr(for: read(length: 2).toString())
+            vr = DicomSpec.vr(for: data.toString())
         }
         else {
             vr = DicomSpec.shared.vrForTag(withCode: element.tagCode())
@@ -333,29 +364,28 @@ public class DicomInputStream {
                 
         if vrMethod == .Explicit {
             if vr == .SQ {
-                let bytes:Data = read(length: 4)
+                let bytes:Data = read(length: 4)!
                 
-                // undefined length sequence
+                // undefined length check
                 if bytes == Data([0xff, 0xff, 0xff, 0xff]) {
                     length = -1
                 } else {
                     length = Int(bytes.toInt32(byteOrder: order))
                 }
-
             } else if   vr == .OB ||
                         vr == .OW ||
                         vr == .OF ||
                         vr == .SQ ||
                         vr == .UT ||
                         vr == .UN {
-                length = Int(read(length: 4).toInt32(byteOrder: order))
+                length = Int(read(length: 4)!.toInt32(byteOrder: order))
             } else {
-                length = Int(read(length: 2).toInt16(byteOrder: order))
+                length = Int(read(length: 2)!.toInt16(byteOrder: order))
             }
         }
         else {
-            // implicit length
-            length = Int(read(length: 4).toInt32(byteOrder: order))
+            // read implicit VR length
+            length = Int(read(length: 4)!.toInt32(byteOrder: order))
         }
                 
         return length
@@ -386,10 +416,10 @@ public class DicomInputStream {
         if length > 0 {
             // data items
             while (length > bytesRead) {
-                let tag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
+                let tag = DataTag(withData: read(length: 4)!, byteOrder: byteOrder)
                 bytesRead += 4
 
-                let itemLength = read(length: 4).toInt32(byteOrder: byteOrder)
+                let itemLength = read(length: 4)!.toInt32(byteOrder: byteOrder)
                 bytesRead += 4
 
                 // CHECK FOR INVALID LENGTH
@@ -410,7 +440,7 @@ public class DicomInputStream {
                 
                 if item.length == -1 {
                     while true {
-                        let itemTag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
+                        let itemTag = DataTag(withData: read(length: 4)!, byteOrder: byteOrder)
                                                     
                         if itemTag.code == "fffee00d" {
                             forward(by: 4)
@@ -454,7 +484,7 @@ public class DicomInputStream {
                                     
             // undefined length sequence loop
             while true {
-                let tag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
+                let tag = DataTag(withData: read(length: 4)!, byteOrder: byteOrder)
                 
                 // break sequence loop
                 if tag.code == "fffee0dd" {
@@ -465,7 +495,7 @@ public class DicomInputStream {
                     let item            = DataItem(withTag:tag, parent: sequence)
                     
                     // read item length
-                    let itemLength      = Int(read(length: 4).toInt32(byteOrder: byteOrder))
+                    let itemLength      = Int(read(length: 4)!.toInt32(byteOrder: byteOrder))
                     item.length         = itemLength
                     item.startOffset    = offset - 8
                     item.dataOffset     = offset
@@ -475,7 +505,7 @@ public class DicomInputStream {
                     // undefined length item
                     if item.length == -1 {
                         while true {
-                            let itemTag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
+                            let itemTag = DataTag(withData: read(length: 4)!, byteOrder: byteOrder)
                                                         
                             if itemTag.code == "fffee00d" {
                                 forward(by: 4)
@@ -523,7 +553,7 @@ public class DicomInputStream {
     }
     
     
-    
+    // Unused by now..
     private func readItem(
         length:Int,
         byteOrder:DicomConstants.ByteOrder,
@@ -532,11 +562,13 @@ public class DicomInputStream {
         return nil
     }
     
+    
+    
     private func readPixelSequence(tag:DataTag, byteOrder:DicomConstants.ByteOrder) -> PixelSequence? {
         let pixelSequence = PixelSequence(withTag: tag)
         
         // read item tag
-        var itemTag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
+        var itemTag = DataTag(withData: read(length: 4)!, byteOrder: byteOrder)
                 
         while itemTag.code != "fffee0dd" {
             // read item
@@ -548,9 +580,9 @@ public class DicomInputStream {
             pixelSequence.items.append(item)
             
             // read item length
-            let itemLength = read(length: 4).toInt32(byteOrder: byteOrder)
+            let itemLength = read(length: 4)!.toInt32(byteOrder: byteOrder)
                         
-            // CHECK FOR INVALID LENGTH
+            // check for invalid lengths
             if itemLength > total {
                 let message = "Fatal, cannot read length properly, decoded length at offset(\(offset-4)) overflows (\(itemLength))"
                 return readError(forLength: Int(itemLength), element: pixelSequence, message: message) as? PixelSequence
@@ -568,7 +600,7 @@ public class DicomInputStream {
             
             // read next again
             if offset < total {
-                itemTag = DataTag(withData: read(length: 4), byteOrder: byteOrder)
+                itemTag = DataTag(withData: read(length: 4)!, byteOrder: byteOrder)
             }
         }
         

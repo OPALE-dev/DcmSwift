@@ -89,10 +89,11 @@ class DatasetViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             if let notifDoc = notification.object as? DicomDocument {
                 if selfDoc == notifDoc {
                     let url = URL(fileURLWithPath: selfDoc.dicomFile.filepath)
-                    if let data = try? Data(contentsOf: url) {
-                        _ = self.dataset.loadData(data)
-                        self.datasetOutlineView.reloadData()
-                    }
+                    // TODO : implement Dicom Output Stream ???
+//                    if let data = try? Data(contentsOf: url) {
+//                        _ = self.dataset.loadData(data)
+//                        self.datasetOutlineView.reloadData()
+//                    }
                 }
             }
         }
