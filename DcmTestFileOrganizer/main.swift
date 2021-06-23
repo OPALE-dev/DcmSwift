@@ -95,12 +95,12 @@ let filePath3 = "/Users/nark/Development/Opale/Cocoa/DcmSwift/DcmSwiftTests/Test
 
 let filePath4 = "/Users/nark/Development/Opale/Cocoa/DcmSwift/DcmSwiftTests/Test Files/US_JPEGBaseline1_MULTI_YBR_FULL_8_GEHealthcare_NULL_GDCM2.8.9_LOGIQE10R1.5.1_28.dcm"
 
-if let dicomFile = DicomFile(forPath: filePath1) {
-    print("\(dicomFile.dataset!)")
-}
-
-//let stream = DicomInputStream2(filePath: filePath0)
-//
-//if let d = stream.readDataset(withoutPixelData: true) {
-//    print(d)
+//if let dicomFile = DicomFile(forPath: filePath0) {
+//    print("\(dicomFile.dataset!)")
 //}
+
+let stream = DicomInputStream(filePath: filePath4)
+
+if let d = try? stream.readDataset(withoutPixelData: true) {
+    print(d)
+}
