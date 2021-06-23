@@ -26,12 +26,6 @@ public class DicomInputStream {
     var offset = 0
     var total  = 0
     
-    var hasBytesAvailable: Bool {
-        get {
-            return stream.hasBytesAvailable
-        }
-    }
-    
     /**
      Init a DicomInputStream with a file path
      */
