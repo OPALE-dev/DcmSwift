@@ -203,14 +203,14 @@ extension DicomFile {
                 
                 return true
             }
-        } catch StreamError.cannotOpenStream {
-            Logger.error("Cannot open stream to path: \(String(describing: filepath))")
-        } catch StreamError.cannotReadStream {
-            Logger.error("Cannot read stream to path: \(String(describing: filepath))")
-        } catch StreamError.notDicomFile {
-            Logger.error("Not a DICOM file at path: \(String(describing: filepath))")
-        } catch StreamError.datasetIsCorrupted {
-            Logger.error("Dataset is corrupted: \(String(describing: filepath))")
+        } catch StreamError.cannotOpenStream(let message) {
+            Logger.error("\(message): \(String(describing: filepath))")
+        } catch StreamError.cannotReadStream(let message) {
+            Logger.error("\(message): \(String(describing: filepath))")
+        } catch StreamError.notDicomFile(let message) {
+            Logger.error("\(message): \(String(describing: filepath))")
+        } catch StreamError.datasetIsCorrupted(let message) {
+            Logger.error("\(message): \(String(describing: filepath))")
         } catch {
             Logger.error("Unknow error while reading: \(String(describing: filepath))")
         }

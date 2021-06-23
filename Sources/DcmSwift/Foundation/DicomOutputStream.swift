@@ -24,7 +24,7 @@ public class DicomOutputStream {
     
     public func write(dataset:DataSet) throws -> Bool {
         if outputStream == nil {
-            throw StreamError.cannotOpenStream
+            throw StreamError.cannotOpenStream(message: "Cannot open stream, init failed")
         }
         
         outputStream.open()
@@ -72,7 +72,7 @@ public class DicomOutputStream {
             let written = outputStream.write(bytes, maxLength: data.count)
             
             if written <= 0 {
-                throw StreamError.cannotWriteStream
+                throw StreamError.cannotWriteStream(message: "Write to stream failed")
             }
         }
     }

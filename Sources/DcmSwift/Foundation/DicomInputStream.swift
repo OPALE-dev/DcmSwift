@@ -50,8 +50,7 @@ public class DicomInputStream {
     // MARK: -
     public func readDataset(headerOnly:Bool = false, withoutPixelData:Bool = false) throws -> DataSet? {
         if stream == nil {
-            Logger.error("Cannot open stream")
-            throw StreamError.cannotOpenStream
+            throw StreamError.cannotOpenStream(message: "Cannot open stream, init failed")
         }
         
         stream.open()
@@ -65,8 +64,7 @@ public class DicomInputStream {
         var tag = readDataTag(order: byteOrder)
         
         if tag == nil {
-            Logger.error("Cannot read 4 first bytes")
-            throw StreamError.cannotReadStream
+            throw StreamError.cannotReadStream(message: "Cannot read 4 first bytes, file is empty?")
         }
                 
         // read DICOM preamble
@@ -76,14 +74,12 @@ public class DicomInputStream {
             
             // read & check the magic word
             guard let magic = read(length: 4) else {
-                Logger.error("Cannot read DICOM magic bytes (DICM)")
-                throw StreamError.cannotReadStream
+                throw StreamError.cannotReadStream(message: "Cannot read DICOM magic bytes (DICM)")
             }
             
             if let  magicWord  = String(bytes: magic, encoding: .ascii),
                     magicWord != "DICM" {
-                Logger.error("Not a DICOM file, no DICOM magic bytes found")
-                throw StreamError.notDicomFile
+                throw StreamError.notDicomFile(message: "Not a DICOM file, no DICM magic bytes found")
             }
                     
             hasPreamble = true
@@ -132,7 +128,7 @@ public class DicomInputStream {
                     byteOrder = .LittleEndian
                     
                     if let ts = newElement.value as? String {
-                        dataset.transferSyntax = TransferSyntax(transferSyntax: ts)
+                        dataset.transferSyntax = TransferSyntax(ts)
                         
                         if dataset.transferSyntax.tsUID == DicomConstants.implicitVRLittleEndian {
                             vrMethod  = .Implicit
@@ -156,7 +152,7 @@ public class DicomInputStream {
                     
                     dataset.allElements.append(newElement)
                 } else {
-                    throw StreamError.datasetIsCorrupted
+                    throw StreamError.datasetIsCorrupted(message: "Dataset is corrupted")
                 }
             }
         }
