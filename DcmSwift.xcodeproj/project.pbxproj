@@ -165,6 +165,9 @@
 		4CED04D22682230D00685D24 /* DicomInputStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CED04D12682229C00685D24 /* DicomInputStream.swift */; };
 		4CED04D32682230E00685D24 /* DicomInputStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CED04D12682229C00685D24 /* DicomInputStream.swift */; };
 		4CED04D42682230F00685D24 /* DicomInputStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CED04D12682229C00685D24 /* DicomInputStream.swift */; };
+		4CED04D62683189800685D24 /* DicomOutputStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CED04D52683189800685D24 /* DicomOutputStream.swift */; };
+		4CED04D72683189800685D24 /* DicomOutputStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CED04D52683189800685D24 /* DicomOutputStream.swift */; };
+		4CED04D82683189800685D24 /* DicomOutputStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CED04D52683189800685D24 /* DicomOutputStream.swift */; };
 		4CFBF6AF228C61C7006FE616 /* SendOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFBF6AE228C61C7006FE616 /* SendOperation.swift */; };
 		4CFBF6B222907A29006FE616 /* ServerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFBF6B122907A29006FE616 /* ServerController.swift */; };
 		4CFBF6B622908CC3006FE616 /* ListenerPreferencesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFBF6B522908CC3006FE616 /* ListenerPreferencesViewController.swift */; };
@@ -383,6 +386,7 @@
 		4CECD64C22415EE90087AF0D /* DicomClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomClient.swift; sourceTree = "<group>"; };
 		4CECD64E22415F5A0087AF0D /* DicomService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomService.swift; sourceTree = "<group>"; };
 		4CED04D12682229C00685D24 /* DicomInputStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomInputStream.swift; sourceTree = "<group>"; };
+		4CED04D52683189800685D24 /* DicomOutputStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicomOutputStream.swift; sourceTree = "<group>"; };
 		4CFBF6AE228C61C7006FE616 /* SendOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendOperation.swift; sourceTree = "<group>"; };
 		4CFBF6B122907A29006FE616 /* ServerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerController.swift; sourceTree = "<group>"; };
 		4CFBF6B522908CC3006FE616 /* ListenerPreferencesViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ListenerPreferencesViewController.swift; sourceTree = "<group>"; };
@@ -727,6 +731,7 @@
 			children = (
 				4C3CD4781F9697DC00323E8A /* DicomFile.swift */,
 				4CED04D12682229C00685D24 /* DicomInputStream.swift */,
+				4CED04D52683189800685D24 /* DicomOutputStream.swift */,
 				4C7B78D01FA1485B005BB2A2 /* DicomDate.swift */,
 				4C783E6A1F969DC500E46F30 /* DicomData.swift */,
 				4C5BF0901FABB4730051F4FE /* DicomString.swift */,
@@ -1071,6 +1076,7 @@
 				4C24CB29266FEBF50001CEFD /* DicomImage.swift in Sources */,
 				4C24CB28266FEBF50001CEFD /* Logger.swift in Sources */,
 				4C24CB25266FEBF50001CEFD /* DicomError.swift in Sources */,
+				4CED04D82683189800685D24 /* DicomOutputStream.swift in Sources */,
 				4C24CB1E266FEBF50001CEFD /* DataTag.swift in Sources */,
 				4C24CB22266FEBF50001CEFD /* DicomData.swift in Sources */,
 				4C24CB21266FEBF50001CEFD /* DicomDate.swift in Sources */,
@@ -1151,6 +1157,7 @@
 				4C53D706227CB8B20003724F /* CFindRQ.swift in Sources */,
 				4C3D72252672A8C80003E6D9 /* Image.swift in Sources */,
 				4C53D6F6227CB1100003724F /* AssociationRQ.swift in Sources */,
+				4CED04D62683189800685D24 /* DicomOutputStream.swift in Sources */,
 				4CED04D22682230D00685D24 /* DicomInputStream.swift in Sources */,
 				4C53D704227CB83A0003724F /* CEchoRQ.swift in Sources */,
 				4C53D702227CB79C0003724F /* PDUDecoder.swift in Sources */,
@@ -1190,6 +1197,7 @@
 				4CC932482292ED96001DFEB7 /* Logger.swift in Sources */,
 				4C5BF08A1FABA5E80051F4FE /* DicomFile.swift in Sources */,
 				4CC932492292ED9B001DFEB7 /* DicomError.swift in Sources */,
+				4CED04D72683189800685D24 /* DicomOutputStream.swift in Sources */,
 				4C5BF08B1FABA5E80051F4FE /* DicomImage.swift in Sources */,
 				4C5BF08C1FABA5E80051F4FE /* DicomDate.swift in Sources */,
 				4C5BF08D1FABA5E80051F4FE /* DicomData.swift in Sources */,
