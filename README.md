@@ -34,15 +34,15 @@ Follow the instructions below to use DcmSwift framework into your Xcode project.
 
 It is the easiest way to use DcmSwift into your Xcode project. Just add the following to your `Cartfile`:
 
-	# TDB
-	
+    # TDB
+    
 If you do not use Carthage yet and want to give it a try, you will found some instructions here to getting started.
 
 ### Subproject
 
 Otherwise, you can link the framework directly from a subproject. The only requirement is to use a Xcode workspace (`.xcworkspace`):
 
-	# TDB
+    # TDB
 
 ## Getting Started
 
@@ -54,23 +54,23 @@ Otherwise, you can link the framework directly from a subproject. The only requi
 
 Read a file in memory:
 
-	let dicomFile = DicomFile(forPath: filepath)
+    let dicomFile = DicomFile(forPath: filepath)
 
 Get a DICOM dataset attribute:
 
-	let patientName = dicomFile.dataset.string(forTag: "PatientName")
+    let patientName = dicomFile.dataset.string(forTag: "PatientName")
 
 Set a DICOM dataset attribute:
 
-	dicomFile.dataset.set(value:"John^Doe", forTagName: "PatientName")
-	
+    dicomFile.dataset.set(value:"John^Doe", forTagName: "PatientName")
+    
 For a lower memory footprint you can use the `DicomInputStream` class directly as below:
 
-	let inputStream = DicomInputStream(filePath: filepath)
-	
-	do {
+    let inputStream = DicomInputStream(filePath: filepath)
+    
+    do {
         if let dataset = try inputStream.readDataset(withoutPixelData: true) {
-        	print(dataset)
+            print(dataset)
         }
     } catch DicomInputStream.StreamError.notDicomFile {
 
@@ -88,7 +88,7 @@ For a lower memory footprint you can use the `DicomInputStream` class directly a
 
 Once modified, you can write the data to a file again:
 
-	dicomFile.write(atPath: newPath)
+    dicomFile.write(atPath: newPath)
 
 ### Export a DICOM file
 
@@ -108,14 +108,14 @@ You can export …
 
 You can load a `DataSet` object directly from data:
 
-	let dataset = DataSet(withData: data)
+    let dataset = DataSet(withData: data)
 
 Or you can create a totally genuine `DataSet` instance and start adding some element to it:
 
-	var dataset = DataSet()
-	dataset.set(value:"John^Doe", forTagName: "PatientName")
-	dataset.set(value:"12345678", forTagName: "PatientID")
-	print(dataset.toData().toHex())
+    var dataset = DataSet()
+    dataset.set(value:"John^Doe", forTagName: "PatientName")
+    dataset.set(value:"12345678", forTagName: "PatientID")
+    print(dataset.toData().toHex())
 
 ## Unit Tests
 
