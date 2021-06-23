@@ -9,14 +9,15 @@
 import Foundation
 
 
+
 public class TransferSyntax: CustomStringConvertible, Equatable {
     public var tsUID:String                     = "1.2.840.10008.1.2.1"
-    public var tsName:String                    = DicomConstants.explicitVRLittleEndian
+    public var tsName:String                    = DicomSpec.shared.nameForUID(withUID: "1.2.840.10008.1.2.1")
     
     var vrMethod:DicomConstants.VRMethod        = .Explicit
     var byteOrder:DicomConstants.ByteOrder      = .LittleEndian
     
-    public init?(transferSyntax:String) {
+    public init?(_ transferSyntax:String) {
         if !DicomSpec.shared.isSupported(transferSyntax: transferSyntax) {
             return nil
         }
@@ -36,6 +37,10 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
     
     public static func == (lhs: TransferSyntax, rhs: String) -> Bool {
         return lhs.tsUID == rhs
+    }
+    
+    public static func == (lhs: String, rhs: TransferSyntax) -> Bool {
+        return lhs == rhs.tsUID
     }
     
     public var description: String {

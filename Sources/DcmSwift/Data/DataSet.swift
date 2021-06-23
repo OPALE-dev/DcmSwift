@@ -25,7 +25,7 @@ public class DataSet: DicomObject {
     
     
     override init() {
-        transferSyntax = TransferSyntax(transferSyntax: DicomConstants.implicitVRLittleEndian)
+        transferSyntax = TransferSyntax(DicomConstants.implicitVRLittleEndian)
     }
             
     

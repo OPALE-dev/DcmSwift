@@ -13,11 +13,11 @@ import Socket
  StreamError represents common errors mostly thrown by DicomInputStream and DicomOutputStream classes
 */
 public enum StreamError: Error {
-    case notDicomFile
-    case cannotOpenStream
-    case cannotReadStream
-    case cannotWriteStream
-    case datasetIsCorrupted
+    case notDicomFile(message:String)
+    case cannotOpenStream(message:String)
+    case cannotReadStream(message:String)
+    case cannotWriteStream(message:String)
+    case datasetIsCorrupted(message:String)
 }
 
 
