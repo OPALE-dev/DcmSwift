@@ -5,18 +5,18 @@ DcmSwift is a (partial, work in progress) DICOM implementation written in Swift.
 ## Requirements
 
 * MacOS 10.13
-* Xcode 11.5
+* Xcode 12.4
+* Swift 5.3
 
 ## Dependencies
 
-* BiAtoms/Socket (networking)
 * IBM-Swift/BlueSocket (networking)
 
-*Dependencies of the Xcode project are managed with Carthage.*
+*Dependencies are managed by SPM.*
 
 ## Overview
 
-DcmSwift is written in Swift 4.2 and mainly rely on the Foundation core library, in order to stay as compliant as possible with most of the common Swift toolchains.
+DcmSwift is written in Swift 5.3 and mainly rely on the Foundation core library, in order to stay as compliant as possible with most of the common Swift toolchains.
 
 A minimal DICOM specification is embed within the `DicomSpec` class itself. It provide a large set of tools to manipulate UIDs, SOP Classes, VRs, Tags and more DICOM specific identifiers.
 
@@ -129,7 +129,7 @@ DcmSwift is *not* a medical imaging nor diagnosis oriented library and is not in
 
 MIT License
 
-Copyright (c) 2019 - Rafaël Warnault <rw@opale.pro>
+Copyright (c) 2019 - OPALE, Rafaël Warnault <rw@opale.pro>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
