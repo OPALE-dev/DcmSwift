@@ -30,25 +30,24 @@ public class DataTF: PDUMessage {
         
         if commandData.count > 0 {
             if self.flags == 0x03 {
-                // TODO: implement input stream
-//                if let dataset = DataSet(withData: commandData, hasPreamble: false) {
-//                    if dataset.loadData() {
-//                        // decode DIMSE status
-//                        if let status = dataset.element(forTagName: "Status") {
-//                            let s = status.data.toUInt16(byteOrder: .LittleEndian)
-//                            if let ds = DIMSEStatus.Status(rawValue: s) {
-//                                self.dimseStatus = DIMSEStatus(status: ds, command: self.commandField!)
-//                            }
-//                        }
-//
-//                        // also decode command field
-//                        // TODO: rename `decodeDIMSEStatus` method
-//                        if let command = dataset.element(forTagName: "CommandField") {
-//                            let c = command.data.toUInt16(byteOrder: .LittleEndian)
-//                            self.commandField = CommandField(rawValue: c)
-//                        }
-//                    }
-//                }
+                let inputStream = DicomInputStream(data: commandData)
+                
+                if let dataset = try? inputStream.readDataset() {
+                    // decode DIMSE status
+                    if let status = dataset.element(forTagName: "Status") {
+                        let s = status.data.toUInt16(byteOrder: .LittleEndian)
+                        if let ds = DIMSEStatus.Status(rawValue: s) {
+                            self.dimseStatus = DIMSEStatus(status: ds, command: self.commandField!)
+                        }
+                    }
+
+                    // also decode command field
+                    // TODO: rename `decodeDIMSEStatus` method
+                    if let command = dataset.element(forTagName: "CommandField") {
+                        let c = command.data.toUInt16(byteOrder: .LittleEndian)
+                        self.commandField = CommandField(rawValue: c)
+                    }
+                }
             }
         }
     }
