@@ -88,12 +88,13 @@ public class DicomInputStream {
             
             // read & check the magic word
             guard let magic = read(length: 4) else {
+                Logger.error("Cannot read DICOM magic bytes (DICM)")
                 throw StreamError.cannotReadStream
             }
             
             if let  magicWord  = String(bytes: magic, encoding: .ascii),
                     magicWord != "DICM" {
-                Logger.error("Not a DICOM file, abort")
+                Logger.error("Not a DICOM file, no DICOM magic bytes found")
                 throw StreamError.notDicomFile
             }
                     
@@ -323,6 +324,8 @@ public class DicomInputStream {
     private func readError(forLength length:Int, element: DataElement, message:String) -> DataElement {
         let v = ValidationResult(element, message: message, severity: .Fatal)
         
+        //print("CORRUPTED : \(element)")
+        
         dataset.internalValidations.append(v)
         dataset.isCorrupted = true
         
@@ -335,11 +338,11 @@ public class DicomInputStream {
     private func readVR(element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit) -> DicomConstants.VR? {
         var vr:DicomConstants.VR? = nil
         
-        guard let data = self.read(length: 2) else {
-            return nil
-        }
-        
         if vrMethod == .Explicit {
+            guard let data = self.read(length: 2) else {
+                return nil
+            }
+            
             vr = DicomSpec.vr(for: data.toString())
         }
         else {
@@ -376,7 +379,7 @@ public class DicomInputStream {
         order:DicomConstants.ByteOrder = .LittleEndian
     ) -> Int {
         var length:Int = 0
-                
+                        
         if vrMethod == .Explicit {
             if vr == .SQ {
                 let bytes:Data = read(length: 4)!
