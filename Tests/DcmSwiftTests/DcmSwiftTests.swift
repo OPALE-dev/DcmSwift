@@ -23,7 +23,7 @@ class DcmSwiftTests: XCTestCase {
     // Configure the test suite with the following boolean attributes
     
     /// Run tests on DICOM Date and Time
-    private static var testDicomDateAndTime     = false
+    private static var testDicomDateAndTime     = true
     
     /// Run tests to read files (rely on embedded test files, dynamically generated)
     private static var testDicomFileRead        = true
@@ -71,8 +71,12 @@ class DcmSwiftTests: XCTestCase {
     override class var defaultTestSuite: XCTestSuite {
         let suite = XCTestSuite(forTestCaseClass: DcmSwiftTests.self)
         
-        let bundle = Bundle(for: DcmSwiftTests.self)
-        let paths = bundle.paths(forResourcesOfType: "dcm", inDirectory: "Test Files")
+        print("defaultTestSuite")
+        
+        //let bundle = Bundle(for: DcmSwiftTests.self)
+        let paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
+        
+        print("paths \(paths)")
         
         if testDicomDateAndTime {
             suite.addTest(DcmSwiftTests(selector: #selector(readDicomDate)))

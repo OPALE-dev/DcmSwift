@@ -10,6 +10,18 @@ import Foundation
 import Socket
 
 /**
+ StreamError represents common errors mostly thrown by DicomInputStream and DicomOutputStream classes
+*/
+public enum StreamError: Error {
+    case notDicomFile
+    case cannotOpenStream
+    case cannotReadStream
+    case cannotWriteStream
+    case datasetIsCorrupted
+}
+
+
+/**
 DicomError represents common errors defined by the DICOM specification
 */
 public class DicomError: NSObject {
