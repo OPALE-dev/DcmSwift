@@ -9,13 +9,6 @@
 import Foundation
 
 public class DicomInputStream {
-    public enum StreamError: Error {
-        case notDicomFile
-        case cannotOpenStream
-        case cannotReadStream
-        case datasetIsCorrupted
-    }
-    
     private var dataset:DataSet!
     
     public var hasPreamble:Bool = false    
@@ -62,12 +55,13 @@ public class DicomInputStream {
         }
         
         stream.open()
+        /**
+        Read first tag : if first tag is 0000,0000 try to read
+        preamble (128 bytes), then DICM magic word (4 bytes).
         
-        // Read first tag : if first tag is 0000,0000 try to read
-        // preamble (128 bytes), then DICM magic word (4 bytes).
-        //
-        // Else if the read tag is a valid DICOM tag,
-        // we try to process the file from offset 0.
+        Else if the read tag is a valid DICOM tag,
+        we try to process the file from offset 0.
+         */
         var tag = readDataTag(order: byteOrder)
         
         if tag == nil {
@@ -104,10 +98,17 @@ public class DicomInputStream {
             // for old ACR-NEMA file
             vrMethod = .Implicit
         }
-                
+                        
         // read dataset elements
         while(stream.hasBytesAvailable && offset < total && !dataset.isCorrupted) {
-            if let newElement = readDataElement(dataset: dataset, parent: nil, vrMethod: vrMethod, order: byteOrder) {
+            var order = byteOrder
+            
+            // always read Meta Info Header as Little Endian
+            if dataset.fileMetaInformationGroupLength + 132 >= offset {
+                order = .LittleEndian
+            }
+            
+            if let newElement = readDataElement(dataset: dataset, parent: nil, vrMethod: vrMethod, order: order) {
                 // header only option
                 if headerOnly && newElement.tag.group != "0002" {
                     break
@@ -143,7 +144,7 @@ public class DicomInputStream {
                         }
                     }
                 }
-                                            
+                                                            
                 // append element to sub-datasets
                 if !dataset.isCorrupted {
                     if newElement.group != DicomConstants.metaInformationGroup {
@@ -200,105 +201,7 @@ public class DicomInputStream {
         
         return data
     }
-    
-    
-    // MARK: -
-    private func readDataElement(
-        dataset:DataSet?                    = nil,
-        parent:DataElement?                 = nil,
-        vrMethod:DicomConstants.VRMethod    = .Explicit,
-        order:DicomConstants.ByteOrder      = .LittleEndian,
-        inTag:DataTag?                      = nil
-    ) -> DataElement? {
-        let startOffset = offset
-        
-        // we try to read the tag only if no `inTag` given
-        guard let tag = inTag ?? readDataTag(order: order) else {
-            Logger.error("Cannot read tag at offset at \(offset)")
-            return nil
-        }
-                
-        // ignore delimitation items
-        if tag.code == "fffee0dd" {
-            return nil
-        }
-        else if tag.code == "fffee00d" {
-            return nil
-        }
-                                
-        var element = DataElement(withTag:tag, dataset: dataset, parent: parent)
-        
-        element.startOffset     = startOffset
-        
-        // enforce Explicit for group 0002 (Meta Info Header)
-        element.vrMethod        = element.group == "0002" ? .Explicit : vrMethod
-        
-        // enforce Little Endian for group 0002 (Meta Info Header)
-        element.byteOrder       = element.group == "0002" ? .LittleEndian : order
-        
-        
-        guard let vr = readVR(element:element, vrMethod: element.vrMethod) else {
-            Logger.error("Cannot read VR at offset at \(offset)")
-            return nil
-        }
-        
-        element.vr              = vr
-        element.length          = readLength(vrMethod: element.vrMethod, vr: element.vr, order: element.byteOrder)
-        element.dataOffset      = offset
-        
-        
-        // check for invalid
-        if element.length > total {
-            let message = "Fatal, cannot read length properly, decoded \(tag) length at offset(\(offset-4)) overflows (\(element.length))"
-            return readError(forLength: Int(element.length), element: element, message: message)
-        }
-                
-        // read value data
-        // if OB/OW but not in prefix header
-        if tag.group != "0002" && (element.vr == .OW || element.vr == .OB) {
-            if element.name == "PixelData" && element.length == -1 {
-                guard let sequence = readPixelSequence(tag: tag, byteOrder: order) else {
-                    Logger.error("Cannot read Pixel Sequence \(tag) at \(offset)")
-                    return nil
-                }
 
-                sequence.parent         = element
-                sequence.vr             = element.vr
-                sequence.startOffset    = element.startOffset
-                sequence.dataOffset     = element.dataOffset
-                element                 = sequence
-
-                // dead bytes
-                forward(by: 4)
-
-            } else {
-                element.data = readValue(length: Int(element.length))
-            }
-        }
-        else if element.vr == .SQ {
-            guard let sequence = readDataSequence(tag:element.tag, length: Int(element.length), byteOrder:order) else {
-                Logger.error("Cannot read Sequence \(tag) at \(self.offset)")
-                return nil
-            }
-            
-            sequence.parent         = element
-            sequence.vr             = element.vr
-            sequence.startOffset    = element.startOffset
-            sequence.dataOffset     = element.dataOffset
-            element                 = sequence
-        }
-        else {
-            // TODO: manage default value better ?
-            element.data = readValue(length: Int(element.length))
-        }
-        
-        element.endOffset = offset
-        
-        //print("\(offset) element \(element.vrMethod) \(element)")
-                        
-        return element
-    }
-    
     
     
     // MARK: -
@@ -318,9 +221,7 @@ public class DicomInputStream {
     
     private func readError(forLength length:Int, element: DataElement, message:String) -> DataElement {
         let v = ValidationResult(element, message: message, severity: .Fatal)
-        
-        //print("CORRUPTED : \(element)")
-        
+                
         dataset.internalValidations.append(v)
         dataset.isCorrupted = true
         
@@ -416,7 +317,106 @@ public class DicomInputStream {
     }
     
     
+    
+    private func readDataElement(
+        dataset:DataSet?                    = nil,
+        parent:DataElement?                 = nil,
+        vrMethod:DicomConstants.VRMethod    = .Explicit,
+        order:DicomConstants.ByteOrder      = .LittleEndian,
+        inTag:DataTag?                      = nil
+    ) -> DataElement? {
+        let startOffset = offset
+        
+        // we try to read the tag only if no `inTag` given
+        guard let tag = inTag ?? readDataTag(order: order) else {
+            Logger.error("Cannot read tag at offset at \(offset)")
+            return nil
+        }
+                
+        // ignore delimitation items
+        if tag.code == "fffee0dd" {
+            return nil
+        }
+        else if tag.code == "fffee00d" {
+            return nil
+        }
+                                
+        var element = DataElement(withTag:tag, dataset: dataset, parent: parent)
+        
+        element.startOffset     = startOffset
+        
+        // enforce Explicit for group 0002 (Meta Info Header)
+        element.vrMethod        = element.group == "0002" ? .Explicit : vrMethod
+        
+        // enforce Little Endian for group 0002 (Meta Info Header)
+        element.byteOrder       = element.group == "0002" ? .LittleEndian : order
+        
+        
+        guard let vr = readVR(element:element, vrMethod: element.vrMethod) else {
+            Logger.error("Cannot read VR at offset at \(offset)")
+            return nil
+        }
+        
+        element.vr              = vr
+        element.length          = readLength(vrMethod: element.vrMethod, vr: element.vr, order: element.byteOrder)
+        element.dataOffset      = offset
+        
+        
+        // check for invalid
+        if element.length > total {
+            let message = "Fatal, cannot read length properly, decoded \(tag) length at offset(\(offset-4)) overflows (\(element.length))"
+            return readError(forLength: Int(element.length), element: element, message: message)
+        }
+                
+        // read value data
+        // if OB/OW but not in prefix header
+        if tag.group != "0002" && (element.vr == .OW || element.vr == .OB) {
+            if element.name == "PixelData" && element.length == -1 {
+                guard let sequence = readPixelSequence(tag: tag, byteOrder: order) else {
+                    Logger.error("Cannot read Pixel Sequence \(tag) at \(offset)")
+                    return nil
+                }
+                
+                sequence.parent         = element
+                sequence.vr             = element.vr
+                sequence.startOffset    = element.startOffset
+                sequence.dataOffset     = element.dataOffset
+                element                 = sequence
 
+                // dead bytes
+                forward(by: 4)
+
+            } else {
+                element.data = readValue(length: Int(element.length))
+            }
+        }
+        else if element.vr == .SQ {
+            guard let sequence = readDataSequence(tag:element.tag, length: Int(element.length), byteOrder:order) else {
+                Logger.error("Cannot read Sequence \(tag) at \(self.offset)")
+                return nil
+            }
+            
+            sequence.parent         = element
+            sequence.vr             = element.vr
+            sequence.startOffset    = element.startOffset
+            sequence.dataOffset     = element.dataOffset
+            element                 = sequence
+        }
+        else {
+            // TODO: manage default value better ?
+            element.data = readValue(length: Int(element.length))
+        }
+        
+        element.endOffset = offset
+        
+        // print("\(order) element \(element.vrMethod) \(element)")
+                        
+        return element
+    }
+    
+    
+    
+    
     private func readDataSequence(
         tag:DataTag,
         length:Int,
@@ -590,26 +590,26 @@ public class DicomInputStream {
             item.dataOffset     = offset
             item.vrMethod       = .Explicit
             
-            pixelSequence.items.append(item)
-            
             // read item length
             let itemLength = read(length: 4)!.toInt32(byteOrder: byteOrder)
-                        
+                                    
             // check for invalid lengths
             if itemLength > total {
-                let message = "Fatal, cannot read length properly, decoded length at offset(\(offset-4)) overflows (\(itemLength))"
-                return readError(forLength: Int(itemLength), element: pixelSequence, message: message) as? PixelSequence
-            }
-            if itemLength < -1 {
-                let message = "Fatal, cannot read length properly, decoded length cannot be negative (\(itemLength))"
+                let message = "Fatal, cannot read PixelSequence item length properly, decoded length at offset(\(offset-4)) overflows (\(itemLength))"
                 return readError(forLength: Int(itemLength), element: pixelSequence, message: message) as? PixelSequence
             }
             
             item.length = Int(itemLength)
             
             if itemLength > 0 {
-                item.data =  read(length: Int(itemLength))
+                item.data = read(length: Int(itemLength))
             }
+            
+            if itemLength < -1 {
+                break
+            }
+            
+            pixelSequence.items.append(item)
             
             // read next again
             if offset < total {
