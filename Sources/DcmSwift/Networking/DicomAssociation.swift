@@ -330,17 +330,16 @@ public class DicomAssociation : NSObject {
                         if PDUType(rawValue: f) == PDUType.dataTF {
                             let commandData = readData.subdata(in: 12..<readData.count)
                             if commandData.count > 0 {
-                                // TODO: implement input stream
-//                                if let dataset = DataSet(withData: commandData, hasPreamble: false) {
-//                                    if dataset.loadData() {
-//                                        if let command = dataset.element(forTagName: "CommandField") {
-//                                            let c = command.data.toUInt16(byteOrder: .LittleEndian)
-//                                            if let cf = CommandField(rawValue: c) {
-//                                                message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, commandField: cf, association: self) as? PDUMessage
-//                                            }
-//                                        }
-//                                    }
-//                                }
+                                let inputStream = DicomInputStream(data: commandData)
+                                
+                                if let dataset = try? inputStream.readDataset() {
+                                    if let command = dataset.element(forTagName: "CommandField") {
+                                        let c = command.data.toUInt16(byteOrder: .LittleEndian)
+                                        if let cf = CommandField(rawValue: c) {
+                                            message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, commandField: cf, association: self) as? PDUMessage
+                                        }
+                                    }
+                                }
                             }
                         } else {
                             message = PDUDecoder.shared.receiveAssocMessage(data: readData, pduType: pt, association: self) as? PDUMessage
