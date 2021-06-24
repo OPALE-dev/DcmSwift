@@ -462,7 +462,7 @@ public class DicomAssociation : NSObject {
     public func checkTransferSyntax(_ ts:String) -> Bool {
         var okSyntax = false
         
-        for ts in DicomConstants.transfersSyntaxes {
+        for ts in TransferSyntax.transfersSyntaxes {
             if ts == ts {
                 okSyntax = true
                 break
