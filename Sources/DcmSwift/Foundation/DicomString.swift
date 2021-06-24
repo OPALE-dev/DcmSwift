@@ -1,4 +1,3 @@
-
 //
 //  DicomString.swift
 //  DcmSwift
