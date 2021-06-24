@@ -170,9 +170,6 @@ public class DicomInputStream {
     private func forward(by bytes: Int) {
         // read into the void...
         _ = read(length: bytes)
-        
-        // maintain a local offset
-        offset += bytes
     }
     
     
@@ -348,7 +345,7 @@ public class DicomInputStream {
         
         // enforce Little Endian for group 0002 (Meta Info Header)
         element.byteOrder       = element.group == "0002" ? .LittleEndian : order
-        
+                
         guard let vr = readVR(element:element, vrMethod: element.vrMethod) else {
             Logger.error("Cannot read VR at offset at \(offset)")
             return nil
@@ -364,7 +361,7 @@ public class DicomInputStream {
             let message = "Fatal, cannot read length properly, decoded \(tag) length at offset(\(offset-4)) overflows (\(element.length))"
             return readError(forLength: Int(element.length), element: element, message: message)
         }
-                
+        
         // read value data
         // if OB/OW but not in prefix header
         if tag.group != "0002" && (element.vr == .OW || element.vr == .OB) {
