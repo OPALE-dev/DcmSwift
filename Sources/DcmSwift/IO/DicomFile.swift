@@ -127,13 +127,13 @@ public class DicomFile {
      - Returns: true if the file was successfully written
      */
     public func write(atPath path:String, transferSyntax:String) -> Bool {        
-        if transferSyntax == DicomConstants.explicitVRLittleEndian {
+        if transferSyntax == TransferSyntax.explicitVRLittleEndian {
             return write(atPath: path, vrMethod: .Explicit, byteOrder: .LittleEndian)
         }
-        else if transferSyntax == DicomConstants.implicitVRLittleEndian {
+        else if transferSyntax == TransferSyntax.implicitVRLittleEndian {
             return write(atPath: path, vrMethod: .Implicit, byteOrder: .LittleEndian)
         }
-        else if transferSyntax == DicomConstants.explicitVRBigEndian {
+        else if transferSyntax == TransferSyntax.explicitVRBigEndian {
             return write(atPath: path, vrMethod: .Explicit, byteOrder: .BigEndian)
         }
 

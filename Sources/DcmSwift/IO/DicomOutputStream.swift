@@ -23,11 +23,11 @@ public class DicomOutputStream {
     }
     
     public func write(dataset:DataSet) throws -> Bool {
-        if dataset.transferSyntax.tsUID == DicomConstants.implicitVRLittleEndian {
+        if dataset.transferSyntax.tsUID == TransferSyntax.implicitVRLittleEndian {
             vrMethod  = .Implicit
             byteOrder = .LittleEndian
         }
-        else if dataset.transferSyntax.tsUID == DicomConstants.explicitVRBigEndian {
+        else if dataset.transferSyntax.tsUID == TransferSyntax.explicitVRBigEndian {
             vrMethod  = .Explicit
             byteOrder = .BigEndian
         }
