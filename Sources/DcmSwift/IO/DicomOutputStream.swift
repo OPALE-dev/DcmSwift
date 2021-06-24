@@ -11,8 +11,8 @@ import Foundation
 public class DicomOutputStream {
     private var outputStream:OutputStream!
     
-    public var vrMethod:DicomConstants.VRMethod     = .Explicit
-    public var byteOrder:DicomConstants.ByteOrder   = .LittleEndian
+    public var vrMethod:VRMethod     = .Explicit
+    public var byteOrder:ByteOrder   = .LittleEndian
     
     public init(filePath:String) {
         outputStream = OutputStream(toFileAtPath: filePath, append: false)
@@ -37,8 +37,8 @@ public class DicomOutputStream {
     
     public func write(
         dataset:DataSet,
-        vrMethod: DicomConstants.VRMethod,
-        byteOrder: DicomConstants.ByteOrder
+        vrMethod: VRMethod,
+        byteOrder: ByteOrder
     ) throws -> Bool {
         if outputStream == nil {
             throw StreamError.cannotOpenStream(message: "Cannot open stream, init failed")

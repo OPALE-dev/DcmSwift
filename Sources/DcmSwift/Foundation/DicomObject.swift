@@ -11,7 +11,7 @@ import Foundation
 
 public protocol DicomObjectProtocol {
     var description: String { get }
-    func toData(vrMethod inVrMethod:DicomConstants.VRMethod, byteOrder inByteOrder:DicomConstants.ByteOrder) -> Data
+    func toData(vrMethod inVrMethod:VRMethod, byteOrder inByteOrder:ByteOrder) -> Data
     func toXML() -> String
     func toJSONArray() -> Any
     func toJSON() -> String
@@ -39,7 +39,7 @@ public class DicomObject: CustomStringConvertible, DicomObjectProtocol {
      Data representation of the DICOM object
      - Returns : A Data representation of the object encoded to comply with the DICOM standard
      */
-    public func toData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
+    public func toData(vrMethod inVrMethod:VRMethod = .Explicit, byteOrder inByteOrder:ByteOrder = .LittleEndian) -> Data {
         return Data()
     }
     

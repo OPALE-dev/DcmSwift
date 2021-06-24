@@ -13,7 +13,7 @@ public class DataTag : DicomObject {
     public var group:String     = ""
     public var element:String   = ""
     
-    public var bytreOrder:DicomConstants.ByteOrder = .LittleEndian
+    public var bytreOrder:ByteOrder = .LittleEndian
     
     static func == (lhs: DataTag, rhs: DataTag) -> Bool {
         return lhs.group == rhs.group && lhs.element == rhs.element
@@ -23,7 +23,7 @@ public class DataTag : DicomObject {
     public var name:String { return DicomSpec.shared.nameForTag(withCode: code) ?? "Unknow" }
     
     
-    public init(withData data:Data, byteOrder:DicomConstants.ByteOrder = .LittleEndian) {
+    public init(withData data:Data, byteOrder:ByteOrder = .LittleEndian) {
         super.init()
         
         self.data       = data
@@ -34,7 +34,7 @@ public class DataTag : DicomObject {
     
     
     
-    public init(withGroup group:String, element:String, byteOrder:DicomConstants.ByteOrder = .LittleEndian) {
+    public init(withGroup group:String, element:String, byteOrder:ByteOrder = .LittleEndian) {
         super.init()
         
         self.group      = group
@@ -46,7 +46,7 @@ public class DataTag : DicomObject {
     
     
     
-    public func data(withByteOrder:DicomConstants.ByteOrder) -> Data {
+    public func data(withByteOrder:ByteOrder) -> Data {
         var data = Data()
         
         if withByteOrder == .BigEndian {
@@ -99,7 +99,7 @@ public class DataTag : DicomObject {
         return data
     }
         
-    private func writeData(withByteOrder:DicomConstants.ByteOrder) {
+    private func writeData(withByteOrder:ByteOrder) {
         self.data = Data()
         
         if withByteOrder == .BigEndian {
@@ -154,7 +154,7 @@ public class DataTag : DicomObject {
     
     
     
-    private func readData(withByteOrder:DicomConstants.ByteOrder) {
+    private func readData(withByteOrder:ByteOrder) {
         if withByteOrder == .BigEndian {
             let group1      = self.data.subdata(in: 0..<1).toHex()
             let group2      = self.data.subdata(in: 1..<2).toHex()

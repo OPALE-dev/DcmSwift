@@ -14,28 +14,6 @@ import Foundation
  * This struct declares a few constants related to the DICOM protocol
  */
 public struct DicomConstants {
-    // MARK: - Enumeration definition
-    
-    /**
-     The ByteOrder enumeration defines 2 endianess methods, little and big endian
-     */
-    public enum ByteOrder {
-        case BigEndian
-        case LittleEndian
-    }
-    
-    
-    /**
-     The VRMethod enumeration defines 2 Value Representation methods
-     supported by the DICOM standard
-     */
-    public enum VRMethod {
-        case Explicit
-        case Implicit
-    }
-    
-    
-    
     /**
      The standard bytes offset used at start of DICOM files (not all).
      The `DICM` magic word used to identify the file type starts at offset 132.

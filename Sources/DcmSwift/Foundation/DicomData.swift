@@ -54,7 +54,7 @@ extension Data {
     
 
     
-    public func toInt8(byteOrder: DicomConstants.ByteOrder = .LittleEndian) -> Int8 {
+    public func toInt8(byteOrder: ByteOrder = .LittleEndian) -> Int8 {
         return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
             let pointer = ptr.baseAddress!.assumingMemoryBound(to: Int8.self).pointee
             return byteOrder == .LittleEndian ? pointer : pointer.bigEndian
@@ -62,7 +62,7 @@ extension Data {
     }
     
     
-    public func toUInt16(byteOrder: DicomConstants.ByteOrder = .LittleEndian) -> UInt16 {
+    public func toUInt16(byteOrder: ByteOrder = .LittleEndian) -> UInt16 {
         return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
             let pointer = ptr.baseAddress!.assumingMemoryBound(to: UInt16.self).pointee
             return byteOrder == .LittleEndian ? CFSwapInt16HostToLittle(pointer) : CFSwapInt16HostToBig(pointer)
@@ -70,7 +70,7 @@ extension Data {
     }
     
     
-    public func toInt16(byteOrder: DicomConstants.ByteOrder = .LittleEndian) -> Int16 {
+    public func toInt16(byteOrder: ByteOrder = .LittleEndian) -> Int16 {
         return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
             let pointer = ptr.baseAddress!.assumingMemoryBound(to: Int16.self).pointee
             return byteOrder == .LittleEndian ? pointer : pointer.bigEndian
@@ -78,7 +78,7 @@ extension Data {
     }
     
     
-    public func toInt32(byteOrder: DicomConstants.ByteOrder = .LittleEndian) -> Int32 {
+    public func toInt32(byteOrder: ByteOrder = .LittleEndian) -> Int32 {
         return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
             let pointer = ptr.baseAddress!.assumingMemoryBound(to: Int32.self).pointee
             return byteOrder == .LittleEndian ? pointer : pointer.bigEndian
@@ -86,7 +86,7 @@ extension Data {
     }
     
     
-    public func toFloat32(byteOrder: DicomConstants.ByteOrder = .LittleEndian) -> Float32 {
+    public func toFloat32(byteOrder: ByteOrder = .LittleEndian) -> Float32 {
         return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
             let pointer = ptr.baseAddress!.assumingMemoryBound(to: UInt32.self).pointee
             return byteOrder == .LittleEndian ? Float32(bitPattern: pointer) : Float32(bitPattern: UInt32(bigEndian: pointer))
@@ -94,7 +94,7 @@ extension Data {
     }
     
     
-    public func toFloat64(byteOrder: DicomConstants.ByteOrder = .LittleEndian) -> Float64 {
+    public func toFloat64(byteOrder: ByteOrder = .LittleEndian) -> Float64 {
         return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
             let pointer = ptr.baseAddress!.assumingMemoryBound(to: UInt64.self).pointee
             return byteOrder == .LittleEndian ? Float64(bitPattern: pointer) : Float64(bitPattern: UInt64(bigEndian: pointer))
