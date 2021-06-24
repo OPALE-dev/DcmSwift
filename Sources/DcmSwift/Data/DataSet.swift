@@ -303,6 +303,13 @@ public class DataSet: DicomObject {
     }
     
     
+    public func remove(elementForTagName name:String) -> DataElement? {
+        guard let el = self.element(forTagName: name) else {
+            return nil
+        }
+        
+        return remove(dataElement: el)
+    }
     
     public func remove(dataElement element:DataElement) -> DataElement {
         if let index = allElements.firstIndex(where: {$0 === element}) {

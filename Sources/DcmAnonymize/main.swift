@@ -125,14 +125,14 @@ public class Anonymizer {
                             if let age = DicomAge(birthdate: birthdate).age() {
                                 _ = dataset.set(value: age, forTagName: name)
                             }
-                        default:
-                            _ = dataset.set(value: "", forTagName: name)
+                        case .delete:
+                            _ = dataset.remove(elementForTagName: name)
                         }
                     }
                 }
             }
             
-            print("Anonymized Dataset\n\(dataset)")
+            Logger.info("Anonymized Dataset\n\(dataset)")
             
             return dicomFile.write(atPath: destPath)
         }
