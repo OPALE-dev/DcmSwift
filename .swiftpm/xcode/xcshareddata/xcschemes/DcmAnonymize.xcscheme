@@ -76,11 +76,11 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "/Users/nark/Development/Opale/Swift/DcmSwift/Tests/DcmSwiftTests/Resources/US_JPEGBaseline1_SINGLE_YBR_FULL_422_8_GEVingmedUltrasound_NULL_VIVIDE95_202.1_VividE95202.58.0_14.dcm"
+            argument = "/Users/nark/Pictures/DICOM/DataSets/WG02/RDSR/DoseSR_GE_01.DCM"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/Users/nark/Desktop/US_JPEGBaseline1_SINGLE_YBR_FULL_422_8_GEVingmedUltrasound_NULL_VIVIDE95_202.1_VividE95202.58.0_14_ANONYMIZED.dcm"
+            argument = "/Users/nark/Desktop/DoseSR_GE_01_ANONYMIZED.dcm"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

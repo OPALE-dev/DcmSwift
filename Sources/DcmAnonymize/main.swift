@@ -95,47 +95,53 @@ public class Anonymizer {
     }
     
     public func anonymize(to destPath:String) -> Bool {
-        let today       = Date()
-        var birthdate   = Date()
-        
-        birthdate = birthdate.addingTimeInterval(-20000)
-        
-        if let dataset = dicomFile.dataset {
-            for (name, type) in UIDsToAnonymize {
-                for element in dataset.allElements {
-                    if element.name == name {
-                        switch type {
-                        case .uid(let root):
-                            _ = dataset.set(value: UID.generate(root: root), forTagName: name)
-                        case .string(let string):
-                            _ = dataset.set(value: string, forTagName: name)
-                        case .id:
-                            _ = dataset.set(value: String.random(length: 12), forTagName: name)
-                        case .blank:
-                            _ = dataset.set(value: "", forTagName: name)
-                        case .date:
-                            _ = dataset.set(value: today.dicomDateString(), forTagName: name)
-                        case .time:
-                            _ = dataset.set(value: today.dicomTimeString(), forTagName: name)
-                        case .datetime:
-                            _ = dataset.set(value: today.dicomDateTimeString(), forTagName: name)
-                        case .birthdate:
-                            _ = dataset.set(value: birthdate.dicomDateString(), forTagName: name)
-                        case .age:
-                            if let age = DicomAge(birthdate: birthdate).age() {
-                                _ = dataset.set(value: age, forTagName: name)
-                            }
-                        case .delete:
-                            _ = dataset.remove(elementForTagName: name)
-                        }
-                    }
-                }
-            }
+        if var dataset = dicomFile.dataset {
+            dataset = anonymize(dataset: dataset, tags: UIDsToAnonymize)
             
             Logger.info("Anonymized Dataset\n\(dataset)")
             
             return dicomFile.write(atPath: destPath)
         }
         return false
+    }
+    
+    
+    public func anonymize(dataset:DataSet, tags:[String: AnonymizationType]) -> DataSet {
+        let today       = Date()
+        var birthdate   = Date()
+        
+        birthdate = birthdate.addingTimeInterval(-20000)
+        
+        for (name, type) in tags {
+            for element in dataset.allElements {
+                if element.name == name {
+                    switch type {
+                    case .uid(let root):
+                        _ = dataset.set(value: UID.generate(root: root), forTagName: name)
+                    case .string(let string):
+                        _ = dataset.set(value: string, forTagName: name)
+                    case .id:
+                        _ = dataset.set(value: String.random(length: 12), forTagName: name)
+                    case .blank:
+                        _ = dataset.set(value: "", forTagName: name)
+                    case .date:
+                        _ = dataset.set(value: today.dicomDateString(), forTagName: name)
+                    case .time:
+                        _ = dataset.set(value: today.dicomTimeString(), forTagName: name)
+                    case .datetime:
+                        _ = dataset.set(value: today.dicomDateTimeString(), forTagName: name)
+                    case .birthdate:
+                        _ = dataset.set(value: birthdate.dicomDateString(), forTagName: name)
+                    case .age:
+                        if let age = DicomAge(birthdate: birthdate).age() {
+                            _ = dataset.set(value: age, forTagName: name)
+                        }
+                    case .delete:
+                        _ = dataset.remove(elementForTagName: name)
+                    }
+                }
+            }
+        }
+        return dataset
     }
 }
