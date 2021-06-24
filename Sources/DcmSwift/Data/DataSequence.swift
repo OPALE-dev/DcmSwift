@@ -55,13 +55,13 @@ public class DataSequence: DataElement {
         // write tag code
         //print("self.tag : (\(self.tag.group),\(self.tag.element))")
         data.append(self.tag.data(withByteOrder: inByteOrder))
-        
+                
         // write VR (only explicit)
         if inVrMethod == .Explicit  {
             let vrString = "\(self.vr)"
             let vrData = vrString.data(using: .ascii)
             data.append(vrData!)
-            
+                        
             if self.vr == .SQ {
                 data.append(Data(repeating: 0x00, count: 2))
             }
@@ -78,9 +78,13 @@ public class DataSequence: DataElement {
         
         // write length
         if self.vr == .SQ {
-            var intLength = UInt32(self.length)
-            let lengthData = Data(bytes: &intLength, count: 4)
-            data.append(lengthData)
+            if self.length == -1 {
+                data.append(Data(repeating: 0xff, count: 4))
+            } else {
+                var intLength = UInt32(self.length)
+                let lengthData = Data(bytes: &intLength, count: 4)
+                data.append(lengthData)
+            }
         }
         else if self.vr == .OB ||
             self.vr == .OW ||
@@ -132,6 +136,8 @@ public class DataSequence: DataElement {
                 var intLength = UInt32(item.length)
                 let lengthData = Data(bytes: &intLength, count: 4)
                 data.append(lengthData)
+            } else {
+                data.append(Data(repeating: 0xff, count: 4))
             }
             
             // write item sub-elements
@@ -140,7 +146,7 @@ public class DataSequence: DataElement {
             }
             
             // write item delimiter
-            if inVrMethod == .Implicit {
+            if item.length == -1 {
                 let tag = DataTag(withGroup: "fffe", element: "e00d")
                 data.append(tag.data)
                 data.append(Data(repeating: 0x00, count: 4))
@@ -148,7 +154,7 @@ public class DataSequence: DataElement {
         }
         
         // write sequence delimiter
-        if inVrMethod == .Implicit {
+        if length == -1 {
             let tag = DataTag(withGroup: "fffe", element: "e0dd")
             data.append(tag.data)
             data.append(Data(repeating: 0x00, count: 4))

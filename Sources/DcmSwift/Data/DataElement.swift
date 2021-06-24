@@ -293,7 +293,6 @@ public class DataElement : DicomObject {
         var data = Data()
         
         // write tag code
-        //print("self.tag : (\(self.tag.group),\(self.tag.element))")
         data.append(self.tag.data(withByteOrder: inByteOrder))
         
         // write VR (only explicit)
