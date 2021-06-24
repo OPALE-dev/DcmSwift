@@ -96,7 +96,26 @@ public class DicomFile {
         vrMethod inVrMethod:DicomConstants.VRMethod? = nil,
         byteOrder inByteOrder:DicomConstants.ByteOrder? = nil
     ) -> Bool {
-        return self.dataset.write(atPath:path, vrMethod:inVrMethod, byteOrder:inByteOrder)
+        let outputStream = DicomOutputStream(filePath: path)
+                
+        do {
+            return try outputStream.write(
+                dataset: dataset,
+                vrMethod: inVrMethod ?? dataset.vrMethod,
+                byteOrder: inByteOrder ?? dataset.byteOrder)
+            
+        } catch StreamError.cannotOpenStream(let message) {
+            Logger.error("\(message): \(String(describing: path))")
+        } catch StreamError.cannotWriteStream(let message) {
+            Logger.error("\(message): \(String(describing: path))")
+        } catch StreamError.datasetIsCorrupted(let message) {
+            Logger.error("\(message): \(String(describing: path))")
+        } catch {
+            Logger.error("Unknow error while writing: \(String(describing: path))")
+        }
+
+        return false
+        
     }
     
     /**
@@ -107,16 +126,17 @@ public class DicomFile {
      
      - Returns: true if the file was successfully written
      */
-    public func write(atPath path:String, transferSyntax:String) -> Bool {
+    public func write(atPath path:String, transferSyntax:String) -> Bool {        
         if transferSyntax == DicomConstants.explicitVRLittleEndian {
-            return self.dataset.write(atPath:path, vrMethod: .Explicit, byteOrder: .LittleEndian)
+            return write(atPath: path, vrMethod: .Explicit, byteOrder: .LittleEndian)
         }
         else if transferSyntax == DicomConstants.implicitVRLittleEndian {
-            return self.dataset.write(atPath:path, vrMethod: .Implicit, byteOrder: .LittleEndian)
+            return write(atPath: path, vrMethod: .Implicit, byteOrder: .LittleEndian)
         }
         else if transferSyntax == DicomConstants.explicitVRBigEndian {
-            return self.dataset.write(atPath:path, vrMethod: .Explicit, byteOrder: .BigEndian)
+            return write(atPath: path, vrMethod: .Explicit, byteOrder: .BigEndian)
         }
+
         return false
     }
     

@@ -53,8 +53,7 @@ public class DataSet: DicomObject {
     
     // MARK: - Public methods
     public override func toData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
-        var newData = Data()
-
+        var newData     = Data()
         var finalVR     = vrMethod
         var finalOrder  = byteOrder
 
@@ -63,14 +62,6 @@ public class DataSet: DicomObject {
         }
         if byteOrder != inByteOrder {
             finalOrder = inByteOrder
-        }
-
-        if hasPreamble {
-            // write 128 bytes preamble
-            newData.append(Data(repeating: 0x00, count: 128))
-            
-            // write DICM magic word
-            newData.append(DicomConstants.dicomMagicWord.data(using: .utf8)!)
         }
 
         // be sure element are sorted properly before write
@@ -419,26 +410,15 @@ extension DataSet {
     // MARK : -
     private func write(dataElement element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit, byteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
         var data = Data()
-        var localVRMethod:DicomConstants.VRMethod = .Explicit
-        var order:DicomConstants.ByteOrder = .LittleEndian
-        
-        // set local byte order to enforce Little Endian for Prefix Header elements
-        if byteOrder == .BigEndian && element.endOffset > fileMetaInformationGroupLength+144 {
-            order = .BigEndian
-        }
-        
-        if hasPreamble {
-            // set local VR Method to enforce Explicit for Prefix Header elements
-            if vrMethod == .Implicit && element.endOffset > fileMetaInformationGroupLength+144 {
-                localVRMethod = .Implicit
-            }
-        } else {
+        var localVRMethod:DicomConstants.VRMethod = element.vrMethod
+
+        if !hasPreamble {
             // force implicit if no header (always implicit, truncated DICOM file, ACR-NEMA, etc)
             localVRMethod = .Implicit
         }
         
         // write tag code
-        data.append(element.toData(vrMethod: localVRMethod, byteOrder: order))
+        data.append(element.toData(vrMethod: localVRMethod, byteOrder: element.byteOrder))
         
         return data
     }

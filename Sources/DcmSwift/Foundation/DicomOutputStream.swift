@@ -23,12 +23,6 @@ public class DicomOutputStream {
     }
     
     public func write(dataset:DataSet) throws -> Bool {
-        if outputStream == nil {
-            throw StreamError.cannotOpenStream(message: "Cannot open stream, init failed")
-        }
-        
-        outputStream.open()
-        
         if dataset.transferSyntax.tsUID == DicomConstants.implicitVRLittleEndian {
             vrMethod  = .Implicit
             byteOrder = .LittleEndian
@@ -38,37 +32,48 @@ public class DicomOutputStream {
             byteOrder = .BigEndian
         }
         
+        return try write(dataset: dataset, vrMethod: vrMethod, byteOrder: byteOrder)
+    }
+    
+    public func write(
+        dataset:DataSet,
+        vrMethod: DicomConstants.VRMethod,
+        byteOrder: DicomConstants.ByteOrder
+    ) throws -> Bool {
+        if outputStream == nil {
+            throw StreamError.cannotOpenStream(message: "Cannot open stream, init failed")
+        }
+        
+        outputStream.open()
+        
         if dataset.hasPreamble {
             // 128 bytes preamble
             try write(data: Data(repeating: 0x00, count: 128))
             
             // DICM magic word
             try write(data: DicomConstants.dicomMagicWord.data(using: .ascii)!)
+        } else {
+            // write empty 0008,0000 tag
+            try write(data: Data([0x08, 0x00, 0x00, 0x00]))
         }
         
         // make sure element are in correct order
         dataset.sortElements()
         
         // write all elements
-        for element in dataset.allElements {
-            var elementData = element.toData(vrMethod: vrMethod, byteOrder: byteOrder)
-            
-            // force Meta Info Group elements in Explicit VR LittleEndian
-            if element.group == "0002" {
-                elementData = element.toData(vrMethod: .Explicit, byteOrder: .LittleEndian)
-            }
-            
-            try write(data: elementData)
-        }
+        try write(data: dataset.toData(vrMethod: vrMethod, byteOrder: byteOrder))
+        
+        outputStream.close()
         
         return true
     }
     
     
+    
     private func write(data:Data) throws {
         try data.withUnsafeBytes { (unsafeBytes) in
             let bytes = unsafeBytes.bindMemory(to: UInt8.self).baseAddress!
-            
+                        
             let written = outputStream.write(bytes, maxLength: data.count)
             
             if written <= 0 {

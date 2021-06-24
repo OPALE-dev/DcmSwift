@@ -94,6 +94,8 @@ public class DicomInputStream {
             // for old ACR-NEMA file
             vrMethod = .Implicit
         }
+        
+        dataset.hasPreamble = hasPreamble
                         
         // read dataset elements
         while(stream.hasBytesAvailable && offset < total && !dataset.isCorrupted) {
@@ -214,19 +216,6 @@ public class DicomInputStream {
     }
     
     
-    
-    private func readError(forLength length:Int, element: DataElement, message:String) -> DataElement {
-        let v = ValidationResult(element, message: message, severity: .Fatal)
-                
-        dataset.internalValidations.append(v)
-        dataset.isCorrupted = true
-        
-        Logger.error(message)
-        
-        return element
-    }
-    
-    
     private func readVR(element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit) -> DicomConstants.VR? {
         var vr:DicomConstants.VR? = nil
         
@@ -264,6 +253,7 @@ public class DicomInputStream {
         
         return vr!
     }
+    
     
     private func readLength(
         vrMethod:DicomConstants.VRMethod = .Explicit,
@@ -304,12 +294,24 @@ public class DicomInputStream {
 
     
     private func readValue(length:Int ) -> Data? {
-        // TODO: manage default value better ?
         if length > 0 && (offset + length <= total) {
             return read(length: length)
         }
         
         return nil
+    }
+    
+    
+    
+    private func readError(forLength length:Int, element: DataElement, message:String) -> DataElement {
+        let v = ValidationResult(element, message: message, severity: .Fatal)
+                
+        dataset.internalValidations.append(v)
+        dataset.isCorrupted = true
+        
+        Logger.error(message)
+        
+        return element
     }
     
     
@@ -346,7 +348,6 @@ public class DicomInputStream {
         
         // enforce Little Endian for group 0002 (Meta Info Header)
         element.byteOrder       = element.group == "0002" ? .LittleEndian : order
-        
         
         guard let vr = readVR(element:element, vrMethod: element.vrMethod) else {
             Logger.error("Cannot read VR at offset at \(offset)")
@@ -391,21 +392,22 @@ public class DicomInputStream {
                 Logger.error("Cannot read Sequence \(tag) at \(self.offset)")
                 return nil
             }
-            
+                        
             sequence.parent         = element
             sequence.vr             = element.vr
+            sequence.vrMethod       = element.vrMethod
             sequence.startOffset    = element.startOffset
             sequence.dataOffset     = element.dataOffset
+            sequence.length         = element.length
             element                 = sequence
         }
         else {
-            // TODO: manage default value better ?
             element.data = readValue(length: Int(element.length))
         }
         
         element.endOffset = offset
         
-        // print("\(order) element \(element.vrMethod) \(element)")
+        //print("element \(element)")
                         
         return element
     }
