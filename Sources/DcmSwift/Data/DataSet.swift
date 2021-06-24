@@ -11,8 +11,8 @@ import Foundation
 public class DataSet: DicomObject {
     public var fileMetaInformationGroupLength       = 0
     public var transferSyntax:TransferSyntax!
-    public var vrMethod:DicomConstants.VRMethod     = .Explicit
-    public var byteOrder:DicomConstants.ByteOrder   = .LittleEndian
+    public var vrMethod:VRMethod     = .Explicit
+    public var byteOrder:ByteOrder   = .LittleEndian
     public var forceExplicit:Bool                   = false
     public var hasPreamble:Bool                     = true
     internal var isCorrupted:Bool                   = false
@@ -35,7 +35,7 @@ public class DataSet: DicomObject {
         sortElements()
         
         string += "# Dicom-Meta-Information-Header\n"
-        string += "# Used TransferSyntax: \(DicomConstants.VRMethod.Explicit)\n"
+        string += "# Used TransferSyntax: \(VRMethod.Explicit)\n"
         for e in metaInformationHeaderElements {
             string += e.description + "\n"
         }
@@ -52,7 +52,7 @@ public class DataSet: DicomObject {
     
     
     // MARK: - Public methods
-    public override func toData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
+    public override func toData(vrMethod inVrMethod:VRMethod = .Explicit, byteOrder inByteOrder:ByteOrder = .LittleEndian) -> Data {
         var newData     = Data()
         var finalVR     = vrMethod
         var finalOrder  = byteOrder
@@ -77,7 +77,7 @@ public class DataSet: DicomObject {
     }
     
     
-    public func DIMSEData(vrMethod inVrMethod:DicomConstants.VRMethod = .Explicit, byteOrder inByteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
+    public func DIMSEData(vrMethod inVrMethod:VRMethod = .Explicit, byteOrder inByteOrder:ByteOrder = .LittleEndian) -> Data {
         var data = Data()
         
         var finalVR     = vrMethod
@@ -331,8 +331,8 @@ public class DataSet: DicomObject {
     
     public func write(
         atPath path:String,
-        vrMethod inVrMethod:DicomConstants.VRMethod? = nil,
-        byteOrder inByteOrder:DicomConstants.ByteOrder? = nil
+        vrMethod inVrMethod:VRMethod? = nil,
+        byteOrder inByteOrder:ByteOrder? = nil
     ) -> Bool {
         var finalVR     = vrMethod
         var finalOrder  = byteOrder
@@ -415,9 +415,9 @@ extension DataSet {
     
     
     // MARK : -
-    private func write(dataElement element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit, byteOrder:DicomConstants.ByteOrder = .LittleEndian) -> Data {
+    private func write(dataElement element:DataElement, vrMethod:VRMethod = .Explicit, byteOrder:ByteOrder = .LittleEndian) -> Data {
         var data = Data()
-        var localVRMethod:DicomConstants.VRMethod = element.vrMethod
+        var localVRMethod:VRMethod = element.vrMethod
 
         if !hasPreamble {
             // force implicit if no header (always implicit, truncated DICOM file, ACR-NEMA, etc)

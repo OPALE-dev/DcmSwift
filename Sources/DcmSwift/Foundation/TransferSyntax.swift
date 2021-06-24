@@ -14,8 +14,8 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
     public var tsUID:String                     = "1.2.840.10008.1.2.1"
     public var tsName:String                    = DicomSpec.shared.nameForUID(withUID: "1.2.840.10008.1.2.1")
     
-    var vrMethod:DicomConstants.VRMethod        = .Explicit
-    var byteOrder:DicomConstants.ByteOrder      = .LittleEndian
+    var vrMethod:VRMethod        = .Explicit
+    var byteOrder:ByteOrder      = .LittleEndian
     
     public init?(_ transferSyntax:String) {
         if !DicomSpec.shared.isSupported(transferSyntax: transferSyntax) {

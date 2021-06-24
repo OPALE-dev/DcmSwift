@@ -12,8 +12,8 @@ public class DicomInputStream {
     private var dataset:DataSet!
     
     public var hasPreamble:Bool = false    
-    public var vrMethod:DicomConstants.VRMethod     = .Explicit
-    public var byteOrder:DicomConstants.ByteOrder   = .LittleEndian
+    public var vrMethod:VRMethod     = .Explicit
+    public var byteOrder:ByteOrder   = .LittleEndian
     
     var stream:InputStream!
     var offset = 0
@@ -200,7 +200,7 @@ public class DicomInputStream {
     
     
     // MARK: -
-    private func readDataTag(order:DicomConstants.ByteOrder = .LittleEndian) -> DataTag? {
+    private func readDataTag(order:ByteOrder = .LittleEndian) -> DataTag? {
         guard let tagData = self.read(length: 4) else {
             return nil
         }
@@ -213,7 +213,7 @@ public class DicomInputStream {
     }
     
     
-    private func readVR(element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit) -> VR.VR? {
+    private func readVR(element:DataElement, vrMethod:VRMethod = .Explicit) -> VR.VR? {
         var vr:VR.VR? = nil
         
         if vrMethod == .Explicit {
@@ -253,9 +253,9 @@ public class DicomInputStream {
     
     
     private func readLength(
-        vrMethod:DicomConstants.VRMethod = .Explicit,
+        vrMethod:VRMethod = .Explicit,
         vr:VR.VR,
-        order:DicomConstants.ByteOrder = .LittleEndian
+        order:ByteOrder = .LittleEndian
     ) -> Int {
         var length:Int = 0
                         
@@ -316,8 +316,8 @@ public class DicomInputStream {
     private func readDataElement(
         dataset:DataSet?                    = nil,
         parent:DataElement?                 = nil,
-        vrMethod:DicomConstants.VRMethod    = .Explicit,
-        order:DicomConstants.ByteOrder      = .LittleEndian,
+        vrMethod:VRMethod    = .Explicit,
+        order:ByteOrder      = .LittleEndian,
         inTag:DataTag?                      = nil
     ) -> DataElement? {
         let startOffset = offset
@@ -415,7 +415,7 @@ public class DicomInputStream {
     private func readDataSequence(
         tag:DataTag,
         length:Int,
-        byteOrder:DicomConstants.ByteOrder,
+        byteOrder:ByteOrder,
         parent: DataElement? = nil
     ) -> DataSequence? {
         let sequence:DataSequence = DataSequence(withTag:tag, parent: parent)
@@ -564,7 +564,7 @@ public class DicomInputStream {
     // Unused by now..
     private func readItem(
         length:Int,
-        byteOrder:DicomConstants.ByteOrder,
+        byteOrder:ByteOrder,
         parent: DataElement? = nil
     ) -> DataItem? {
         return nil
@@ -572,7 +572,7 @@ public class DicomInputStream {
     
     
     
-    private func readPixelSequence(tag:DataTag, byteOrder:DicomConstants.ByteOrder) -> PixelSequence? {
+    private func readPixelSequence(tag:DataTag, byteOrder:ByteOrder) -> PixelSequence? {
         let pixelSequence = PixelSequence(withTag: tag)
         
         // read item tag

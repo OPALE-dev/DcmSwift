@@ -93,8 +93,8 @@ public class DicomFile {
      */
     public func write(
         atPath path:String,
-        vrMethod inVrMethod:DicomConstants.VRMethod? = nil,
-        byteOrder inByteOrder:DicomConstants.ByteOrder? = nil
+        vrMethod inVrMethod:VRMethod? = nil,
+        byteOrder inByteOrder:ByteOrder? = nil
     ) -> Bool {
         let outputStream = DicomOutputStream(filePath: path)
                 
