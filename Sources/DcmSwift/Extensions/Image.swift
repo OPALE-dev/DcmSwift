@@ -19,6 +19,7 @@ public extension NSImage {
         guard let tiffRepresentation = tiffRepresentation, let bitmapImage = NSBitmapImageRep(data: tiffRepresentation) else { return nil }
         return bitmapImage.representation(using: .jpeg2000, properties: [:])
     }
+    
     func jpegWrite(to url: URL, options: Data.WritingOptions = .atomic) -> Bool {
         do {
             try jpegData?.write(to: url, options: options)

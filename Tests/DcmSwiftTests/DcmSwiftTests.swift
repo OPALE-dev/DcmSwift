@@ -23,13 +23,13 @@ class DcmSwiftTests: XCTestCase {
     // Configure the test suite with the following boolean attributes
     
     /// Run tests on DICOM Date and Time
-    private static var testDicomDateAndTime     = true
+    private static var testDicomDateAndTime     = false
     
     /// Run tests to read files (rely on embedded test files, dynamically generated)
-    private static var testDicomFileRead        = true
+    private static var testDicomFileRead        = false
     
     /// Run tests to write files (rely on embedded test files, dynamically generated)
-    private static var testDicomFileWrite       = true
+    private static var testDicomFileWrite       = false
     
     /// Run tests to update dataset (rely on embedded test files, dynamically generated)
     private static var testDicomDataSet         = false
@@ -37,9 +37,11 @@ class DcmSwiftTests: XCTestCase {
     /// Run tests to read image(s) (rely on embedded test files, dynamically generated)
     private static var testDicomImage           = false
     
+    /// Run Age String (AS VR) related tests
+    private static var testAgeString            = true
     
     // TODO: add tests for DicomUID
-    // TODO: add tests for DicomAge
+    // TODO: add tests for AgeString
     
     internal var filePath:String!
     private var finderTestDir:String = ""
@@ -80,13 +82,19 @@ class DcmSwiftTests: XCTestCase {
             suite.addTest(DcmSwiftTests(selector: #selector(writeDicomDate)))
             suite.addTest(DcmSwiftTests(selector: #selector(dicomDateWrongLength)))
             suite.addTest(DcmSwiftTests(selector: #selector(readDicomTimeMidnight)))
-            // TODO: fix it!
+            // TODO: fix it!?
             //suite.addTest(DcmSwiftTests(selector: #selector(dicomTimeWrongLength)))
             suite.addTest(DcmSwiftTests(selector: #selector(dicomTimeWeirdTime)))
             suite.addTest(DcmSwiftTests(selector: #selector(readDicomTime)))
             suite.addTest(DcmSwiftTests(selector: #selector(writeDicomTime)))
             suite.addTest(DcmSwiftTests(selector: #selector(combineDateAndTime)))
             suite.addTest(DcmSwiftTests(selector: #selector(readWriteDicomRange)))
+        }
+        
+        
+        if testAgeString {
+            suite.addTest(DcmSwiftTests(selector: #selector(ageStringPositiveAge)))
+            suite.addTest(DcmSwiftTests(selector: #selector(ageStringNegativeAge)))
         }
         
         
@@ -165,6 +173,38 @@ class DcmSwiftTests: XCTestCase {
     
     
     
+    
+    //MARK: -
+    public func ageStringPositiveAge() {
+        let currentDate = Date()
+        var dateComponent = DateComponents()
+        
+        // two years in the past
+        dateComponent.year = -2
+                
+        if let futureDate = Calendar.current.date(byAdding: dateComponent, to: currentDate) {
+            // should not be nil
+            XCTAssertTrue((AgeString(birthdate: futureDate) != nil))
+        }
+    }
+    
+    
+    public func ageStringNegativeAge() {
+        let currentDate = Date()
+        var dateComponent = DateComponents()
+        
+        // two years in the future
+        dateComponent.year = 2
+                
+        if let futureDate = Calendar.current.date(byAdding: dateComponent, to: currentDate) {
+            // should be nil
+            XCTAssertNil(AgeString(birthdate: futureDate))
+        }
+    }
+    
+    
+    
+    // MARK: -
     public func readDicomDate() {
         let ds1 = "20001201"
         let dd1 = Date(dicomDate: ds1)
