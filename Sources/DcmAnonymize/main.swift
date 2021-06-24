@@ -7,38 +7,33 @@
 
 import Foundation
 import DcmSwift
+import ArgumentParser
 
-
-func usage() {
-    Logger.info("DcmAnonymize is a CLI program that anonymize a DICOM file\n")
-    Logger.info("Usage: DcmAnonymize <path/to/dicom/file> <path/to/anonymized/file>\n")
-}
-
-if CommandLine.arguments.count != 3 {
-    Logger.error("Invalid arguments\n")
+struct DcmAnonymize: ParsableCommand {
+    @Argument(help: "Path of DICOM file to anonymize")
+    var sourcePath: String
     
-    usage()
-    
-    exit(0)
+    @Argument(help: "Path to save the anonymized DICOM file")
+    var destPath: String
+
+    mutating func run() throws {
+        guard let anonymizer = Anonymizer(path: sourcePath) else {
+            Logger.error("Cannot create anonymizer for file: \(sourcePath)")
+
+            DcmAnonymize.exit(withError: nil)
+        }
+
+        if !anonymizer.anonymize(to: destPath) {
+            Logger.error("Cannot write anonymized file \(destPath)")
+
+            DcmAnonymize.exit(withError: nil)
+        }
+
+        Logger.info("Anonymization succeeded")
+    }
 }
 
-let sourcePath  = CommandLine.arguments[1]
-let destPath    = CommandLine.arguments[2]
-
-guard let anonymizer = Anonymizer(path: sourcePath) else {
-    Logger.error("Cannot create anonymizer for file: \(sourcePath)")
-
-    exit(0)
-}
-
-if !anonymizer.anonymize(to: destPath) {
-    Logger.error("Cannot write anonymized file")
-
-    exit(0)
-}
-
-Logger.info("Anonymization succeeded")
-
+DcmAnonymize.main()
 
 
 public class Anonymizer {
@@ -133,8 +128,10 @@ public class Anonymizer {
                     case .birthdate:
                         _ = dataset.set(value: birthdate.dicomDateString(), forTagName: name)
                     case .age:
-                        if let age = DicomAge(birthdate: birthdate).age() {
-                            _ = dataset.set(value: age, forTagName: name)
+                        if let age  = DicomAge(birthdate: birthdate),
+                           let a    = age.age()
+                        {
+                            _ = dataset.set(value: a, forTagName: name)
                         }
                     case .delete:
                         _ = dataset.remove(elementForTagName: name)
