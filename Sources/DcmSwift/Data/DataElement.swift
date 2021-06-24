@@ -31,7 +31,7 @@ public class DataElement : DicomObject {
     public var tag:DataTag
     public var data:Data!
     
-    public var vr:DicomConstants.VR                  = DicomConstants.VR.UN
+    public var vr:VR.VR                  = VR.VR.UN
     public var vrMethod:DicomConstants.VRMethod      = .Explicit
     public var byteOrder:DicomConstants.ByteOrder    = .LittleEndian
     
