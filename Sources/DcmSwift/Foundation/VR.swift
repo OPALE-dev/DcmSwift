@@ -50,14 +50,32 @@ public class VR: CustomStringConvertible {
         return name
     }
     
+    
     init?(name: String, maxLength:Int) {
         guard let v = DicomSpec.vr(for: name) else {
             Logger.error("Unknow VR")
             return nil
         }
         
-        self.name       = name
         self.vr         = v
+        self.name       = name
         self.maxLength  = maxLength
+    }
+    
+    /**
+     Unused. Why not.. because enum are bet…faster!
+     */
+    init?(stream:DicomInputStream) {
+        guard let data = stream.read(length: 2) else {
+            return nil
+        }
+        
+        guard let vr = DicomSpec.vr(for: data.toString()) else {
+            return nil
+        }
+        
+        self.vr         = vr
+        self.name       = "\(vr)"
+        self.maxLength  = DicomSpec.lengthOf(vr: vr)
     }
 }
