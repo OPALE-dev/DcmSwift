@@ -1,5 +1,5 @@
 //
-//  DicomUID.swift
+//  UID.swift
 //  
 //
 //  Created by Rafael Warnault, OPALE on 23/06/2021.
@@ -9,12 +9,21 @@ import Foundation
 
 public let orgRoot = "2.5.220.10055"
 
-public class DicomUID {
-    var root:String
-    var suffix:String?
+/**
+ UID represents DICOM Unique Identifiers
+ 
+ DICOM standard:
+ * Section 9: http://dicom.nema.org/dicom/2013/output/chtml/part05/chapter_9.html
+ * Annex B: http://dicom.nema.org/dicom/2013/output/chtml/part05/chapter_B.html
+ */
+public class UID {
+    public var root:String
+    public var suffix:String?
     
+    
+    // MARK: - Public interface
     public class func generate(root:String? = nil) -> String {
-        let uid = DicomUID(root: root)
+        let uid = UID(root: root)
                 
         return uid.generate()
     }
@@ -23,6 +32,9 @@ public class DicomUID {
         return false
     }
     
+    
+    
+    // MARK: - Private
     private init(root:String? = nil) {
         var r = orgRoot
         
