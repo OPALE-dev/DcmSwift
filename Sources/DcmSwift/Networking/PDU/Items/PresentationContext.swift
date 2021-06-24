@@ -110,9 +110,9 @@ public class PresentationContext {
         var tsArray: [String] = []
         
         if self.result != nil {
-            tsArray = [DicomConstants.explicitVRLittleEndian]
+            tsArray = [TransferSyntax.explicitVRLittleEndian]
         } else {
-            tsArray = [DicomConstants.implicitVRLittleEndian, DicomConstants.explicitVRLittleEndian]
+            tsArray = [TransferSyntax.implicitVRLittleEndian, TransferSyntax.explicitVRLittleEndian]
         }
         
         for ts in tsArray {

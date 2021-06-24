@@ -397,14 +397,14 @@ class DcmSwiftTests: XCTestCase {
                     writePath = "\(self.finderTestDir)/\(fileName)-rwi-test-\(i)"
                     
                     if let image = dicomImage.image(forFrame: i) {
-                        if dicomFile.dataset.transferSyntax == DicomConstants.JPEG2000 ||
-                           dicomFile.dataset.transferSyntax == DicomConstants.JPEG2000Part2 ||
-                           dicomFile.dataset.transferSyntax == DicomConstants.JPEG2000LosslessOnly ||
-                           dicomFile.dataset.transferSyntax == DicomConstants.JPEG2000Part2Lossless {
+                        if dicomFile.dataset.transferSyntax == TransferSyntax.JPEG2000 ||
+                           dicomFile.dataset.transferSyntax == TransferSyntax.JPEG2000Part2 ||
+                           dicomFile.dataset.transferSyntax == TransferSyntax.JPEG2000LosslessOnly ||
+                           dicomFile.dataset.transferSyntax == TransferSyntax.JPEG2000Part2Lossless {
                             _ = image.writeToFile(file: writePath, atomically: true, usingType: NSBitmapImageRep.FileType.jpeg2000)
                         }
-                        else if dicomFile.dataset.transferSyntax == DicomConstants.JPEGLossless ||
-                                dicomFile.dataset.transferSyntax == DicomConstants.JPEGLosslessNonhierarchical {
+                        else if dicomFile.dataset.transferSyntax == TransferSyntax.JPEGLossless ||
+                                dicomFile.dataset.transferSyntax == TransferSyntax.JPEGLosslessNonhierarchical {
                             _ = image.writeToFile(file: writePath, atomically: true, usingType: NSBitmapImageRep.FileType.jpeg)
                         }
                         else {

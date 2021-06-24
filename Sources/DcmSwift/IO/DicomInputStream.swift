@@ -132,11 +132,11 @@ public class DicomInputStream {
                     if let ts = newElement.value as? String {
                         dataset.transferSyntax = TransferSyntax(ts)
                         
-                        if dataset.transferSyntax.tsUID == DicomConstants.implicitVRLittleEndian {
+                        if dataset.transferSyntax.tsUID == TransferSyntax.implicitVRLittleEndian {
                             vrMethod  = .Implicit
                             byteOrder = .LittleEndian
                         }
-                        else if dataset.transferSyntax.tsUID == DicomConstants.explicitVRBigEndian {
+                        else if dataset.transferSyntax.tsUID == TransferSyntax.explicitVRBigEndian {
                             vrMethod  = .Explicit
                             byteOrder = .BigEndian
                         }
