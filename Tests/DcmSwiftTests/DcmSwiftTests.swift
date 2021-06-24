@@ -38,6 +38,9 @@ class DcmSwiftTests: XCTestCase {
     private static var testDicomImage           = false
     
     
+    // TODO: add tests for DicomUID
+    // TODO: add tests for DicomAge
+    
     internal var filePath:String!
     private var finderTestDir:String = ""
     private var printDatasets = false
