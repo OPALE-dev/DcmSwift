@@ -70,14 +70,8 @@ class DcmSwiftTests: XCTestCase {
      */
     override class var defaultTestSuite: XCTestSuite {
         let suite = XCTestSuite(forTestCaseClass: DcmSwiftTests.self)
-        
-        print("defaultTestSuite")
-        
-        //let bundle = Bundle(for: DcmSwiftTests.self)
         let paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
-        
-        print("paths \(paths)")
-        
+                
         if testDicomDateAndTime {
             suite.addTest(DcmSwiftTests(selector: #selector(readDicomDate)))
             suite.addTest(DcmSwiftTests(selector: #selector(writeDicomDate)))
