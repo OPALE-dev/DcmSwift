@@ -106,7 +106,7 @@ public class Anonymizer {
                     if element.name == name {
                         switch type {
                         case .uid(let root):
-                            _ = dataset.set(value: DicomUID.generate(root: root), forTagName: name)
+                            _ = dataset.set(value: UID.generate(root: root), forTagName: name)
                         case .string(let string):
                             _ = dataset.set(value: string, forTagName: name)
                         case .id:
