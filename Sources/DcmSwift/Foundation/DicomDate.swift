@@ -201,7 +201,7 @@ extension Date {
     
     
     
-    public func format(accordingTo: DicomConstants.VR) -> String {
+    public func format(accordingTo: VR.VR) -> String {
         let df = DateFormatter()
         df.dateStyle = .short
         df.timeStyle = .short
@@ -274,7 +274,7 @@ public class DateRange : CustomStringConvertible {
     public var start:Date?
     public var end:Date?
     public var range:Range = .between
-    public var type:DicomConstants.VR = .DA
+    public var type:VR.VR = .DA
 
 
     /**
@@ -287,7 +287,7 @@ public class DateRange : CustomStringConvertible {
      - returns: DateRange object
 
      */
-    public init(start:Date?, end:Date?, range:Range, type:DicomConstants.VR) {
+    public init(start:Date?, end:Date?, range:Range, type:VR.VR) {
         self.start  = start
         self.end    = end
         self.range  = range
@@ -305,7 +305,7 @@ public class DateRange : CustomStringConvertible {
      DICOM Date string will be automatically formatted to Date objects
 
      */
-    public convenience init?(dicomStart:String?, dicomEnd:String?, range:Range, type:DicomConstants.VR) {
+    public convenience init?(dicomStart:String?, dicomEnd:String?, range:Range, type:VR.VR) {
         guard let dsd = dicomStart, let sd = Date(dicomDate: dsd) else {
             Swift.print("Invalid DICOM start date")
             return nil
@@ -322,7 +322,7 @@ public class DateRange : CustomStringConvertible {
     /**
      Create a DICOM Date Range from DICOM Date Range String
      */
-    public convenience init?(dicomRange:String, type: DicomConstants.VR) {
+    public convenience init?(dicomRange:String, type: VR.VR) {
         let components  = dicomRange.split(separator: "-")
         var rangeType   = Range.prior
 

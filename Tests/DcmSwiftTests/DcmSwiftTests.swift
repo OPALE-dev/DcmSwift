@@ -305,7 +305,7 @@ class DcmSwiftTests: XCTestCase {
         let ds2 = "20021201"
         
         let dicomRange = "\(ds1)-\(ds2)"
-        let dateRange = DateRange(dicomRange: dicomRange, type: DicomConstants.VR.DA)
+        let dateRange = DateRange(dicomRange: dicomRange, type: VR.VR.DA)
         
         XCTAssert(dateRange!.range          == .between)
         XCTAssert(dateRange!.description    == "20001201-20021201")

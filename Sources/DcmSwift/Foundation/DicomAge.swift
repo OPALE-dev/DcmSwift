@@ -18,7 +18,7 @@ import Foundation
  
  http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_6.2.html
  */
-public class DicomAge: CustomStringConvertible {
+public class DicomAge: VR {
     var birthdate:Date
     var precision:AgePrecision = .years
     
@@ -35,7 +35,7 @@ public class DicomAge: CustomStringConvertible {
     /**
      From CustomStringConvertible protocol
      */
-    public var description: String {
+    public override var description: String {
         return self.age() ?? "000D"
     }
     
@@ -43,18 +43,22 @@ public class DicomAge: CustomStringConvertible {
     /**
      Create age from birth date
      */
-    public init(birthdate:Date) {
+    public init?(birthdate:Date) {
         self.birthdate = birthdate
+        
+        super.init(name: "AS", maxLength: 4)
     }
     
     /**
      Create age from DICOM age string
      */
-    public init(ageString:String) {
+    public init?(ageString:String) {
         // TODO: decompose DicomAge string of every possible formats to determine birthdate
         // nnnD, nnnW, nnnM, nnnY, ex : 107Y, 033D, 012W, etc.
         // http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_6.2.html
         self.birthdate = Date() // fake date for init
+        
+        super.init(name: "AS", maxLength: 4)
     }
     
     /**

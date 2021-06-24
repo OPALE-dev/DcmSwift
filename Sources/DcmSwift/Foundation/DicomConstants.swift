@@ -35,40 +35,6 @@ public struct DicomConstants {
     }
     
     
-    /**
-     The list of Value Representations supported by the DICOM standard
-     */
-    public enum VR {
-        case AE
-        case AS
-        case AT
-        case CS
-        case DA
-        case DS
-        case DT
-        case FL
-        case FD
-        case IS
-        case LO
-        case LT
-        case OB
-        case OD
-        case OF
-        case OW
-        case PN
-        case SH
-        case SL
-        case SQ
-        case SS
-        case ST
-        case TM
-        case UI
-        case UL
-        case UN
-        case US
-        case UT
-    }
-    
     
     /**
      The standard bytes offset used at start of DICOM files (not all).

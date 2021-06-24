@@ -213,8 +213,8 @@ public class DicomInputStream {
     }
     
     
-    private func readVR(element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit) -> DicomConstants.VR? {
-        var vr:DicomConstants.VR? = nil
+    private func readVR(element:DataElement, vrMethod:DicomConstants.VRMethod = .Explicit) -> VR.VR? {
+        var vr:VR.VR? = nil
         
         if vrMethod == .Explicit {
             guard let data = self.read(length: 2) else {
@@ -254,7 +254,7 @@ public class DicomInputStream {
     
     private func readLength(
         vrMethod:DicomConstants.VRMethod = .Explicit,
-        vr:DicomConstants.VR,
+        vr:VR.VR,
         order:DicomConstants.ByteOrder = .LittleEndian
     ) -> Int {
         var length:Int = 0

@@ -85,7 +85,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Parameter vr: VR enum
      
      */
-    public static func lengthOf(vr:DicomConstants.VR) -> Int {
+    public static func lengthOf(vr:VR.VR) -> Int {
         switch vr {
         case .AS:
             return 4
@@ -120,7 +120,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Parameter vr: VR enum
      
      */
-    public static func maxLengthOf(vr:DicomConstants.VR) -> Int {
+    public static func maxLengthOf(vr:VR.VR) -> Int {
         switch vr {
         case .AE:
             return 16
@@ -171,7 +171,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Parameter vr: VR enum
      
      */
-    public static func vr(for vr:String) -> DicomConstants.VR? {
+    public static func vr(for vr:String) -> VR.VR? {
         switch vr {
         case "AE":
             return .AE
@@ -307,7 +307,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Parameter code: string composed of DICOM group and element
      - Returns: en VR enum
      */
-    public func vrForTag(withCode code: String) -> DicomConstants.VR? {
+    public func vrForTag(withCode code: String) -> VR.VR? {
         if tags.keys.contains(code) {
             if let t = tags[code] {
                 if let v = t["vr"] {
