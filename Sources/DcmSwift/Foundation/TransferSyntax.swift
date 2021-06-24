@@ -10,6 +10,47 @@ import Foundation
 
 
 public class TransferSyntax: CustomStringConvertible, Equatable {
+    
+    /**
+     List of supported Transfer Syntaxes
+     */
+    public static let transfersSyntaxes:[String] = [
+        TransferSyntax.implicitVRLittleEndian,
+        TransferSyntax.explicitVRLittleEndian,
+        TransferSyntax.explicitVRBigEndian
+    ]
+    
+    
+    /**
+     List of JPEG Transfer syntax
+     */
+    public static let JPEGTransfersSyntaxes:[String] = [
+        TransferSyntax.JPEGLossy8bit,
+        TransferSyntax.JPEGLossy12bit,
+        TransferSyntax.JPEGExtended,
+        TransferSyntax.JPEGSpectralSelectionNonhierarchical6,
+        TransferSyntax.JPEGSpectralSelectionNonhierarchical7,
+        TransferSyntax.JPEGFullProgressionNonhierarchical10,
+        TransferSyntax.JPEGFullProgressionNonhierarchical11,
+        TransferSyntax.JPEGLosslessNonhierarchical,
+        TransferSyntax.JPEGLossless15,
+        TransferSyntax.JPEGExtended16,
+        TransferSyntax.JPEGExtended17,
+        TransferSyntax.JPEGSpectralSelectionHierarchical20,
+        TransferSyntax.JPEGSpectralSelectionHierarchical21,
+        TransferSyntax.JPEGFullProgressionHierarchical24,
+        TransferSyntax.JPEGFullProgressionHierarchical25,
+        TransferSyntax.JPEGLossless28,
+        TransferSyntax.JPEGLossless29,
+        TransferSyntax.JPEGLossless,
+        TransferSyntax.JPEGLSLossless,
+        TransferSyntax.JPEGLSLossy,
+        TransferSyntax.JPEG2000LosslessOnly,
+        TransferSyntax.JPEG2000,
+        TransferSyntax.JPEG2000Part2Lossless,
+        TransferSyntax.JPEG2000Part2
+    ]
+    
     /**
      Transfer Syntax : Implicit Value Representation, Little Endian
      */

@@ -176,7 +176,7 @@ public class DicomImage {
         let size = NSSize(width: self.columns, height: self.rows)
         let data = self.frames[frame]
         
-        if DicomConstants.transfersSyntaxes.contains(self.dataset.transferSyntax.tsUID) {
+        if TransferSyntax.transfersSyntaxes.contains(self.dataset.transferSyntax.tsUID) {
             if let cgim = self.imageFromPixels(size: size, pixels: data.toUnsigned8Array(), width: self.columns, height: self.rows) {
                 return NSImage(cgImage: cgim, size: size)
             }
