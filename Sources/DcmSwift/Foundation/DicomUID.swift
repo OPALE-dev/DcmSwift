@@ -51,6 +51,7 @@ public class DicomUID {
         return compose(root: self.root, suffix: self.suffix!)
     }
     
+    // TODO: validate DICOM UID
     private func validate(uid:String) -> Bool {
         return false
     }
