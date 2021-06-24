@@ -104,7 +104,7 @@ public class Anonymizer {
                     case .birthdate:
                         _ = dataset.set(value: birthdate.dicomDateString(), forTagName: name)
                     case .age:
-                        if let age  = DicomAge(birthdate: birthdate),
+                        if let age  = AgeString(birthdate: birthdate),
                            let a    = age.age()
                         {
                             _ = dataset.set(value: a, forTagName: name)

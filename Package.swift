@@ -27,10 +27,16 @@ let package = Package(
             dependencies: [ "Socket" ]),
         .target(
             name: "DcmAnonymize",
-            dependencies: [ "DcmSwift", .product(name: "ArgumentParser", package: "swift-argument-parser") ]),
+            dependencies: [
+                "DcmSwift",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ]),
         .target(
             name: "DcmPrint",
-            dependencies: [ "DcmSwift" ]),
+            dependencies: [
+                "DcmSwift",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ]),
         .testTarget(
             name: "DcmSwiftTests",
             dependencies: ["DcmSwift"],

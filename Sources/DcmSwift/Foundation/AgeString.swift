@@ -18,7 +18,7 @@ import Foundation
  
  http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_6.2.html
  */
-public class DicomAge: VR {
+public class AgeString: VR {
     var birthdate:Date
     var precision:AgePrecision = .years
     
@@ -44,6 +44,11 @@ public class DicomAge: VR {
      Create age from birth date
      */
     public init?(birthdate:Date) {
+        // make sure reject future dates
+        if birthdate > Date() {
+            return nil
+        }
+        
         self.birthdate = birthdate
         
         super.init(name: "AS", maxLength: 4)
@@ -53,10 +58,15 @@ public class DicomAge: VR {
      Create age from DICOM age string
      */
     public init?(ageString:String) {
-        // TODO: decompose DicomAge string of every possible formats to determine birthdate
+        // TODO: decompose AgeString string of every possible formats to determine birthdate
         // nnnD, nnnW, nnnM, nnnY, ex : 107Y, 033D, 012W, etc.
         // http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_6.2.html
         self.birthdate = Date() // fake date for init
+        
+        // make sure reject future dates
+        if birthdate > Date() {
+            return nil
+        }
         
         super.init(name: "AS", maxLength: 4)
     }
@@ -65,7 +75,7 @@ public class DicomAge: VR {
      Generate a DICOM Age String (AS VR)
      */
     public func age(withPrecision precision:AgePrecision? = nil) -> String? {
-        // TODO: implement DicomAge for each formats:
+        // TODO: implement AgeString for each formats:
         // nnnD, nnnW, nnnM, nnnY, ex : 107Y, 033D, 012W, etc.
         // http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_6.2.html
         let p = precision ?? self.precision
@@ -77,6 +87,8 @@ public class DicomAge: VR {
         
             let birthYear   = dateFormatter.string(from: birthdate)
             let thisYear    = dateFormatter.string(from: Date())
+            
+            print("birthYear \(birthYear) - thisYear \(thisYear)")
             
             if let ty       = Int(thisYear),
                let by       = Int(birthYear)

@@ -25,6 +25,7 @@ public class AssociationAC: PDUMessage {
             // Weird but works:
             // - we don't need AS in assoc-as
             // - but we need it later for message response
+            // NOTE : sometimes you understand DICOM years later. It is a fact.
             let asx = pc.abstractSyntax
             pc.abstractSyntax = nil
             pcData.append(pc.data())
