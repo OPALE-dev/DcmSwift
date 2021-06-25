@@ -19,7 +19,7 @@ import Foundation
  http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_6.2.html
  */
 public class AgeString: VR {
-    var birthdate:Date
+    public var birthdate:Date
     var precision:AgePrecision = .years
     
     /**
@@ -63,11 +63,25 @@ public class AgeString: VR {
         // http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_6.2.html
         self.birthdate = Date() // fake date for init
         
+        guard let lastChar = ageString.last else {
+            print("problem")
+            exit(0)
+        }
+        if(lastChar == "D") {
+            
+        } else if(lastChar == "W") {
+            
+        } else if(lastChar == "M") {
+        
+        } else if(lastChar == "Y") {
+        
+        }
+        
         // make sure reject future dates
         if birthdate > Date() {
             return nil
         }
-        
+
         super.init(name: "AS", maxLength: 4)
     }
     
@@ -77,6 +91,8 @@ public class AgeString: VR {
         Version Colombe
      */
     public func age(withPrecision precision:AgePrecision? = nil) -> String? {
+        var result:String? = nil
+        
         let p = precision ?? self.precision
         let nbDays = Calendar.current.dateComponents([.day], from: birthdate, to: Date()).day!
         
@@ -89,20 +105,43 @@ public class AgeString: VR {
                 if(nbMonths > 999 || p == .years) {
                     let nbYears = nbDays/365
                     
-                    return "\(String(format: "%03d", nbYears))Y"
+                    result = "\(String(format: "%03d", nbYears))Y"
                 } else {
-                    return "\(String(format: "%03d", nbMonths))M"
+                    result = "\(String(format: "%03d", nbMonths))M"
                 }
             } else {
-                return "\(String(format: "%03d", nbWeeks))W"
+                result = "\(String(format: "%03d", nbWeeks))W"
             }
         } else {
-            return "\(String(format: "%03d", nbDays))D"
+            result = "\(String(format: "%03d", nbDays))D"
         }
+        
+        if let s = result, !validate(age: s) {
+            return nil
+        }
+        
+        return result
     }
     
     // TODO: implement a validation of Age String format
     public func validate(age:String) -> Bool {
+        guard let lastChar = age.last else {
+            return false
+        }
+        
+        if(lastChar == "D" || lastChar == "W" || lastChar == "M" || lastChar == "Y") {
+            if(age.count == 4) {
+                
+                let startSubstring = age.index(age.startIndex, offsetBy: 0)
+                let endSubstring = age.index(age.startIndex, offsetBy: 2)
+                let substring = String(age[startSubstring...endSubstring])
+                
+                guard let _ = Int(substring) else {
+                    return false
+                }
+                return true
+            }
+        }
         return false
     }
 }
