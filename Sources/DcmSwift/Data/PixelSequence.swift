@@ -56,7 +56,8 @@ class PixelSequence: DataSequence {
             let vrData = vrString.data(using: .ascii)
             data.append(vrData!)
             
-            data.append(contentsOf: [0x00, 0x00, 0xff, 0xff, 0xff, 0xff])
+            data.append(byte: 0x00, count: 2)
+            data.append(byte: 0xff, count: 4)
             
 //            if self.vr == .SQ {
 //                data.append(Data(repeating: 0x00, count: 2))
@@ -92,8 +93,8 @@ class PixelSequence: DataSequence {
         // write pixel Sequence Delimiter Item
         tag = DataTag(withGroup: "fffe", element: "e0dd")
         data.append(tag.data)
-        data.append(Data(repeating: 0x00, count: 4))
-        
+        data.append(byte: 0x00, count: 4)
+
         return data
     }
 }

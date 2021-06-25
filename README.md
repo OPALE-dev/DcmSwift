@@ -30,25 +30,7 @@ DcmSwift is widely used in the **DicomiX** application for macOS, which is avail
 
 Follow the instructions below to use DcmSwift framework into your Xcode project.
 
-### Carthage
-
-It is the easiest way to use DcmSwift into your Xcode project. Just add the following to your `Cartfile`:
-
-    # TDB
-    
-If you do not use Carthage yet and want to give it a try, you will found some instructions here to getting started.
-
-### Subproject
-
-Otherwise, you can link the framework directly from a subproject. The only requirement is to use a Xcode workspace (`.xcworkspace`):
-
-    # TDB
-
 ## Getting Started
-
-### Import the framework
-
-
 
 ### Read a DICOM file
 

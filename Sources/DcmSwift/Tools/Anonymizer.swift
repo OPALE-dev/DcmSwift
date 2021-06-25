@@ -83,38 +83,38 @@ public class Anonymizer {
         // TODO: obviously better birthdate is needed here...
         birthdate = birthdate.addingTimeInterval(-20000)
         
-        for (name, type) in tags {
-            for element in dataset.allElements {
-                if element.name == name {
-                    switch type {
-                    case .uid(let root):
-                        _ = dataset.set(value: UID.generate(root: root), forTagName: name)
-                    case .string(let string):
-                        _ = dataset.set(value: string, forTagName: name)
-                    case .id:
-                        _ = dataset.set(value: String.random(length: 12), forTagName: name)
-                    case .blank:
-                        _ = dataset.set(value: "", forTagName: name)
-                    case .date:
-                        _ = dataset.set(value: today.dicomDateString(), forTagName: name)
-                    case .time:
-                        _ = dataset.set(value: today.dicomTimeString(), forTagName: name)
-                    case .datetime:
-                        _ = dataset.set(value: today.dicomDateTimeString(), forTagName: name)
-                    case .birthdate:
-                        _ = dataset.set(value: birthdate.dicomDateString(), forTagName: name)
-                    case .age:
-                        if let age  = AgeString(birthdate: birthdate),
-                           let a    = age.age()
-                        {
-                            _ = dataset.set(value: a, forTagName: name)
-                        }
-                    case .delete:
-                        _ = dataset.remove(elementForTagName: name)
-                    }
-                }
-            }
-        }
+//        for (name, type) in tags {
+//            for element in dataset.allElements {
+//                if element.name == name {
+//                    switch type {
+//                    case .uid(let root):
+//                        _ = dataset.set(value: UID.generate(root: root), forTagName: name)
+//                    case .string(let string):
+//                        _ = dataset.set(value: string, forTagName: name)
+//                    case .id:
+//                        _ = dataset.set(value: String.random(length: 12), forTagName: name)
+//                    case .blank:
+//                        _ = dataset.set(value: "", forTagName: name)
+//                    case .date:
+//                        _ = dataset.set(value: today.dicomDateString(), forTagName: nahme)
+//                    case .time:
+//                        _ = dataset.set(value: today.dicomTimeString(), forTagName: name)
+//                    case .datetime:
+//                        _ = dataset.set(value: today.dicomDateTimeString(), forTagName: name)
+//                    case .birthdate:
+//                        _ = dataset.set(value: birthdate.dicomDateString(), forTagName: name)
+//                    case .age:
+//                        if let age  = AgeString(birthdate: birthdate),
+//                           let a    = age.age()
+//                        {
+//                            _ = dataset.set(value: a, forTagName: name)
+//                        }
+//                    case .delete:
+//                        _ = dataset.remove(elementForTagName: name)
+//                    }
+//                }
+//            }
+//        }
         return dataset
     }
 }

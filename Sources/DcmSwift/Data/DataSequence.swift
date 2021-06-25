@@ -63,7 +63,7 @@ public class DataSequence: DataElement {
             data.append(vrData!)
                         
             if self.vr == .SQ {
-                data.append(Data(repeating: 0x00, count: 2))
+                data.append(byte: 0x00, count: 2)
             }
             else if self.vr == .OB ||
                 self.vr == .OW ||
@@ -71,7 +71,7 @@ public class DataSequence: DataElement {
                 self.vr == .SQ ||
                 self.vr == .UT ||
                 self.vr == .UN {
-                data.append(Data(repeating: 0x00, count: 2))
+                data.append(byte: 0x00, count: 2)
             }
         }
         
@@ -79,7 +79,7 @@ public class DataSequence: DataElement {
         // write length
         if self.vr == .SQ {
             if self.length == -1 {
-                data.append(Data(repeating: 0xff, count: 4))
+                data.append(byte: 0xff, count: 4)
             } else {
                 var intLength = UInt32(self.length)
                 let lengthData = Data(bytes: &intLength, count: 4)
@@ -103,8 +103,7 @@ public class DataSequence: DataElement {
             else if self.length == -1 {
                 // if OB/OW is a Pixel Sequence
                 if let _ = self as? PixelSequence {
-                    //print(pixelSequence)
-                    data.append(Data(repeating: 0xff, count: 4))
+                    data.append(byte: 0xff, count: 4)
                 }
             }
         }
@@ -132,12 +131,12 @@ public class DataSequence: DataElement {
             data.append(item.tag.data)
             
             // write item length
-            if inVrMethod == .Explicit && item.length != -1 {
+            if item.length != -1 {
                 var intLength = UInt32(item.length)
                 let lengthData = Data(bytes: &intLength, count: 4)
                 data.append(lengthData)
             } else {
-                data.append(Data(repeating: 0xff, count: 4))
+                data.append(byte: 0xff, count: 4)
             }
             
             // write item sub-elements
@@ -149,7 +148,7 @@ public class DataSequence: DataElement {
             if item.length == -1 {
                 let tag = DataTag(withGroup: "fffe", element: "e00d")
                 data.append(tag.data)
-                data.append(Data(repeating: 0x00, count: 4))
+                data.append(byte: 0x00, count: 4)
             }
         }
         
@@ -157,7 +156,7 @@ public class DataSequence: DataElement {
         if length == -1 {
             let tag = DataTag(withGroup: "fffe", element: "e0dd")
             data.append(tag.data)
-            data.append(Data(repeating: 0x00, count: 4))
+            data.append(byte: 0x00, count: 4)
         }
         
         return data

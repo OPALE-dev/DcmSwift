@@ -455,7 +455,7 @@ public class DicomInputStream {
                             break
                         }
                                                 
-                        guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: .Explicit, order: byteOrder, inTag: itemTag) else {
+                        guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: vrMethod, order: byteOrder, inTag: itemTag) else {
                             Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
                             return nil
                         }
@@ -471,7 +471,7 @@ public class DicomInputStream {
                     while(itemLength > itemBytesRead) {
                         let oldOffset = offset
                         
-                        guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: .Explicit, order: byteOrder) else {
+                        guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: vrMethod, order: byteOrder) else {
                             Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
                             return nil
                         }
@@ -520,7 +520,7 @@ public class DicomInputStream {
                                 break
                             }
                                                         
-                            guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: .Explicit, order: byteOrder, inTag: itemTag) else {
+                            guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: vrMethod, order: byteOrder, inTag: itemTag) else {
                                 Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
                                 return nil
                             }
@@ -535,7 +535,7 @@ public class DicomInputStream {
                         while(itemLength > itemBytesRead) {
                             let oldOffset = offset
                             
-                            guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: .Explicit, order: byteOrder) else {
+                            guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: vrMethod, order: byteOrder) else {
                                 Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
                                 return nil
                             }

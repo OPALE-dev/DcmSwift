@@ -297,12 +297,11 @@ public class DataElement : DicomObject {
         
         // write VR (only explicit)
         if inVrMethod == .Explicit  {
-            let vrString = "\(self.vr)"
-            let vrData = vrString.data(using: .ascii)
+            let vrData = "\(self.vr)".data(using: .ascii)
             data.append(vrData!)
             
             if self.vr == .SQ {
-                data.append(Data(repeating: 0x00, count: 2))
+                data.append(byte: 0x00, count: 2)
             }
             else if self.vr == .OB ||
                 self.vr == .OW ||
@@ -310,7 +309,7 @@ public class DataElement : DicomObject {
                 self.vr == .SQ ||
                 self.vr == .UT ||
                 self.vr == .UN {
-                data.append(Data(repeating: 0x00, count: 2))
+                data.append(byte: 0x00, count: 2)
             }
         }
         
@@ -339,7 +338,7 @@ public class DataElement : DicomObject {
                 // if OB/OW is a Pixel Sequence
                 if let _ = self as? PixelSequence {
                     //print(pixelSequence)
-                    data.append(Data(repeating: 0xff, count: 4))
+                    data.append(byte: 0xff, count: 4)
                 }
             }
         }
@@ -363,79 +362,69 @@ public class DataElement : DicomObject {
         
         
         // write value
-        if  self.vr == .UL {
-            // TODO: fix empty data for UL VR, causing missing data on write !!!
-            if self.data != nil {
+        if self.data != nil {
+            if  self.vr == .UL {
+                // TODO: fix empty data for UL VR, causing missing data on write !!!
                 data.append(self.data)
             }
-        }
-        else if self.vr == .OB {
-            //print("OB \(type(of: self))")
-            if self is PixelSequence {
-                let pixelSequence = self as! PixelSequence
-                //print("PixelSequence")
-                data.append(pixelSequence.toData(vrMethod: inVrMethod, byteOrder: inByteOrder))
-            } else {
-                if self.data != nil {
+            else if self.vr == .OB {
+                //print("OB \(type(of: self))")
+                if self is PixelSequence {
+                    let pixelSequence = self as! PixelSequence
+                    //print("PixelSequence")
+                    data.append(pixelSequence.toData(vrMethod: inVrMethod, byteOrder: inByteOrder))
+                } else {
                     data.append(self.data)
                 }
             }
-        }
-        else if self.vr == .OW {
-            if let pixelSequence = self as? PixelSequence {
-                data.append(pixelSequence.toData(vrMethod: inVrMethod, byteOrder: inByteOrder))
-            } else {
-                if self.data != nil {
+            else if self.vr == .OW {
+                if let pixelSequence = self as? PixelSequence {
+                    data.append(pixelSequence.toData(vrMethod: inVrMethod, byteOrder: inByteOrder))
+                } else {
                     data.append(self.data)
                 }
             }
-        }
-        else if self.vr == .UI {
-            data.append(self.data)
-        }
-        else if self.vr == .FL {
-            data.append(self.data)
-        }
-        else if self.vr == .FD {
-            if self.data != nil {
+            else if self.vr == .UI {
                 data.append(self.data)
             }
-        }
-        else if self.vr == .SL {
-            data.append(self.data)
-        }
-        else if self.vr == .SS {
-            data.append(self.data)
-        }
-        else if self.vr == .US {
-            if self.data != nil {
+            else if self.vr == .FL {
                 data.append(self.data)
             }
-        }
-        else if self.vr == .SQ {
-            if let sequence = self as? DataSequence {
-                data.append(sequence.toData())
+            else if self.vr == .FD {
+                data.append(self.data)
             }
-        }
-        else if self.vr == .SH ||
-            self.vr == .AS ||
-            self.vr == .CS ||
-            self.vr == .DS ||
-            self.vr == .LO ||
-            self.vr == .LT ||
-            self.vr == .ST ||
-            self.vr == .OD ||
-            self.vr == .OF ||
-            self.vr == .AE ||
-            self.vr == .UT ||
-            self.vr == .IS ||
-            self.vr == .PN ||
-            self.vr == .DA ||
-            self.vr == .DT ||
-            self.vr == .UN ||
-            self.vr == .AT ||
-            self.vr == .TM  {
-            if self.data != nil {
+            else if self.vr == .SL {
+                data.append(self.data)
+            }
+            else if self.vr == .SS {
+                data.append(self.data)
+            }
+            else if self.vr == .US {
+                data.append(self.data)
+            }
+            else if self.vr == .SQ {
+                if let sequence = self as? DataSequence {
+                    data.append(sequence.toData())
+                }
+            }
+            else if self.vr == .SH ||
+                self.vr == .AS ||
+                self.vr == .CS ||
+                self.vr == .DS ||
+                self.vr == .LO ||
+                self.vr == .LT ||
+                self.vr == .ST ||
+                self.vr == .OD ||
+                self.vr == .OF ||
+                self.vr == .AE ||
+                self.vr == .UT ||
+                self.vr == .IS ||
+                self.vr == .PN ||
+                self.vr == .DA ||
+                self.vr == .DT ||
+                self.vr == .UN ||
+                self.vr == .AT ||
+                self.vr == .TM  {
                 data.append(self.data)
             }
         }
