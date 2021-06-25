@@ -191,18 +191,12 @@ public class DicomAssociation : NSObject {
     
     public func listen(withCompletion completion:((_ socket:Socket) -> Void)?) {
         //var listen = true
-        var message = self.readMessage()
+        //var message = self.readMessage()
 
-        while message != nil {
-            if let response = message?.handleRequest() {
+        while let message = self.readMessage() {
+            if let response = message.handleRequest() {
                 self.write(message: response)
             }
-            
-            message = self.readMessage()
-            
-//            if !listen {
-//                break
-//            }
         }
         
         Logger.debug("Association ended")
