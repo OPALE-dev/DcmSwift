@@ -9,13 +9,13 @@
 import Foundation
 
 public class DataSet: DicomObject {
-    public var fileMetaInformationGroupLength       = 0
     public var transferSyntax:TransferSyntax!
-    public var vrMethod:VRMethod     = .Explicit
-    public var byteOrder:ByteOrder   = .LittleEndian
+    public var fileMetaInformationGroupLength       = 0
+    public var vrMethod:VRMethod                    = .Explicit
+    public var byteOrder:ByteOrder                  = .LittleEndian
     public var forceExplicit:Bool                   = false
     public var hasPreamble:Bool                     = true
-    internal var isCorrupted:Bool                   = false
+    public var isCorrupted:Bool                     = false
     
     public var metaInformationHeaderElements:[DataElement]  = []
     public var datasetElements:[DataElement]                = []

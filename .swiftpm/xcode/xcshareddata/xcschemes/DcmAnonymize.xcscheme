@@ -76,11 +76,11 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "/Users/nark/Pictures/DICOM/DataSets/WG02/RDSR/DoseSR_GE_01.DCM"
+            argument = "/Users/nark/Development/Opale/Swift/DcmSwift/Tests/DcmSwiftTests/Resources/MR_ImplicitVRLittleEndian_MULTI_MONOCHROME2_Philips_RTNC1_33.dcm"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/Users/nark/Desktop/DoseSR_GE_01_ANONYMIZED.dcm"
+            argument = "/Users/nark/Desktop/MR_ImplicitVRLittleEndian_MULTI_MONOCHROME2_Philips_RTNC1_33_ANONYMIZED.dcm"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

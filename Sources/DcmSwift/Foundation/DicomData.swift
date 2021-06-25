@@ -111,10 +111,11 @@ extension Data {
     
 
     
-    mutating func append(byte data: Int8, count:Int = 1) {
-        self.append(Data(from: data))
+    mutating func append(byte data: UInt8, count:Int = 1) {
+        self.append(Data(repeating: data, count: count))
     }
     
+
     
     mutating func append(uint8 data: UInt8, bigEndian: Bool = true) {
         let value = bigEndian ? data.bigEndian : data.littleEndian
