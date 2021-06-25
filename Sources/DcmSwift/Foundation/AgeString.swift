@@ -2,7 +2,8 @@
 //  DicomAge.swift
 //  
 //
-//  Created by Rafael Warnault, OPALE on 24/06/2021.
+//  Created by Rafaël Warnault, OPALE on 24/06/2021.
+//  Edited by Colombe Blachère, OPALE on 25/06/2021.
 //
 
 import Foundation
@@ -65,7 +66,7 @@ public class AgeString: VR {
         
         guard let lastChar = ageString.last else {
             print("problem")
-            exit(0)
+            return nil
         }
         if(lastChar == "D") {
             

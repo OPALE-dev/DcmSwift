@@ -33,6 +33,24 @@ public class DataTag : DicomObject {
     }
     
     
+    public init?(withStream stream:DicomInputStream, byteOrder:ByteOrder = .LittleEndian) {
+        super.init()
+        
+        guard let tagData = stream.read(length: 4) else {
+            return nil
+        }
+        
+        if tagData.count < 4 {
+            return nil
+        }
+        
+        self.data       = tagData
+        self.bytreOrder = byteOrder
+        
+        self.readData(withByteOrder: self.bytreOrder)
+    }
+    
+    
     
     public init(withGroup group:String, element:String, byteOrder:ByteOrder = .LittleEndian) {
         super.init()

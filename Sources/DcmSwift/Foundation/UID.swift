@@ -27,14 +27,40 @@ public class UID {
                 
         return uid.generate()
     }
+    
+    /**
+     DICOM UID Validation
+    
+     9.1 UID Encoding Rules
+     
+     http://dicom.nema.org/dicom/2013/output/chtml/part05/chapter_9.html
 
+     */
     public class func validate(uid:String) -> Bool {
-        return false
+        // max length up to 64 bytes
+        if uid.count > 64 {
+            Logger.error("UID \(uid) is larger than 64 bytes")
+            return false
+        }
+        
+        // 1st char cannot be a `0`
+        if uid.first == "0" {
+            Logger.error("UID \(uid) cannot start by `0' digit")
+            return false
+        }
+        
+        // at least 2 components
+        if uid.split(separator: ".").count != 2 {
+            Logger.error("UID \(uid) should at least have 2 components")
+            return false
+        }
+        
+        return true
     }
     
     
     
-    // MARK: - Private
+    // MARK: - Private init
     private init(root:String? = nil) {
         var r = orgRoot
         
@@ -48,7 +74,12 @@ public class UID {
     private init(uid:String? = nil) {
         self.root = orgRoot
     }
+}
     
+
+
+// MARK: - 
+private extension UID {
     private func compose(root:String, suffix:String) -> String {
         return "\(root).\(suffix)"
     }
@@ -61,10 +92,5 @@ public class UID {
         self.suffix = "\(comp1).\(comp2).\(comp3).\(Date().timeIntervalSince1970)"
         
         return compose(root: self.root, suffix: self.suffix!)
-    }
-    
-    // TODO: validate DICOM UID
-    private func validate(uid:String) -> Bool {
-        return false
     }
 }
