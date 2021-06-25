@@ -24,12 +24,12 @@ public class DataSet: DicomObject {
     public var internalValidations:[ValidationResult]       = []
     
     
-    override init() {
-        transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian)
+    public override init() {
+        transferSyntax = TransferSyntax(TransferSyntax.explicitVRLittleEndian)
     }
             
     
-    override public var description: String {
+    public override var description: String {
         var string = ""
         
         sortElements()
