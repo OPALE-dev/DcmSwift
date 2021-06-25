@@ -404,7 +404,7 @@ public class DicomInputStream {
         
         element.endOffset = offset
         
-        print("element \(element)")
+        //print("element \(element)")
                         
         return element
     }
