@@ -27,7 +27,7 @@ public class AgeString: VR {
      */
     public enum AgePrecision:Int {
         case years
-        case month
+        case months
         case weeks
         case days
     }
@@ -36,7 +36,7 @@ public class AgeString: VR {
      From CustomStringConvertible protocol
      */
     public override var description: String {
-        return self.age() ?? "000D"
+        return self.age(withPrecision: precision) ?? "000D"
     }
     
     
@@ -71,38 +71,38 @@ public class AgeString: VR {
         super.init(name: "AS", maxLength: 4)
     }
     
+
     /**
-     Generate a DICOM Age String (AS VR)
+        Generate a DICOM age String using specified precision
+        Version Colombe
      */
     public func age(withPrecision precision:AgePrecision? = nil) -> String? {
-        // TODO: implement AgeString for each formats:
-        // nnnD, nnnW, nnnM, nnnY, ex : 107Y, 033D, 012W, etc.
-        // http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_6.2.html
         let p = precision ?? self.precision
+        let nbDays = Calendar.current.dateComponents([.day], from: birthdate, to: Date()).day!
         
-        let dateFormatter = DateFormatter()
-        
-        if p == .years {
-            dateFormatter.dateFormat = "Y"
-        
-            let birthYear   = dateFormatter.string(from: birthdate)
-            let thisYear    = dateFormatter.string(from: Date())
+        if(nbDays > 999 || p == .weeks || p == .months || p == .years) {
+            let nbWeeks = nbDays/7
             
-            print("birthYear \(birthYear) - thisYear \(thisYear)")
-            
-            if let ty       = Int(thisYear),
-               let by       = Int(birthYear)
-            {
-  
-                return String(format: "%03dY", ty - by)
+            if(nbWeeks > 999 || p == .months || p == .years) {
+                let nbMonths = nbDays/30
+                
+                if(nbMonths > 999 || p == .years) {
+                    let nbYears = nbDays/365
+                    
+                    return "\(String(format: "%03d", nbYears))Y"
+                } else {
+                    return "\(String(format: "%03d", nbMonths))M"
+                }
+            } else {
+                return "\(String(format: "%03d", nbWeeks))W"
             }
+        } else {
+            return "\(String(format: "%03d", nbDays))D"
         }
-        
-        return nil
     }
     
     // TODO: implement a validation of Age String format
-    private func validate(age:String) -> Bool {
+    public func validate(age:String) -> Bool {
         return false
     }
 }
