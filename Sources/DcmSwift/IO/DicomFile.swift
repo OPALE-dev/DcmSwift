@@ -160,7 +160,7 @@ public class DicomFile {
     
     
     /**
-     An instane of DicomImage if available.
+     Instance of DicomImage if available.
      */
     public var dicomImage: DicomImage? {
         get {
@@ -186,7 +186,7 @@ public class DicomFile {
     /**
      A static helper to check if the given file is a DICOM file
      
-     It first looks at `DICM` magic world, and if not found (for old ACR-NEMA type of files) it
+     Obsolete: It first looks at `DICM` magic world, and if not found (for old ACR-NEMA type of files) it
      checks the first group,element pair (0008,0004) before accepting the file as DICOM or not
      
      - Returns: A boolean value that indicates if the file is readable by DcmSwift

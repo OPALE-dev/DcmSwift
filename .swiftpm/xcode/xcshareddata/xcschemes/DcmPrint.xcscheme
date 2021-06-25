@@ -76,7 +76,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "/Users/nark/Development/Opale/Swift/DcmSwift/Tests/DcmSwiftTests/Resources/US_ExplicitVRBigEndian_SINGLE_RGB_8_G.E.MedicalSystems_NULL_OFFIS-DCMTK-311_R6.1_3.dcm"
+            argument = "/Users/nark/Pictures/DICOM/MultiFramesSingleSerieXR/1.3.46.670589.7.5.10.80002138018.20001204.181556.4.1.1.dcm"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

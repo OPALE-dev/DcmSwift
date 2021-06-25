@@ -76,11 +76,11 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "/Users/nark/Pictures/DICOM/DataSets/WG02/RDSR/DoseSR_GE_01.DCM"
+            argument = "/Users/nark/Pictures/DICOM/DataSets/WG12/Acuson/Sequoia/EXAMS/EXAM0000/CLIPS/CLIP0031"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/Users/nark/Desktop/DoseSR_GE_01_ANONYMIZED.dcm"
+            argument = "/Users/nark/Desktop/CLIP0031_ANONYMIZED.dcm"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
