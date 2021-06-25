@@ -3,16 +3,15 @@
 //  DcmSwift
 //
 //  Created by Rafael Warnault on 23/06/2021.
-//  Copyright © 2021 Read-Write.fr. All rights reserved.
+//  Copyright © 2021 OPALE. All rights reserved.
 //
 
 import Foundation
 
 
 public class TransferSyntax: CustomStringConvertible, Equatable {
-    
     /**
-     List of supported Transfer Syntaxes
+     List of native Transfer Syntaxes
      */
     public static let transfersSyntaxes:[String] = [
         TransferSyntax.implicitVRLittleEndian,
@@ -22,7 +21,7 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
     
     
     /**
-     List of JPEG Transfer syntax
+     List of compressed Transfer Syntaxes
      */
     public static let JPEGTransfersSyntaxes:[String] = [
         TransferSyntax.JPEGLossy8bit,
@@ -186,11 +185,12 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
      */
     public static let JPEG2000Part2 = "1.2.840.10008.1.2.4.93"
     
-    public var tsUID:String                     = "1.2.840.10008.1.2.1"
-    public var tsName:String                    = DicomSpec.shared.nameForUID(withUID: "1.2.840.10008.1.2.1")
     
-    var vrMethod:VRMethod        = .Explicit
-    var byteOrder:ByteOrder      = .LittleEndian
+    public var tsUID:String         = "1.2.840.10008.1.2.1"
+    public var tsName:String        = DicomSpec.shared.nameForUID(withUID: "1.2.840.10008.1.2.1")
+    
+    var vrMethod:VRMethod           = .Explicit
+    var byteOrder:ByteOrder         = .LittleEndian
     
     public init?(_ transferSyntax:String) {
         if !DicomSpec.shared.isSupported(transferSyntax: transferSyntax) {
