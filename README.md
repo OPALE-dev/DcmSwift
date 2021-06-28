@@ -22,13 +22,28 @@ A minimal DICOM specification is embed within the `DicomSpec` class itself. It p
 
 With the `DicomFile` class you can read/write standard DICOM files (even some broken ones!). It provides an abstract layer through the `DataSet` class and several tools to manipulate inner data. Such objects can be exported to several formats (raw data, XML, JSON) and translated to several Transfer Syntaxes.
 
-The framework also comes with a set of helpers to ease the manipulation of DICOM specific data type like dates, times, endianness, etc. The whole API want to stay as minimal as it is possible (despite the whole DICOM standard wildness), and still giving you a decent set of features to deal with it in a standard and secure way.
+The library also comes with a set of helpers to ease the manipulation of DICOM specific data type like dates, times, endianness, etc. The whole API want to stay as minimal as it is possible (despite the whole DICOM standard wildness), and still giving you a decent set of features to deal with it in a standard and secure way.
 
-DcmSwift is widely used in the **DicomiX** application for macOS, which is available *here*. The app is mainly developed as a showcase of concepts implemented by the DcmSwift framework.
+DcmSwift is widely used in the **DicomiX** application for macOS, which is available *here*. The app is mainly developed as a showcase of concepts implemented by the DcmSwift library.
 
-## Install
+## Use DcmSwift in your project
 
-Follow the instructions below to use DcmSwift framework into your Xcode project.
+DcmSwift relies on SPM so all you have to do is to declare it as a dependency of your target in your `Package.swift` file:
+
+    dependencies: [
+        // Dependencies declare other packages that this package depends on.
+        .package(name: "DcmSwift", url: "http://gitlab.dev.opale.pro/rw/DcmSwift.git", from:"0.0.1"),
+    ]
+    
+    ...
+    
+    .target(
+        name: "YourTarget",
+        dependencies: [
+            "DcmSwift"
+        ]
+        
+If you are using Xcode, you can add this package by repository address.
 
 ## Getting Started
 
@@ -45,26 +60,6 @@ Get a DICOM dataset attribute:
 Set a DICOM dataset attribute:
 
     dicomFile.dataset.set(value:"John^Doe", forTagName: "PatientName")
-    
-For a lower memory footprint you can use the `DicomInputStream` class directly as below:
-
-    let inputStream = DicomInputStream(filePath: filepath)
-    
-    do {
-        if let dataset = try inputStream.readDataset(withoutPixelData: true) {
-            print(dataset)
-        }
-    } catch DicomInputStream.StreamError.notDicomFile {
-
-    } catch DicomInputStream.StreamError.cannotOpenStream {
-
-    } catch DicomInputStream.StreamError.cannotReadStream {
-
-    } catch DicomInputStream.StreamError.datasetIsCorrupted {
-
-    } catch _ {
-
-    }
 
 ### Write a DICOM file
 
@@ -72,19 +67,7 @@ Once modified, you can write the data to a file again:
 
     dicomFile.write(atPath: newPath)
 
-### Export a DICOM file
-
-DcmSwift provides several export format options.
-
 #### Data
-
-#### DICOM
-
-You can export …
-
-#### XML
-
-#### JSON
 
 ### More in depth with DataSet
 
@@ -94,14 +77,28 @@ You can load a `DataSet` object directly from data:
 
 Or you can create a totally genuine `DataSet` instance and start adding some element to it:
 
-    var dataset = DataSet()
+    let dataset = DataSet()
+    
     dataset.set(value:"John^Doe", forTagName: "PatientName")
     dataset.set(value:"12345678", forTagName: "PatientID")
+    
     print(dataset.toData().toHex())
+    
+## Using binaries
+
+The DcmSwift package embbed some binaries known as `DcmPrint`, `DcmAnonymize`, `DcmEcho`, etc. which you can compile and use as follow:
+
+    swift build -c release
+    
+Binaries can be found in `.build/release` directory. For example:
+
+    .build/release/DcmPrint /my/dicom/file.dcm
 
 ## Unit Tests
 
-## 
+Run the command:
+    
+    swift test
 
 ## Disclamer
 
