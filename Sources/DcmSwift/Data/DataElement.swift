@@ -9,17 +9,6 @@
 import Foundation
 
 
-public class DataValue {
-    public var value:String    = ""
-    public var index:Int       = 0
-    
-    init(_ val:String, atIndex index:Int = 0) {
-        self.value = val
-        self.index = index
-    }
-}
-
-
 public class DataElement : DicomObject {
     public var startOffset:Int      = 0
     public var vrOffset:Int         = 0
@@ -33,7 +22,7 @@ public class DataElement : DicomObject {
     public var tag:DataTag
     public var data:Data!
     
-    public var vr:VR.VR                  = VR.VR.UN
+    public var vr:VR.VR               = VR.VR.UN
     public var vrMethod:VRMethod      = .Explicit
     public var byteOrder:ByteOrder    = .LittleEndian
     

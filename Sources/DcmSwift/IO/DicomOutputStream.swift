@@ -37,8 +37,8 @@ public class DicomOutputStream {
     
     public func write(
         dataset:DataSet,
-        vrMethod: VRMethod,
-        byteOrder: ByteOrder
+        vrMethod: VRMethod? = nil,
+        byteOrder: ByteOrder? = nil
     ) throws -> Bool {
         if outputStream == nil {
             throw StreamError.cannotOpenStream(message: "Cannot open stream, init failed")
@@ -61,7 +61,7 @@ public class DicomOutputStream {
         dataset.sortElements()
         
         // write all elements
-        try write(data: dataset.toData(vrMethod: vrMethod, byteOrder: byteOrder))
+        try write(data: dataset.toData(vrMethod: nil, byteOrder: nil))
         
         outputStream.close()
         
