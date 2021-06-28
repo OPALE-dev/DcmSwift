@@ -19,7 +19,7 @@ import Foundation
  http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_6.2.html
  */
 public class AgeString: VR {
-    public var birthdate:Date
+    public var birthdate:Date?
     var precision:AgePrecision = .years
     
     /**
@@ -58,43 +58,70 @@ public class AgeString: VR {
      Create age from DICOM age string
      */
     public init?(ageString:String) {
+        super.init(name: "AS", maxLength: 4)
+        
         // TODO: decompose AgeString string of every possible formats to determine birthdate
         // nnnD, nnnW, nnnM, nnnY, ex : 107Y, 033D, 012W, etc.
         // http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_6.2.html
-        self.birthdate = Date() // fake date for init
         
-        guard let lastChar = ageString.last else {
-            print("problem")
-            exit(0)
-        }
-        if(lastChar == "D") {
+        if(validate(age:ageString)) {
+            guard let lastChar = ageString.last else {
+                print("problem")
+                exit(0)
+            }
             
-        } else if(lastChar == "W") {
+            let currentDate = Date()
+            let startSubstring = ageString.index(ageString.startIndex, offsetBy: 0)
+            let endSubstring = ageString.index(ageString.startIndex, offsetBy: 2)
+            let substring = String(ageString[startSubstring...endSubstring])
+            let intAge = Int(substring)!
             
-        } else if(lastChar == "M") {
-        
-        } else if(lastChar == "Y") {
-        
-        }
-        
-        // make sure reject future dates
-        if birthdate > Date() {
+            if(lastChar == "D") {
+                let intAgeDays = Double(-intAge*86400)
+                let result = Date.init(timeInterval: intAgeDays, since: currentDate)
+               
+                // make sure reject future dates
+                if(result < Date()) {
+                    self.birthdate = result
+                }
+            } else if(lastChar == "W") {
+                let intAgeWeeks = Double(-intAge*604800)
+                let result = Date.init(timeInterval: intAgeWeeks, since: currentDate)
+                
+                // make sure reject future dates
+                if(result < Date()) {
+                    self.birthdate = result
+                }
+            } else if(lastChar == "M") {
+                let intAgeMonths = (Double(-intAge*604800))*4.34524
+                let result = Date.init(timeInterval: intAgeMonths, since: currentDate)
+                
+                // make sure reject future dates
+                if(result < Date()) {
+                    self.birthdate = result
+                }
+            } else if(lastChar == "Y") {
+                let intAgeYears = (Double(-intAge*604800))*52.1786
+                let result = Date.init(timeInterval: intAgeYears, since: currentDate)
+                
+                // make sure reject future dates
+                if(result < Date()) {
+                    self.birthdate = result
+                }
+            }
+        } else {
             return nil
         }
-
-        super.init(name: "AS", maxLength: 4)
     }
-    
 
     /**
         Generate a DICOM age String using specified precision
-        Version Colombe
      */
     public func age(withPrecision precision:AgePrecision? = nil) -> String? {
         var result:String? = nil
         
         let p = precision ?? self.precision
-        let nbDays = Calendar.current.dateComponents([.day], from: birthdate, to: Date()).day!
+        let nbDays = Calendar.current.dateComponents([.day], from: birthdate!, to: Date()).day!
         
         if(nbDays > 999 || p == .weeks || p == .months || p == .years) {
             let nbWeeks = nbDays/7
@@ -122,6 +149,8 @@ public class AgeString: VR {
         
         return result
     }
+    
+    
     
     // TODO: implement a validation of Age String format
     public func validate(age:String) -> Bool {
