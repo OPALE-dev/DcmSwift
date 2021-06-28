@@ -101,8 +101,8 @@ public class DicomFile {
         do {
             return try outputStream.write(
                 dataset: dataset,
-                vrMethod: inVrMethod ?? dataset.vrMethod,
-                byteOrder: inByteOrder ?? dataset.byteOrder)
+                vrMethod: inVrMethod ?? nil,
+                byteOrder: inByteOrder ?? nil)
             
         } catch StreamError.cannotOpenStream(let message) {
             Logger.error("\(message): \(String(describing: path))")
