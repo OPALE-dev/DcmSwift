@@ -21,10 +21,12 @@ public class DataValue {
 
 
 public class DataElement : DicomObject {
-    public var startOffset:Int  = 0
-    public var dataOffset:Int   = 0
-    public var endOffset:Int    = 0
-    public var length:Int       = 0
+    public var startOffset:Int      = 0
+    public var vrOffset:Int         = 0
+    public var lengthOffset:Int     = 0
+    public var dataOffset:Int       = 0
+    public var endOffset:Int        = 0
+    public var length:Int           = 0
     
     public var parent:DataElement?
     public var dataset:DataSet?

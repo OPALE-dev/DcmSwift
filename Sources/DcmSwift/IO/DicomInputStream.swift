@@ -91,24 +91,25 @@ public class DicomInputStream {
             // we will parse the DICOM meta Info header as Explicit VR
             vrMethod = .Explicit
         } else {
-            // for old ACR-NEMA file
+            // except for old ACR-NEMA file
             vrMethod = .Implicit
         }
         
+        // preambule processing is done
         dataset.hasPreamble = hasPreamble
                         
-        // read dataset elements
+        // read elements to fill the dataset
         while(stream.hasBytesAvailable && offset < total && !dataset.isCorrupted) {
             var order = byteOrder
             
             // always read Meta Info Header as Little Endian
-            if dataset.fileMetaInformationGroupLength + 132 >= offset {
+            if dataset.fileMetaInformationGroupLength + DicomConstants.dicomBytesOffset >= offset {
                 order = .LittleEndian
             }
             
             if let newElement = readDataElement(dataset: dataset, parent: nil, vrMethod: vrMethod, order: order) {
                 // header only option
-                if headerOnly && newElement.tag.group != "0002" {
+                if headerOnly && newElement.tag.group != DicomConstants.metaInformationGroup {
                     break
                 }
                 
@@ -201,15 +202,7 @@ public class DicomInputStream {
     
     // MARK: -
     private func readDataTag(order:ByteOrder = .LittleEndian) -> DataTag? {
-        guard let tagData = self.read(length: 4) else {
-            return nil
-        }
-        
-        if tagData.count < 4 {
-            return nil
-        }
-        
-        return DataTag(withData:tagData, byteOrder:order)
+        return DataTag(withStream: self, byteOrder:order)
     }
     
     
@@ -345,18 +338,20 @@ public class DicomInputStream {
         
         // enforce Little Endian for group 0002 (Meta Info Header)
         element.byteOrder       = element.group == "0002" ? .LittleEndian : order
-                
+        element.vrOffset        = offset
+        
         guard let vr = readVR(element:element, vrMethod: element.vrMethod) else {
             Logger.error("Cannot read VR at offset at \(offset)")
             return nil
         }
         
         element.vr              = vr
+        element.lengthOffset    = offset
         element.length          = readLength(vrMethod: element.vrMethod, vr: element.vr, order: element.byteOrder)
         element.dataOffset      = offset
         
         
-        // check for invalid
+        // check for invalid length
         if element.length > total {
             let message = "Fatal, cannot read length properly, decoded \(tag) length at offset(\(offset-4)) overflows (\(element.length))"
             return readError(forLength: Int(element.length), element: element, message: message)
@@ -375,6 +370,8 @@ public class DicomInputStream {
                 sequence.vr             = element.vr
                 sequence.startOffset    = element.startOffset
                 sequence.dataOffset     = element.dataOffset
+                sequence.lengthOffset   = element.lengthOffset
+                sequence.vrOffset       = element.vrOffset
                 element                 = sequence
 
                 // dead bytes
@@ -395,6 +392,8 @@ public class DicomInputStream {
             sequence.vrMethod       = element.vrMethod
             sequence.startOffset    = element.startOffset
             sequence.dataOffset     = element.dataOffset
+            sequence.lengthOffset   = element.lengthOffset
+            sequence.vrOffset       = element.vrOffset
             sequence.length         = element.length
             element                 = sequence
         }
@@ -579,7 +578,7 @@ public class DicomInputStream {
         var itemTag = DataTag(withData: read(length: 4)!, byteOrder: byteOrder)
                 
         while itemTag.code != "fffee0dd" {
-            // read item
+            // create item
             let item            = DataItem(withTag: itemTag)
             item.startOffset    = offset - 4
             item.dataOffset     = offset
