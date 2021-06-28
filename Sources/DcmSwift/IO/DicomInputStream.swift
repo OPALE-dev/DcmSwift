@@ -338,13 +338,15 @@ public class DicomInputStream {
         
         // enforce Little Endian for group 0002 (Meta Info Header)
         element.byteOrder       = element.group == "0002" ? .LittleEndian : order
-                
+        element.vrOffset        = offset
+        
         guard let vr = readVR(element:element, vrMethod: element.vrMethod) else {
             Logger.error("Cannot read VR at offset at \(offset)")
             return nil
         }
         
         element.vr              = vr
+        element.lengthOffset    = offset
         element.length          = readLength(vrMethod: element.vrMethod, vr: element.vr, order: element.byteOrder)
         element.dataOffset      = offset
         
@@ -368,6 +370,8 @@ public class DicomInputStream {
                 sequence.vr             = element.vr
                 sequence.startOffset    = element.startOffset
                 sequence.dataOffset     = element.dataOffset
+                sequence.lengthOffset   = element.lengthOffset
+                sequence.vrOffset       = element.vrOffset
                 element                 = sequence
 
                 // dead bytes
@@ -388,6 +392,8 @@ public class DicomInputStream {
             sequence.vrMethod       = element.vrMethod
             sequence.startOffset    = element.startOffset
             sequence.dataOffset     = element.dataOffset
+            sequence.lengthOffset   = element.lengthOffset
+            sequence.vrOffset       = element.vrOffset
             sequence.length         = element.length
             element                 = sequence
         }
