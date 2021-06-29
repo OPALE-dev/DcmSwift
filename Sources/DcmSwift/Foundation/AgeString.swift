@@ -174,4 +174,27 @@ public class AgeString: VR {
         }
         return false
     }
+    
+    /**
+        Return a nice string to print an AgeString instance
+     */
+    public func format() -> String {
+        let nbDays = Calendar.current.dateComponents([.day], from: birthdate!, to: Date()).day!
+        
+        if nbDays < 7 {
+            return ("\(nbDays) days")
+            
+        } else if nbDays < 31 {
+            let nbWeeks = nbDays/7
+            return ("\(nbWeeks) weeks")
+            
+        } else if nbDays < 365 {
+            let nbMonths = nbDays/31
+            return ("\(nbMonths) months")
+            
+        } else {
+            let nbYears = nbDays/365
+            return ("\(nbYears) years")
+        }
+    }
 }

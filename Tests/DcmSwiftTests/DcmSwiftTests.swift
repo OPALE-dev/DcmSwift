@@ -258,6 +258,23 @@ class DcmSwiftTests: XCTestCase {
         }
     }
     
+    func ageStringFormat() {
+        let source  = ["334D", "034Y", "111W", "002D"]
+        let dest    = ["10 months", "34 ans", "2 years", "2 days"]
+        
+        var index = 0
+        
+        for s in source {
+            let agStr = AgeString.init(ageString: s)
+            
+            if let a = agStr  {
+                XCTAssertEqual(a.format(), dest[index])
+            }
+            
+            index += 1
+        }
+    }
+    
     
     // UID
     public func validateUID() {
@@ -746,6 +763,5 @@ class DcmSwiftTests: XCTestCase {
         
         return output
     }
-
 }
 
