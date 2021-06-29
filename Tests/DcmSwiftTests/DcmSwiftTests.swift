@@ -38,7 +38,10 @@ class DcmSwiftTests: XCTestCase {
     private static var testDicomImage           = false
     
     /// Run Age String (AS VR) related tests
-    private static var testAgeString            = true
+    private static var testAgeString            = false
+    
+    /// Run
+    private static var testUID                  = true
     
     // TODO: add tests for DicomUID
     // TODO: add tests for AgeString
@@ -101,6 +104,10 @@ class DcmSwiftTests: XCTestCase {
             suite.addTest(DcmSwiftTests(selector: #selector(ageStringVariations)))
         }
         
+        if testUID {
+            suite.addTest(DcmSwiftTests(selector: #selector(validateUID)))
+            suite.addTest(DcmSwiftTests(selector: #selector(generateUID)))
+        }
         
         if testDicomFileRead {
             paths.forEach { path in
@@ -249,6 +256,24 @@ class DcmSwiftTests: XCTestCase {
                 XCTAssertTrue(astrWorks.validate(age: age))
             }
         }
+    }
+    
+    
+    // UID
+    public func validateUID() {
+        let valUID = "1.102.99"
+        XCTAssertTrue(UID.validate(uid: valUID))
+        
+        let invalUID1 = "1.012.5"
+        let invalUID2 = "coucou"
+        
+        XCTAssertFalse(UID.validate(uid: invalUID1))
+        XCTAssertFalse(UID.validate(uid: invalUID2))
+    }
+    
+    public func generateUID() {
+        let valUID = "1.102.99"
+        XCTAssertNotNil(UID.generate(root: valUID))
     }
     
     
@@ -686,7 +711,7 @@ class DcmSwiftTests: XCTestCase {
     private func filePath(forName name:String) -> String {
         let bundle = Bundle(for: type(of: self))
         let path = bundle.path(forResource: name, ofType: "dcm")!
-        
+    
         return path
     }
     
