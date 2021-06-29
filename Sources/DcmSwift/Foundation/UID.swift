@@ -35,24 +35,44 @@ public class UID {
      
      http://dicom.nema.org/dicom/2013/output/chtml/part05/chapter_9.html
 
+     1.2.840.xxxxx.3.152.235.2.12.187636473
+     11111.1111111
+     11.11111.44444
+     1.0.34444.222
+     1.45464.0333.333
+     
      */
     public class func validate(uid:String) -> Bool {
+        let uidSplit = uid.components(separatedBy: ".")
+        
         // max length up to 64 bytes
         if uid.count > 64 {
             Logger.error("UID \(uid) is larger than 64 bytes")
             return false
         }
-        
-        // 1st char cannot be a `0`
-        if uid.first == "0" {
-            Logger.error("UID \(uid) cannot start by `0' digit")
+                
+        // at least 2 components
+        if uidSplit.count < 2 {
+            Logger.error("UID \(uid) should at least have 2 components")
             return false
         }
         
-        // at least 2 components
-        if uid.split(separator: ".").count != 2 {
-            Logger.error("UID \(uid) should at least have 2 components")
-            return false
+        for partString in uidSplit {
+            
+            // contains only digits
+            guard let _ = Int(partString) else {
+                Logger.error("UID \(uid) needs to be made of integers")
+                return false
+            }
+            
+            //1st char of a part cannot be a `0`
+            guard let partInt = Int(partString.prefix(1)) else {
+                return false
+            }
+            if partInt == 0 {
+                Logger.error("UID \(uid) parts cannot start by '0' digit")
+                return false
+            }
         }
         
         return true
