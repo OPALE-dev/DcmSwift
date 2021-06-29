@@ -34,7 +34,7 @@ public class CStoreRQ: DataTF {
                 _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
                 _ = pdvDataset.set(value: sopInstanceUID, forTagName: "AffectedSOPInstanceUID")
                 
-                let commandGroupLength = pdvDataset.toData().count
+                let commandGroupLength = pdvDataset.toData(vrMethod: .Implicit, byteOrder: .LittleEndian).count
                 _ = pdvDataset.set(value: UInt32(commandGroupLength).bigEndian, forTagName: "CommandGroupLength")
                 
                 var pdvData = Data()
@@ -42,8 +42,8 @@ public class CStoreRQ: DataTF {
                 pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
                 pdvData.append(uint8: pcs.first!.contextID, bigEndian: true) // Context
                 pdvData.append(byte: 0x03) // Flags
-                pdvData.append(pdvDataset.toData())
-                
+                pdvData.append(pdvDataset.toData(vrMethod: .Implicit, byteOrder: .LittleEndian))
+                                                
                 let pduLength = UInt32(pdvLength + 4)
                 data.append(uint8: self.pduType.rawValue, bigEndian: true)
                 data.append(byte: 0x00) // reserved

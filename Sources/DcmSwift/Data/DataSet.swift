@@ -14,7 +14,7 @@ public class DataSet: DicomObject {
     public var vrMethod:VRMethod                    = .Explicit
     public var byteOrder:ByteOrder                  = .LittleEndian
     public var forceExplicit:Bool                   = false
-    public var hasPreamble:Bool                     = true
+    public var hasPreamble:Bool                     = false
     public var isCorrupted:Bool                     = false
     
     public var metaInformationHeaderElements:[DataElement]  = []
@@ -52,24 +52,31 @@ public class DataSet: DicomObject {
     
     
     // MARK: - Public methods
-    public override func toData(vrMethod inVrMethod:VRMethod = .Explicit, byteOrder inByteOrder:ByteOrder = .LittleEndian) -> Data {
+    public override func toData(vrMethod inVrMethod:VRMethod? = .Explicit, byteOrder inByteOrder:ByteOrder? = .LittleEndian) -> Data {
         var newData     = Data()
-        var finalVR     = vrMethod
-        var finalOrder  = byteOrder
-
-        if vrMethod != inVrMethod {
-            finalVR = inVrMethod
-        }
-        if byteOrder != inByteOrder {
-            finalOrder = inByteOrder
-        }
-
+        
         // be sure element are sorted properly before write
         sortElements()
 
         // append meta header elements as binary data
         for element in allElements {
-            //print(type(of: element))
+            var finalVR     = element.vrMethod
+            var finalOrder  = element.byteOrder
+
+            if inVrMethod != nil && finalVR != inVrMethod {
+                finalVR = inVrMethod!
+            }
+            if inByteOrder != nil && finalOrder != inByteOrder {
+                finalOrder = inByteOrder!
+            }
+            
+            if hasPreamble {
+                if element.group == "0002" {
+                    finalVR = .Explicit
+                    finalOrder = .LittleEndian
+                }
+            }
+            
             newData.append(write(dataElement: element, vrMethod:finalVR, byteOrder:finalOrder))
         }
 
@@ -417,15 +424,9 @@ extension DataSet {
     // MARK : -
     private func write(dataElement element:DataElement, vrMethod:VRMethod = .Explicit, byteOrder:ByteOrder = .LittleEndian) -> Data {
         var data = Data()
-        var localVRMethod:VRMethod = element.vrMethod
-
-        if !hasPreamble {
-            // force implicit if no header (always implicit, truncated DICOM file, ACR-NEMA, etc)
-            localVRMethod = .Implicit
-        }
         
         // write tag code
-        data.append(element.toData(vrMethod: localVRMethod, byteOrder: element.byteOrder))
+        data.append(element.toData(vrMethod: vrMethod, byteOrder: byteOrder))
         
         return data
     }

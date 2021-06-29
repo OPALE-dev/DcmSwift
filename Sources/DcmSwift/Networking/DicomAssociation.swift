@@ -298,6 +298,8 @@ public class DicomAssociation : NSObject {
                                                                       level: .error,
                                                                       realm: .custom))
                         self.close()
+                        
+                        return
                     }
                 }
             }
@@ -322,11 +324,14 @@ public class DicomAssociation : NSObject {
                 if let f = readData.first, PDUType.isSupported(f) {
                     if let pt = PDUType(rawValue: f) {
                         if PDUType(rawValue: f) == PDUType.dataTF {
+                            // we received a command message (PDUMessage as DataTF and inherited)
                             let commandData = readData.subdata(in: 12..<readData.count)
                             if commandData.count > 0 {
+                                // we use a DicomInputStream to read th dataset
                                 let inputStream = DicomInputStream(data: commandData)
                                 
                                 if let dataset = try? inputStream.readDataset() {
+                                    // we create a response (PDUMessage of DIMSE family) based on received CommandField value using PDUDecoder
                                     if let command = dataset.element(forTagName: "CommandField") {
                                         let c = command.data.toUInt16(byteOrder: .LittleEndian)
                                         if let cf = CommandField(rawValue: c) {
@@ -336,6 +341,7 @@ public class DicomAssociation : NSObject {
                                 }
                             }
                         } else {
+                            // we received an association message
                             message = PDUDecoder.shared.receiveAssocMessage(data: readData, pduType: pt, association: self) as? PDUMessage
                         }
                     }
