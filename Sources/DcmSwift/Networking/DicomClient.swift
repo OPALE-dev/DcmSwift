@@ -120,11 +120,12 @@ public class DicomClient : DicomService, StreamDelegate {
         
         let association = DicomAssociation(socket: self.socket, callingAET: self.localEntity, calledAET: self.remoteEntity)
         
-        // Add all know SOP classes
+        // Add all know storage SOP classes (maybe not the best approach on client side?)
         for abstractSyntax in DicomConstants.storageSOPClasses {
             association.addPresentationContext(abstractSyntax: abstractSyntax)
         }
         
+        // request assoc
         association.request() { (accepted, receivedMessage, error) in
             if accepted {
                 var index = 0

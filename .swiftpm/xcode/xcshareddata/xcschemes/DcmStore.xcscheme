@@ -80,7 +80,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "HOROSRW"
+            argument = "STORESCP"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -88,11 +88,11 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "4097"
+            argument = "11112"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/Users/nark/Desktop/CLIP0031_ANONYMIZED.dcm"
+            argument = "/Users/nark/Desktop/US0001"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

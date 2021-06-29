@@ -99,6 +99,20 @@ Binaries can be found in `.build/release` directory. For example:
 Run the command:
     
     swift test
+    
+## Side notes
+
+### For testing networking
+
+Very useful DCMTK arguments for `storescp` program that show a lot of logs: 
+
+    storescp 11112 --log-level trace
+
+Another alternative is `storescp` program from dcm4chee (5.x), but without the precision DCMTK offers.
+
+    storescp -b STORESCP@127.0.0.1:11112
+    
+All the executables from both `DCMTK` and `dcm4chee` are very good reference for testing DICOM features.
 
 ## Disclamer
 
