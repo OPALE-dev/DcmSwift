@@ -133,7 +133,7 @@ public class DicomClient : DicomService, StreamDelegate {
                     if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_STORE_RQ, association: association) as? CStoreRQ {
                         message.dicomFile = DicomFile(forPath: f)
                         
-                        association.write(message: message, readResponse: true, completion: completion)
+                        association.write(message: message, readResponse: false, completion: completion)
                         
                         progression(index)
                         index += 1
