@@ -27,22 +27,16 @@ public class CFindRQ: DataTF {
         
         let pdvDataset = DataSet()
         _ = pdvDataset.set(value: CommandField.C_FIND_RQ.rawValue.bigEndian, forTagName: "CommandField")
-        Logger.debug(pc!.abstractSyntax)
-        Logger.debug("\(pc!.abstractSyntax.count)")
         
         _ = pdvDataset.set(value: pc!.abstractSyntax ?? "", forTagName: "AffectedSOPClassUID")
-        // "1.2.840.10008.5.1.4.1.1.9.3.1"
-        //_ = pdvDataset.set(value: "", forTagName: "AffectedSOPClassUID")
+
         _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
         _ = pdvDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
         _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
-        
-        print("pdvDataset \(pdvDataset)")
-        
+                
         // comand group length is the length of the group 0000 AFTER the value of data element CommandGroupLength
         
         let commandGroupLength = pdvDataset.toData(vrMethod: .Implicit, byteOrder: .BigEndian).count
-        Logger.debug(String(commandGroupLength))
         // command group length must be EVEN http://dicom.nema.org/medical/dicom/current/output/chtml/part07/sect_9.3.2.html
         /*
         var commandGroupValue = UInt32(commandGroupLength).bigEndian
@@ -55,7 +49,6 @@ public class CFindRQ: DataTF {
         
         var pdvData = Data()
         let pdvLength = commandGroupLength + 14
-        Logger.debug(String(UInt32(pdvLength)))
         pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
         pdvData.append(uint8: association.presentationContexts.keys.first!, bigEndian: true) // Context
         pdvData.append(byte: 0x03) // Flags
@@ -65,7 +58,6 @@ public class CFindRQ: DataTF {
         data.append(uint8: self.pduType.rawValue, bigEndian: true)
         data.append(byte: 0x00) // reserved
         data.append(uint32: pduLength, bigEndian: true)
-        Logger.debug(String(pduLength))
         data.append(pdvData)
         
         return data
