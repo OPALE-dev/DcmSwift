@@ -36,7 +36,7 @@ struct DcmFind: ParsableCommand {
                 _ = dataset.set(value:"12345678", forTagName: "PatientID")
                 
                 client.find(dataset, completion: { (ok, message, error) in
-                    
+                    print(message)
                 })
             } else {
                 if let e = error?.description {
