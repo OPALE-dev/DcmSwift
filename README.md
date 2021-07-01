@@ -112,6 +112,10 @@ Another alternative is `storescp` program from dcm4chee (5.x), but without the p
 
     storescp -b STORESCP@127.0.0.1:11112
     
+DCMTK proposes also a server, for testing `cfind` program:
+
+    dcmqrscp 11112 --log-level trace -c /path/to/config/dcmqrscp.cfg
+
 All the executables from both `DCMTK` and `dcm4chee` are very good reference for testing DICOM features.
 
 ## Disclamer
