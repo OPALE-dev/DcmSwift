@@ -58,9 +58,11 @@ public enum CompletionFlag {
  Class representing a DICOM Structured Report file
  This class provides specific tools and implementation to deals with DICOM SR document.
  */
-public class SRDocument {
+public class SRDocument: CustomStringConvertible {
     private var dataset:DataSet
     private var root:SRNode
+    
+    public var conceptName:SRCode?
     
     public var preliminaryFlag:PreliminaryFlag      = .PRELIMINARY
     public var verificationFlag:VerificationFlag    = .UNVERIFIED
@@ -78,13 +80,79 @@ public class SRDocument {
         }
     }
     
+    public var patientName:String? {
+        get {
+            dataset.string(forTag: "PatientName")
+        }
+    }
+    
+    public var patientID:String? {
+        get {
+            dataset.string(forTag: "PatientID")
+        }
+    }
+    
+    public var patientBirthDate:Date? {
+        get {
+            dataset.date(forTag: "PatientBirthDate")
+        }
+    }
+    
+    public var patientSex:String? {
+        get {
+            dataset.string(forTag: "PatientSex")
+        }
+    }
+    
+    public var studyDescription:String? {
+        get {
+            dataset.string(forTag: "StudyDescription")
+        }
+    }
+    
+    public var seriesDescription:String? {
+        get {
+            dataset.string(forTag: "SeriesDescription")
+        }
+    }
+    
+    
+    public var description: String {
+        get {
+            var str = "* Patient: \(patientName ?? "") [\(patientID ?? "")] (\(patientSex ?? "")\n"
+            
+            if let ddns = patientBirthDate?.format(accordingTo: .DA) {
+                str += "\n\t\u{021B3} Patient Birthdate: \(ddns)"
+            }
+            
+            if let std = studyDescription {
+                str += "\n\t\u{021B3} Study Description: \(std)"
+            }
+            
+            if let std = seriesDescription {
+                str += "\n\t\u{021B3} Series Description: \(std)"
+            }
+            
+            if let cn = conceptName {
+                str += "\n\t\u{021B3} Concept Name: \(cn)\n"
+            }
+            
+            for n in root.nodes {
+                str = n.print(inString: str)
+            }
+            
+            return str
+        }
+    }
+    
+    
     /**
         Init a DICOM SR document with a given dataset
      */
     public init?(withDataset dataset:DataSet) {
         self.dataset = dataset
     
-        self.root = SRNode(parent: nil, relationshipType: .root)
+        self.root = SRNode(valueType: .Container, relationshipType: .root, parent: nil)
         
         if !load() {
             return nil
@@ -105,6 +173,11 @@ public class SRDocument {
         }
         
         // Load SR characteristics:
+        /// * concept name
+        if let sequence = dataset.element(forTagName: "ConceptNameCodeSequence") as? DataSequence {
+            conceptName = SRCode(withSequence: sequence)
+        }
+        
         /// * doc type (via IOD and SOP classes)
         /// * flags (in the file dataset)
         /// * etc.
@@ -122,11 +195,43 @@ public class SRDocument {
     private func load(sequence:DataSequence, node:SRNode) -> Bool {
         // loop items
         for item in sequence.items {
-            if let irt = item.element
+            let child = SRNode(withItem: item, parent: node)
+                            
+            if let conceptNameCodeSequence = item.element(withName: "ConceptNameCodeSequence") as? DataSequence {
+                child.setConceptName(withSequence: conceptNameCodeSequence)
+            }
             
-            let node = SRNode(parent: node, relationshipType: <#T##RelationshipType#>)
+            switch child.valueType {
+            case .Container:
+                if let contentSequence = item.element(withName: "ContentSequence") as? DataSequence {
+                    _ = load(sequence: contentSequence, node: child)
+                }
+                
+            case .PName:
+                if let personName = item.element(withName: "PersonName")?.value as? String {
+                    child.value = personName
+                }
+            
+            case .Text:
+                if let textValue = item.element(withName: "TextValue")?.value as? String {
+                    child.value = textValue
+                }
+                
+            case .Num:
+                if let measuredValueSequence = item.element(withName: "MeasuredValueSequence") as? DataSequence {
+                    for item in measuredValueSequence.items {
+                        child.measuredValues.append(SRMeasuredValue(withItem: item, parent: child))
+                    }
+                }
+            
+            
+            default: break
+            }
+            
+            node.add(child: child)
+            
         }
         
-        return false
+        return true
     }
 }
