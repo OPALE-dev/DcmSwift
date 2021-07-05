@@ -12,6 +12,8 @@ import Foundation
  
  Pasted from DCMTK for reference:
  
+ TODO: unused for now!
+ 
  https://support.dcmtk.org/docs/classDSRTypes.html#a6545d88cf751a0b97c56c509dc644b85
  */
 public enum DocumentType {
@@ -39,6 +41,7 @@ public enum DocumentType {
 }
 
 
+// TODO: unused for now!
 public enum PreliminaryFlag {
     case PRELIMINARY
     case FINAL
@@ -57,10 +60,12 @@ public enum CompletionFlag {
 /**
  Class representing a DICOM Structured Report file
  This class provides specific tools and implementation to deals with DICOM SR document.
+ 
+ TODO: Unit tests for SRDocument class
  */
 public class SRDocument: CustomStringConvertible {
     private var dataset:DataSet
-    private var root:SRNode
+    private var root:SRItemNode
     
     public var conceptName:SRCode?
     
@@ -137,8 +142,10 @@ public class SRDocument: CustomStringConvertible {
                 str += "\n\t\u{021B3} Concept Name: \(cn)\n"
             }
             
+            // TODO: add more attributes (ContentDate, flags, etc.)
+            
             for n in root.nodes {
-                str = n.print(inString: str)
+                str += "\n\(n.description)"
             }
             
             return str
@@ -152,14 +159,23 @@ public class SRDocument: CustomStringConvertible {
     public init?(withDataset dataset:DataSet) {
         self.dataset = dataset
     
-        self.root = SRNode(valueType: .Container, relationshipType: .root, parent: nil)
+        self.root = SRItemNode(valueType: .Container, relationshipType: .root, parent: nil)
         
         if !load() {
             return nil
         }
     }
+}
+
     
-    
+
+// MARK: -
+private extension SRDocument {
+    /**
+     Load dataset-level element related to SR document
+     
+     NOTE: Recursive call in there, be careful
+     */
     private func load(force:Bool = false) -> Bool {
         // perform some sanity checks
         guard let modality = dataset.string(forTag: "Modality") else {
@@ -172,12 +188,12 @@ public class SRDocument: CustomStringConvertible {
             return false
         }
         
-        // Load SR characteristics:
-        /// * concept name
+        // Load dataset-level ConceptNameCodeSequence if exists
         if let sequence = dataset.element(forTagName: "ConceptNameCodeSequence") as? DataSequence {
             conceptName = SRCode(withSequence: sequence)
         }
         
+        // TODO: collect dataset-level information
         /// * doc type (via IOD and SOP classes)
         /// * flags (in the file dataset)
         /// * etc.
@@ -188,22 +204,29 @@ public class SRDocument: CustomStringConvertible {
             return false
         }
         
+        // load sequence items
         return load(sequence: sequence, node: root)
     }
     
     
-    private func load(sequence:DataSequence, node:SRNode) -> Bool {
+    /**
+     Load nodes and childs given a Content Sequence element
+     It loads nested Content Sequence recursively if found
+     */
+    private func load(sequence:DataSequence, node:SRItemNode) -> Bool {
         // loop items
         for item in sequence.items {
-            let child = SRNode(withItem: item, parent: node)
+            let child = SRItemNode(withItem: item, parent: node)
                             
             if let conceptNameCodeSequence = item.element(withName: "ConceptNameCodeSequence") as? DataSequence {
                 child.setConceptName(withSequence: conceptNameCodeSequence)
             }
             
+            // TODO: Implement all types: Code,
             switch child.valueType {
             case .Container:
                 if let contentSequence = item.element(withName: "ContentSequence") as? DataSequence {
+                    // TODO: Maybe use return value here?
                     _ = load(sequence: contentSequence, node: child)
                 }
                 
@@ -229,7 +252,6 @@ public class SRDocument: CustomStringConvertible {
             }
             
             node.add(child: child)
-            
         }
         
         return true
