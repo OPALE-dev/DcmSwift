@@ -43,7 +43,11 @@ public class DicomFile {
         if !self.read() { return nil }
     }
     
-
+    /**
+        Create a void dicomFile
+     */
+    internal init() { }
+    
     /**
     Get the formatted size of the current file path
      
@@ -202,11 +206,9 @@ public class DicomFile {
             return false
         }
     }
-}
 
-// MARK: - Private DicomFile methods
-extension DicomFile {
-    private func read() -> Bool {
+    // MARK: - Private methods
+    internal func read() -> Bool {
         let inputStream = DicomInputStream(filePath: filepath)
         
         do {
