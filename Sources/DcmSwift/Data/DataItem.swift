@@ -31,4 +31,16 @@ public class DataItem: DataElement {
     override public var isEditable:Bool  {
         return false
     }
+    
+    
+    // MARK: -
+    public func element(withName name:String) -> DataElement? {
+        for elem in elements {
+            if elem.name == name {
+                return elem
+            }
+        }
+        
+        return nil
+    }
 }

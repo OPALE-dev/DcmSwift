@@ -15,7 +15,7 @@ import Foundation
  */
 public class DicomFile {
     // MARK: - Attributes
-    /// The path of the loaded DICOM file
+    /// @objc @objc The path of the loaded DICOM file
     public var filepath:String!
     /// The parsed dataset containing all the DICOM attributes
     public var dataset:DataSet!
@@ -202,11 +202,11 @@ public class DicomFile {
             return false
         }
     }
-}
 
-// MARK: - Private DicomFile methods
-extension DicomFile {
-    private func read() -> Bool {
+    
+    
+    
+    internal func read() -> Bool {
         let inputStream = DicomInputStream(filePath: filepath)
         
         do {

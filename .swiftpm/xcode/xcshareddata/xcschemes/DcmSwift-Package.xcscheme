@@ -84,9 +84,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "DcmEcho"
-               BuildableName = "DcmEcho"
-               BlueprintName = "DcmEcho"
+               BlueprintIdentifier = "DcmClient"
+               BuildableName = "DcmClient"
+               BlueprintName = "DcmClient"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -112,9 +112,37 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "DcmEcho"
+               BuildableName = "DcmEcho"
+               BlueprintName = "DcmEcho"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "DcmStore"
                BuildableName = "DcmStore"
                BlueprintName = "DcmStore"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "DcmDir"
+               BuildableName = "DcmDir"
+               BlueprintName = "DcmDir"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -152,9 +180,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DcmStore"
-            BuildableName = "DcmStore"
-            BlueprintName = "DcmStore"
+            BlueprintIdentifier = "DcmDir"
+            BuildableName = "DcmDir"
+            BlueprintName = "DcmDir"
             ReferencedContainer = "container:">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -178,9 +206,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DcmStore"
-            BuildableName = "DcmStore"
-            BlueprintName = "DcmStore"
+            BlueprintIdentifier = "DcmDir"
+            BuildableName = "DcmDir"
+            BlueprintName = "DcmDir"
             ReferencedContainer = "container:">
          </BuildableReference>
       </BuildableProductRunnable>
