@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Html
 
 
 public class SRItemNode: SRNode {
@@ -52,9 +53,39 @@ public class SRItemNode: SRNode {
     public func add(child:SRNode) {
         self.nodes.append(child)
     }
-    
+
     
     // MARK: -
+    var htmlNode:Node {
+        get {
+            var ns:[Node] = []
+
+            for n in nodes {
+                if let itemNode = n as? SRItemNode {
+                    ns.append(itemNode.htmlNode)
+                }
+            }
+                
+            var div = Node.div()
+            var p = Node.p(attributes: [.style(unsafe: "margin-left: \(level)0px")],
+                Node.text("\(conceptName != nil ? conceptName!.codeMeaning! : ""): "),
+                Node.text("\(value)")
+            )
+        
+            for n in ns {
+                p.append(n)
+            }
+            
+            div.append(p)
+            
+            return div
+        }
+    }
+    
+    var html:String {
+        render(htmlNode)
+    }
+    
     public override var description: String {
         get {
             var str = ""

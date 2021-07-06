@@ -17,6 +17,10 @@ struct DcmSR: ParsableCommand {
         if let dicomFile = DicomFile(forPath: sourcePath) {
             if let doc = dicomFile.structuredReportDocument {
                 print(doc)
+                
+                let dest = NSString(string: sourcePath).deletingPathExtension.appending(".html5")
+                
+                try? doc.html.write(to: URL(fileURLWithPath: dest), atomically: true, encoding: .utf8)
             }
         }
     }

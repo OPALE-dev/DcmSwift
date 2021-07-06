@@ -335,7 +335,16 @@ public class DataSet: DicomObject {
     
 
     
-    
+    public func add(element:DataElement) {
+        if element.group != DicomConstants.metaInformationGroup {
+            datasetElements.append(element)
+        }
+        else {
+            metaInformationHeaderElements.append(element)
+        }
+        
+        allElements.append(element)
+    }
     
     
     public func write(

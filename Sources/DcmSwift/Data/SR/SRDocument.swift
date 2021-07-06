@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import Html
+
 
 /**
  SR document types (DICOM IOD)
@@ -72,6 +74,33 @@ public class SRDocument: CustomStringConvertible {
     public var preliminaryFlag:PreliminaryFlag      = .PRELIMINARY
     public var verificationFlag:VerificationFlag    = .UNVERIFIED
     public var completionFlag:CompletionFlag        = .PARTIAL
+    
+    
+    
+    /**
+        Init a DICOM SR document with a given dataset
+     */
+    public init?(withDataset dataset:DataSet) {
+        self.dataset = dataset
+    
+        self.root = SRItemNode(valueType: .Container, relationshipType: .root, parent: nil)
+        
+        if !load() {
+            return nil
+        }
+    }
+    
+    
+    public var title:String {
+        get {
+            if let sopclass = dataset.string(forTag: "MediaStorageSOPClassUID") {
+                return DicomSpec.shared.nameForUID(withUID: sopclass)
+            }
+            
+            return "No Title"
+        }
+    }
+    
     
     public var contentDate:Date? {
         get {
@@ -151,23 +180,83 @@ public class SRDocument: CustomStringConvertible {
             return str
         }
     }
-    
-    
-    /**
-        Init a DICOM SR document with a given dataset
-     */
-    public init?(withDataset dataset:DataSet) {
-        self.dataset = dataset
-    
-        self.root = SRItemNode(valueType: .Container, relationshipType: .root, parent: nil)
-        
-        if !load() {
-            return nil
+}
+
+
+// MARK: -
+public extension SRDocument {
+    var html:String {
+        get {
+            var contentDateTime = Node.text("")
+            
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateStyle = .short
+            dateFormatter.timeStyle = .short
+            
+            if let d = dataset.date(forTag: "ContentDate"),
+               let t = dataset.date(forTag: "ContentTime"),
+               let dt = Date(date: d, time: t) {
+                let dateTime = dateFormatter.string(from: dt)
+                contentDateTime = Node.text("\(dateTime)")
+            }
+            
+            var contentDiv = Node.div()
+            
+            for n in root.nodes {
+                if let itemNode = n as? SRItemNode {
+                    contentDiv.append(itemNode.htmlNode)
+                }
+            }
+            
+            let document: Node = .document(
+                .html(
+                    .head(
+                        .title(title)
+                    ),
+                    .body(
+                        .h1(Node.text(title)),
+                        .table(
+                            .tr(
+                                .td(Node.text("Patient: ")),
+                                .td(Node.text("\(patientName ?? "") [\(patientID ?? "")] (\(patientSex ?? ""))"))
+                            ),
+                            .tr(
+                                .td(Node.text("Study: ")),
+                                .td(Node.text("\(studyDescription ?? "")"))
+                            ),
+                            .tr(
+                                .td(Node.text("Serie: ")),
+                                .td(Node.text("\(seriesDescription ?? "")"))
+                            ),
+                            .tr(
+                                .td(Node.text("Preliminary Flag: ")),
+                                .td(Node.text("\(preliminaryFlag)"))
+                            ),
+                            .tr(
+                                .td(Node.text("Completion Flag: ")),
+                                .td(Node.text("\(completionFlag)"))
+                            ),
+                            .tr(
+                                .td(Node.text("Verification Flag: ")),
+                                .td(Node.text("\(verificationFlag)"))
+                            ),
+                            .tr(
+                                .td(Node.text("Content Date/Time: ")),
+                                .td(contentDateTime)
+                            )
+                        ),
+                        .hr(),
+                        .h2("Structured Report"),
+                        contentDiv
+                    )
+                )
+            )
+            return render(document)
         }
     }
 }
 
-    
+
 
 // MARK: -
 private extension SRDocument {
@@ -214,6 +303,8 @@ private extension SRDocument {
      It loads nested Content Sequence recursively if found
      */
     private func load(sequence:DataSequence, node:SRItemNode) -> Bool {
+        let dateFormatter = DateFormatter()
+            
         // loop items
         for item in sequence.items {
             let child = SRItemNode(withItem: item, parent: node)
@@ -229,6 +320,13 @@ private extension SRDocument {
                     // TODO: Maybe use return value here?
                     _ = load(sequence: contentSequence, node: child)
                 }
+             
+            case .Code:
+                if let conceptCodeSequence = item.element(withName: "ConceptCodeSequence") as? DataSequence {
+                    if let code = SRCode(withSequence: conceptCodeSequence) {
+                        child.value = "\(code.codeMeaning ?? "") (\(code.codeValue ?? ""), \(code.codingSchemeDesignator ?? ""))"
+                    }
+                }
                 
             case .PName:
                 if let personName = item.element(withName: "PersonName")?.value as? String {
@@ -239,15 +337,44 @@ private extension SRDocument {
                 if let textValue = item.element(withName: "TextValue")?.value as? String {
                     child.value = textValue
                 }
+               
+            case .Date:
+                if let date = item.element(withName: "Date")?.value as? Date {
+                    dateFormatter.dateStyle = .short
+                    dateFormatter.timeStyle = .none
+                    child.value = dateFormatter.string(from: date)
+                }
+              
+            case .Time:
+                if let date = item.element(withName: "Time")?.value as? Date {
+                    dateFormatter.dateStyle = .none
+                    dateFormatter.timeStyle = .short
+                    child.value = dateFormatter.string(from: date)
+                }
                 
+            case .UIDRef:
+                if let textValue = item.element(withName: "UID")?.value as? String {
+                    child.value = textValue
+                }
+                
+            case .Image:
+                if let referencedSOPSequence = item.element(withName: "ReferencedSOPSequence") as? DataSequence {
+                    if let i = referencedSOPSequence.items.first {
+                        if let rscu = i.element(withName: "ReferencedSOPClassUID")?.value as? String,
+                           let rsiu = i.element(withName: "ReferencedSOPInstanceUID")?.value as? String {
+                            child.value = "\(DicomSpec.shared.nameForUID(withUID: rscu)): \(rsiu)"
+                        }
+                    }
+                }
+            
             case .Num:
                 if let measuredValueSequence = item.element(withName: "MeasuredValueSequence") as? DataSequence {
                     for item in measuredValueSequence.items {
                         child.measuredValues.append(SRMeasuredValue(withItem: item, parent: child))
+                        child.value = child.measuredValues.map { v in "\(v.value) \(v.measurementUnitsCode?.codeValue ?? "")" }
                     }
                 }
-            
-            
+                
             default: break
             }
             

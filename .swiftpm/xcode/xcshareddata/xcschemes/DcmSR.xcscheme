@@ -76,7 +76,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "/Users/nark/Downloads/srdoc102/report10.dcm"
+            argument = "/Users/nark/Downloads/tumor_User3_SemiAuto_Trial2.dcm"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
