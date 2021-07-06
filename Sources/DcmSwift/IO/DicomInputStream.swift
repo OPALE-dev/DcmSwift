@@ -16,6 +16,9 @@ public class DicomInputStream {
     public var byteOrder:ByteOrder   = .LittleEndian
     
     var stream:InputStream!
+    /// A copy of the original stream used if we need to reset the read offset
+    var backstream:InputStream!
+    
     var offset = 0
     var total  = 0
     
@@ -23,27 +26,30 @@ public class DicomInputStream {
      Init a DicomInputStream with a file path
      */
     public init(filePath:String) {
-        dataset = DataSet()
-        stream  = InputStream(fileAtPath: filePath)
-        total   = Int(DicomFile.fileSize(path: filePath))
+        dataset     = DataSet()
+        stream      = InputStream(fileAtPath: filePath)
+        backstream  = InputStream(fileAtPath: filePath)
+        total       = Int(DicomFile.fileSize(path: filePath))
     }
     
     /**
     Init a DicomInputStream with a file URL
     */
     public init(url:URL) {
-        dataset = DataSet()
-        stream  = InputStream(url: url)
-        total   = Int(DicomFile.fileSize(path: url.path))
+        dataset     = DataSet()
+        stream      = InputStream(url: url)
+        backstream  = InputStream(url: url)
+        total       = Int(DicomFile.fileSize(path: url.path))
     }
     
     /**
     Init a DicomInputStream with a Data object
     */
     public init(data:Data) {
-        dataset = DataSet()
-        stream  = InputStream(data: data)
-        total   = data.count
+        dataset     = DataSet()
+        stream      = InputStream(data: data)
+        backstream  = InputStream(data: data)
+        total       = data.count
     }
     
     
@@ -52,7 +58,7 @@ public class DicomInputStream {
         if stream == nil {
             throw StreamError.cannotOpenStream(message: "Cannot open stream, init failed")
         }
-        
+                
         stream.open()
         /**
         Read first tag : if first tag is 0000,0000 try to read
@@ -67,7 +73,7 @@ public class DicomInputStream {
             throw StreamError.cannotReadStream(message: "Cannot read 4 first bytes, file is empty?")
         }
                 
-        // read DICOM preamble
+        // read DICOM preamble if exists
         if tag!.group != "0008" {
             // only the remaining bytes, we already read 4
             _ = read(length: 124)
@@ -85,16 +91,22 @@ public class DicomInputStream {
             hasPreamble = true
         }
         
+        // enforce vr Method
         if hasPreamble {
-            // we kill the 00000000 fake tag read earlier
+            // we kill the 00000000 not-a-tag read earlier
             tag = nil
             // we will parse the DICOM meta Info header as Explicit VR
             vrMethod = .Explicit
         } else {
             // except for old ACR-NEMA file
             vrMethod = .Implicit
+            
+            // reset stream and offset using backstream
+            backstream.open()
+            stream = backstream
+            offset = 0
         }
-        
+                
         // preambule processing is done
         dataset.hasPreamble = hasPreamble
                         
@@ -156,6 +168,7 @@ public class DicomInputStream {
         
         dataset.sortElements()
         
+        backstream.close()
         stream.close()
         
         return dataset
