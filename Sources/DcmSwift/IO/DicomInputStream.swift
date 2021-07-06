@@ -99,17 +99,21 @@ public class DicomInputStream {
             vrMethod = .Explicit
         } else {
             // except for old ACR-NEMA file
+            dataset.transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian)
             vrMethod = .Implicit
             
             // reset stream and offset using backstream
             backstream.open()
+            
             stream = backstream
             offset = 0
         }
                 
         // preambule processing is done
         dataset.hasPreamble = hasPreamble
-                        
+        dataset.vrMethod = vrMethod
+        dataset.byteOrder = byteOrder
+    
         // read elements to fill the dataset
         while(stream.hasBytesAvailable && offset < total && !dataset.isCorrupted) {
             var order = byteOrder
