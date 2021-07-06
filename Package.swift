@@ -76,7 +76,9 @@ let package = Package(
             name: "DcmSwiftTests",
             dependencies: ["DcmSwift"],
             resources: [
-                .process("Resources")
+                .process("Resources/DICOM"),
+                .process("Resources/SR"),
+                .process("Resources/RT")
             ]
         )
     ]

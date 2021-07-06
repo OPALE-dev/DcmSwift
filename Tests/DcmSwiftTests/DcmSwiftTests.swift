@@ -42,9 +42,7 @@ class DcmSwiftTests: XCTestCase {
     
     /// Run
     private static var testUID                  = true
-    
-    // TODO: add tests for DicomUID
-    // TODO: add tests for AgeString
+
     
     internal var filePath:String!
     private var finderTestDir:String = ""
@@ -164,7 +162,7 @@ class DcmSwiftTests: XCTestCase {
     private class func addFileTest(withName name: String, inSuite suite: XCTestSuite, withPath path:String, block: Any) {
         var fileName = String((path as NSString).deletingPathExtension.split(separator: "/").last!)
         fileName = (fileName as NSString).replacingOccurrences(of: "-", with: "_")
-        
+                 
         // with help of ObjC runtime we add new test method to class
         let implementation = imp_implementationWithBlock(block)
         let selectorName = "test_\(name)_\(fileName)"
@@ -684,9 +682,12 @@ class DcmSwiftTests: XCTestCase {
             Logger.info("#########################################################")
             
             return true
+        } else {
+            Logger.info("# Error: cannot open file: \(writePath)")
+            Logger.info("#")
+            Logger.info("#########################################################")
+            return false
         }
-        
-        return true
     }
     
     
@@ -717,9 +718,12 @@ class DcmSwiftTests: XCTestCase {
             Logger.info("#########################################################")
             
             return true
+        } else {
+            Logger.info("# Error: cannot open file: \(writePath)")
+            Logger.info("#")
+            Logger.info("#########################################################")
+            return false
         }
-        
-        return true
     }
     
     
