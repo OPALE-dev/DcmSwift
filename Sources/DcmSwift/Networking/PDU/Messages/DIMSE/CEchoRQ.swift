@@ -22,7 +22,40 @@ public class CEchoRQ: DataTF {
         _ = pdvDataset.set(value: self.messageID, forTagName: "MessageID")
         _ = pdvDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
         
-        let commandGroupLength = pdvDataset.toData().count
+        var vrMethod: VRMethod = .Explicit
+        var byteOrder: ByteOrder  = .LittleEndian
+
+        
+        if let transferSyntax = self.association.acceptedTransferSyntax {
+            Logger.debug(">>> TRANSFER SYNTAX KNOWN")
+            let tsName  = DicomSpec.shared.nameForUID(withUID: transferSyntax)
+            Logger.debug(tsName)
+            
+            if tsName == TransferSyntax.implicitVRLittleEndian {
+                vrMethod    = .Implicit
+                byteOrder   = .LittleEndian
+            } else if tsName == TransferSyntax.explicitVRBigEndian {
+                vrMethod    = .Explicit
+                byteOrder   = .BigEndian
+            } else if tsName == TransferSyntax.explicitVRLittleEndian {
+                vrMethod    = .Explicit
+                byteOrder   = .LittleEndian
+            }
+            
+        } else {
+            Logger.debug(">>> TRANSFER SYNTAX UNKNOWN")
+            vrMethod    = .Explicit
+            byteOrder   = .LittleEndian
+            // TODO warning
+            // Little endian explicit
+        }
+        
+        Logger.debug("---------------------------------------------------");
+        Logger.debug("(VR METHOD) \(vrMethod), (BYTE ORDER) \(byteOrder)");
+        Logger.debug("---------------------------------------------------");
+        
+        // Why implicit endian ??
+        let commandGroupLength = pdvDataset.toData(vrMethod: vrMethod, byteOrder: byteOrder).count
         _ = pdvDataset.set(value: UInt32(commandGroupLength).bigEndian, forTagName: "CommandGroupLength")
         
         var pdvData = Data()
@@ -30,7 +63,7 @@ public class CEchoRQ: DataTF {
         pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
         pdvData.append(uint8: association.presentationContexts.keys.first!, bigEndian: true) // Context
         pdvData.append(byte: 0x03) // Flags
-        pdvData.append(pdvDataset.toData())
+        pdvData.append(pdvDataset.toData(vrMethod: vrMethod, byteOrder: byteOrder))
         
         let pduLength = UInt32(pdvLength + 4)
         data.append(uint8: self.pduType.rawValue, bigEndian: true)
