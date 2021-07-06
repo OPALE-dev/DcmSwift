@@ -8,7 +8,7 @@
 
 import Foundation
 
-
+// TODO: make DataItem inherit from DataSet to behave more like a collection?
 public class DataItem: DataElement {
     public var elements:[DataElement]   = []
     
@@ -28,7 +28,21 @@ public class DataItem: DataElement {
         return val
     }
     
+    
     override public var isEditable:Bool  {
         return false
+    }
+    
+    /**
+     Get Data Element by name
+     */
+    public func element(withName name:String) -> DataElement? {
+        for elem in elements {
+            if elem.name == name {
+                return elem
+            }
+        }
+        
+        return nil
     }
 }

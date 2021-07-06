@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "DcmStore"
-               BuildableName = "DcmStore"
-               BlueprintName = "DcmStore"
+               BlueprintIdentifier = "DcmSR"
+               BuildableName = "DcmSR"
+               BlueprintName = "DcmSR"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -68,31 +68,23 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DcmStore"
-            BuildableName = "DcmStore"
-            BlueprintName = "DcmStore"
+            BlueprintIdentifier = "DcmSR"
+            BuildableName = "DcmSR"
+            BlueprintName = "DcmSR"
             ReferencedContainer = "container:">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "-c DCMSTORE"
+            argument = "html"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "STORESCP"
+            argument = "/Users/nark/Downloads/tumor_User3_SemiAuto_Trial2.dcm"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "127.0.0.1"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "11112"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "&apos;/Users/paul/Desktop/DICOM/Test Files/CT_ExplicitVRLittleEndian_SINGLE_MONOCHROME2_16_PickerInternationalInc._NULL_NULL_NULL_27.dcm&apos;"
+            argument = "/Users/nark/Downloads/tumor_User3_SemiAuto_Trial2.html5"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
@@ -107,9 +99,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DcmStore"
-            BuildableName = "DcmStore"
-            BlueprintName = "DcmStore"
+            BlueprintIdentifier = "DcmSR"
+            BuildableName = "DcmSR"
+            BlueprintName = "DcmSR"
             ReferencedContainer = "container:">
          </BuildableReference>
       </BuildableProductRunnable>

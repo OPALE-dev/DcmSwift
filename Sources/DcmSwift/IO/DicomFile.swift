@@ -25,7 +25,6 @@ public class DicomFile {
     public var isEncapsulatedPDF = false
     
     
-    
     // MARK: - Public methods
     /**
     Load a DICOM file
@@ -171,6 +170,17 @@ public class DicomFile {
             return DicomImage(self.dataset)
         }
     }
+    
+    
+    /**
+     Instance of SRDocument if available.
+     */
+    public var structuredReportDocument: SRDocument? {
+        get {
+            return SRDocument(withDataset: dataset)
+        }
+    }
+    
     
     
     public func pdfData() -> Data? {

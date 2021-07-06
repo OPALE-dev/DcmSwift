@@ -211,7 +211,9 @@ public class DataSet: DicomObject {
     public func date(forTag tag:String ) -> Date? {
         for el in allElements {
             if el.name == tag {
-                if let str = el.value as? String {
+                if let date = el.value as? Date {
+                    return date
+                } else if let str = el.value as? String {
                     return Date(dicomDate: str)
                 }
             }
@@ -333,7 +335,16 @@ public class DataSet: DicomObject {
     
 
     
-    
+    public func add(element:DataElement) {
+        if element.group != DicomConstants.metaInformationGroup {
+            datasetElements.append(element)
+        }
+        else {
+            metaInformationHeaderElements.append(element)
+        }
+        
+        allElements.append(element)
+    }
     
     
     public func write(
