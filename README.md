@@ -11,6 +11,7 @@ DcmSwift is a (partial, work in progress) DICOM implementation written in Swift.
 ## Dependencies
 
 * IBM-Swift/BlueSocket (networking)
+* pointfreeco/swift-html (HTML rendering)
 
 *Dependencies are managed by SPM.*
 
@@ -62,7 +63,7 @@ Set a DICOM dataset attribute:
 
     dicomFile.dataset.set(value:"John^Doe", forTagName: "PatientName")
     
-Once modified, you can write the data to a file again:
+Once modified, write the dataset to a file again:
 
     dicomFile.write(atPath: newPath)
 
@@ -117,7 +118,7 @@ Get files path indexed by a DICOMDIR file for a specific `PatientID`:
 
 ## DICOM SR
 
-Load and print a DICOM SR Tree:
+Load and print SR Tree:
 
     if let dicomFile = DicomFile(forPath: dicomSRPath) {
         if let doc = dicomFile.structuredReportDocument {
@@ -125,7 +126,7 @@ Load and print a DICOM SR Tree:
         }
     }
 
-Load and print a DICOM SR as HTML:
+Load and print SR as HTML:
 
     if let dicomFile = DicomFile(forPath: dicomSRPath) {
         if let doc = dicomFile.structuredReportDocument {
