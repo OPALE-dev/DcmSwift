@@ -31,7 +31,6 @@ DcmSwift is widely used in the **DicomiX** application for macOS, which is avail
 DcmSwift relies on SPM so all you have to do is to declare it as a dependency of your target in your `Package.swift` file:
 
     dependencies: [
-        // Dependencies declare other packages that this package depends on.
         .package(name: "DcmSwift", url: "http://gitlab.dev.opale.pro/rw/DcmSwift.git", from:"0.0.1"),
     ]
     
@@ -45,7 +44,7 @@ DcmSwift relies on SPM so all you have to do is to declare it as a dependency of
         
 If you are using Xcode, you can add this package by repository address.
 
-## Getting Started
+## DICOM files
 
 ### Read a DICOM file
 
@@ -57,23 +56,35 @@ Get a DICOM dataset attribute:
 
     let patientName = dicomFile.dataset.string(forTag: "PatientName")
 
+### Write a DICOM file
+
 Set a DICOM dataset attribute:
 
     dicomFile.dataset.set(value:"John^Doe", forTagName: "PatientName")
-
-### Write a DICOM file
-
+    
 Once modified, you can write the data to a file again:
 
     dicomFile.write(atPath: newPath)
 
-#### Data
+## DataSet
 
-### More in depth with DataSet
+### Read dataset 
 
-You can load a `DataSet` object directly from data:
+You can load a `DataSet` object manually using `DicomInputStream`:
 
-    let dataset = DataSet(withData: data)
+    let inputStream = DicomInputStream(filePath: filepath)
+
+    do {
+        if let dataset = try inputStream.readDataset() {
+            // ...
+        }
+    } catch {
+        Logger.error("Error")
+    }
+    
+`DicomInputStream` can also be initialized with URL or Data object.
+
+### Create DataSet from scratch
 
 Or you can create a totally genuine `DataSet` instance and start adding some element to it:
 
@@ -84,10 +95,52 @@ Or you can create a totally genuine `DataSet` instance and start adding some ele
     
     print(dataset.toData().toHex())
     
+Add an element, here a sequence, to a dataset:
+
+    dataset.add(element: DataSequence(withTag: tag, parent: nil))
+    
+## DICOMDIR
+
+Get files path indexed by a DICOMDIR file:
+
+    if let dicomDir = DicomDir(forPath: dicomDirPath) {
+        print(dicomDir.index)
+    }
+
+Get files path indexed by a DICOMDIR file for a specific `PatientID`:
+
+    if let dicomDir = DicomDir(forPath: dicomDirPath) {
+        if let files = dicomDir.index(forPatientID: "198726783") {
+            print(files)
+        }
+    }
+
+## DICOM SR
+
+Load and print a DICOM SR Tree:
+
+    if let dicomFile = DicomFile(forPath: dicomSRPath) {
+        if let doc = dicomFile.structuredReportDocument {
+            print(doc)
+        }
+    }
+
+Load and print a DICOM SR as HTML:
+
+    if let dicomFile = DicomFile(forPath: dicomSRPath) {
+        if let doc = dicomFile.structuredReportDocument {
+            print(doc.html)
+        }
+    }
+
 ## Using binaries
 
 The DcmSwift package embbed some binaries known as `DcmPrint`, `DcmAnonymize`, `DcmEcho`, etc. which you can compile and use as follow:
 
+    swift build -c debug
+    
+    // or
+    
     swift build -c release
     
 Binaries can be found in `.build/release` directory. For example:
@@ -102,7 +155,7 @@ Run the command:
     
 ## Side notes
 
-### For testing networking
+### For testing/debuging networking
 
 Very useful DCMTK arguments for `storescp` program that show a lot of logs: 
 
