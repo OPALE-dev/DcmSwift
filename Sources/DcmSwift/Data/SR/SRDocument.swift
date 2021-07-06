@@ -150,10 +150,17 @@ public class SRDocument: CustomStringConvertible {
         }
     }
     
+    public var institutionName:String? {
+        get {
+            dataset.string(forTag: "InstitutionName")
+        }
+    }
+
+    
     
     public var description: String {
         get {
-            var str = "* Patient: \(patientName ?? "") [\(patientID ?? "")] (\(patientSex ?? "")\n"
+            var str = "* Patient: \(patientName ?? "") [\(patientID ?? "")] (\(patientSex ?? ""))\n"
             
             if let ddns = patientBirthDate?.format(accordingTo: .DA) {
                 str += "\n\t\u{021B3} Patient Birthdate: \(ddns)"
@@ -217,31 +224,35 @@ public extension SRDocument {
                         .h1(Node.text(title)),
                         .table(
                             .tr(
-                                .td(Node.text("Patient: ")),
+                                .td(.b(Node.text("Institution: "))),
+                                .td(Node.text("\(institutionName ?? "")"))
+                            ),
+                            .tr(
+                                .td(.b(Node.text("Patient: "))),
                                 .td(Node.text("\(patientName ?? "") [\(patientID ?? "")] (\(patientSex ?? ""))"))
                             ),
                             .tr(
-                                .td(Node.text("Study: ")),
+                                .td(.b(Node.text("Study: "))),
                                 .td(Node.text("\(studyDescription ?? "")"))
                             ),
                             .tr(
-                                .td(Node.text("Serie: ")),
+                                .td(.b(Node.text("Serie: "))),
                                 .td(Node.text("\(seriesDescription ?? "")"))
                             ),
                             .tr(
-                                .td(Node.text("Preliminary Flag: ")),
+                                .td(.b(Node.text("Preliminary Flag: "))),
                                 .td(Node.text("\(preliminaryFlag)"))
                             ),
                             .tr(
-                                .td(Node.text("Completion Flag: ")),
+                                .td(.b(Node.text("Completion Flag: "))),
                                 .td(Node.text("\(completionFlag)"))
                             ),
                             .tr(
-                                .td(Node.text("Verification Flag: ")),
+                                .td(.b(Node.text("Verification Flag: "))),
                                 .td(Node.text("\(verificationFlag)"))
                             ),
                             .tr(
-                                .td(Node.text("Content Date/Time: ")),
+                                .td(.b(Node.text("Content Date/Time: "))),
                                 .td(contentDateTime)
                             )
                         ),
@@ -359,10 +370,11 @@ private extension SRDocument {
                 
             case .Image:
                 if let referencedSOPSequence = item.element(withName: "ReferencedSOPSequence") as? DataSequence {
+                    child.imageReferencedSOPSequence = referencedSOPSequence
+                    
                     if let i = referencedSOPSequence.items.first {
-                        if let rscu = i.element(withName: "ReferencedSOPClassUID")?.value as? String,
-                           let rsiu = i.element(withName: "ReferencedSOPInstanceUID")?.value as? String {
-                            child.value = "\(DicomSpec.shared.nameForUID(withUID: rscu)): \(rsiu)"
+                        if let rsiu = i.element(withName: "ReferencedSOPInstanceUID")?.value as? String {
+                            child.value = rsiu
                         }
                     }
                 }

@@ -9,6 +9,25 @@ import Foundation
 import DcmSwift
 import ArgumentParser
 
+/**
+ DcmSR is a tool to extract DICOM SR data
+ 
+ Usage:
+ 
+     OVERVIEW: A tool to extract DICOM SR data
+
+     USAGE: dcm-sr <subcommand>
+
+     OPTIONS:
+       -h, --help              Show help information.
+
+     SUBCOMMANDS:
+       dump (default)          Print the DICOM SR Tree
+       html                    Convert DICOM SR to HTML
+
+       See 'dcm-sr help <subcommand>' for detailed help.
+ 
+ */
 struct DcmSR: ParsableCommand {
     static var configuration = CommandConfiguration(
             abstract: "A tool to extract DICOM SR data",

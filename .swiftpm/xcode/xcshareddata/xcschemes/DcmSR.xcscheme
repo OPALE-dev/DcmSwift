@@ -76,7 +76,15 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
+            argument = "html"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "/Users/nark/Downloads/tumor_User3_SemiAuto_Trial2.dcm"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Users/nark/Downloads/tumor_User3_SemiAuto_Trial2.html5"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
