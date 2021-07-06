@@ -16,6 +16,7 @@ public class SRItemNode: SRNode {
     
     public var conceptName:SRCode?
     public var concept:SRCode?
+    public var imageReferencedSOPSequence:DataSequence?
     public var measuredValues:[SRMeasuredValue] = []
     
     public init(withItem item: DataItem, parent:SRNode?) {
@@ -67,11 +68,23 @@ public class SRItemNode: SRNode {
             }
                 
             var div = Node.div()
-            var p = Node.p(attributes: [.style(unsafe: "margin-left: \(level)0px")],
-                Node.text("\(conceptName != nil ? conceptName!.codeMeaning! : ""): "),
-                Node.text("\(value)")
-            )
-        
+            var label:Node = Node.b(Node.text("\(conceptName != nil ? conceptName!.codeMeaning! : ""): "))
+            
+            if valueType == .Image {
+                if let it = imageReferencedSOPSequence?.items.first,
+                   let referencedSOPClassUID = it.element(withName: "ReferencedSOPClassUID")?.value as? String {
+                    label = Node.b(Node.text("\(DicomSpec.shared.nameForUID(withUID: referencedSOPClassUID)): "))
+                }
+            }
+            else if valueType == .Container {
+                label = Node.element("h\(level)", [(key: "style", value: "margin-left: \(level)0px")], Node.text("\(conceptName != nil ? conceptName!.codeMeaning! : ""): "))
+
+            } else {
+                
+            }
+            
+            var p = Node.p(attributes: [.style(unsafe: "margin-left: \(level)0px")], label, Node.text("\(value)"))
+            
             for n in ns {
                 p.append(n)
             }
@@ -99,7 +112,7 @@ public class SRItemNode: SRNode {
             if let cn = conceptName {
                 str += "\n"
                 
-                str.indent(level: level)
+                str.indent(level: level + 1)
                 
                 str += "\u{021B3} Concept Name: \(cn)"
             }
@@ -107,13 +120,13 @@ public class SRItemNode: SRNode {
             // concept
             if let c = concept {
                 str += "\n"
-                str.indent(level: level)
+                str.indent(level: level + 1)
                 str += "\u{021B3} Concept: \(c)"
             }
             
             // value
             str += "\n"
-            str.indent(level: level)
+            str.indent(level: level + 1)
             str += "\u{021B3} Value: \(value)\n"
             
             // measured values
