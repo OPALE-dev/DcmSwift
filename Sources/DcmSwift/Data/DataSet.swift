@@ -34,14 +34,19 @@ public class DataSet: DicomObject {
         
         sortElements()
         
-        string += "# Dicom-Meta-Information-Header\n"
-        string += "# Used TransferSyntax: \(VRMethod.Explicit)\n"
+        
+        if metaInformationHeaderElements.count > 0 {
+            string += "# Dicom-Meta-Information-Header\n"
+            string += "# Used TransferSyntax: \(VRMethod.Explicit)\n"
+        }
+        
         for e in metaInformationHeaderElements {
             string += e.description + "\n"
         }
+        
         string += "\n"
         string += "# Dicom-Dataset\n"
-        string += "# Used TransferSyntax: \(self.transferSyntax)\n"
+        string += "# Used TransferSyntax: \(self.transferSyntax?.tsName ?? "Unknow")\n"
         for e in datasetElements {
             string += e.description + "\n"
         }
