@@ -76,7 +76,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "/Users/nark/Pictures/DICOM/MultiFramesSingleSerieXR/1.3.46.670589.7.5.10.80002138018.20001204.181556.4.1.1.dcm"
+            argument = "/Users/nark/Downloads/DOSE.20110509.1010_Irregular.dcm"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

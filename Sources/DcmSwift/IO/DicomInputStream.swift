@@ -158,9 +158,13 @@ public class DicomInputStream {
                             byteOrder = .BigEndian
                         }
                     }
+                    
+                    // update the dataset properties
+                    dataset.vrMethod = vrMethod
+                    dataset.byteOrder = byteOrder
                 }
                                                             
-                // append element to sub-datasets
+                // append element to sub-datasets, if everything is OK
                 if !dataset.isCorrupted {
                     dataset.add(element: newElement)
                     
