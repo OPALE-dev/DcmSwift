@@ -10,8 +10,8 @@ DcmSwift is a (partial, work in progress) DICOM implementation written in Swift.
 
 ## Dependencies
 
-* IBM-Swift/BlueSocket (networking)
-* pointfreeco/swift-html (HTML rendering)
+* `IBM-Swift/BlueSocket` (networking)
+* `pointfreeco/swift-html` (HTML rendering)
 
 *Dependencies are managed by SPM.*
 
@@ -49,7 +49,7 @@ If you are using Xcode, you can add this package by repository address.
 
 ### Read a DICOM file
 
-Read a file in memory:
+Read a file:
 
     let dicomFile = DicomFile(forPath: filepath)
 
@@ -83,7 +83,7 @@ You can load a `DataSet` object manually using `DicomInputStream`:
         Logger.error("Error")
     }
     
-`DicomInputStream` can also be initialized with URL or Data object.
+`DicomInputStream` can also be initialized with `URL` or `Data` object.
 
 ### Create DataSet from scratch
 
@@ -102,13 +102,19 @@ Add an element, here a sequence, to a dataset:
     
 ## DICOMDIR
 
-Get files path indexed by a DICOMDIR file:
+Get all files indexed by a DICOMDIR file:
 
     if let dicomDir = DicomDir(forPath: dicomDirPath) {
         print(dicomDir.index)
     }
+    
+List patients indexed in the DICOMDIR:
 
-Get files path indexed by a DICOMDIR file for a specific `PatientID`:
+    if let dicomDir = DicomDir(forPath: dicomDirPath) {
+        print(dicomDir.patients)
+    }
+
+Get files indexed by a DICOMDIR file for a specific `PatientID`:
 
     if let dicomDir = DicomDir(forPath: dicomDirPath) {
         if let files = dicomDir.index(forPatientID: "198726783") {
@@ -136,11 +142,11 @@ Load and print SR as HTML:
 
 ## Using binaries
 
-The DcmSwift package embbed some binaries known as `DcmPrint`, `DcmAnonymize`, `DcmEcho`, etc. which you can compile and use as follow:
+The DcmSwift package embbed some binaries known as `DcmPrint`, `DcmAnonymize`, `DcmEcho`, etc. which you can build as follow:
 
-    swift build -c debug
+    swift build
     
-    // or
+To build release binaries:
     
     swift build -c release
     
