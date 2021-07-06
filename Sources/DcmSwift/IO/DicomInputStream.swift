@@ -68,7 +68,7 @@ public class DicomInputStream {
         }
                 
         // read DICOM preamble
-        if tag!.code != "00080000" {
+        if tag!.group != "0008" {
             // only the remaining bytes, we already read 4
             _ = read(length: 124)
             
