@@ -123,6 +123,15 @@ extension Date {
         }
     }
     
+    
+    public init?(date:Date, time:Date) {
+        guard let date = Date.combineDateWithTime(date: date, time: time) else {
+            return nil
+        }
+        
+        self.init(timeInterval:0, since:date)
+    }
+    
 
     /**
      Format DICOM DateTime
@@ -156,6 +165,7 @@ extension Date {
         
         return nil
     }
+    
     
 
     /**

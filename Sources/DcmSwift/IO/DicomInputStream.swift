@@ -146,14 +146,8 @@ public class DicomInputStream {
                                                             
                 // append element to sub-datasets
                 if !dataset.isCorrupted {
-                    if newElement.group != DicomConstants.metaInformationGroup {
-                        dataset.datasetElements.append(newElement)
-                    }
-                    else {
-                        dataset.metaInformationHeaderElements.append(newElement)
-                    }
+                    dataset.add(element: newElement)
                     
-                    dataset.allElements.append(newElement)
                 } else {
                     throw StreamError.datasetIsCorrupted(message: "Dataset is corrupted")
                 }
@@ -166,6 +160,8 @@ public class DicomInputStream {
         
         return dataset
     }
+    
+
 
     
     private func forward(by bytes: Int) {

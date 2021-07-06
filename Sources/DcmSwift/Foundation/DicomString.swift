@@ -34,4 +34,10 @@ extension String {
         let letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         return String((0..<length).map{ _ in letters.randomElement()! })
     }
+    
+    public mutating func indent(level:Int) {
+        for _ in 0..<level {
+            self += "\t"
+        }
+    }
 }

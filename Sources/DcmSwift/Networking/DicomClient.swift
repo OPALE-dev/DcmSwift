@@ -70,6 +70,31 @@ public class DicomClient : DicomService, StreamDelegate {
         
         association.request() { (accepted, receivedMessage, error) in
             if accepted {
+                
+                if let receivedMsg = receivedMessage {
+                    Logger.debug("I AM RECEIVED")
+                    Logger.debug(receivedMsg.debugDescription)
+                    
+                    
+      
+                    if let transferSyntax = receivedMsg.association.acceptedPresentationContexts.values.first?.transferSyntaxes.first {
+                        Logger.debug(transferSyntax)
+                        association.acceptedTransferSyntax = transferSyntax
+                    } else {
+                        // TODO throw error
+                        Logger.debug("Meh")
+                    }
+                     
+                    
+                    
+                } else {
+                    Logger.debug("I AM NOT RECEIVED")
+                }
+                
+                if let transferSyntax = association.acceptedTransferSyntax {
+                    Logger.debug("transferSyntax here")
+                }
+                
                 if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
                     association.write(message: message, readResponse: true, completion: completion)
                     
@@ -91,7 +116,11 @@ public class DicomClient : DicomService, StreamDelegate {
         let association = DicomAssociation(socket: self.socket, callingAET: self.localEntity, calledAET: self.remoteEntity)
         
         // add C-FIND Study Root Query Level
-        association.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND)
+        //association.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND)
+        // Add all know storage SOP classes (maybe not the best approach on client side?)
+        for abstractSyntax in DicomConstants.storageSOPClasses {
+            association.addPresentationContext(abstractSyntax: abstractSyntax)
+        }
         
         // request assoc
         association.request() { (accepted, receivedMessage, error) in
@@ -133,7 +162,7 @@ public class DicomClient : DicomService, StreamDelegate {
                     if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_STORE_RQ, association: association) as? CStoreRQ {
                         message.dicomFile = DicomFile(forPath: f)
                         
-                        association.write(message: message, readResponse: true, completion: completion)
+                        association.write(message: message, readResponse: false, completion: completion)
                         
                         progression(index)
                         index += 1
