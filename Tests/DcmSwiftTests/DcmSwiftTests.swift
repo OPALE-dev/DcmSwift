@@ -23,13 +23,13 @@ class DcmSwiftTests: XCTestCase {
     // Configure the test suite with the following boolean attributes
     
     /// Run tests on DICOM Date and Time
-    private static var testDicomDateAndTime     = false
+    private static var testDicomDateAndTime     = true
     
     /// Run tests to read files (rely on embedded test files, dynamically generated)
-    private static var testDicomFileRead        = false
+    private static var testDicomFileRead        = true
     
     /// Run tests to write files (rely on embedded test files, dynamically generated)
-    private static var testDicomFileWrite       = false
+    private static var testDicomFileWrite       = true
     
     /// Run tests to update dataset (rely on embedded test files, dynamically generated)
     private static var testDicomDataSet         = false
@@ -38,7 +38,7 @@ class DcmSwiftTests: XCTestCase {
     private static var testDicomImage           = false
     
     /// Run Age String (AS VR) related tests
-    private static var testAgeString            = false
+    private static var testAgeString            = true
     
     /// Run
     private static var testUID                  = true
