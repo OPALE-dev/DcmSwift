@@ -1,0 +1,15 @@
+stages:
+  - build
+  - test
+
+build:
+  script:
+    - swift build -c debug
+  tags:
+    - swift
+    
+test:
+  script:
+    - swift test
+  tags:
+    - swift
