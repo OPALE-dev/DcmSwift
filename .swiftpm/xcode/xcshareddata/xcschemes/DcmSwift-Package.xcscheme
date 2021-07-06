@@ -132,6 +132,20 @@
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "DcmFind"
+               BuildableName = "DcmFind"
+               BlueprintName = "DcmFind"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -166,9 +180,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DcmSR"
-            BuildableName = "DcmSR"
-            BlueprintName = "DcmSR"
+            BlueprintIdentifier = "DcmFind"
+            BuildableName = "DcmFind"
+            BlueprintName = "DcmFind"
             ReferencedContainer = "container:">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -192,9 +206,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DcmSR"
-            BuildableName = "DcmSR"
-            BlueprintName = "DcmSR"
+            BlueprintIdentifier = "DcmFind"
+            BuildableName = "DcmFind"
+            BlueprintName = "DcmFind"
             ReferencedContainer = "container:">
          </BuildableReference>
       </BuildableProductRunnable>

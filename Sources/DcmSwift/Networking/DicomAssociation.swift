@@ -127,7 +127,9 @@ public class DicomAssociation : NSObject {
         self.presentationContexts[ctID] = pc
     }
     
-    
+    /*
+     ASSOCIATION RQ -> AC procedure
+     */
     public func request(completion: @escaping PDUCompletion) {
         if let message = PDUEncoder.shared.createAssocMessage(pduType: .associationRQ, association: self) as? PDUMessage {
             message.debugDescription = "\n  -> Application Context Name: \(DicomConstants.applicationContextName)\n"
@@ -145,7 +147,23 @@ public class DicomAssociation : NSObject {
             message.debugDescription.append("  -> User Informations:\n")
             message.debugDescription.append("    -> Local Max PDU: \(self.maxPDULength)\n")
             
-            self.write(message: message, readResponse: true, completion: completion)
+            let response = self.write(message: message, readResponse: true, completion: completion)
+            
+            
+            
+            
+            
+            // Association AC message contains the accepted transfer syntax !
+            if let transferSyntax = response?.association.acceptedPresentationContexts.values.first?.transferSyntaxes.first {
+                Logger.debug("ABALABABIBADABADAAAADAAAADADADADADA")
+                Logger.debug(transferSyntax)
+                self.acceptedTransferSyntax = transferSyntax
+            } else {
+                // TODO throw error
+                Logger.debug("Meh")
+            }
+            
+            completion(true, response, nil)
             
             return
         }
@@ -265,7 +283,7 @@ public class DicomAssociation : NSObject {
     }
     
     
-    public func write(message:PDUMessage, readResponse:Bool = false, completion: PDUCompletion? = nil) {
+    public func write(message:PDUMessage, readResponse:Bool = false, completion: PDUCompletion? = nil) -> PDUMessage? {
         do {
             let data = message.data()
             try socket.write(from: data)
@@ -282,13 +300,29 @@ public class DicomAssociation : NSObject {
             
             if !readResponse {
                 completion?(true, nil, nil)
-                return
+                return nil
+            }
+            
+            if let transferSyntax = self.acceptedTransferSyntax {
+                Logger.debug("write after response \(transferSyntax)")
+                let tsName  = DicomSpec.shared.nameForUID(withUID: transferSyntax)
+                Logger.debug(tsName)
+                
+      
+                
+            } else {
+                Logger.debug("TRANSFER SYNTAX IS NIL")
             }
             
             let response = self.readResponse(forMessage: message, completion: completion)
-            
+        
+            Logger.debug("J'AI UNE REPONSE")
             Logger.info("RECEIVE \(response?.messageName() ?? "UNKNOW-DIMSE")")
             Logger.debug(message.debugDescription)
+
+            
+            Logger.debug(response?.debugDescription ?? "")
+            Logger.debug(response?.association.debugDescription ?? "")
             
             // Special case: Only one « Unsupported Abstract Syntaxes (Result: 0x3) » in returned accepted presentation contexts
             if self.acceptedPresentationContexts.count == 1 {
@@ -299,15 +333,17 @@ public class DicomAssociation : NSObject {
                                                                       realm: .custom))
                         self.close()
                         
-                        return
+                        return response
                     }
                 }
             }
             
             completion?(true, response, nil)
+            return response
         } catch let e {
             print(e)
             completion?(false, nil, nil)
+            return nil
         }
     }
     

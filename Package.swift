@@ -66,6 +66,12 @@ let package = Package(
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
+        .target(
+            name: "DcmFind",
+            dependencies: [
+                "DcmSwift",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ]),
         .testTarget(
             name: "DcmSwiftTests",
             dependencies: ["DcmSwift"],
