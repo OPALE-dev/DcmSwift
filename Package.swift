@@ -20,7 +20,8 @@ let package = Package(
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         .package(name: "Socket", url: "https://github.com/Kitura/BlueSocket.git", from:"1.0.8"),
-        .package(url: "https://github.com/apple/swift-argument-parser", from: "0.4.0")
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "0.4.0"),
+        .package(name: "Html", url: "https://github.com/pointfreeco/swift-html.git", from: "0.3.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -28,7 +29,7 @@ let package = Package(
         
         .target(
             name: "DcmSwift",
-            dependencies: [ "Socket" ]),
+            dependencies: [ "Socket", "Html" ]),
         .target(
             name: "DcmAnonymize",
             dependencies: [
