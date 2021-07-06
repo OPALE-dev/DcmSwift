@@ -10,17 +10,51 @@ import DcmSwift
 import ArgumentParser
 
 struct DcmSR: ParsableCommand {
-    @Argument(help: "Path of DICOM SR file to print")
-    var sourcePath: String
+    static var configuration = CommandConfiguration(
+            abstract: "A tool to extract DICOM SR data",
+            subcommands: [Dump.self, Html.self],
+            defaultSubcommand: Dump.self)
+    
+    struct Options: ParsableArguments {
+        @Argument(help: "Path of DICOM SR input file ")
+        var dicomPath: String
+    }
+}
 
-    mutating func run() throws {
-        if let dicomFile = DicomFile(forPath: sourcePath) {
-            if let doc = dicomFile.structuredReportDocument {
-                print(doc)
-                
-                let dest = NSString(string: sourcePath).deletingPathExtension.appending(".html5")
-                
-                try? doc.html.write(to: URL(fileURLWithPath: dest), atomically: true, encoding: .utf8)
+extension DcmSR {
+    struct Dump: ParsableCommand {
+        static var configuration
+            = CommandConfiguration(abstract: "Print the DICOM SR Tree")
+
+        @OptionGroup var options: DcmSR.Options
+
+        mutating func run() throws {
+            if let dicomFile = DicomFile(forPath: options.dicomPath) {
+                if let doc = dicomFile.structuredReportDocument {
+                    print(doc)
+                }
+            }
+        }
+    }
+
+    struct Html: ParsableCommand {
+        static var configuration
+            = CommandConfiguration(abstract: "Convert DICOM SR to HTML")
+
+        @OptionGroup var options: DcmSR.Options
+        
+        @Argument(help: "Path of HTML output file ")
+        var htmlPath: String
+
+        mutating func run() throws {
+            if let dicomFile = DicomFile(forPath: options.dicomPath) {
+                if let doc = dicomFile.structuredReportDocument {
+                    let html = doc.html
+                    
+                    print(html)
+                    
+                    try? html.write(to: URL(fileURLWithPath: htmlPath), atomically: true, encoding: .utf8)
+                }
             }
         }
     }
