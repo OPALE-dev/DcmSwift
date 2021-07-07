@@ -42,6 +42,9 @@ class DcmSwiftTests: XCTestCase {
     
     /// Run
     private static var testUID                  = true
+    
+    /// Run DicomRT helpers tests
+    private static var testRT                   = true
 
     
     internal var filePath:String!
@@ -153,6 +156,12 @@ class DcmSwiftTests: XCTestCase {
                 
                 DcmSwiftTests.addFileTest(withName: "DicomImage", inSuite: suite, withPath:path, block: block)
             }
+        }
+        
+        if testRT {
+            suite.addTest(DcmSwiftTests(selector: #selector(testIsValid)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImageWidth)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImageHeight)))
         }
         
         return suite
@@ -766,6 +775,66 @@ class DcmSwiftTests: XCTestCase {
         let output: String = String(data: data, encoding: String.Encoding.utf8)!
         
         return output
+    }
+    
+    
+    // Poulpy
+    
+    // RTDose tests
+    
+    public func testIsValid() {
+
+        // TODO get files under RT folder, doesn't work atm; workaround, use filter to get "rt_" files
+        var paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
+        paths = paths.filter { $0.contains("rt_") }
+        
+        paths.forEach { path in
+            let rtDose = RTDose.init(forPath: path)
+            _ = rtDose?.isValid()
+        }
+        
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let rtDose = RTDose.init(forPath: p) {
+            XCTAssertTrue(rtDose.isValid())
+        }
+        
+        
+        
+        let path2 = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular", ofType: "dcm")
+        guard let p2 = path2 else {
+            return
+        }
+        
+        if let rtDose = RTDose.init(forPath: p2) {
+            XCTAssertFalse(rtDose.isValid())
+        }
+    }
+    
+    public func testGetDoseImageWidth() {
+        
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let rtDose = RTDose.init(forPath: p) {
+            XCTAssertEqual((rtDose.getDoseImageWidth()), 10)
+        }
+    }
+    
+    public func testGetDoseImageHeight() {
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let rtDose = RTDose.init(forPath: p) {
+            XCTAssertEqual((rtDose.getDoseImageHeight()), 10)
+        }
     }
 }
 
