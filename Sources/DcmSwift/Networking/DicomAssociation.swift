@@ -7,8 +7,7 @@
 //
 
 import Foundation
-
-import Socket
+import NIO
 
 
 public typealias ConnectCompletion = (_ ok:Bool, _ error:DicomError?) -> Void
@@ -96,7 +95,7 @@ public class DicomAssociation : NSObject {
     public var remoteImplementationUID:String?
     public var remoteImplementationVersion:String?
     
-    private var socket:Socket!
+    private var channel:Channel!
     public var protocolVersion:Int = 1
     public var contextID:UInt8 = 1
     var isPending:Bool = false
@@ -105,19 +104,19 @@ public class DicomAssociation : NSObject {
     /*
      Initialize an Association for a Local to Remote connection, i.e. send to a remote DICOM entity
      */
-    public init(socket:Socket, callingAET:DicomEntity, calledAET:DicomEntity, origin: Origin = .Local) {
+    public init(channel:Channel, callingAET:DicomEntity, calledAET:DicomEntity, origin: Origin = .Local) {
         self.calledAET  = calledAET
         self.callingAET = callingAET
-        self.socket     = socket
+        self.channel    = channel
     }
     
     
     /*
      Initialize an Association for a Remote to Local connection, i.e. received from a remote DICOM entity
      */
-    public init(socket:Socket, calledAET:DicomEntity, origin: Origin = .Remote) {
+    public init(channel:Channel, calledAET:DicomEntity, origin: Origin = .Remote) {
         self.calledAET  = calledAET
-        self.socket     = socket
+        self.channel    = channel
     }
     
     
@@ -147,16 +146,12 @@ public class DicomAssociation : NSObject {
             message.debugDescription.append("  -> User Informations:\n")
             message.debugDescription.append("    -> Local Max PDU: \(self.maxPDULength)\n")
             
-            let response = self.write(message: message, readResponse: true, completion: completion)
-            
-            
-            
+            let response = self.write(message: message, readResponse: false, completion: completion)
+
             
             
             // Association AC message contains the accepted transfer syntax !
             if let transferSyntax = response?.association.acceptedPresentationContexts.values.first?.transferSyntaxes.first {
-                Logger.debug("ABALABABIBADABADAAAADAAAADADADADADA")
-                Logger.debug(transferSyntax)
                 self.acceptedTransferSyntax = transferSyntax
             } else {
                 // TODO throw error
@@ -188,7 +183,7 @@ public class DicomAssociation : NSObject {
             }
             
             // Build calling AET Dicom Entity
-            self.callingAET = DicomEntity(title: associationRQ.remoteCallingAETitle!, hostname: self.socket!.remoteHostname, port: Int(self.socket!.remotePort))
+            self.callingAET = DicomEntity(title: associationRQ.remoteCallingAETitle!, hostname: channel!.remoteAddress!.description, port: channel!.remoteAddress!.port!)
             
             // check presentation contexts ?
             
@@ -207,138 +202,126 @@ public class DicomAssociation : NSObject {
     
     
     
-    public func listen(withCompletion completion:((_ socket:Socket) -> Void)?) {
-        //var listen = true
-        //var message = self.readMessage()
-
-        while let message = self.readMessage() {
-            if let response = message.handleRequest() {
-                self.write(message: response)
-            }
-        }
-        
-        Logger.debug("Association ended")
-        completion?(self.socket)
+    public func listen(withCompletion completion:((_ channel:Channel) -> Void)?) {
+//        //var listen = true
+//        //var message = self.readMessage()
+//
+//        while let message = self.readMessage() {
+//            if let response = message.handleRequest() {
+//                self.write(message: response)
+//            }
+//        }
+//
+//        Logger.debug("Association ended")
+//        completion?(self.socket)
     }
     
     
     
     public func reject(withResult result: RejectResult, source: RejectSource, reason: UInt8) {
-        if self.socket.isConnected {
-            do {
-                // send A-Association-RJ message
-                if let message = PDUEncoder.shared.createAssocMessage(pduType: .associationRJ, association: self) as? AssociationRJ {
-                    message.result = result
-                    message.source = source
-                    message.reason = reason
-                    
-                    let data = message.data()
-                    
-                    Logger.info("SEND A-ASSOCIATION-RJ")
-                    
-                    try socket.write(from: data)
-                }
-                
-            } catch let e {
-                print(e)
-            }
+        // send A-Association-RJ message
+        if let message = PDUEncoder.shared.createAssocMessage(pduType: .associationRJ, association: self) as? AssociationRJ {
+            message.result = result
+            message.source = source
+            message.reason = reason
+            
+            let data = message.data()
+            
+            Logger.info("SEND A-ASSOCIATION-RJ")
+            
+            self.write(data)
+            //try socket.write(from: data)
         }
+
     }
     
     
     public func close() {
-        if self.socket.isConnected && self.associationAccepted {
-            do {
-                // send A-Release-RQ message
-                if let message = PDUEncoder.shared.createAssocMessage(pduType: .releaseRQ, association: self) {
-                    let data = message.data()
-                    
-                    Logger.info("SEND A-RELEASE-RQ", "Association")
-                    
-                    try socket.write(from: data)
-                    
-                    self.socket.close()
-                }
-
-            } catch let e {
-                print(e)
+        if self.associationAccepted {
+            // send A-Release-RQ message
+            if let message = PDUEncoder.shared.createAssocMessage(pduType: .releaseRQ, association: self) {
+                let data = message.data()
+                
+                Logger.info("SEND A-RELEASE-RQ", "Association")
+                
+                self.write(data)
+                
+                channel.close(mode: .all, promise: nil)
             }
         }
     }
     
     
     public func abort() {
-        do {
-            // send A-Abort message
-            if let message = PDUEncoder.shared.createAssocMessage(pduType: .abort, association: self) {
-                let data = message.data()
-                
-                Logger.info("SEND A-ABORT", "Association")
-                
-                try socket.write(from: data)
-            }
-        } catch let e {
-            print(e)
+        // send A-Abort message
+        if let message = PDUEncoder.shared.createAssocMessage(pduType: .abort, association: self) {
+            let data = message.data()
+            
+            Logger.info("SEND A-ABORT", "Association")
+            
+            self.write(data)
         }
     }
     
     
-    public func write(message:PDUMessage, readResponse:Bool = false, completion: PDUCompletion? = nil) -> PDUMessage? {
-        do {
-            let data = message.data()
-            try socket.write(from: data)
-            
-            Logger.info("SEND \(message.messageName() )")
-            Logger.debug(message.debugDescription)
-            
-            for messageData in message.messagesData() {
-                Logger.info("SEND \(message.messageName())-DATA")
-                if messageData.count > 0 {
-                    try socket.write(from: messageData)
-                }
-            }
-            
-            if !readResponse {
-                completion?(true, nil, nil)
-                return nil
-            }
-            
-            if let transferSyntax = self.acceptedTransferSyntax {
-                Logger.debug("write after response \(transferSyntax)")
-                let tsName  = DicomSpec.shared.nameForUID(withUID: transferSyntax)
-                Logger.debug(tsName)
-            }
-            
-            let response = self.readResponse(forMessage: message, completion: completion)
+    private func write(_ data:Data) {
+        let buffer = channel.allocator.buffer(bytes: data)
         
-            Logger.info("RECEIVE \(response?.messageName() ?? "UNKNOW-DIMSE")")
-            Logger.debug(message.debugDescription)
-
-            
-            Logger.debug(response?.debugDescription ?? "")
-            Logger.debug(response?.association.debugDescription ?? "")
-            
-            // Special case: Only one « Unsupported Abstract Syntaxes (Result: 0x3) » in returned accepted presentation contexts
-            if self.acceptedPresentationContexts.count == 1 {
-                for (_,v) in self.acceptedPresentationContexts {
-                    if v.result == 0x3 {
-                        completion?(false, response, DicomError(description: "Unsupported Abstract Syntaxes",
-                                                                      level: .error,
-                                                                      realm: .custom))
-                        self.close()
-                        
-                        return response
-                    }
-                }
+        channel.write(buffer, promise: nil)
+    }
+    
+    
+    public func write(message:PDUMessage, readResponse:Bool = false, completion: PDUCompletion? = nil) -> PDUMessage? {
+        let data = message.data()
+        
+        self.write(data)
+        
+        Logger.info("SEND \(message.messageName() )")
+        Logger.debug(message.debugDescription)
+        
+        for messageData in message.messagesData() {
+            Logger.info("SEND \(message.messageName())-DATA")
+            if messageData.count > 0 {
+                self.write(messageData)
             }
-            
-            completion?(true, response, nil)
-            return response
-        } catch let e {
-            print(e)
-            completion?(false, nil, nil)
+        }
+        
+        if !readResponse {
+            completion?(true, nil, nil)
             return nil
         }
+        
+        if let transferSyntax = self.acceptedTransferSyntax {
+            Logger.debug("write after response \(transferSyntax)")
+            let tsName  = DicomSpec.shared.nameForUID(withUID: transferSyntax)
+            Logger.debug(tsName)
+        }
+        
+        let response = self.readResponse(forMessage: message, completion: completion)
+    
+        Logger.info("RECEIVE \(response?.messageName() ?? "UNKNOW-DIMSE")")
+        Logger.debug(message.debugDescription)
+
+        
+        Logger.debug(response?.debugDescription ?? "")
+        Logger.debug(response?.association.debugDescription ?? "")
+        
+        // Special case: Only one « Unsupported Abstract Syntaxes (Result: 0x3) » in returned accepted presentation contexts
+        if self.acceptedPresentationContexts.count == 1 {
+            for (_,v) in self.acceptedPresentationContexts {
+                if v.result == 0x3 {
+                    completion?(false, response, DicomError(description: "Unsupported Abstract Syntaxes",
+                                                                  level: .error,
+                                                                  realm: .custom))
+                    self.close()
+                    
+                    return response
+                }
+            }
+        }
+        
+        completion?(true, response, nil)
+        return response
     }
     
     
@@ -347,40 +330,40 @@ public class DicomAssociation : NSObject {
         var message:PDUMessage? = nil
         var readData = Data()
         
-        do {
-            let bytesRead = try socket.read(into: &readData)
-            
-            if bytesRead > 0 {
-                if let f = readData.first, PDUType.isSupported(f) {
-                    if let pt = PDUType(rawValue: f) {
-                        if PDUType(rawValue: f) == PDUType.dataTF {
-                            // we received a command message (PDUMessage as DataTF and inherited)
-                            let commandData = readData.subdata(in: 12..<readData.count)
-                            if commandData.count > 0 {
-                                // we use a DicomInputStream to read th dataset
-                                let inputStream = DicomInputStream(data: commandData)
-                                
-                                if let dataset = try? inputStream.readDataset() {
-                                    // we create a response (PDUMessage of DIMSE family) based on received CommandField value using PDUDecoder
-                                    if let command = dataset.element(forTagName: "CommandField") {
-                                        let c = command.data.toUInt16(byteOrder: .LittleEndian)
-                                        if let cf = CommandField(rawValue: c) {
-                                            message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, commandField: cf, association: self) as? PDUMessage
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            // we received an association message
-                            message = PDUDecoder.shared.receiveAssocMessage(data: readData, pduType: pt, association: self) as? PDUMessage
-                        }
-                    }
-                }
-            }
-        }
-        catch let error {
-            print(error)
-        }
+//        do {
+//            let bytesRead = try socket.read(into: &readData)
+//
+//            if bytesRead > 0 {
+//                if let f = readData.first, PDUType.isSupported(f) {
+//                    if let pt = PDUType(rawValue: f) {
+//                        if PDUType(rawValue: f) == PDUType.dataTF {
+//                            // we received a command message (PDUMessage as DataTF and inherited)
+//                            let commandData = readData.subdata(in: 12..<readData.count)
+//                            if commandData.count > 0 {
+//                                // we use a DicomInputStream to read th dataset
+//                                let inputStream = DicomInputStream(data: commandData)
+//
+//                                if let dataset = try? inputStream.readDataset() {
+//                                    // we create a response (PDUMessage of DIMSE family) based on received CommandField value using PDUDecoder
+//                                    if let command = dataset.element(forTagName: "CommandField") {
+//                                        let c = command.data.toUInt16(byteOrder: .LittleEndian)
+//                                        if let cf = CommandField(rawValue: c) {
+//                                            message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, commandField: cf, association: self) as? PDUMessage
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                        } else {
+//                            // we received an association message
+//                            message = PDUDecoder.shared.receiveAssocMessage(data: readData, pduType: pt, association: self) as? PDUMessage
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        catch let error {
+//            print(error)
+//        }
         
         return message
     }
@@ -392,79 +375,79 @@ public class DicomAssociation : NSObject {
         
         isPending = true
         
-        do {
-            repeat {
-                //let (r, _) = try self.socket.isReadableOrWritable(waitForever: false, timeout: DicomConstants.dicomTimeOut)
-                // we read only if the buffer is empty
-                if readData.count == 0 {
-                    let readSize = try socket.read(into: &readData)
-                    
-                    if readSize == 0 {
-                        isPending = false
-                        break
-                    }
-                }
-                
-                // Check for PDU data
-                if let f = readData.first, PDUType.isSupported(f) {
-                    let pduLength = readData.subdata(in: 2..<6).toInt32().bigEndian
-                    var dataLength = readData.count
-                    
-                    // Reassemble data fragments if needed for DATA-TF messages
-                    while pduLength > 4 && dataLength < pduLength {
-                        // read more if PDU is incomplete
-                        let _ = try socket.read(into: &readData)
-                        dataLength = readData.count
-                    }
-                    
-                    var messageData = Data()
-                    let messageLength = Int(pduLength + 6)
-                    
-                    // now if we have to much data, we handle this first message
-                    if dataLength > pduLength {
-                        messageData = readData.subdata(in: 0..<messageLength)
-                        // put rest back into buffer
-                        readData = readData.subdata(in: messageLength..<dataLength)
-                    } else {
-                        messageData = readData
-                        // clean buffer
-                        readData = Data()
-                    }
-                    
-                    // read message and check pending status
-                    if let r = message.handleResponse(data: messageData) {
-                        response = r
-                        
-                        if response?.pduType == PDUType.associationAC {
-                            return response
-                        }
-                        
-                        // get results from last RSP message
-                        if let cFinRQ = message as? CFindRQ {
-                            if let cFinRSP = response as? CFindRSP {
-                                cFinRSP.queryResults = cFinRQ.queryResults
-                            }
-                        }
-                        
-                        if let s = r.dimseStatus {
-                            if s.status == DIMSEStatus.Status.Pending {
-                                isPending = true
-                            }
-                            else if s.status == DIMSEStatus.Status.Success {
-                                isPending = false
-                                break
-                            }
-                        }
-                    } else {
-                        isPending = false
-                    }
-                }
-            } while (isPending == true)
-            
-        } catch let e {
-            print(e)
-            return nil
-        }
+//        do {
+//            repeat {
+//                //let (r, _) = try self.socket.isReadableOrWritable(waitForever: false, timeout: DicomConstants.dicomTimeOut)
+//                // we read only if the buffer is empty
+//                if readData.count == 0 {
+//                    let readSize = try socket.read(into: &readData)
+//
+//                    if readSize == 0 {
+//                        isPending = false
+//                        break
+//                    }
+//                }
+//
+//                // Check for PDU data
+//                if let f = readData.first, PDUType.isSupported(f) {
+//                    let pduLength = readData.subdata(in: 2..<6).toInt32().bigEndian
+//                    var dataLength = readData.count
+//
+//                    // Reassemble data fragments if needed for DATA-TF messages
+//                    while pduLength > 4 && dataLength < pduLength {
+//                        // read more if PDU is incomplete
+//                        let _ = try socket.read(into: &readData)
+//                        dataLength = readData.count
+//                    }
+//
+//                    var messageData = Data()
+//                    let messageLength = Int(pduLength + 6)
+//
+//                    // now if we have to much data, we handle this first message
+//                    if dataLength > pduLength {
+//                        messageData = readData.subdata(in: 0..<messageLength)
+//                        // put rest back into buffer
+//                        readData = readData.subdata(in: messageLength..<dataLength)
+//                    } else {
+//                        messageData = readData
+//                        // clean buffer
+//                        readData = Data()
+//                    }
+//
+//                    // read message and check pending status
+//                    if let r = message.handleResponse(data: messageData) {
+//                        response = r
+//
+//                        if response?.pduType == PDUType.associationAC {
+//                            return response
+//                        }
+//
+//                        // get results from last RSP message
+//                        if let cFinRQ = message as? CFindRQ {
+//                            if let cFinRSP = response as? CFindRSP {
+//                                cFinRSP.queryResults = cFinRQ.queryResults
+//                            }
+//                        }
+//
+//                        if let s = r.dimseStatus {
+//                            if s.status == DIMSEStatus.Status.Pending {
+//                                isPending = true
+//                            }
+//                            else if s.status == DIMSEStatus.Status.Success {
+//                                isPending = false
+//                                break
+//                            }
+//                        }
+//                    } else {
+//                        isPending = false
+//                    }
+//                }
+//            } while (isPending == true)
+//
+//        } catch let e {
+//            print(e)
+//            return nil
+//        }
         
         return response
     }

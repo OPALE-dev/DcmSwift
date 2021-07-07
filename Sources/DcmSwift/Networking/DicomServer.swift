@@ -72,7 +72,8 @@ public class DicomServer: DicomService {
                     Logger.debug("Accepted connection from: \(newSocket.remoteHostname) on port \(newSocket.remotePort)")
                     
                     // handle new association
-                    self.handleAssociation(DicomAssociation(socket: newSocket, calledAET: self.calledAET), socket: newSocket)
+                    // TODO: commented because switching to SwiftNIO
+                    // self.handleAssociation(DicomAssociation(socket: newSocket, calledAET: self.calledAET), socket: newSocket)
                 }
                 
             } while self.continueRunning
@@ -103,17 +104,19 @@ public class DicomServer: DicomService {
         Logger.verbose("Server Presentation Contexts: \(association.presentationContexts)");
         
         // read ASSOCIATION-AC
-        if association.acknowledge() {
-            Logger.debug("Add association: [\(socket.socketfd)] calledAET:\(String(describing: association.calledAET)) <-> callingAET:\(String(describing: association.callingAET))")
-            self.connectedAssociations[socket.socketfd] = association
-            
-            // listen for DIMSE service messages (C-ECHO-RQ, C-FIND-RQ, etc.)
-            association.listen { (sock) in
-                self.connectedAssociations.removeValue(forKey: sock.socketfd)
-                Logger.debug("Remove association: [\(socket.socketfd)]")
-                
-                sock.close()
-            }
-        }
+        // TODO: commented because SwiftNIO switching
+//        if association.acknowledge() {
+//            Logger.debug("Add association: [\(socket.socketfd)] calledAET:\(String(describing: association.calledAET)) <-> callingAET:\(String(describing: association.callingAET))")
+//            self.connectedAssociations[socket.socketfd] = association
+//
+//            // listen for DIMSE service messages (C-ECHO-RQ, C-FIND-RQ, etc.)
+//            association.listen { (sock) in
+//                self.connectedAssociations.removeValue(forKey: sock.socketfd)
+//
+//                Logger.debug("Remove association: [\(socket.socketfd)]")
+//
+//                sock.close()
+//            }
+//        }
     }
 }
