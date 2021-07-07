@@ -268,10 +268,9 @@ public class DataSet: DicomObject {
         if let element = element(forTagName: name) {
             return set(value: value, toElement: element) ? element : nil
         }
-        
+                
         // element does not already exist in dataset
         if let element = DataElement(withTagName: name, dataset: self) {
-
             if element.setValue(value) {
                 allElements.append(element)
                 
@@ -365,6 +364,17 @@ public class DataSet: DicomObject {
         
         // write file to FS
         return FileManager.default.createFile(atPath: path, contents: data, attributes: nil)
+    }
+    
+    public func add(element:DataElement) {
+        if element.group != DicomConstants.metaInformationGroup {
+            datasetElements.append(element)
+        }
+        else {
+            metaInformationHeaderElements.append(element)
+        }
+            
+        allElements.append(element)
     }
 }
 
