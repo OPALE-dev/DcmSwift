@@ -14,7 +14,10 @@ public typealias ConnectCompletion = (_ ok:Bool, _ error:DicomError?) -> Void
 public typealias PDUCompletion = (_ ok:Bool, _ response:PDUMessage?, _ error:DicomError?) -> Void
 
 
-public class DicomAssociation : NSObject {
+public class DicomAssociation : ChannelInboundHandler {
+    public typealias InboundIn = ByteBuffer
+    public typealias OutboundOut = ByteBuffer
+    
     public enum Origin {
         case Local
         case Remote
@@ -96,8 +99,11 @@ public class DicomAssociation : NSObject {
     public var remoteImplementationVersion:String?
     
     private var channel:Channel!
+    private var currentCompletion:PDUCompletion!
+    
     public var protocolVersion:Int = 1
     public var contextID:UInt8 = 1
+    
     var isPending:Bool = false
     
     
@@ -126,6 +132,76 @@ public class DicomAssociation : NSObject {
         self.presentationContexts[ctID] = pc
     }
     
+    
+    
+    
+    
+    //MARK: -
+    
+    public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+        var buffer          = self.unwrapInboundIn(data)
+        let messageLength   = buffer.readableBytes
+        
+        print("channelRead")
+                
+        if let bytes = buffer.readBytes(length: messageLength) {
+            let readData = Data(bytes)
+            
+            if let f = readData.first, PDUType.isSupported(f) {
+                if let pt = PDUType(rawValue: f) {
+                    if PDUType(rawValue: f) == PDUType.dataTF {
+                        // we received a command message (PDUMessage as DataTF and inherited)
+                        let commandData = readData.subdata(in: 12..<readData.count)
+                        if commandData.count > 0 {
+                            // we use a DicomInputStream to read th dataset
+                            let inputStream = DicomInputStream(data: commandData)
+
+                            if let dataset = try? inputStream.readDataset() {
+                                // we create a response (PDUMessage of DIMSE family) based on received CommandField value using PDUDecoder
+                                if let command = dataset.element(forTagName: "CommandField") {
+                                    let c = command.data.toUInt16(byteOrder: .LittleEndian)
+                                    if let cf = CommandField(rawValue: c) {
+                                        let message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, commandField: cf, association: self) as? PDUMessage
+                                        
+                                        if currentCompletion != nil {
+                                            currentCompletion!(true, message, nil)
+                                            
+                                            currentCompletion = nil
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // we received an association message
+                        let message = PDUDecoder.shared.receiveAssocMessage(data: readData, pduType: pt, association: self) as? PDUMessage
+                        
+                        if let transferSyntax = self.acceptedPresentationContexts.values.first?.transferSyntaxes.first {
+                            self.acceptedTransferSyntax = transferSyntax
+                        }
+                        
+                        if currentCompletion != nil {
+                            currentCompletion!(true, message, nil)
+                            
+                            currentCompletion = nil
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public func errorCaught(context: ChannelHandlerContext, error: Error) {
+        print("error: ", error)
+
+        // As we are not really interested getting notified on success or failure we just pass nil as promise to
+        // reduce allocations.
+        context.close(promise: nil)
+    }
+    
+    
+    
+    // MARK: -
     /*
      ASSOCIATION RQ -> AC procedure
      */
@@ -146,23 +222,11 @@ public class DicomAssociation : NSObject {
             message.debugDescription.append("  -> User Informations:\n")
             message.debugDescription.append("    -> Local Max PDU: \(self.maxPDULength)\n")
             
-            let response = self.write(message: message, readResponse: false, completion: completion)
-
-            
-            
-            // Association AC message contains the accepted transfer syntax !
-            if let transferSyntax = response?.association.acceptedPresentationContexts.values.first?.transferSyntaxes.first {
-                self.acceptedTransferSyntax = transferSyntax
-            } else {
-                // TODO throw error
-                Logger.debug("Meh")
-            }
-            
-            completion(true, response, nil)
+            self.write(message: message, readResponse: true, completion: completion)
             
             return
         }
-    
+        
         completion(false, nil, nil)
     }
     
@@ -267,15 +331,19 @@ public class DicomAssociation : NSObject {
     private func write(_ data:Data) {
         let buffer = channel.allocator.buffer(bytes: data)
         
-        channel.write(buffer, promise: nil)
+        channel.writeAndFlush(buffer, promise: nil)
     }
     
     
-    public func write(message:PDUMessage, readResponse:Bool = false, completion: PDUCompletion? = nil) -> PDUMessage? {
+    public func write(message:PDUMessage, readResponse:Bool = false, completion: PDUCompletion? = nil) {
         let data = message.data()
+                
+        if readResponse {
+            currentCompletion = completion
+        }
         
         self.write(data)
-        
+                
         Logger.info("SEND \(message.messageName() )")
         Logger.debug(message.debugDescription)
         
@@ -286,42 +354,42 @@ public class DicomAssociation : NSObject {
             }
         }
         
-        if !readResponse {
-            completion?(true, nil, nil)
-            return nil
-        }
-        
-        if let transferSyntax = self.acceptedTransferSyntax {
-            Logger.debug("write after response \(transferSyntax)")
-            let tsName  = DicomSpec.shared.nameForUID(withUID: transferSyntax)
-            Logger.debug(tsName)
-        }
-        
-        let response = self.readResponse(forMessage: message, completion: completion)
-    
-        Logger.info("RECEIVE \(response?.messageName() ?? "UNKNOW-DIMSE")")
-        Logger.debug(message.debugDescription)
-
-        
-        Logger.debug(response?.debugDescription ?? "")
-        Logger.debug(response?.association.debugDescription ?? "")
-        
-        // Special case: Only one « Unsupported Abstract Syntaxes (Result: 0x3) » in returned accepted presentation contexts
-        if self.acceptedPresentationContexts.count == 1 {
-            for (_,v) in self.acceptedPresentationContexts {
-                if v.result == 0x3 {
-                    completion?(false, response, DicomError(description: "Unsupported Abstract Syntaxes",
-                                                                  level: .error,
-                                                                  realm: .custom))
-                    self.close()
-                    
-                    return response
-                }
-            }
-        }
-        
-        completion?(true, response, nil)
-        return response
+//        if !readResponse {
+//            completion?(true, nil, nil)
+//            return nil
+//        }
+//
+//        if let transferSyntax = self.acceptedTransferSyntax {
+//            Logger.debug("write after response \(transferSyntax)")
+//            let tsName  = DicomSpec.shared.nameForUID(withUID: transferSyntax)
+//            Logger.debug(tsName)
+//        }
+//
+//        let response = self.readResponse(forMessage: message, completion: completion)
+//
+//        Logger.info("RECEIVE \(response?.messageName() ?? "UNKNOW-DIMSE")")
+//        Logger.debug(message.debugDescription)
+//
+//
+//        Logger.debug(response?.debugDescription ?? "")
+//        Logger.debug(response?.association.debugDescription ?? "")
+//
+//        // Special case: Only one « Unsupported Abstract Syntaxes (Result: 0x3) » in returned accepted presentation contexts
+//        if self.acceptedPresentationContexts.count == 1 {
+//            for (_,v) in self.acceptedPresentationContexts {
+//                if v.result == 0x3 {
+//                    completion?(false, response, DicomError(description: "Unsupported Abstract Syntaxes",
+//                                                                  level: .error,
+//                                                                  realm: .custom))
+//                    self.close()
+//
+//                    return response
+//                }
+//            }
+//        }
+//
+//        completion?(true, response, nil)
+//        return response
     }
     
     
