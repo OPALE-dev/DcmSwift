@@ -25,9 +25,9 @@ struct DcmEcho: ParsableCommand {
     mutating func run() throws {
         let callingAE   = DicomEntity(title: callingAET, hostname: "127.0.0.1", port: 11115)
         let calledAE    = DicomEntity(title: calledAET, hostname: calledHostname, port: calledPort)
-        
+
         let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
-        
+
         client.connect { (connected, error) in
             if connected {
                 client.echo { (ok, message, error) in
@@ -39,7 +39,7 @@ struct DcmEcho: ParsableCommand {
                         if let e = error?.description {
                             Logger.error("ECHO Failed: \(e)")
                         }
-                    }                    
+                    }
                 }
             } else {
                 if let e = error?.description {

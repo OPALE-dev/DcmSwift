@@ -126,6 +126,14 @@ public class DicomAssociation : ChannelInboundHandler {
     }
     
     
+    
+    deinit {
+        print("DicomAssociation deinit")
+    }
+    
+    
+    // MARK: -
+    
     public func addPresentationContext(abstractSyntax: String, result:UInt8? = nil) {
         let ctID = self.getNextContextID()
         let pc = PresentationContext(abstractSyntax: abstractSyntax, contextID: ctID, result: result)
@@ -141,35 +149,40 @@ public class DicomAssociation : ChannelInboundHandler {
     public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         var buffer          = self.unwrapInboundIn(data)
         let messageLength   = buffer.readableBytes
-        
-        print("channelRead")
-                
+                        
         if let bytes = buffer.readBytes(length: messageLength) {
             let readData = Data(bytes)
             
             if let f = readData.first, PDUType.isSupported(f) {
                 if let pt = PDUType(rawValue: f) {
                     if PDUType(rawValue: f) == PDUType.dataTF {
+                        print("dataTF")
                         // we received a command message (PDUMessage as DataTF and inherited)
                         let commandData = readData.subdata(in: 12..<readData.count)
+                        
                         if commandData.count > 0 {
                             // we use a DicomInputStream to read th dataset
                             let inputStream = DicomInputStream(data: commandData)
-
-                            if let dataset = try? inputStream.readDataset() {
-                                // we create a response (PDUMessage of DIMSE family) based on received CommandField value using PDUDecoder
-                                if let command = dataset.element(forTagName: "CommandField") {
-                                    let c = command.data.toUInt16(byteOrder: .LittleEndian)
-                                    if let cf = CommandField(rawValue: c) {
-                                        let message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, commandField: cf, association: self) as? PDUMessage
-                                        
-                                        if currentCompletion != nil {
-                                            currentCompletion!(true, message, nil)
+                            
+                            print("commandData: \(commandData.toHex())")
+                            
+                            do {
+                                if let dataset = try inputStream.readDataset() {
+                                    print(dataset)
+                                    
+                                    // we create a response (PDUMessage of DIMSE family) based on received CommandField value using PDUDecoder
+                                    if let command = dataset.element(forTagName: "CommandField") {
+                                        let c = command.data.toUInt16(byteOrder: .LittleEndian)
+                                        if let cf = CommandField(rawValue: c) {
+                                            let message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, commandField: cf, association: self) as? PDUMessage
                                             
-                                            currentCompletion = nil
+                                            currentCompletion?(true, message, nil)
                                         }
                                     }
                                 }
+                            } catch let e {
+                                print(e)
+                                currentCompletion?(false, nil, nil)
                             }
                         }
                     } else {
@@ -180,11 +193,7 @@ public class DicomAssociation : ChannelInboundHandler {
                             self.acceptedTransferSyntax = transferSyntax
                         }
                         
-                        if currentCompletion != nil {
-                            currentCompletion!(true, message, nil)
-                            
-                            currentCompletion = nil
-                        }
+                        currentCompletion?(true, message, nil)
                     }
                 }
             }
