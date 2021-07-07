@@ -32,18 +32,16 @@ struct DcmEcho: ParsableCommand {
             if connected {
                 client.echo { (ok, message, error) in
                     print("echo completion \(ok)")
-                    
-                    if ok {
-                        if let messageName = message?.messageName() {
-                            Logger.info("ECHO Succeeded: \(messageName)")
-                        }
-                    } else {
-                        if let e = error?.description {
-                            Logger.error("ECHO Failed: \(e)")
-                        }
-                    }
 
-                    sleep(3)
+//                    if ok {
+//                        if let messageName = message?.messageName() {
+//                            Logger.info("ECHO Succeeded: \(messageName)")
+//                        }
+//                    } else {
+//                        if let e = error?.description {
+//                            Logger.error("ECHO Failed: \(e)")
+//                        }
+//                    }
                 }
             } else {
                 if let e = error?.description {
