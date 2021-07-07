@@ -14,6 +14,9 @@ import Foundation
  */
 public class DicomDir:DicomFile {
     private var offset:Int = 0
+    private var offsetFirst:Int = 0
+    private var offsetLast:Int = 0
+    
     public var index:[String] = []
     
     // PatientID:PatientName
@@ -266,34 +269,41 @@ public class DicomDir:DicomFile {
     public func createDirectoryRecordSequence() -> DataSequence? {
         let dataTag = DataTag.init(withGroup: "0004", element: "1220", byteOrder: .LittleEndian)
         let sequence:DataSequence = DataSequence(withTag: dataTag, parent: nil)
-        
+        var cpt = 1
         offset += sequence.toData().count
-        //print("sequence data count \(sequence.toData().count)")
         
         for(patientID,patientName) in patients {
-            
             let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
             let item = DataItem(withTag: tagItem, parent: sequence)
+            
+            if(cpt == 1) {
+                offsetFirst = offset
+                print("offsetFirst \(offsetFirst)")
+            } else if(cpt == patients.count) {
+                offsetLast = offset
+                print("offsetLast \(offsetLast)")
+            }
+            
             offset += item.toData().count
             
             sequence.items.append(item)
             
             let tagOffsetNext = DataTag.init(withGroup: "0004", element: "1400", byteOrder: .LittleEndian)
-            //let tagRecordInUseFlag = DataTag.init(withGroup: "0004", element: "1410", byteOrder: .LittleEndian)
+            let tagRecordInUseFlag = DataTag.init(withGroup: "0004", element: "1410", byteOrder: .LittleEndian)
             let tagID = DataTag.init(withGroup: "0010", element: "0020", byteOrder: .LittleEndian)
             let tagName = DataTag.init(withGroup: "0010", element: "0010", byteOrder: .LittleEndian)
             let tagType = DataTag.init(withGroup: "0004", element: "1430", byteOrder: .LittleEndian)
             let tagCharacterSet = DataTag.init(withGroup: "0008", element: "0005", byteOrder: .LittleEndian)
             
             let elementOffsetNext = DataElement(withTag: tagOffsetNext, parent: item)
-            //let elementRecordInUseFlag = DataElement(withTag: tagRecordInUseFlag, parent: item)
+            let elementRecordInUseFlag = DataElement(withTag: tagRecordInUseFlag, parent: item)
             let elementPatientID = DataElement(withTag: tagID, parent: item)
             let elementPatientName = DataElement(withTag: tagName, parent: item)
             let elementPatientType = DataElement(withTag: tagType, parent: item)
             let elementCharacterSet = DataElement(withTag: tagCharacterSet, parent: item)
             
-            _ = elementOffsetNext.setValue(4820) //TODO:INSERT REAL VALUE
-            //_ = elementRecordInUseFlag.setValue(-1)
+            _ = elementOffsetNext.setValue(UInt32(4820).bigEndian) //TODO:INSERT REAL VALUE
+            _ = elementRecordInUseFlag.setValue(-1)
             _ = elementPatientID.setValue(patientID)
             _ = elementPatientName.setValue(patientName)
             _ = elementPatientType.setValue("PATIENT")
@@ -301,14 +311,14 @@ public class DicomDir:DicomFile {
             
             
             offset += elementOffsetNext.toData().count
-            //offset += elementRecordInUseFlag.toData().count
+            offset += elementRecordInUseFlag.toData().count
             offset += elementPatientID.toData().count
             offset += elementPatientName.toData().count
             offset += elementPatientType.toData().count
             offset += elementCharacterSet.toData().count
         
             item.elements.append(elementOffsetNext)
-            //sitem.elements.append(elementRecordInUseFlag)
+            item.elements.append(elementRecordInUseFlag)
             item.elements.append(elementPatientType)
             item.elements.append(elementCharacterSet)
             item.elements.append(elementPatientName)
@@ -323,16 +333,21 @@ public class DicomDir:DicomFile {
                     sequence.items.append(item)
                     
                     let tagstID = DataTag.init(withGroup: "0020", element: "000d", byteOrder: .LittleEndian)
+                    let tagstDescription = DataTag.init(withGroup: "0008", element: "1030", byteOrder: .LittleEndian)
+                    let tagstDate = DataTag.init(withGroup: "0008", element: "0020", byteOrder: .LittleEndian)
+                    let tagstTime = DataTag.init(withGroup: "0008", element: "0030", byteOrder: .LittleEndian)
                     
                     let elementStudyInstanceUID = DataElement(withTag: tagstID, parent: item)
                     let elementStudyType = DataElement(withTag: tagType, parent: item)
                     
+                    _ = elementRecordInUseFlag.setValue(-1)
                     _ = elementStudyInstanceUID.setValue(studyID)
                     _ = elementStudyType.setValue("STUDY")
                     
                     offset += elementStudyInstanceUID.toData().count
                     offset += elementStudyType.toData().count
                     
+                    item.elements.append(elementRecordInUseFlag)
                     item.elements.append(elementStudyType)
                     item.elements.append(elementCharacterSet)
                     item.elements.append(elementStudyInstanceUID)
@@ -375,6 +390,9 @@ public class DicomDir:DicomFile {
                                     _ = elementImageSOP.setValue(sop)
                                     _ = elementImageType.setValue("IMAGE")
                                     
+                                    offset += elementImageSOP.toData().count
+                                    offset += elementImageType.toData().count
+                                    
                                     item.elements.append(elementImageType)
                                     item.elements.append(elementImageSOP)
                                 }
@@ -383,6 +401,7 @@ public class DicomDir:DicomFile {
                     }
                 }
             }
+            cpt += 1
         }
         
         return sequence
@@ -396,45 +415,43 @@ public class DicomDir:DicomFile {
         dataset = DataSet()
         
         // Write the Prefix Header
-        _ = dataset.set(value:"", forTagName:"FileMetaInformationGroupLength")
-        _ = dataset.set(value: Data(repeating: 0x00, count: 2), forTagName: "FileMetaInformationVersion")
+        _ = dataset.set(value: UInt32(0).bigEndian, forTagName: "FileMetaInformationGroupLength")
+        _ = dataset.set(value: Data(repeating: 0x00, count: 2), forTagName: "FileMetaInformationVersion") // WRONG DATA
         _ = dataset.set(value: "1.2.840.10008.1.3.10", forTagName: "MediaStorageSOPClassUID")
         _ = dataset.set(value: "2.25.263396925751148424850033748771929175867", forTagName: "MediaStorageSOPInstanceUID")
         _ = dataset.set(value: "1.2.840.10008.1.2.1", forTagName: "TransferSyntaxUID")
         _ = dataset.set(value: "1.2.40.0.13.1.3", forTagName: "ImplementationClassUID")
         _ = dataset.set(value: "dcm4che-5.23.3", forTagName: "ImplementationVersionName")
         
-        let headerData = dataset.toData()
-        let headerCount = headerData.count
-        print("headerData count \(headerCount)")
-        
-        _ = dataset.set(value: UInt32(headerData.count).bigEndian, forTagName: "FileMetaInformationGroupLength")
-    
+        let headerCount = dataset.toData().count
+        _ = dataset.set(value: UInt32(headerCount-12).bigEndian, forTagName: "FileMetaInformationGroupLength") // headerCount - 12 car on ne compte pas les bytes de FileMetaInformationGroupLength
+
         offset += 132 // 128 bytes preamble + 4 bytes
         offset += headerCount
         
+        // Write the DataSet
         _ = dataset.set(value: "", forTagName: "FileSetID")
+        let sizeFileSetID = dataset.toData().count - headerCount
+        offset += sizeFileSetID
         
+        _ = dataset.set(value: UInt32(000).bigEndian, forTagName:  "OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity") // offsetFirst
+        _ = dataset.set(value: UInt32(0000).bigEndian, forTagName: "OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity") // offsetLast
+        _ = dataset.set(value: UInt16(0).bigEndian, forTagName: "FileSetConsistencyFlag")
+        
+        let sizeAfterOffset = dataset.toData().count - headerCount - sizeFileSetID
+        offset += sizeAfterOffset
+                
         // Write the DirectoryRecordSequence
         if let c:DataSequence = createDirectoryRecordSequence() {
             c.length = -1
-            
             for item in c.items {
                 item.length = -1
             }
-            
             dataset.add(element: c as DataElement)
         }
         
-        print(offset)
-        
-        _ = dataset.set(value: UInt32(366).bigEndian, forTagName: "OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity")
-        _ = dataset.set(value: UInt32(4820).bigEndian, forTagName: "OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity")
-        /*
-         _ = dataset.set(value: UInt32(offset).bigEndian, forTagName: "OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity")
-         _ = dataset.set(value: UInt32(offset).bigEndian, forTagName: "OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity")
-         */
-        _ = dataset.set(value: UInt16(0).bigEndian, forTagName: "FileSetConsistencyFlag")
+        _ = dataset.set(value: UInt32(offsetFirst).bigEndian, forTagName:  "OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity") // offsetFirst
+        _ = dataset.set(value: UInt32(offsetLast).bigEndian, forTagName: "OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity") // offsetLast
         
         dataset.hasPreamble = hasPreamble
         
