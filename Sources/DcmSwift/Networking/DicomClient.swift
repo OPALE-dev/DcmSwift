@@ -11,33 +11,6 @@ import NIO
 //import Socket
 
 
-private final class ClientHandler: ChannelInboundHandler {
-    public typealias InboundIn = ByteBuffer
-    public typealias OutboundOut = ByteBuffer
-
-    private func printByte(_ byte: UInt8) {
-        #if os(Android)
-        print(Character(UnicodeScalar(byte)),  terminator:"")
-        #else
-        fputc(Int32(byte), stdout)
-        #endif
-    }
-
-    public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-        var buffer = self.unwrapInboundIn(data)
-        while let byte: UInt8 = buffer.readInteger() {
-            printByte(byte)
-        }
-    }
-
-    public func errorCaught(context: ChannelHandlerContext, error: Error) {
-        print("error: ", error)
-
-        // As we are not really interested getting notified on success or failure we just pass nil as promise to
-        // reduce allocations.
-        context.close(promise: nil)
-    }
-}
 
 
 
@@ -49,19 +22,14 @@ public class DicomClient : DicomService, StreamDelegate {
     private var isConnected:Bool = false
     
     private let group:MultiThreadedEventLoopGroup!
-    private let bootstrap:ClientBootstrap!
+    private var bootstrap:ClientBootstrap!
     private var channel:Channel!
     
     public init(localEntity: DicomEntity, remoteEntity: DicomEntity) {
         self.localEntity    = localEntity
         self.remoteEntity   = remoteEntity
         
-        self.group      = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        self.bootstrap  = ClientBootstrap(group: group)
-            .channelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
-            .channelInitializer { channel in
-                channel.pipeline.addHandler(ClientHandler())
-            }
+        self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
         
         super.init(localAET: localEntity.title)
     }
@@ -71,6 +39,18 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     public func connect(completion: ConnectCompletion) {
+        bootstrap  = ClientBootstrap(group: group)
+            .channelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
+//            .channelInitializer { channel in
+//                let assoc = DicomAssociation(channel: channel, callingAET: self.localEntity, calledAET: self.remoteEntity)
+//
+//                return channel.pipeline.addHandler(assoc)
+//            }
+        
+        defer {
+            try! group.syncShutdownGracefully()
+        }
+        
         do {
             channel = try bootstrap.connect(host: self.remoteEntity.hostname, port: self.remoteEntity.port).wait()
             
@@ -124,35 +104,25 @@ public class DicomClient : DicomService, StreamDelegate {
 
         let association = DicomAssociation(channel: self.channel, callingAET: self.localEntity, calledAET: self.remoteEntity)
 
+        _ = channel.pipeline.addHandler(association)
+        
         association.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP)
 
         association.request() { (accepted, receivedMessage, error) in
-//            if accepted {
-//
-//                if let receivedMsg = receivedMessage {
-//                    Logger.debug(receivedMsg.debugDescription)
-//
-//                    if let transferSyntax = receivedMsg.association.acceptedPresentationContexts.values.first?.transferSyntaxes.first {
-//                        Logger.debug(transferSyntax)
-//                        association.acceptedTransferSyntax = transferSyntax
-//                    }
-//                }
-//
-//                if let transferSyntax = association.acceptedTransferSyntax {
-//                    Logger.debug("transferSyntax here \(transferSyntax)")
-//                }
-//
-//                if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
-//                    association.write(message: message, readResponse: true, completion: completion)
-//
-//                    association.close()
-//                }
-//            }
-//            else {
-//                completion?(false, receivedMessage, error)
-//                association.close()
-//            }
+            if accepted {
+                if let message = receivedMessage {
+                    if let message2 = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
+                        association.write(message: message2, readResponse: true, completion: completion)
+                    
+                        //association.close()
+                        
+
+                    }
+                }
+            }
         }
+        
+        //completion?(false, nil, DicomError(description: "ECHO Error", level: .error, realm: .network))
     }
     
     
