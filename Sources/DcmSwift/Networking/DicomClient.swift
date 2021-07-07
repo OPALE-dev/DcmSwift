@@ -70,34 +70,23 @@ public class DicomClient : DicomService, StreamDelegate {
         
         association.request() { (accepted, receivedMessage, error) in
             if accepted {
-                
+
                 if let receivedMsg = receivedMessage {
-                    Logger.debug("I AM RECEIVED")
                     Logger.debug(receivedMsg.debugDescription)
-                    
-                    
-      
+
                     if let transferSyntax = receivedMsg.association.acceptedPresentationContexts.values.first?.transferSyntaxes.first {
                         Logger.debug(transferSyntax)
                         association.acceptedTransferSyntax = transferSyntax
-                    } else {
-                        // TODO throw error
-                        Logger.debug("Meh")
                     }
-                     
-                    
-                    
-                } else {
-                    Logger.debug("I AM NOT RECEIVED")
                 }
-                
+
                 if let transferSyntax = association.acceptedTransferSyntax {
-                    Logger.debug("transferSyntax here")
+                    Logger.debug("transferSyntax here \(transferSyntax)")
                 }
-                
+
                 if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
                     association.write(message: message, readResponse: true, completion: completion)
-                    
+
                     association.close()
                 }
             }

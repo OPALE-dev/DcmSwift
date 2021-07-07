@@ -307,16 +307,10 @@ public class DicomAssociation : NSObject {
                 Logger.debug("write after response \(transferSyntax)")
                 let tsName  = DicomSpec.shared.nameForUID(withUID: transferSyntax)
                 Logger.debug(tsName)
-                
-      
-                
-            } else {
-                Logger.debug("TRANSFER SYNTAX IS NIL")
             }
             
             let response = self.readResponse(forMessage: message, completion: completion)
         
-            Logger.debug("J'AI UNE REPONSE")
             Logger.info("RECEIVE \(response?.messageName() ?? "UNKNOW-DIMSE")")
             Logger.debug(message.debugDescription)
 
