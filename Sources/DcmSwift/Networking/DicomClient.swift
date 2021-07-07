@@ -35,6 +35,12 @@ public class DicomClient : DicomService, StreamDelegate {
     }
     
 
+    deinit {
+        print("deinit")
+        if group != nil {
+            try! group.syncShutdownGracefully()
+        }
+    }
     
     
     
@@ -47,16 +53,14 @@ public class DicomClient : DicomService, StreamDelegate {
 //                return channel.pipeline.addHandler(assoc)
 //            }
         
-        defer {
-            try! group.syncShutdownGracefully()
-        }
-        
         do {
             channel = try bootstrap.connect(host: self.remoteEntity.hostname, port: self.remoteEntity.port).wait()
             
             self.isConnected = true
             
             completion(self.isConnected, nil)
+            
+            try channel.closeFuture.wait()
             
             return
         } catch {
@@ -122,7 +126,7 @@ public class DicomClient : DicomService, StreamDelegate {
             }
         }
         
-        //completion?(false, nil, DicomError(description: "ECHO Error", level: .error, realm: .network))
+        completion?(false, nil, DicomError(description: "ECHO Error", level: .error, realm: .network))
     }
     
     

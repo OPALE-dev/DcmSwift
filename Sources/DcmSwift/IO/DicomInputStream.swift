@@ -11,9 +11,9 @@ import Foundation
 public class DicomInputStream {
     private var dataset:DataSet!
     
-    public var hasPreamble:Bool = false    
-    public var vrMethod:VRMethod     = .Explicit
-    public var byteOrder:ByteOrder   = .LittleEndian
+    public var hasPreamble:Bool         = false
+    public var vrMethod:VRMethod        = .Explicit
+    public var byteOrder:ByteOrder      = .LittleEndian
     
     var stream:InputStream!
     /// A copy of the original stream used if we need to reset the read offset
@@ -60,41 +60,55 @@ public class DicomInputStream {
         }
                 
         stream.open()
-        /**
-        Read first tag : if first tag is 0000,0000 try to read
-        preamble (128 bytes), then DICM magic word (4 bytes).
         
-        Else if the read tag is a valid DICOM tag,
-        we try to process the file from offset 0.
-         */
-        var tag = readDataTag(order: byteOrder)
+        // try to read 128 00H + DCIM magic world
+        let preambleData = read(length: 132)
         
-        if tag == nil {
-            throw StreamError.cannotReadStream(message: "Cannot read 4 first bytes, file is empty?")
-        }
-                
-        // read DICOM preamble if exists
-        if tag!.group != "0008" {
-            // only the remaining bytes, we already read 4
-            _ = read(length: 124)
-            
-            // read & check the magic word
-            guard let magic = read(length: 4) else {
+        // no DCIM preamble found
+        if preambleData == nil || preambleData?.toHex().lowercased() != DicomConstants.dicomPreamble.lowercased() {
+            print("no DCIM preamble found, try to read dataset anyway")
+        } else {
+            // try to read DCIM magic word
+            guard let magicData = preambleData?.dropFirst(128) else {
                 throw StreamError.cannotReadStream(message: "Cannot read DICOM magic bytes (DICM)")
             }
             
-            if let  magicWord  = String(bytes: magic, encoding: .ascii),
-                    magicWord != "DICM" {
+            guard let magicWord = String(bytes: magicData, encoding: .ascii),
+                  magicWord == DicomConstants.dicomMagicWord else {
                 throw StreamError.notDicomFile(message: "Not a DICOM file, no DICM magic bytes found")
             }
-                    
+            
             hasPreamble = true
         }
+        
+//        var tag = readDataTag(order: byteOrder)
+//
+//        if tag == nil {
+//            throw StreamError.cannotReadStream(message: "Cannot read 4 first bytes, file is empty?")
+//        }
+//
+//        // read DICOM preamble if exists
+//        if tag!.group != "0008" {
+//            // only the remaining bytes, we already read 4
+//            _ = read(length: 124)
+//
+//            // read & check the magic word
+//            guard let magic = read(length: 4) else {
+//                throw StreamError.cannotReadStream(message: "Cannot read DICOM magic bytes (DICM)")
+//            }
+//
+//            if let  magicWord  = String(bytes: magic, encoding: .ascii),
+//                    magicWord != "DICM" {
+//                throw StreamError.notDicomFile(message: "Not a DICOM file, no DICM magic bytes found")
+//            }
+//
+//            hasPreamble = true
+//        }
         
         // enforce vr Method
         if hasPreamble {
             // we kill the 00000000 not-a-tag read earlier
-            tag = nil
+            // tag = nil
             // we will parse the DICOM meta Info header as Explicit VR
             vrMethod = .Explicit
         } else {
@@ -198,8 +212,8 @@ public class DicomInputStream {
         // fill the buffer by reading bytes with given length
         let read = stream.read(buffer, maxLength: length)
         
-        if read < 0 {
-            Logger.error("Cannot read \(length) bytes")
+        if read < 0 || read < length {
+            Logger.warning("Cannot read \(length) bytes")
             return nil
         }
         
