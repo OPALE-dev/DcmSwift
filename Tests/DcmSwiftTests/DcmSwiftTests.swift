@@ -836,5 +836,34 @@ class DcmSwiftTests: XCTestCase {
             XCTAssertEqual((rtDose.getDoseImageHeight()), 10)
         }
     }
+    
+    public func testToPNG() {
+        // finderTestDir
+        /*
+        var paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
+        paths = paths.filter { $0.contains("rt_") }
+        
+        paths.forEach { path in
+            if let dcmFile = DicomFile(forPath: path) {
+                if let dcmImage = DicomImage(dcmFile.dataset) {
+                    dcmImage.toPNG(path: finderTestDir, baseName: dcmFile.fileName())
+                }
+            }
+            
+        }
+        */
+        Logger.debug("IM A DINOSAUR")
+        Logger.debug(finderTestDir)
+        
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        if let p = path {
+            
+            if let dcmFile = DicomFile(forPath: p) {
+                if let dcmImage = DicomImage(dcmFile.dataset) {
+                    dcmImage.toPNG(path: finderTestDir, baseName: dcmFile.fileName())
+                }
+            }
+        }
+    }
 }
 
