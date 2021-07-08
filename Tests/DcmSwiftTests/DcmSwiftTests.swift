@@ -41,7 +41,9 @@ class DcmSwiftTests: XCTestCase {
     private static var testAgeString            = false
     
     /// Run
-    private static var testUID                  = true
+    private static var testUID                  = false
+    
+    private static var testDicomDir             = true
     
     // TODO: add tests for DicomUID
     // TODO: add tests for AgeString
@@ -107,6 +109,16 @@ class DcmSwiftTests: XCTestCase {
         if testUID {
             suite.addTest(DcmSwiftTests(selector: #selector(validateUID)))
             suite.addTest(DcmSwiftTests(selector: #selector(generateUID)))
+        }
+        
+        if testDicomDir {
+            suite.addTest(DcmSwiftTests(selector: #selector(testParseDicomDir)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testIsDicomDir)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testIndex)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testIndexForStudy)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testAmputation)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testCreateDirectoryRecordSequence)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testWriteDicomDir)))
         }
         
         if testDicomFileRead {
@@ -763,5 +775,47 @@ class DcmSwiftTests: XCTestCase {
         
         return output
     }
+    
+    //MARK: TESTS DICOMDIR
+    
+    func testParseDicomDir() {
+        
+    }
+    
+    func testIsDicomDir() {
+        let pathTrue = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR/DICOMDIR"
+        let b:Bool = DicomDir.isDicomDir(forPath:pathTrue)
+        XCTAssertTrue(b)
+        
+        let pathFalse = "/Users/home/Downloads/commons-io-2.10.0-bin.zip"
+        let p:Bool = DicomDir.isDicomDir(forPath:pathFalse)
+        XCTAssertFalse(p)
+    }
+    
+    func testIndex() {
+        let pathFolder = "/Users/home/Documents/2_skull_ct/DICOM"
+        if let dir = DicomDir.parse(atPath: pathFolder) {
+            for(a,b) in dir.studies {
+                Logger.info("a : \(a) b : \(b)")
+            }
+        }
+    }
+    
+    func testIndexForStudy() {
+        
+    }
+    
+    func testAmputation() {
+        let path = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR/DICOMDIR"
+        let path_2 = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR"
+        XCTAssertEqual(DicomDir.amputation(forPath: path),path_2)
+    }
+    
+    func testCreateDirectoryRecordSequence() {
+        
+    }
+    
+    func testWriteDicomDir() {
+        //XCTAssertTrue()
+    }
 }
-
