@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "DcmStore"
-               BuildableName = "DcmStore"
-               BlueprintName = "DcmStore"
+               BlueprintIdentifier = "DcmFind"
+               BuildableName = "DcmFind"
+               BlueprintName = "DcmFind"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -68,34 +68,12 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DcmStore"
-            BuildableName = "DcmStore"
-            BlueprintName = "DcmStore"
+            BlueprintIdentifier = "DcmFind"
+            BuildableName = "DcmFind"
+            BlueprintName = "DcmFind"
             ReferencedContainer = "container:">
          </BuildableReference>
       </BuildableProductRunnable>
-      <CommandLineArguments>
-         <CommandLineArgument
-            argument = "-c DCMSTORE"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "STORESCP"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "127.0.0.1"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "11112"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "&apos;/Users/nark/Pictures/DICOM/MG-MONO2-16 (Little Endian Explicit VR).dcm&apos;"
-            isEnabled = "YES">
-         </CommandLineArgument>
-      </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -107,9 +85,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DcmStore"
-            BuildableName = "DcmStore"
-            BlueprintName = "DcmStore"
+            BlueprintIdentifier = "DcmFind"
+            BuildableName = "DcmFind"
+            BlueprintName = "DcmFind"
             ReferencedContainer = "container:">
          </BuildableReference>
       </BuildableProductRunnable>

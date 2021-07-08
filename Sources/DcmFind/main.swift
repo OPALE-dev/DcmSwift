@@ -35,9 +35,14 @@ struct DcmFind: ParsableCommand {
                 _ = dataset.set(value:"John^Doe", forTagName: "PatientName")
                 _ = dataset.set(value:"12345678", forTagName: "PatientID")
                 
-                client.find(dataset, completion: { (ok, message, error) in
+                client.find(dataset) { (message) in
                     print(message)
-                })
+                } errorCompletion: { (error) in
+                    
+                } closeCompletion: { (assoc) in
+                    
+                }
+                
             } else {
                 if let e = error?.description {
                     Logger.error("CONNECT Error: \(e)")

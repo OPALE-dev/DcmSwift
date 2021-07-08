@@ -92,82 +92,104 @@ public class DicomClient : DicomService, StreamDelegate {
         } errorCompletion: { (error) in
             errorCompletion(error)
             
-            return
+            association.close()
+            
         } closeCompletion: { (association) in
             closeCompletion(association)
-            
-            association?.close()
         }
     }
     
     
-    public func find(_ queryDataset:DataSet, completion: PDUCompletion?)  {
-//        if !self.checkConnected(completion) { return }
-//
-//        // create assoc between local and remote
-//        let association = DicomAssociation(socket: self.socket, callingAET: self.localEntity, calledAET: self.remoteEntity)
-//
-//        // add C-FIND Study Root Query Level
-//        //association.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND)
-//        // Add all know storage SOP classes (maybe not the best approach on client side?)
-//        for abstractSyntax in DicomConstants.storageSOPClasses {
-//            association.addPresentationContext(abstractSyntax: abstractSyntax)
-//        }
-//
-//        // request assoc
-//        association.request() { (accepted, receivedMessage, error) in
-//            if accepted {
-//                // create C-FIND-RQ message
-//                if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_FIND_RQ, association: association) as? CFindRQ {
-//                    // add query dataset to the message
-//                    message.queryDataset = queryDataset
-//                    // send message
-//                    association.write(message: message, readResponse: true, completion: completion)
-//                    //
-//                    association.close()
-//                }
-//            }
-//            else {
-//                completion?(false, receivedMessage, error)
-//                association.close()
-//            }
-//        }
+    public func find(
+        _ queryDataset:DataSet,
+        pduCompletion: @escaping PDUCompletion,
+        errorCompletion: @escaping ErrorCompletion,
+        closeCompletion: @escaping CloseCompletion
+     )  {
+        if !self.checkConnected(errorCompletion) { return }
+
+        // create assoc between local and remote
+        let association = DicomAssociation(channel: self.channel, callingAET: self.localEntity, calledAET: self.remoteEntity)
+
+        // add C-FIND Study Root Query Level
+        association.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND)
+        
+        // request assoc
+        association.request { (message) in
+            // create C-FIND-RQ message
+            guard let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_FIND_RQ, association: association) as? CFindRQ else {
+                errorCompletion(DicomError(description: "Cannot create C_FIND_RQ message", level: .error))
+                return
+            }
+            
+            // add query dataset to the message
+            message.queryDataset = queryDataset
+            
+            // send message
+            association.write(
+                message: message,
+                readResponse: false,
+                pduCompletion: pduCompletion,
+                errorCompletion: errorCompletion,
+                closeCompletion: closeCompletion)
+
+            // association.close()
+            
+        } errorCompletion: { (error) in
+            errorCompletion(error)
+            
+            association.close()
+            
+        } closeCompletion: { (assoc) in
+            closeCompletion(association)
+        }
     }
     
     
     
-    public func store(_ files:[String], progression: @escaping (_ index:Int) -> Void, completion: PDUCompletion?)  {
-//        if !self.checkConnected(completion) { return }
-//
-//        let association = DicomAssociation(socket: self.socket, callingAET: self.localEntity, calledAET: self.remoteEntity)
-//
-//        // Add all know storage SOP classes (maybe not the best approach on client side?)
-//        for abstractSyntax in DicomConstants.storageSOPClasses {
-//            association.addPresentationContext(abstractSyntax: abstractSyntax)
-//        }
-//
-//        // request assoc
-//        association.request() { (accepted, receivedMessage, error) in
-//            if accepted {
-//                var index = 0
-//                for f in files {
-//                    if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_STORE_RQ, association: association) as? CStoreRQ {
-//                        message.dicomFile = DicomFile(forPath: f)
-//
-//                        association.write(message: message, readResponse: false, completion: completion)
-//
-//                        progression(index)
-//                        index += 1
-//                    }
-//                }
-//
-//                association.close()
-//            }
-//            else {
-//                completion?(false, receivedMessage, error)
-//                association.close()
-//            }
-//        }
+    public func store(
+        _ files:[String],
+        progression: @escaping (_ index:Int) -> Void,
+        pduCompletion: @escaping PDUCompletion,
+        errorCompletion: @escaping ErrorCompletion,
+        closeCompletion: @escaping CloseCompletion
+    )  {
+        if !self.checkConnected(errorCompletion) { return }
+
+        let association = DicomAssociation(channel: self.channel, callingAET: self.localEntity, calledAET: self.remoteEntity)
+
+        // Add all know storage SOP classes (maybe not the best approach on client side?)
+        for abstractSyntax in DicomConstants.storageSOPClasses {
+            association.addPresentationContext(abstractSyntax: abstractSyntax)
+        }
+
+        // request assoc
+        association.request { (message) in
+            var index = 0
+            for f in files {
+                if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_STORE_RQ, association: association) as? CStoreRQ {
+                    message.dicomFile = DicomFile(forPath: f)
+
+                    association.write(
+                        message: message,
+                        readResponse: false,
+                        pduCompletion: pduCompletion,
+                        errorCompletion: errorCompletion,
+                        closeCompletion: closeCompletion)
+                    
+                    progression(index)
+                    
+                    index += 1
+                }
+            }
+        } errorCompletion: { (error) in
+            errorCompletion(error)
+            
+            association.close()
+            
+        } closeCompletion: { (associtaion) in
+            closeCompletion(association)
+        }
     }
     
     
