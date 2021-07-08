@@ -18,6 +18,15 @@ import UIKit
 #endif
 
 
+extension NSImage {
+    var png: Data? { tiffRepresentation?.bitmap?.png }
+}
+extension NSBitmapImageRep {
+    var png: Data? { representation(using: .png, properties: [:]) }
+}
+extension Data {
+    var bitmap: NSBitmapImageRep? { NSBitmapImageRep(data: self) }
+}
 /**
  DicomImage is a wrapper that provides images related features for the DICOM standard.
  */
@@ -74,7 +83,7 @@ public class DicomImage {
     
     
     
-    init?(_ dataset:DataSet) {
+    public init?(_ dataset:DataSet) {
         self.dataset = dataset
         
         if let pi = self.dataset.string(forTag: "PhotometricInterpretation") {
@@ -306,8 +315,42 @@ public class DicomImage {
         return output
     }
     
+    public func toPNG(path: String, baseName: String?) {
+        
+        let baseFilename: String
+        if baseName == nil {
+            baseFilename = UID.generate()
+        } else {
+            baseFilename = baseName!
+        }
+        
+        for frame in 0..<numberOfFrames {
+            if let image = image(forFrame: frame) {
+                
+                var url = URL(fileURLWithPath: path)
+                url.appendPathComponent(baseFilename + "_" + String(frame) + ".png")
+                Logger.debug(url.absoluteString)
+                
+                image.setName(url.absoluteString)
+                
+                #if os(macOS)
+                if let data = image.png {
+                    try? data.write(to: url)
+                }
+                #elseif os(iOS)
+                if let data = image.pngData() {
+                    do {
+                        try? data.write(to: url)
+                    } catch let error as NSError {
+                        print(error)
+                    }
+                }
+                #endif
+            }
+        }
+    }
     
-    private func loadPixelData() {
+    public func loadPixelData() {
         // refuse NON native DICOM TS for now
 //        if !DicomConstants.transfersSyntaxes.contains(self.dataset.transferSyntax) {
 //            Logger.error("  -> Unsuppoorted Transfer Syntax")

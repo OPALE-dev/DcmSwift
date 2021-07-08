@@ -13,7 +13,7 @@ import Foundation
  */
 public class RTDose : DicomFile {
     
-    public func getDose() {
+    public func getDose(column: UInt, row: UInt, frame: UInt) {
         
     }
     
