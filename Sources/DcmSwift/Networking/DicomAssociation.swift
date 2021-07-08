@@ -182,26 +182,37 @@ public class DicomAssociation : ChannelInboundHandler {
             let commandData = readData.subdata(in: 12..<readData.count)
             
             if commandData.count == 0 {
-                currentErrorCompletion?(DicomError(description: "Cannot read command", level: .error))
+                currentErrorCompletion?(DicomError(description: "Cannot read PDU command", level: .error))
                 return
             }
             
             let inputStream = DicomInputStream(data: commandData)
                                         
             do {
-                if let dataset = try inputStream.readDataset() {
-                    print(dataset)
-                    
-                    // we create a response (PDUMessage of DIMSE family) based on received CommandField value using PDUDecoder
-                    if let command = dataset.element(forTagName: "CommandField") {
-                        let c = command.data.toUInt16(byteOrder: .LittleEndian)
-                        if let cf = CommandField(rawValue: c) {
-                            if let message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, commandField: cf, association: self) as? PDUMessage {
-                                currentPDUCompletion?(message)
-                            }
-                        }
-                    }
+                guard let dataset = try inputStream.readDataset() else {
+                    currentErrorCompletion?(DicomError(description: "Cannot read command Dataset", level: .error))
+                    return
                 }
+                                
+                guard let command = dataset.element(forTagName: "CommandField") else {
+                    currentErrorCompletion?(DicomError(description: "Cannot read CommandField in command Dataset", level: .error))
+                    return
+                }
+                
+                // we create a response (PDUMessage of DIMSE family) based on received CommandField value using PDUDecoder
+                let c = command.data.toUInt16(byteOrder: .LittleEndian)
+                
+                guard let cf = CommandField(rawValue: c) else {
+                    currentErrorCompletion?(DicomError(description: "Cannot read CommandField in command Dataset", level: .error))
+                    return
+                }
+                
+                guard let message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, commandField: cf, association: self) as? PDUMessage else {
+                    currentErrorCompletion?(DicomError(description: "Cannot read DIMSE message of type \(pt)", level: .error))
+                    return
+                }
+                
+                currentPDUCompletion?(message)
             } catch let e {
                 print(e)
                 currentErrorCompletion?(DicomError(description: e.localizedDescription, level: .error))
@@ -224,7 +235,7 @@ public class DicomAssociation : ChannelInboundHandler {
 
     public func errorCaught(context: ChannelHandlerContext, error: Error) {
         print("error: ", error)
-
+        // TODO: implement something here
         // As we are not really interested getting notified on success or failure we just pass nil as promise to
         // reduce allocations.
         context.close(promise: nil)
