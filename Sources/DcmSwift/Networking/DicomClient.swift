@@ -8,8 +8,6 @@
 
 import Foundation
 import NIO
-//import Socket
-
 
 
 
@@ -36,7 +34,6 @@ public class DicomClient : DicomService, StreamDelegate {
     
 
     deinit {
-        print("deinit")
         if group != nil {
             try! group.syncShutdownGracefully()
         }
@@ -47,11 +44,6 @@ public class DicomClient : DicomService, StreamDelegate {
     public func connect(completion: ConnectCompletion) {
         bootstrap  = ClientBootstrap(group: group)
             .channelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
-//            .channelInitializer { channel in
-//                let assoc = DicomAssociation(channel: channel, callingAET: self.localEntity, calledAET: self.remoteEntity)
-//
-//                return channel.pipeline.addHandler(assoc)
-//            }
         
         do {
             channel = try bootstrap.connect(host: self.remoteEntity.hostname, port: self.remoteEntity.port).wait()
@@ -68,28 +60,6 @@ public class DicomClient : DicomService, StreamDelegate {
         }
         
         completion(self.isConnected, DicomError(description:  "Cannot connect", level: .error, realm: .custom))
-        
-//        do {
-//            if self.socket == nil {
-//                self.socket = try Socket.create()
-//            }
-//
-//
-//            try self.socket.setBlocking(mode: true)
-//
-//            try self.socket.connect(to: self.remoteEntity.hostname, port: Int32(self.remoteEntity.port))
-//            self.isConnected = self.socket.isConnected
-//
-//            completion(self.isConnected, nil)
-//        } catch let error {
-//            self.isConnected = false
-//
-//            if let socketError = error as? Socket.Error {
-//                completion(self.isConnected, DicomError(socketError: socketError))
-//            } else {
-//                completion(self.isConnected, DicomError(description:  "Unexpected Socket Error", level: .error, realm: .custom))
-//            }
-//        }
     }
     
     public func disconnect() -> Bool {
@@ -103,30 +73,31 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    public func echo(completion: PDUCompletion?) {
-        if !self.checkConnected(completion) { return }
+    public func echo(pduCompletion: @escaping PDUCompletion, errorCompletion: @escaping ErrorCompletion, closeCompletion: @escaping CloseCompletion) {
+        if !self.checkConnected(errorCompletion) { return }
 
         let association = DicomAssociation(channel: self.channel, callingAET: self.localEntity, calledAET: self.remoteEntity)
-
-        _ = channel.pipeline.addHandler(association)
         
         association.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP)
-
-        association.request() { (accepted, receivedMessage, error) in
-            if accepted {
-                if let message = receivedMessage {
-                    if let message2 = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
-                        association.write(message: message2, readResponse: true, completion: completion)
-                    
-                        //association.close()
-                        
-
-                    }
-                }
-            }
-        }
         
-        completion?(false, nil, DicomError(description: "ECHO Error", level: .error, realm: .network))
+        association.request { (message) in
+            if let response = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
+                association.write(
+                    message: response,
+                    readResponse: true,
+                    pduCompletion: pduCompletion,
+                    errorCompletion: errorCompletion,
+                    closeCompletion: closeCompletion)
+            }
+        } errorCompletion: { (error) in
+            errorCompletion(error)
+            
+            return
+        } closeCompletion: { (association) in
+            closeCompletion(association)
+            
+            association?.close()
+        }
     }
     
     
@@ -213,9 +184,9 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    private func checkConnected(_ completion: PDUCompletion?) -> Bool {
+    private func checkConnected(_ errorCompletion: ErrorCompletion) -> Bool {
         if !self.isConnected {
-            completion?(false, nil, DicomError(description: "Socket is not connected, please connect first.",
+            errorCompletion(DicomError(description: "Socket is not connected, please connect first.",
                                                level: .error,
                                                realm: .custom))
             return false
