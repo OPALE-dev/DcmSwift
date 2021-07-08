@@ -21,27 +21,9 @@ public class CEchoRQ: DataTF {
         _ = pdvDataset.set(value: self.association.abstractSyntax, forTagName: "AffectedSOPClassUID")
         _ = pdvDataset.set(value: self.messageID, forTagName: "MessageID")
         _ = pdvDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
-                
-        var byteOrder: ByteOrder  = .LittleEndian
 
-        if let transferSyntax = self.association.acceptedTransferSyntax {
-            let tsName  = DicomSpec.shared.nameForUID(withUID: transferSyntax)
-            Logger.debug(tsName)
-
-            if tsName == TransferSyntax.implicitVRLittleEndian {
-                byteOrder   = .LittleEndian
-            } else if tsName == TransferSyntax.explicitVRBigEndian {
-                byteOrder   = .BigEndian
-            } else if tsName == TransferSyntax.explicitVRLittleEndian {
-                byteOrder   = .LittleEndian
-            }
-
-        } else {
-            byteOrder   = .LittleEndian
-        }
-
-        // Why implicit endian ??
-        let commandGroupLength = pdvDataset.toData(vrMethod: .Implicit, byteOrder: byteOrder).count
+        // Why implicit endian ??.LittleEndian
+        let commandGroupLength = pdvDataset.toData(vrMethod: .Implicit, byteOrder: .LittleEndian).count
         _ = pdvDataset.set(value: UInt32(commandGroupLength).bigEndian, forTagName: "CommandGroupLength")
         
         var pdvData = Data()
@@ -49,7 +31,7 @@ public class CEchoRQ: DataTF {
         pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
         pdvData.append(uint8: association.presentationContexts.keys.first!, bigEndian: true) // Context
         pdvData.append(byte: 0x03) // Flags
-        pdvData.append(pdvDataset.toData(vrMethod: .Implicit, byteOrder: byteOrder))
+        pdvData.append(pdvDataset.toData(vrMethod: .Implicit, byteOrder: .LittleEndian))
         
         let pduLength = UInt32(pdvLength + 4)
         data.append(uint8: self.pduType.rawValue, bigEndian: true)
@@ -60,9 +42,9 @@ public class CEchoRQ: DataTF {
         return data
     }
     
-    public override func decodeData(data: Data) -> Bool {
+    public override func decodeData(data: Data) -> DIMSEStatus.Status {
         print("TODO: decodeData")
-        return true
+        return .Success
     }
     
     public override func handleResponse(data:Data) -> PDUMessage? {

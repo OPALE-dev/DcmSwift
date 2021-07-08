@@ -14,7 +14,7 @@ struct DcmFind: ParsableCommand {
     var callingAET: String = "DCMCLIENT"
     
     @Argument(help: "Remote AE title")
-    var calledAET: String = "DCMSERVER"
+    var calledAET: String = "DCMQRSCP"
     
     @Argument(help: "Remote AE hostname")
     var calledHostname: String = "127.0.0.1"
@@ -32,13 +32,18 @@ struct DcmFind: ParsableCommand {
             if connected {
                 let dataset = DataSet()
                 
-                _ = dataset.set(value:"John^Doe", forTagName: "PatientName")
-                _ = dataset.set(value:"12345678", forTagName: "PatientID")
+                //_ = dataset.set(value:"John^Doe", forTagName: "PatientName")
+                _ = dataset.set(value:"*", forTagName: "PatientID")
                 
                 client.find(dataset) { (message) in
-                    print(message)
-                } errorCompletion: { (error) in
+                    if message.dimseStatus.status == DIMSEStatus.Status.Success {
+                        print("C-FIND-RSP dataset: \(message.responseDataset)")
+                    } else {
+                        Logger.error("C-FIND-RSP Unsuccessful DIMSE status: : \(message.dimseStatus.status)")
+                    }
                     
+                } errorCompletion: { (message, error) in
+                    print(error)
                 } closeCompletion: { (assoc) in
                     
                 }
