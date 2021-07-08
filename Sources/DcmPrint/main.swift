@@ -9,33 +9,6 @@ import Foundation
 import DcmSwift
 import ArgumentParser
 
-/*
-if let ageString = AgeString(ageString: "034Y") {
-    print("bd : \(ageString.birthdate)")
-}
-*/
-
-let stringTestTrue = "002D"
-let stringTestFalse = "coucou :P"
-
-var testAStr1 = AgeString.init(ageString:stringTestTrue)
-
-if let unwrappedStr = testAStr1 {
-    let a2 = unwrappedStr.validate(age:stringTestTrue)
-    print(a2)
-    
-    let a3 = unwrappedStr.age(withPrecision: .days)
-    print(a3!)
-}
-
-var testAstr2 = AgeString.init(ageString: stringTestTrue)
-let dateFormatter = DateFormatter()
-dateFormatter.dateStyle = .short
-
-if let unwrappedStr = testAstr2?.birthdate {
-    print(unwrappedStr)
-}
-
 //struct DcmPrint: ParsableCommand {
 //    @Argument(help: "Path of DICOM file to print")
 //    var sourcePath: String
@@ -50,3 +23,11 @@ if let unwrappedStr = testAstr2?.birthdate {
 //}
 //
 //DcmPrint.main()
+
+let pathFolder = "/Users/home/Documents/2_skull_ct/DICOM"
+
+if let dir = DicomDir.parse(atPath: pathFolder) {
+    for (a,b) in dir.studies {
+        print("key : \(a) value : \(b)")
+    }
+}

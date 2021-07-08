@@ -22,11 +22,12 @@ public class DicomDir:DicomFile {
     // PatientID:PatientName
     public var patients:[String:String] = [:]
     
-    // StudyInstanceUID:PatientID
-    public var studies:[String:String] = [:]
+    // StudyInstanceUID:[PatientID,StudyDate]
+    public var studies:[String:[String]] = [:]
     
-    // SeriesInstanceUID:StudyInstanceUID
+    // SeriesInstanceUID:[StudyInstanceUID
     public var series:[String:String] = [:]
+    //public var series:[String:[String]] = [:]
     
     // ReferencedSOPInstanceUIDInFile:[SeriesInstanceUID,filepath]
     public var images:[String:[String]] = [:]
@@ -85,14 +86,14 @@ public class DicomDir:DicomFile {
     
     /**
         Return an array of String wich represents all the DICOM files corresponding to a given patient
-     */
+    */
     public func index(forPatientID givenID:String) -> [String] {
         var resultat : [String] = []
         
         for(patientsID,_) in patients {
             if(patientsID == givenID) {
-                for(studyUID, patientsID_2) in studies {
-                    if(patientsID == patientsID_2) {
+                for(studyUID, arrayStudies) in studies {
+                    if(patientsID == arrayStudies[0]) {
                         for(seriesUID, studyUID_2) in series {
                             if(studyUID == studyUID_2) {
                                 for(_,array) in images {
@@ -172,12 +173,17 @@ public class DicomDir:DicomFile {
     private func load() {
         if let dataset = self.dataset {
             if let directoryRecordSequence = dataset.element(forTagName: "DirectoryRecordSequence") as? DataSequence {
-                var patientName = ""
-                var patientID = ""
-                var studyUID = ""
-                var serieUID = ""
-                var SOPUID = ""
-                var path = ""
+                var patientName     = ""
+                var patientID       = ""
+                
+                var studyUID        = ""
+                var studyDate       = ""
+                var studyTime       = ""
+                var studyDescri     = ""
+                
+                var serieUID        = ""
+                var SOPUID          = ""
+                var path            = ""
                 
                 for item in directoryRecordSequence.items {
                     
@@ -194,7 +200,6 @@ public class DicomDir:DicomFile {
                         } 
                          
                     // Load the patients property
-                        
                         if element.name == "PatientName" {
                             patientName = "\(element.value)"
                         }
@@ -207,8 +212,21 @@ public class DicomDir:DicomFile {
                         if element.name == "StudyInstanceUID" {
                             studyUID = "\(element.value)"
                             if studyUID.count > 0 {
-                                studies[studyUID] = patientID
+                                studies[studyUID]?.insert(patientID, at: 0)
                             }
+                        }
+                        
+                        if element.name == "StudyDate" {
+                            studyDate = "\(element.value)"
+                            studies[studyUID]?.insert(studyDate, at: 1)
+                        }
+                        
+                        if element.name == "StudyTime" {
+                            studyDate = "\(element.value)"
+                        }
+                        
+                        if element.name == "StudyDescription" {
+                            studyDate = "\(element.value)"
                         }
                         
                     // Load the series property
@@ -217,6 +235,10 @@ public class DicomDir:DicomFile {
                             if serieUID.count > 0 {
                                 series[serieUID] = studyUID
                             }
+                        }
+                        
+                        if element.name == "SeriesNumber" {
+                            studyDate = "\(element.value)"
                         }
                     
                     // Load the images property
@@ -326,7 +348,7 @@ public class DicomDir:DicomFile {
             
             for(studyID,patientID_2) in studies {
                 
-                if(patientID == patientID_2) {
+                if(patientID == patientID_2[0]) {
                 
                     let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
                     let item = DataItem(withTag: tagItem, parent: sequence)
@@ -496,8 +518,12 @@ public class DicomDir:DicomFile {
                 // fill study property
                 let studyKey = dcmFile.dataset.string(forTag: "StudyInstanceUID")
                 let studyVal = patientKey
+                
                 if let key = studyKey {
-                    dcmDir.studies[key] = studyVal
+                    if dcmDir.studies[key] == nil {
+                        dcmDir.studies[key] = []
+                        dcmDir.studies[key]?.insert(studyVal!, at: 0)
+                    }
                 }
                 
                 // fill serie property
