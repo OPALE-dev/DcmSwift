@@ -43,7 +43,7 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     public convenience init?(data:Data, pduType:PDUType, association:DicomAssociation) {
         self.init(pduType: pduType, association: association)
         
-        if !decodeData(data: data) {
+        if decodeData(data: data) == .Refused {
             return nil
         }
     }
@@ -52,7 +52,7 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     public convenience init?(data:Data, pduType:PDUType, commandField:CommandField, association:DicomAssociation) {
         self.init(pduType: pduType, commandField:commandField, association: association)
         
-        if !decodeData(data: data) {
+        if decodeData(data: data) == .Refused {
             return nil
         }
     }
@@ -78,11 +78,12 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     }
     
     
-    public func decodeData(data:Data) -> Bool {
+    public func decodeData(data:Data) -> DIMSEStatus.Status {
         if let p = self.pduType {
             Logger.warning("Not implemented yet \(#function) \(p)")
         }
-        return false
+        
+        return DIMSEStatus.Status.Unknow
     }
     
     

@@ -53,9 +53,9 @@ public class DataTF: PDUMessage {
     }
     
     
-    public override func decodeData(data: Data) -> Bool {
+    public override func decodeData(data: Data) -> DIMSEStatus.Status {
         //self.decodeDIMSEStatus(data: data)
         
-        return true
+        return DIMSEStatus.Status.Unknow
     }
 }

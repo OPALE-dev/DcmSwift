@@ -10,7 +10,7 @@ import Foundation
 
 
 public protocol PDUDecodable {
-    func decodeData(data:Data) -> Bool
+    func decodeData(data:Data) -> DIMSEStatus.Status
 }
 
 

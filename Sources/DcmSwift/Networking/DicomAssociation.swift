@@ -14,7 +14,7 @@ public typealias ConnectCompletion = (_ ok:Bool, _ error:DicomError?) -> Void
 //public typealias PDUCompletion = (_ ok:Bool, _ response:PDUMessage?, _ error:DicomError?) -> Void
 
 public typealias PDUCompletion = (_ response:PDUMessage) -> Void
-public typealias ErrorCompletion = (_ error:DicomError?) -> Void
+public typealias ErrorCompletion = (_ response:PDUMessage?, _ error:DicomError?) -> Void
 public typealias CloseCompletion = (_ association:DicomAssociation?) -> Void
 
 
@@ -138,15 +138,18 @@ public class DicomAssociation : ChannelInboundHandler {
     
     
     deinit {
-        print("DicomAssociation deinit")
+
     }
+    
     
     
     // MARK: -
     
     public func addPresentationContext(abstractSyntax: String, result:UInt8? = nil) {
         let ctID = self.getNextContextID()
+        
         let pc = PresentationContext(abstractSyntax: abstractSyntax, contextID: ctID, result: result)
+        
         self.presentationContexts[ctID] = pc
     }
     
@@ -155,25 +158,33 @@ public class DicomAssociation : ChannelInboundHandler {
     
     
     //MARK: -
+    private func completionError(description: String, message: PDUMessage?, closeAssoc: Bool) {
+        currentErrorCompletion?(message, DicomError(description: description, level: .error, realm: .custom))
+        
+        if closeAssoc {
+            close()
+        }
+    }
     
     public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         var buffer          = self.unwrapInboundIn(data)
         let messageLength   = buffer.readableBytes
         
         guard let bytes = buffer.readBytes(length: messageLength) else {
-            currentErrorCompletion?(DicomError(description: "Cannot read bytes", level: .error))
+            completionError(description: "Cannot read bytes", message: nil, closeAssoc: true)
+            
             return
         }
         
         let readData = Data(bytes)
         
         guard let f = readData.first, PDUType.isSupported(f) else {
-            currentErrorCompletion?(DicomError(description: "Unsupported PDU Type", level: .error))
+            completionError(description: "Unsupported PDU Type", message: nil, closeAssoc: true)
             return
         }
         
         guard let pt = PDUType(rawValue: f) else {
-            currentErrorCompletion?(DicomError(description: "Cannot read PDU Type", level: .error))
+            completionError(description: "Cannot read PDU Type", message: nil, closeAssoc: true)
             return
         }
         
@@ -182,7 +193,7 @@ public class DicomAssociation : ChannelInboundHandler {
             let commandData = readData.subdata(in: 12..<readData.count)
             
             if commandData.count == 0 {
-                currentErrorCompletion?(DicomError(description: "Cannot read PDU command", level: .error))
+                completionError(description: "Cannot read PDU command", message: nil, closeAssoc: true)
                 return
             }
             
@@ -190,12 +201,12 @@ public class DicomAssociation : ChannelInboundHandler {
                                         
             do {
                 guard let dataset = try inputStream.readDataset() else {
-                    currentErrorCompletion?(DicomError(description: "Cannot read command Dataset", level: .error))
+                    completionError(description: "Cannot read command Dataset", message: nil, closeAssoc: true)
                     return
                 }
                                 
                 guard let command = dataset.element(forTagName: "CommandField") else {
-                    currentErrorCompletion?(DicomError(description: "Cannot read CommandField in command Dataset", level: .error))
+                    completionError(description: "Cannot read CommandField in command Dataset", message: nil, closeAssoc: true)
                     return
                 }
                 
@@ -203,25 +214,36 @@ public class DicomAssociation : ChannelInboundHandler {
                 let c = command.data.toUInt16(byteOrder: .LittleEndian)
                 
                 guard let cf = CommandField(rawValue: c) else {
-                    currentErrorCompletion?(DicomError(description: "Cannot read CommandField in command Dataset", level: .error))
+                    completionError(description: "Cannot read CommandField in command Dataset", message: nil, closeAssoc: true)
                     return
                 }
                 
                 guard let message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, commandField: cf, association: self) as? PDUMessage else {
-                    currentErrorCompletion?(DicomError(description: "Cannot read DIMSE message of type \(pt)", level: .error))
+                    completionError(description: "Cannot read DIMSE message of type \(pt)", message: nil, closeAssoc: true)
+                    return
+                }
+                
+                Logger.info("RECEIVE \(message.messageName())")
+                
+                if message.dimseStatus.status != .Success {
+                    completionError(description: "Wrong DIMSE status: \(message.dimseStatus.status)", message: message, closeAssoc: true)
                     return
                 }
                 
                 currentPDUCompletion?(message)
+                
+                // TODO: make sure it is always the case
+                close()
+                
             } catch let e {
                 print(e)
-                currentErrorCompletion?(DicomError(description: e.localizedDescription, level: .error))
+                currentErrorCompletion?(nil, DicomError(description: e.localizedDescription, level: .error))
             }
         }
         else {
             // we received an association message
             guard let message = PDUDecoder.shared.receiveAssocMessage(data: readData, pduType: pt, association: self) as? PDUMessage else {
-                currentErrorCompletion?(DicomError(description: "Cannot decode \(pt) message", level: .error))
+                currentErrorCompletion?(nil, DicomError(description: "Cannot decode \(pt) message", level: .error))
                 return
             }
             
@@ -229,13 +251,16 @@ public class DicomAssociation : ChannelInboundHandler {
                 self.acceptedTransferSyntax = transferSyntax
             }
             
+            Logger.info("RECEIVE \(message.messageName())")
+            
             currentPDUCompletion?(message)
         }
     }
 
+    
     public func errorCaught(context: ChannelHandlerContext, error: Error) {
-        print("error: ", error)
-        // TODO: implement something here
+        currentErrorCompletion?(nil, DicomError(description: error.localizedDescription, level: .error))
+        
         // As we are not really interested getting notified on success or failure we just pass nil as promise to
         // reduce allocations.
         context.close(promise: nil)
@@ -269,7 +294,7 @@ public class DicomAssociation : ChannelInboundHandler {
             return
         }
         
-        errorCompletion(DicomError(description: "Cannot create AssociationRQ message", level: .error))
+        errorCompletion(nil, DicomError(description: "Cannot create AssociationRQ message", level: .error))
     }
     
     
@@ -354,6 +379,8 @@ public class DicomAssociation : ChannelInboundHandler {
                 self.write(data)
                 
                 channel.close(mode: .all, promise: nil)
+                
+                currentCloseCompletion?(self)
             }
         }
     }
@@ -400,7 +427,7 @@ public class DicomAssociation : ChannelInboundHandler {
                 
         Logger.info("SEND \(message.messageName() )")
         Logger.debug(message.debugDescription)
-        
+                
         for messageData in message.messagesData() {
             Logger.info("SEND \(message.messageName())-DATA")
             if messageData.count > 0 {

@@ -21,45 +21,32 @@ public class CFindRQ: DataTF {
     
     public override func data() -> Data {
         var data = Data()
-        
-        //let pcs:[PresentationContext] = self.association.acceptedPresentationContexts(forSOPClassUID: sopClassUID)
+
         let pc = association.presentationContexts[association.presentationContexts.keys.first!]
-        
+
         let pdvDataset = DataSet()
         _ = pdvDataset.set(value: CommandField.C_FIND_RQ.rawValue.bigEndian, forTagName: "CommandField")
-        
-        _ = pdvDataset.set(value: pc!.abstractSyntax ?? "", forTagName: "AffectedSOPClassUID")
-
+        _ = pdvDataset.set(value: pc!.abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
         _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
         _ = pdvDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
         _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
-                
-        // comand group length is the length of the group 0000 AFTER the value of data element CommandGroupLength
-        
-        let commandGroupLength = pdvDataset.toData(vrMethod: .Implicit, byteOrder: .BigEndian).count
-        // command group length must be EVEN http://dicom.nema.org/medical/dicom/current/output/chtml/part07/sect_9.3.2.html
-        /*
-        var commandGroupValue = UInt32(commandGroupLength).bigEndian
-        if commandGroupValue % 2 == 1 {
-            commandGroupValue -= 1
-        }
-        */
-        
-        _ = pdvDataset.set(value: commandGroupLength, forTagName: "CommandGroupLength")
-        
+
+        let commandGroupLength = pdvDataset.toData(vrMethod: .Implicit, byteOrder: .LittleEndian).count
+        _ = pdvDataset.set(value: UInt32(commandGroupLength).bigEndian, forTagName: "CommandGroupLength")
+
         var pdvData = Data()
         let pdvLength = commandGroupLength + 14
         pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
         pdvData.append(uint8: association.presentationContexts.keys.first!, bigEndian: true) // Context
         pdvData.append(byte: 0x03) // Flags
-        pdvData.append(pdvDataset.toData(vrMethod: .Implicit, byteOrder: .BigEndian))
-        
+        pdvData.append(pdvDataset.toData(vrMethod: .Implicit, byteOrder: .LittleEndian))
+
         let pduLength = UInt32(pdvLength + 4)
         data.append(uint8: self.pduType.rawValue, bigEndian: true)
         data.append(byte: 0x00) // reserved
         data.append(uint32: pduLength, bigEndian: true)
         data.append(pdvData)
-        
+
         return data
     }
     
@@ -93,8 +80,8 @@ public class CFindRQ: DataTF {
     }
     
     
-    public override func decodeData(data: Data) -> Bool {
-        return false
+    public override func decodeData(data: Data) -> DIMSEStatus.Status {
+        return .Success
     }
     
     

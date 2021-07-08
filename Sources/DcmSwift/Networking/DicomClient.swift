@@ -89,8 +89,8 @@ public class DicomClient : DicomService, StreamDelegate {
                     errorCompletion: errorCompletion,
                     closeCompletion: closeCompletion)
             }
-        } errorCompletion: { (error) in
-            errorCompletion(error)
+        } errorCompletion: { (message, error) in
+            errorCompletion(message, error)
             
             association.close()
             
@@ -118,25 +118,23 @@ public class DicomClient : DicomService, StreamDelegate {
         association.request { (message) in
             // create C-FIND-RQ message
             guard let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_FIND_RQ, association: association) as? CFindRQ else {
-                errorCompletion(DicomError(description: "Cannot create C_FIND_RQ message", level: .error))
+                errorCompletion(nil, DicomError(description: "Cannot create C_FIND_RQ message", level: .error))
                 return
             }
-            
+
             // add query dataset to the message
             message.queryDataset = queryDataset
-            
+
             // send message
             association.write(
                 message: message,
-                readResponse: false,
+                readResponse: true,
                 pduCompletion: pduCompletion,
                 errorCompletion: errorCompletion,
                 closeCompletion: closeCompletion)
-
-            // association.close()
             
-        } errorCompletion: { (error) in
-            errorCompletion(error)
+        } errorCompletion: { (message, error) in
+            errorCompletion(message, error)
             
             association.close()
             
@@ -182,8 +180,8 @@ public class DicomClient : DicomService, StreamDelegate {
                     index += 1
                 }
             }
-        } errorCompletion: { (error) in
-            errorCompletion(error)
+        } errorCompletion: { (message, error) in
+            errorCompletion(message, error)
             
             association.close()
             
@@ -208,7 +206,7 @@ public class DicomClient : DicomService, StreamDelegate {
     
     private func checkConnected(_ errorCompletion: ErrorCompletion) -> Bool {
         if !self.isConnected {
-            errorCompletion(DicomError(description: "Socket is not connected, please connect first.",
+            errorCompletion(nil, DicomError(description: "Socket is not connected, please connect first.",
                                                level: .error,
                                                realm: .custom))
             return false

@@ -16,11 +16,11 @@ public class CFindRSP: DataTF {
     }
     
     
-    override public func decodeData(data: Data) -> Bool {
+    override public func decodeData(data: Data) -> DIMSEStatus.Status {
         super.decodeDIMSEStatus(data: data)
-        
+                        
         let commandData = data.subdata(in: 12..<data.count)
-        
+                        
         if commandData.count > 0 {
             if self.flags == 0x02 {
                 let inputStream = DicomInputStream(data: commandData)
@@ -28,18 +28,9 @@ public class CFindRSP: DataTF {
                 if let dataset = try? inputStream.readDataset() {
                     responseDataset = dataset
                 }
-                // TODO: implement input stream (better)
-//                if let dataset = DataSet(withData: commandData, hasPreamble: false) {
-//                    dataset.hasPreamble = false
-//                    dataset.forceExplicit = true
-//
-//                    if dataset.loadData() {
-//                        responseDataset = dataset
-//                    }
-//                }
             }
         }
         
-        return true
+        return self.dimseStatus.status
     }
 }
