@@ -34,10 +34,15 @@ struct DcmStore: ParsableCommand {
         client.connect { (connected, error) in
             if connected {
                 client.store([filePath]) { (progress) in
-                    
-                } completion: { (ok, message, error) in
-                    
+                    print("progress \(progress)")
+                } pduCompletion: { (message) in
+                    print("receive message \(message.messageName())")
+                } errorCompletion: { (error) in
+                    print(error)
+                } closeCompletion: { (assoc) in
+                    print("closed")
                 }
+
             } else {
                 if let e = error?.description {
                     Logger.error("CONNECT Error: \(e)")
