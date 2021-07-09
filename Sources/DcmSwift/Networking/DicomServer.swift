@@ -7,31 +7,18 @@
 //
 
 import Foundation
-import Socket
+import NIO
 import Dispatch
 
 public class DicomServer: DicomService {
     var calledAET:DicomEntity!
     var port: Int = 11112
     
-    var listenSocket: Socket? = nil
-    var continueRunningValue = true
+    var channel: Channel!
+    var group:MultiThreadedEventLoopGroup!
+    var bootstrap:ServerBootstrap!
+
     
-    var connectedAssociations = [Int32: DicomAssociation]()
-    let socketLockQueue = DispatchQueue(label: "pro.opale.DcmSwift.socketLockQueue")
-    
-    var continueRunning: Bool {
-        set(newValue) {
-            socketLockQueue.sync {
-                self.continueRunningValue = newValue
-            }
-        }
-        get {
-            return socketLockQueue.sync {
-                self.continueRunningValue
-            }
-        }
-    }
     
     public init(port: Int, localAET:String) {
         super.init(localAET: localAET)
@@ -39,84 +26,41 @@ public class DicomServer: DicomService {
         self.calledAET = DicomEntity(title: localAET, hostname: "localhost", port: port)
         
         self.port = port
+        
+        self.group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+        self.bootstrap = ServerBootstrap(group: group)
+            // Specify backlog and enable SO_REUSEADDR for the server itself
+            .serverChannelOption(ChannelOptions.backlog, value: 256)
+            .serverChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
+            .childChannelInitializer { channel in
+                    // we create a new DicomAssociation for each new activating channel
+                    return channel.pipeline.addHandler(DicomAssociation(calledAET: self.calledAET))
+                }
+            
+            .childChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
+            .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
+            .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
     }
     
     deinit {
-        // Close all open sockets...
-        for assoc in connectedAssociations.values {
-            assoc.close()
-        }
-        self.listenSocket?.close()
+        channel.close(mode: .all, promise: nil)
     }
     
-    @available(OSX 10.12, *)
-    public func run() {
+    
+    public func start() {
         do {
-            // Create an IPV4 socket...
-            try self.listenSocket = Socket.create(family: .inet)
-            guard let socket = self.listenSocket else {
-                Logger.error("Unable to unwrap socket...")
-                return
-            }
-    
-            // Listen on the socket
-            try socket.listen(on: self.port)
-            Logger.info("Listening on port: \(socket.listeningPort)")
+            channel = try bootstrap.bind(host: "0.0.0.0", port: port).wait()
             
-            repeat {
-                let newSocket = try socket.acceptClientConnection()
-                
-                // detach new socket on another thread
-                Thread.detachNewThread {
-                    newSocket.readBufferSize = DicomConstants.maxPDULength
-                    Logger.debug("Accepted connection from: \(newSocket.remoteHostname) on port \(newSocket.remotePort)")
-                    
-                    // handle new association
-                    // TODO: commented because switching to SwiftNIO
-                    // self.handleAssociation(DicomAssociation(socket: newSocket, calledAET: self.calledAET), socket: newSocket)
-                }
-                
-            } while self.continueRunning
+            Logger.info("Server listening on port \(port)...")
             
+            try channel.closeFuture.wait()
+            
+        } catch let e {
+            Logger.error(e.localizedDescription)
         }
-        catch let error {
-            guard let socketError = error as? Socket.Error else {
-                Logger.error("Unexpected error...")
-                return
-            }
-            
-            if self.continueRunning {
-                Logger.error("Error reported:\n \(socketError.description)")
-                
-            }
-        }
-    }
-    
-    
-    private func handleAssociation(_ association:DicomAssociation, socket: Socket) {
-        // setup accepted presentation contexts
-        association.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP, result: 0x00)
-        association.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND, result: 0x00)
         
-        for sop in DicomConstants.storageSOPClasses {
-            association.addPresentationContext(abstractSyntax: sop, result: 0x00)
+        do {
+            try! group.syncShutdownGracefully()
         }
-        Logger.verbose("Server Presentation Contexts: \(association.presentationContexts)");
-        
-        // read ASSOCIATION-AC
-        // TODO: commented because SwiftNIO switching
-//        if association.acknowledge() {
-//            Logger.debug("Add association: [\(socket.socketfd)] calledAET:\(String(describing: association.calledAET)) <-> callingAET:\(String(describing: association.callingAET))")
-//            self.connectedAssociations[socket.socketfd] = association
-//
-//            // listen for DIMSE service messages (C-ECHO-RQ, C-FIND-RQ, etc.)
-//            association.listen { (sock) in
-//                self.connectedAssociations.removeValue(forKey: sock.socketfd)
-//
-//                Logger.debug("Remove association: [\(socket.socketfd)]")
-//
-//                sock.close()
-//            }
-//        }
     }
 }

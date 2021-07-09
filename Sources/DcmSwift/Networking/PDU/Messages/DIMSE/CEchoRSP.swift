@@ -49,8 +49,8 @@ public class CEchoRSP: DataTF {
     public override func decodeData(data: Data) -> DIMSEStatus.Status {
         super.decodeDIMSEStatus(data: data)
         
-        if let s = self.dimseStatus, s.status == DIMSEStatus.Status.Success {
-            return .Success
+        if let s = self.dimseStatus {
+            return s.status
         }
         
         return .Refused

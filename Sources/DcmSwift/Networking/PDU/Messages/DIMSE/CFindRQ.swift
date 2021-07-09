@@ -56,9 +56,9 @@ public class CFindRQ: DataTF {
         
         if let qrDataset = self.queryDataset, qrDataset.allElements.count > 0 {
             var datasetData = Data()
-            
+                        
             for e in qrDataset.allElements {
-                datasetData.append(e.toData(vrMethod: .Explicit, byteOrder: .LittleEndian))
+                datasetData.append(e.toData(vrMethod: .Implicit, byteOrder: .LittleEndian))
             }
             
             var pdvData2 = Data()
@@ -81,6 +81,8 @@ public class CFindRQ: DataTF {
     
     
     public override func decodeData(data: Data) -> DIMSEStatus.Status {
+        super.decodeDIMSEStatus(data: data)
+        
         return .Success
     }
     

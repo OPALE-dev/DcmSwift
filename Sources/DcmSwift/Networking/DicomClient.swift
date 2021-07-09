@@ -10,15 +10,15 @@ import Foundation
 import NIO
 
 
+public typealias ConnectCompletion = () -> Void
+public typealias ConnectErrorCompletion = (_ error:DicomError?) -> Void
 
 
 public class DicomClient : DicomService, StreamDelegate {
     public var localEntity:DicomEntity
     public var remoteEntity:DicomEntity
     
-    //private var socket:Socket!
     private var isConnected:Bool = false
-    
     private let group:MultiThreadedEventLoopGroup!
     private var bootstrap:ClientBootstrap!
     private var channel:Channel!
@@ -41,7 +41,7 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    public func connect(completion: ConnectCompletion) {
+    public func connect(connectCompletion: ConnectCompletion, errorCompletion:ConnectErrorCompletion) {
         bootstrap  = ClientBootstrap(group: group)
             .channelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
         
@@ -50,7 +50,7 @@ public class DicomClient : DicomService, StreamDelegate {
             
             self.isConnected = true
             
-            completion(self.isConnected, nil)
+            connectCompletion()
             
             try channel.closeFuture.wait()
             
@@ -59,7 +59,7 @@ public class DicomClient : DicomService, StreamDelegate {
             self.isConnected = false
         }
         
-        completion(self.isConnected, DicomError(description:  "Cannot connect", level: .error, realm: .custom))
+        errorCompletion(DicomError(description:  "Cannot connect", level: .error, realm: .custom))
     }
     
     public func disconnect() -> Bool {
@@ -73,15 +73,26 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    public func echo(pduCompletion: @escaping PDUCompletion, errorCompletion: @escaping ErrorCompletion, closeCompletion: @escaping CloseCompletion) {
+    public func echo(
+        pduCompletion: @escaping PDUCompletion,
+        errorCompletion: @escaping ErrorCompletion,
+        closeCompletion: @escaping CloseCompletion
+    ) {
         if !self.checkConnected(errorCompletion) { return }
 
-        let association = DicomAssociation(channel: self.channel, callingAET: self.localEntity, calledAET: self.remoteEntity)
+        let association = DicomAssociation(
+            channel: self.channel,
+            callingAET: self.localEntity,
+            calledAET: self.remoteEntity)
         
         association.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP)
         
         association.request { (message) in
-            if let response = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
+            if let response = PDUEncoder.shared.createDIMSEMessage(
+                pduType: PDUType.dataTF,
+                commandField: .C_ECHO_RQ,
+                association: association
+            ) as? PDUMessage {
                 association.write(
                     message: response,
                     readResponse: true,
@@ -109,7 +120,10 @@ public class DicomClient : DicomService, StreamDelegate {
         if !self.checkConnected(errorCompletion) { return }
 
         // create assoc between local and remote
-        let association = DicomAssociation(channel: self.channel, callingAET: self.localEntity, calledAET: self.remoteEntity)
+        let association = DicomAssociation(
+            channel: self.channel,
+            callingAET: self.localEntity,
+            calledAET: self.remoteEntity)
 
         // add C-FIND Study Root Query Level
         association.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND)
@@ -117,10 +131,17 @@ public class DicomClient : DicomService, StreamDelegate {
         // request assoc
         association.request { (message) in
             // create C-FIND-RQ message
-            guard let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_FIND_RQ, association: association) as? CFindRQ else {
+            guard let message = PDUEncoder.shared.createDIMSEMessage(
+                    pduType: PDUType.dataTF,
+                    commandField: .C_FIND_RQ,
+                    association: association
+            ) as? CFindRQ else {
                 errorCompletion(nil, DicomError(description: "Cannot create C_FIND_RQ message", level: .error))
                 return
             }
+            
+            // make sure our dataset has a QueryRetrieveLevel attribute
+            _ = queryDataset.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
 
             // add query dataset to the message
             message.queryDataset = queryDataset
@@ -154,7 +175,10 @@ public class DicomClient : DicomService, StreamDelegate {
     )  {
         if !self.checkConnected(errorCompletion) { return }
 
-        let association = DicomAssociation(channel: self.channel, callingAET: self.localEntity, calledAET: self.remoteEntity)
+        let association = DicomAssociation(
+            channel: self.channel,
+            callingAET: self.localEntity,
+            calledAET: self.remoteEntity)
 
         // Add all know storage SOP classes (maybe not the best approach on client side?)
         for abstractSyntax in DicomConstants.storageSOPClasses {
@@ -165,7 +189,11 @@ public class DicomClient : DicomService, StreamDelegate {
         association.request { (message) in
             var index = 0
             for f in files {
-                if let message = PDUEncoder.shared.createDIMSEMessage(pduType: PDUType.dataTF, commandField: .C_STORE_RQ, association: association) as? CStoreRQ {
+                if let message = PDUEncoder.shared.createDIMSEMessage(
+                    pduType: PDUType.dataTF,
+                    commandField: .C_STORE_RQ,
+                    association: association
+                ) as? CStoreRQ {
                     message.dicomFile = DicomFile(forPath: f)
 
                     association.write(
