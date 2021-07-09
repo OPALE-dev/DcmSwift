@@ -872,11 +872,9 @@ class DcmSwiftTests: XCTestCase {
         }
         
         if let rtDose = RTDose.init(forPath: p) {
-            
+            XCTAssertNotNil(rtDose.getUnscaledDose(column: 1, row: 1, frame: 1))
             if let unscaledDose = rtDose.getUnscaledDose(column: 1, row: 1, frame: 1) {
                 XCTAssertTrue(unscaledDose is UInt32)
-            } else {
-                Logger.error("It's nil")
             }
         }
     }
