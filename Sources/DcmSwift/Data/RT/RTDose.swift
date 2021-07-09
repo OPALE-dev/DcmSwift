@@ -72,36 +72,10 @@ public class RTDose : DicomFile {
             return nil
         }
         
-        if bitsAllocated == 16 {
-            if let pixelData = self.dataset.element(forTagName: "PixelData") {
-                let pixel = PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), length: 16, pixelRepresentation: pr)
-                return pixel
-                /*
-                if pixelRepresentation == 1 {
-                    let pixel = PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), length: 16, pixelRepresentation: pr)
-                    return pixel
-                } else {
-                    let pixel = PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), length: 16, pixelRepresentation: pr)
-                    return pixel
-                    //return (PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: pixelNumber, length: bitsAllocated, pixelRepresentation: pr) as? Int16)
-                }
-                */
-            }
-        } else if bitsAllocated == 32 {
-            if let pixelData = self.dataset.element(forTagName: "PixelData") {
+        if let pixelData = self.dataset.element(forTagName: "PixelData") {
+            let pixel = PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), length: UInt(bitsAllocated), pixelRepresentation: pr, byteOrder: pixelData.byteOrder)
+            return pixel
 
-                let pixel = PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), length: 32, pixelRepresentation: pr)
-                return pixel
-                /*
-                if pixelRepresentation == 1 {
-                    return getPixel(pixelDataElement: pixelData, pixelNumber: pixelNumber, length: bitsAllocated, pixelRepresentation: pr) as! UInt32
-                } else {
-                    return getPixel(pixelDataElement: pixelData, pixelNumber: pixelNumber, length: bitsAllocated, pixelRepresentation: pr) as! Int32
-                }
-                */
-            }
-        } else {
-            Logger.warning("16 or 32 bits, got \(bitsAllocated)")
         }
      
         return nil
