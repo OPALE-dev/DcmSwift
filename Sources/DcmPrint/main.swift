@@ -9,6 +9,7 @@ import Foundation
 import DcmSwift
 import ArgumentParser
 
+
 //struct DcmPrint: ParsableCommand {
 //    @Argument(help: "Path of DICOM file to print")
 //    var sourcePath: String
@@ -31,4 +32,3 @@ if let dir = DicomDir.parse(atPath: pathFolder) {
         print("key : \(a) value : \(b)")
     }
 }
-

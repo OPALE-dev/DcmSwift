@@ -10,7 +10,8 @@ DcmSwift is a (partial, work in progress) DICOM implementation written in Swift.
 
 ## Dependencies
 
-* IBM-Swift/BlueSocket (networking)
+* `IBM-Swift/BlueSocket` (networking)
+* `pointfreeco/swift-html` (HTML rendering)
 
 *Dependencies are managed by SPM.*
 
@@ -31,7 +32,6 @@ DcmSwift is widely used in the **DicomiX** application for macOS, which is avail
 DcmSwift relies on SPM so all you have to do is to declare it as a dependency of your target in your `Package.swift` file:
 
     dependencies: [
-        // Dependencies declare other packages that this package depends on.
         .package(name: "DcmSwift", url: "http://gitlab.dev.opale.pro/rw/DcmSwift.git", from:"0.0.1"),
     ]
     
@@ -45,11 +45,11 @@ DcmSwift relies on SPM so all you have to do is to declare it as a dependency of
         
 If you are using Xcode, you can add this package by repository address.
 
-## Getting Started
+## DICOM files
 
 ### Read a DICOM file
 
-Read a file in memory:
+Read a file:
 
     let dicomFile = DicomFile(forPath: filepath)
 
@@ -57,23 +57,35 @@ Get a DICOM dataset attribute:
 
     let patientName = dicomFile.dataset.string(forTag: "PatientName")
 
+### Write a DICOM file
+
 Set a DICOM dataset attribute:
 
     dicomFile.dataset.set(value:"John^Doe", forTagName: "PatientName")
-
-### Write a DICOM file
-
-Once modified, you can write the data to a file again:
+    
+Once modified, write the dataset to a file again:
 
     dicomFile.write(atPath: newPath)
 
-#### Data
+## DataSet
 
-### More in depth with DataSet
+### Read dataset 
 
-You can load a `DataSet` object directly from data:
+You can load a `DataSet` object manually using `DicomInputStream`:
 
-    let dataset = DataSet(withData: data)
+    let inputStream = DicomInputStream(filePath: filepath)
+
+    do {
+        if let dataset = try inputStream.readDataset() {
+            // ...
+        }
+    } catch {
+        Logger.error("Error")
+    }
+    
+`DicomInputStream` can also be initialized with `URL` or `Data` object.
+
+### Create DataSet from scratch
 
 Or you can create a totally genuine `DataSet` instance and start adding some element to it:
 
@@ -84,10 +96,58 @@ Or you can create a totally genuine `DataSet` instance and start adding some ele
     
     print(dataset.toData().toHex())
     
+Add an element, here a sequence, to a dataset:
+
+    dataset.add(element: DataSequence(withTag: tag, parent: nil))
+    
+## DICOMDIR
+
+Get all files indexed by a DICOMDIR file:
+
+    if let dicomDir = DicomDir(forPath: dicomDirPath) {
+        print(dicomDir.index)
+    }
+    
+List patients indexed in the DICOMDIR:
+
+    if let dicomDir = DicomDir(forPath: dicomDirPath) {
+        print(dicomDir.patients)
+    }
+
+Get files indexed by a DICOMDIR file for a specific `PatientID`:
+
+    if let dicomDir = DicomDir(forPath: dicomDirPath) {
+        if let files = dicomDir.index(forPatientID: "198726783") {
+            print(files)
+        }
+    }
+
+## DICOM SR
+
+Load and print SR Tree:
+
+    if let dicomFile = DicomFile(forPath: dicomSRPath) {
+        if let doc = dicomFile.structuredReportDocument {
+            print(doc)
+        }
+    }
+
+Load and print SR as HTML:
+
+    if let dicomFile = DicomFile(forPath: dicomSRPath) {
+        if let doc = dicomFile.structuredReportDocument {
+            print(doc.html)
+        }
+    }
+
 ## Using binaries
 
-The DcmSwift package embbed some binaries known as `DcmPrint`, `DcmAnonymize`, `DcmEcho`, etc. which you can compile and use as follow:
+The DcmSwift package embbed some binaries known as `DcmPrint`, `DcmAnonymize`, `DcmEcho`, etc. which you can build as follow:
 
+    swift build
+    
+To build release binaries:
+    
     swift build -c release
     
 Binaries can be found in `.build/release` directory. For example:
@@ -102,7 +162,7 @@ Run the command:
     
 ## Side notes
 
-### For testing networking
+### For testing/debuging networking
 
 Very useful DCMTK arguments for `storescp` program that show a lot of logs: 
 
@@ -112,6 +172,10 @@ Another alternative is `storescp` program from dcm4chee (5.x), but without the p
 
     storescp -b STORESCP@127.0.0.1:11112
     
+DCMTK proposes also a server, for testing `cfind` program:
+
+    dcmqrscp 11112 --log-level trace -c /path/to/config/dcmqrscp.cfg
+
 All the executables from both `DCMTK` and `dcm4chee` are very good reference for testing DICOM features.
 
 ## Disclamer

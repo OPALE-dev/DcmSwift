@@ -57,14 +57,14 @@ public class AssociationAC: PDUMessage {
     }
     
     
-    public override func decodeData(data:Data) -> Bool {
+    public override func decodeData(data:Data) -> DIMSEStatus.Status {
         var offset = 0
         
         // PDU type
         let pcPduType = data.first
         if pcPduType != 0x02 {
             Logger.error("ERROR: Waiting for an A-ASSOCIATE-AC message, received \(String(describing: pcPduType))")
-            return false
+            return .Refused
         }
         offset += 2
         
@@ -76,7 +76,7 @@ public class AssociationAC: PDUMessage {
         let protocolVersion = data.subdata(in: offset..<offset+2).toInt16(byteOrder: .BigEndian)
         if Int(protocolVersion) != self.association?.protocolVersion {
             Logger.error("WARN: Wrong protocol version")
-            return false
+            return .Refused
         }
         offset += 2
         
@@ -97,7 +97,7 @@ public class AssociationAC: PDUMessage {
         let acData = data.subdata(in: offset..<offset+acLength+4)
         guard let applicationContext = ApplicationContext(data: acData) else {
             Logger.error("Missing application context. Abort.")
-            return false
+            return .Refused
         }
         offset += acData.count
         self.association.remoteApplicationContext = applicationContext
@@ -127,17 +127,15 @@ public class AssociationAC: PDUMessage {
         
         guard let userInfo = UserInfo(data: userInfoData) else {
             Logger.warning("No user information values provided. Abort")
-            return false
+            return .Refused
         }
 
         self.association?.maxPDULength = userInfo.maxPDULength
         self.association?.remoteImplementationUID = userInfo.implementationUID
         self.association?.remoteImplementationVersion = userInfo.implementationVersion
         self.association?.associationAccepted = true
-
-        Logger.info(" ")
         
-        return true
+        return .Success
     }
     
     

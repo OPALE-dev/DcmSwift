@@ -31,17 +31,19 @@ struct DcmStore: ParsableCommand {
         
         let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
         
-        client.connect { (connected, error) in
-            if connected {
-                client.store([filePath]) { (progress) in
-                    
-                } completion: { (ok, message, error) in
-                    
-                }
-            } else {
-                if let e = error?.description {
-                    Logger.error("CONNECT Error: \(e)")
-                }
+        client.connect {
+            client.store([filePath]) { (progress) in
+                print("progress \(progress)")
+            } pduCompletion: { (message) in
+                print("receive message \(message.messageName())")
+            } errorCompletion: { (error) in
+                print(error)
+            } closeCompletion: { (assoc) in
+                print("closed")
+            }
+        } errorCompletion: { (error) in
+            if let e = error?.description {
+                Logger.error("CONNECT Error: \(e)")
             }
         }
     }

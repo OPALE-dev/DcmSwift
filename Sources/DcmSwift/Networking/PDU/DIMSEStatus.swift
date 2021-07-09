@@ -29,5 +29,5 @@ public struct DIMSEStatus {
         case Unknow                             = 0xA800
     }
     
-    let status: Status, command: CommandField
+    public let status: Status, command: CommandField
 }
