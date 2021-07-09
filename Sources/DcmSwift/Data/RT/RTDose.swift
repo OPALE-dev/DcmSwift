@@ -52,7 +52,7 @@ public class RTDose : DicomFile {
         return (frameCount, rows, columns, bitsAllocated, pixelRepresentation)
     }
     
-    public func getUnscaledDose(column: Int16, row: Int16, frame: Int16) -> Float64? {
+    public func getUnscaledDose(column: Int16, row: Int16, frame: Int16) -> Any? {
         guard let imageParams = getImageParameters() else {
             Logger.warning("Can't get image parameters")
             return nil
@@ -68,12 +68,38 @@ public class RTDose : DicomFile {
         var pixelNumber = frame * columns * rows
         pixelNumber += row * columns + column
         
+        guard let pr = DicomImage.PixelRepresentation.init(rawValue: Int(pixelRepresentation)) else {
+            return nil
+        }
+        
         if bitsAllocated == 16 {
             if let pixelData = self.dataset.element(forTagName: "PixelData") {
-                //
+                let pixel = PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), length: 16, pixelRepresentation: pr)
+                return pixel
+                /*
+                if pixelRepresentation == 1 {
+                    let pixel = PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), length: 16, pixelRepresentation: pr)
+                    return pixel
+                } else {
+                    let pixel = PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), length: 16, pixelRepresentation: pr)
+                    return pixel
+                    //return (PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: pixelNumber, length: bitsAllocated, pixelRepresentation: pr) as? Int16)
+                }
+                */
             }
         } else if bitsAllocated == 32 {
-            //
+            if let pixelData = self.dataset.element(forTagName: "PixelData") {
+
+                let pixel = PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), length: 32, pixelRepresentation: pr)
+                return pixel
+                /*
+                if pixelRepresentation == 1 {
+                    return getPixel(pixelDataElement: pixelData, pixelNumber: pixelNumber, length: bitsAllocated, pixelRepresentation: pr) as! UInt32
+                } else {
+                    return getPixel(pixelDataElement: pixelData, pixelNumber: pixelNumber, length: bitsAllocated, pixelRepresentation: pr) as! Int32
+                }
+                */
+            }
         } else {
             Logger.warning("16 or 32 bits, got \(bitsAllocated)")
         }

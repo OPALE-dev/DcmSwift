@@ -185,13 +185,13 @@ public class DicomInputStream {
 
 
     
-    private func forward(by bytes: Int) {
+    public func forward(by bytes: Int) {
         // read into the void...
         _ = read(length: bytes)
     }
     
     
-    internal func read(length:Int) -> Data? {
+    public func read(length:Int) -> Data? {
         // allocate memory buffer with given length
         let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: length)
         
