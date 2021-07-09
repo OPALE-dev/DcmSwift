@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  RTDose.swift
 //  
 //
 //  Created by Paul on 07/07/2021.
@@ -7,113 +7,155 @@
 
 import Foundation
 
-/*
+/**
  Helper functions
  TODO why not extension ?
  */
-public class RTDose : DicomFile {
+public class RTDose {
     
-    public func getDose(column: UInt, row: UInt, frame: UInt) {
-        
-    }
+    public let dicomRT: DicomRT
     
-    public func getImageParameters() -> (Int16, Int16, Int16, Int16, Int16)? {
-        guard let numberOfFrames = self.dataset.string(forTag: "NumberOfFrames"),// String, cast to Int16 later
-        let rows = self.dataset.integer16(forTag: "Rows"),// Int16
-        let columns = self.dataset.integer16(forTag: "Columns"),// Int16
-        let bitsAllocated = self.dataset.integer16(forTag: "BitsAllocated"),// Int16
-        let bitsStored = self.dataset.integer16(forTag: "BitsStored"),// Int16
-        let highBit = self.dataset.integer16(forTag: "HighBit"),// Int16
-        let pixelRepresentation = self.dataset.integer16(forTag: "PixelRepresentation") else {// Int16
-            return nil
-        }
-        
-        // if pixelRepresentation == 0: unsigned, == 1: signed
-        if pixelRepresentation != 0 && pixelRepresentation != 1 {
-            return nil
-        }
-        
-        guard let frameCount = Int16(numberOfFrames) else {
-            return nil
-        }
+    public var pixelRepresentation: DicomImage.PixelRepresentation!
+    public var bitsAllocated: Int16
     
-        if frameCount < 0 {
-            return nil
-        }
-        
-        if bitsStored != bitsAllocated {
-            return nil
-        }
-        
-        if highBit != bitsStored - 1 {
-            return nil
-        }
-        
-        return (frameCount, rows, columns, bitsAllocated, pixelRepresentation)
-    }
+    public var columns: Int16
+    public var rows: Int16
+    public var frames: Int16
     
-    public func getUnscaledDose(column: Int16, row: Int16, frame: Int16) -> Any? {
-        guard let imageParams = getImageParameters() else {
-            Logger.warning("Can't get image parameters")
+    public var column: Int16
+    public var row: Int16
+    public var frame: Int16
+    
+    public init?(dicomRTFile: DicomRT, column: Int16, row: Int16, frame: Int16) {
+
+        guard let imageParams = dicomRTFile.getImageParameters() else {
             return nil
         }
         
         let (frames, rows, columns, bitsAllocated, pixelRepresentation) = imageParams
         
+        if bitsAllocated != 16 && bitsAllocated != 32 {
+            return nil
+        }
+        
         if frame > frames || column > columns || row > rows {
             Logger.warning("frame > frames, or column > columns, or row > rows")
             return nil
         }
+        
+        self.dicomRT = dicomRTFile
+        if let p = DicomImage.PixelRepresentation.init(rawValue: Int(pixelRepresentation)) {
+            self.pixelRepresentation = p
+        }
+        self.bitsAllocated = bitsAllocated
+        
+        self.columns = columns
+        self.rows    = rows
+        self.frames  = frames
+        
+        self.column  = column
+        self.row     = row
+        self.frame   = frame
+    }
     
+    
+    //public func getDose(column: UInt, row: UInt, frame: UInt) -> Float64? {
+    public lazy var dose: Float64? = {
+        guard let doseGridScaling: String = self.dicomRT.dataset.string(forTag: "DoseGridScaling") else {
+            return nil
+        }
+        
+        guard let dgs = Float64(doseGridScaling) else {
+            return nil
+        }
+        
+        if pixelRepresentation == .Signed && bitsAllocated == 16 {
+            guard let udi16 = unscaledDoseI16 else {//}, let u = Float64(udi16) else {
+                return nil
+            }
+            return dgs * Float64(udi16)
+            
+        } else if pixelRepresentation == .Signed && bitsAllocated == 32 {
+            guard let udi32 = unscaledDoseI32 else {//, let u = Float64(udi32) else {
+                return nil
+            }
+            return dgs * Float64(udi32)
+            
+        } else if pixelRepresentation == .Unsigned && bitsAllocated == 16 {
+            guard let udu16 = unscaledDoseU16 else {//, let u = Float64(udu16) else {
+                return nil
+            }
+            return dgs * Float64(udu16)
+            
+        } else if pixelRepresentation == .Unsigned && bitsAllocated == 32 {
+            guard let udu32 = unscaledDoseU32 else {//, let u = Float64(udu32) else {
+                return nil
+            }
+            return dgs * Float64(udu32)
+        }
+        
+        return nil
+    }()
+
+    public lazy var unscaledDoseU32: UInt32? = {
+        return self.unscaledDose as! UInt32
+    }()
+    
+    public lazy var unscaledDoseU16: UInt16? = {
+        return self.unscaledDose as! UInt16
+    }()
+    
+    public lazy var unscaledDoseI32: Int32? = {
+        return self.unscaledDose as! Int32
+    }()
+    
+    public lazy var unscaledDoseI16: Int16? = {
+        return self.unscaledDose as! Int16
+    }()
+    
+    public lazy var unscaledDose: Any? = {
         var pixelNumber = frame * columns * rows
         pixelNumber += row * columns + column
         
-        guard let pr = DicomImage.PixelRepresentation.init(rawValue: Int(pixelRepresentation)) else {
+        guard let pixelData = self.dicomRT.dataset.element(forTagName: "PixelData") else {
+            //let pixel = PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), length: UInt(bitsAllocated), pixelRepresentation: pr, byteOrder: pixelData.byteOrder)
             return nil
-        }
-        
-        if let pixelData = self.dataset.element(forTagName: "PixelData") {
-            let pixel = PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), length: UInt(bitsAllocated), pixelRepresentation: pr, byteOrder: pixelData.byteOrder)
-            return pixel
-
         }
      
+        switch self.pixelRepresentation {
+        case .Signed:
+            if bitsAllocated == 16 {
+                return PixelDataAccess.getPixelSigned16(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), byteOrder: pixelData.byteOrder)
+            } else {
+                return PixelDataAccess.getPixelSigned32(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), byteOrder: pixelData.byteOrder)
+            }
+        case .Unsigned:
+            if bitsAllocated == 16 {
+                return PixelDataAccess.getPixelUnsigned16(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), byteOrder: pixelData.byteOrder)
+            } else {
+                return PixelDataAccess.getPixelUnsigned32(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), byteOrder: pixelData.byteOrder)
+            }
+        case .none:
+            return nil
+        }
+        
+        /*
+        if pixelRepresentation == .Signed && bitsAllocated == 16 {
+            //self.unscaledDoseI16 = getPixelSigned16(pixelDataElement: pixelDataElement, pixelNumber: pixelNumber, byteOrder: byteOrder)
+            return PixelDataAccess.getPixelSigned16(pixelDataElement: pixelData, pixelNumber: pixelNumber, byteOrder: pixelData.byteOrder)
+            
+        } else if pixelRepresentation == .Signed && bitsAllocated == 32 {
+            //self.unscaledDoseI32 = getPixelSigned32(pixelDataElement: pixelDataElement, pixelNumber: pixelNumber, byteOrder: byteOrder)
+            return PixelDataAccess.getPixelSigned32(pixelDataElement: pixelData, pixelNumber: pixelNumber, byteOrder: pixelData.byteOrder)
+        } else if pixelRepresentation == .Unsigned && bitsAllocated == 16 {
+            //self.unscaledDoseU16 = getPixelUnsigned16(pixelDataElement: pixelDataElement, pixelNumber: pixelNumber, byteOrder: byteOrder)
+            return PixelDataAccess.getPixelUnsigned16(pixelDataElement: pixelData, pixelNumber: pixelNumber, byteOrder: pixelData.byteOrder)
+        } else if pixelRepresentation == .Unsigned && bitsAllocated == 32 {
+            //self.unscaledDoseU32 = getPixelUnsigned32(pixelDataElement: pixelDataElement, pixelNumber: pixelNumber, byteOrder: byteOrder)
+            return PixelDataAccess.getPixelUnsigned32(pixelDataElement: pixelData, pixelNumber: pixelNumber, byteOrder: pixelData.byteOrder)
+        }
+         */
+     
         return nil
-    }
-    
-    public func getDoseImage() {
-        // TODO
-    }
-    
-    public func getDoseImages() {
-        // TODO
-    }
-    
-    public func getDoseImageWidth() -> Int16? {
-        if let columns = self.dataset.value(forTag: "Columns") {
-            return columns as! Int16
-        } else {
-            Logger.debug("No column data element")
-            return nil
-        }
-    }
-    
-    public func getDoseImageHeight() -> Int16? {
-        if let rows = self.dataset.value(forTag: "Rows") {
-            return rows as! Int16
-        } else {
-            Logger.debug("No row data element")
-            return nil
-        }
-    }
-    
-    public func isValid() -> Bool {
-        guard let imageParams = getImageParameters() else {
-            return false
-        }
-        
-        let (_, _, _, bitsAllocated, _) = imageParams
-        
-        return bitsAllocated == 16 || bitsAllocated == 32
-    }
+    }()
 }
