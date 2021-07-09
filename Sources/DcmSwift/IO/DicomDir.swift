@@ -22,8 +22,8 @@ public class DicomDir:DicomFile {
     // PatientID:PatientName
     public var patients:[String:String] = [:]
     
-    // StudyInstanceUID:[PatientID,StudyDate]
-    public var studies:[String:[String]] = [:]
+    // StudyInstanceUID:[PatientID,StudyDate,StudyTime,StudyDescription]
+    public var studies:[String:[Any]] = [:]
     
     // SeriesInstanceUID:[StudyInstanceUID
     public var series:[String:String] = [:]
@@ -93,7 +93,7 @@ public class DicomDir:DicomFile {
         for(patientsID,_) in patients {
             if(patientsID == givenID) {
                 for(studyUID, arrayStudies) in studies {
-                    if(patientsID == arrayStudies[0]) {
+                    if(patientsID == arrayStudies[0] as? String) {
                         for(seriesUID, studyUID_2) in series {
                             if(studyUID == studyUID_2) {
                                 for(_,array) in images {
@@ -222,11 +222,13 @@ public class DicomDir:DicomFile {
                         }
                         
                         if element.name == "StudyTime" {
-                            studyDate = "\(element.value)"
+                            studyTime = "\(element.value)"
+                            studies[studyUID]?.insert(studyTime, at: 2)
                         }
                         
                         if element.name == "StudyDescription" {
-                            studyDate = "\(element.value)"
+                            studyDescri = "\(element.value)"
+                            studies[studyUID]?.insert(studyDescri, at: 3)
                         }
                         
                     // Load the series property
@@ -348,7 +350,7 @@ public class DicomDir:DicomFile {
             
             for(studyID,patientID_2) in studies {
                 
-                if(patientID == patientID_2[0]) {
+                if(patientID == patientID_2[0] as? String) {
                 
                     let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
                     let item = DataItem(withTag: tagItem, parent: sequence)
@@ -361,17 +363,29 @@ public class DicomDir:DicomFile {
                     
                     let elementStudyInstanceUID = DataElement(withTag: tagstID, parent: item)
                     let elementStudyType = DataElement(withTag: tagType, parent: item)
+                    let elementStudyDate = DataElement(withTag: tagstDate, parent: item)
+                    let elementStudyTime = DataElement(withTag: tagstTime, parent: item)
+                    let elementStudyDescri = DataElement(withTag: tagstDescription, parent: item)
                     
                     _ = elementRecordInUseFlag.setValue(-1)
-                    _ = elementStudyInstanceUID.setValue(studyID)
                     _ = elementStudyType.setValue("STUDY")
+                    _ = elementStudyDate.setValue(patientID_2[1])
+                    _ = elementStudyTime.setValue(patientID_2[2])
+                    _ = elementStudyDescri.setValue(patientID_2[3])
+                    _ = elementStudyInstanceUID.setValue(studyID)
                     
-                    offset += elementStudyInstanceUID.toData().count
+                    offset += elementRecordInUseFlag.toData().count
                     offset += elementStudyType.toData().count
+                    offset += elementStudyDate.toData().count
+                    offset += elementStudyTime.toData().count
+                    offset += elementStudyDescri.toData().count
+                    offset += elementStudyInstanceUID.toData().count
                     
                     item.elements.append(elementRecordInUseFlag)
                     item.elements.append(elementStudyType)
-                    item.elements.append(elementCharacterSet)
+                    item.elements.append(elementStudyDate)
+                    item.elements.append(elementStudyTime)
+                    //item.elements.append(elementCharacterSet)
                     item.elements.append(elementStudyInstanceUID)
                     
                     for(serieID,studyID_2) in series {
@@ -517,12 +531,18 @@ public class DicomDir:DicomFile {
                 
                 // fill study property
                 let studyKey = dcmFile.dataset.string(forTag: "StudyInstanceUID")
+                let date = dcmFile.dataset.date(forTag: "StudyDate")
+                let time = dcmFile.dataset.time(forTag: "StudyTime")
+                let description = dcmFile.dataset.time(forTag: "StudyDescription")
                 let studyVal = patientKey
                 
                 if let key = studyKey {
                     if dcmDir.studies[key] == nil {
                         dcmDir.studies[key] = []
                         dcmDir.studies[key]?.insert(studyVal!, at: 0)
+                        dcmDir.studies[key]?.insert(date as Any, at: 1)
+                        dcmDir.studies[key]?.insert(time as Any, at: 2)
+                        dcmDir.studies[key]?.insert(description as Any, at: 3)
                     }
                 }
                 

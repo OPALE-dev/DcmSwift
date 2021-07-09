@@ -31,3 +31,4 @@ if let dir = DicomDir.parse(atPath: pathFolder) {
         print("key : \(a) value : \(b)")
     }
 }
+
