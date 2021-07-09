@@ -134,8 +134,6 @@ public class AssociationAC: PDUMessage {
         self.association?.remoteImplementationUID = userInfo.implementationUID
         self.association?.remoteImplementationVersion = userInfo.implementationVersion
         self.association?.associationAccepted = true
-
-        Logger.info(" ")
         
         return .Success
     }

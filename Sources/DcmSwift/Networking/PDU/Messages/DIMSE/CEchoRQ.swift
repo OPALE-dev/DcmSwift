@@ -43,7 +43,10 @@ public class CEchoRQ: DataTF {
     }
     
     public override func decodeData(data: Data) -> DIMSEStatus.Status {
-        print("TODO: decodeData")
+        super.decodeDIMSEStatus(data: data)
+        
+        print("TODO: decodeData \(self.dimseStatus)")
+        
         return .Success
     }
     

@@ -28,30 +28,25 @@ struct DcmFind: ParsableCommand {
         
         let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
         
-        client.connect { (connected, error) in
-            if connected {
-                let dataset = DataSet()
-                
-                //_ = dataset.set(value:"John^Doe", forTagName: "PatientName")
-                _ = dataset.set(value:"*", forTagName: "PatientID")
-                
-                client.find(dataset) { (message) in
-                    if message.dimseStatus.status == DIMSEStatus.Status.Success {
-                        print("C-FIND-RSP dataset: \(message.responseDataset)")
-                    } else {
-                        Logger.error("C-FIND-RSP Unsuccessful DIMSE status: : \(message.dimseStatus.status)")
-                    }
-                    
-                } errorCompletion: { (message, error) in
-                    print(error)
-                } closeCompletion: { (assoc) in
-                    
+        client.connect {
+            let dataset = DataSet()
+            //_ = dataset.set(value:"*", forTagName: "PatientID")
+            
+            client.find(dataset) { (message) in
+                if message.dimseStatus.status == DIMSEStatus.Status.Success {
+                    print("C-FIND-RSP dataset: \(message.responseDataset != nil)")
+                } else {
+                    Logger.error("C-FIND-RSP Failed")
                 }
                 
-            } else {
-                if let e = error?.description {
-                    Logger.error("CONNECT Error: \(e)")
-                }
+            } errorCompletion: { (message, error) in
+
+            } closeCompletion: { (assoc) in
+                
+            }
+        } errorCompletion: { (error) in
+            if let e = error?.description {
+                Logger.error("CONNECT Error: \(e)")
             }
         }
     }

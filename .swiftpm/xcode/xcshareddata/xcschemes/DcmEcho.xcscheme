@@ -80,7 +80,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "DCMQRSCP"
+            argument = "DCM4CHEE"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -88,7 +88,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "4097"
+            argument = "11112"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

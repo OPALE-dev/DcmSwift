@@ -45,6 +45,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     
     public var sopClassesArray:[[String : String]]       = []
     public var transferSyntaxArray:[[String : String]]   = []
+    public var sopPairs:[String: [String]] = [:]
     
     private var parser = XMLParser()
     
@@ -66,6 +67,29 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         self.parser.delegate = self
         
         self.parser.parse()
+        
+        self.sopPairs = [
+            DicomConstants.verificationSOP: [
+                TransferSyntax.implicitVRLittleEndian,
+                TransferSyntax.explicitVRLittleEndian,
+                TransferSyntax.explicitVRBigEndian
+            ],
+            DicomConstants.StudyRootQueryRetrieveInformationModelFIND: [
+                TransferSyntax.implicitVRLittleEndian,
+                TransferSyntax.explicitVRLittleEndian,
+                TransferSyntax.explicitVRBigEndian
+            ]
+        ]
+        
+        for storageSOP in sopClassesArray {
+            if let uid = storageSOP["uid"] {
+                sopPairs[uid] = [
+                    TransferSyntax.implicitVRLittleEndian,
+                    TransferSyntax.explicitVRLittleEndian,
+                    TransferSyntax.explicitVRBigEndian
+                ]
+            }
+        }
     }
     
     

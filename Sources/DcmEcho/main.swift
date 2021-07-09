@@ -27,25 +27,22 @@ struct DcmEcho: ParsableCommand {
         let calledAE    = DicomEntity(title: calledAET, hostname: calledHostname, port: calledPort)
 
         let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
-
-        client.connect { (connected, error) in
-            if connected {
-                client.echo { (message) in
-                    Logger.info("ECHO Succeeded: \(message.messageName())")
-                }
-                errorCompletion: { (error) in
-                    if let e = error?.description {
-                        Logger.error("ECHO Failed: \(e)")
-                    }
-                }
-                closeCompletion: { (association) in
-                    
-                }
-
-            } else {
+        
+        client.connect {
+            client.echo { (message) in
+                Logger.info("ECHO Succeeded: \(message.messageName())")
+            }
+            errorCompletion: { (message, error) in
                 if let e = error?.description {
-                    Logger.error("CONNECT Error: \(e)")
+                    Logger.error("ECHO Failed: \(e)")
                 }
+            }
+            closeCompletion: { (association) in
+                
+            }
+        } errorCompletion: { (error) in
+            if let e = error?.description {
+                Logger.error("CONNECT Error: \(e)")
             }
         }
     }
