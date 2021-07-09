@@ -70,25 +70,25 @@ public class RTDose {
         }
         
         if pixelRepresentation == .Signed && bitsAllocated == 16 {
-            guard let udi16 = unscaledDoseI16 else {//}, let u = Float64(udi16) else {
+            guard let udi16 = unscaledDoseI16 else {
                 return nil
             }
             return dgs * Float64(udi16)
             
         } else if pixelRepresentation == .Signed && bitsAllocated == 32 {
-            guard let udi32 = unscaledDoseI32 else {//, let u = Float64(udi32) else {
+            guard let udi32 = unscaledDoseI32 else {
                 return nil
             }
             return dgs * Float64(udi32)
             
         } else if pixelRepresentation == .Unsigned && bitsAllocated == 16 {
-            guard let udu16 = unscaledDoseU16 else {//, let u = Float64(udu16) else {
+            guard let udu16 = unscaledDoseU16 else {
                 return nil
             }
             return dgs * Float64(udu16)
             
         } else if pixelRepresentation == .Unsigned && bitsAllocated == 32 {
-            guard let udu32 = unscaledDoseU32 else {//, let u = Float64(udu32) else {
+            guard let udu32 = unscaledDoseU32 else {
                 return nil
             }
             return dgs * Float64(udu32)
@@ -118,7 +118,6 @@ public class RTDose {
         pixelNumber += row * columns + column
         
         guard let pixelData = self.dicomRT.dataset.element(forTagName: "PixelData") else {
-            //let pixel = PixelDataAccess.getPixel(pixelDataElement: pixelData, pixelNumber: Int(pixelNumber), length: UInt(bitsAllocated), pixelRepresentation: pr, byteOrder: pixelData.byteOrder)
             return nil
         }
      
@@ -138,24 +137,5 @@ public class RTDose {
         case .none:
             return nil
         }
-        
-        /*
-        if pixelRepresentation == .Signed && bitsAllocated == 16 {
-            //self.unscaledDoseI16 = getPixelSigned16(pixelDataElement: pixelDataElement, pixelNumber: pixelNumber, byteOrder: byteOrder)
-            return PixelDataAccess.getPixelSigned16(pixelDataElement: pixelData, pixelNumber: pixelNumber, byteOrder: pixelData.byteOrder)
-            
-        } else if pixelRepresentation == .Signed && bitsAllocated == 32 {
-            //self.unscaledDoseI32 = getPixelSigned32(pixelDataElement: pixelDataElement, pixelNumber: pixelNumber, byteOrder: byteOrder)
-            return PixelDataAccess.getPixelSigned32(pixelDataElement: pixelData, pixelNumber: pixelNumber, byteOrder: pixelData.byteOrder)
-        } else if pixelRepresentation == .Unsigned && bitsAllocated == 16 {
-            //self.unscaledDoseU16 = getPixelUnsigned16(pixelDataElement: pixelDataElement, pixelNumber: pixelNumber, byteOrder: byteOrder)
-            return PixelDataAccess.getPixelUnsigned16(pixelDataElement: pixelData, pixelNumber: pixelNumber, byteOrder: pixelData.byteOrder)
-        } else if pixelRepresentation == .Unsigned && bitsAllocated == 32 {
-            //self.unscaledDoseU32 = getPixelUnsigned32(pixelDataElement: pixelDataElement, pixelNumber: pixelNumber, byteOrder: byteOrder)
-            return PixelDataAccess.getPixelUnsigned32(pixelDataElement: pixelData, pixelNumber: pixelNumber, byteOrder: pixelData.byteOrder)
-        }
-         */
-     
-        return nil
     }()
 }
