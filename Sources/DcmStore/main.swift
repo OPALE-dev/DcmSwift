@@ -36,7 +36,7 @@ struct DcmStore: ParsableCommand {
                 print("progress \(progress)")
             } pduCompletion: { (message) in
                 print("receive message \(message.messageName())")
-            } errorCompletion: { (error) in
+            } errorCompletion: { (message, error) in
                 print(error)
             } closeCompletion: { (assoc) in
                 print("closed")

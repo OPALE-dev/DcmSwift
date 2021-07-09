@@ -12,6 +12,13 @@ import Foundation
  Class representing a DICOM file and all associated methods.
  With this class you can load a DICOM file from a given path to access its dataset of attributes.
  You can also write the dataset back to a file, process some validation, and get access to image or PDF data.
+ 
+ Example:
+ 
+        let dicomFile = DicomFile(forPath: filepath)
+ 
+        print(dicomFile.dataset)
+ 
  */
 public class DicomFile {
     // MARK: - Attributes
