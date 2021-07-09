@@ -23,28 +23,19 @@ class DcmSwiftTests: XCTestCase {
     // Configure the test suite with the following boolean attributes
     
     /// Run tests on DICOM Date and Time
-    private static var testDicomDateAndTime     = true
+    private static var testDicomDateAndTime     = false
     
     /// Run tests to read files (rely on embedded test files, dynamically generated)
-    private static var testDicomFileRead        = true
+    private static var testDicomFileRead        = false
     
     /// Run tests to write files (rely on embedded test files, dynamically generated)
-    private static var testDicomFileWrite       = true
+    private static var testDicomFileWrite       = false
     
     /// Run tests to update dataset (rely on embedded test files, dynamically generated)
     private static var testDicomDataSet         = false
     
     /// Run tests to read image(s) (rely on embedded test files, dynamically generated)
     private static var testDicomImage           = false
-    
-    /// Run Age String (AS VR) related tests
-    private static var testAgeString            = true
-    
-    /// Run
-    private static var testUID                  = false
-    
-    private static var testDicomDir             = true
-    
     
     internal var filePath:String!
     private var finderTestDir:String = ""
@@ -94,30 +85,9 @@ class DcmSwiftTests: XCTestCase {
             suite.addTest(DcmSwiftTests(selector: #selector(readWriteDicomRange)))
         }
         
+
         
-        if testAgeString {
-            suite.addTest(DcmSwiftTests(selector: #selector(ageStringPositiveAge)))
-            suite.addTest(DcmSwiftTests(selector: #selector(ageStringNegativeAge)))
-            suite.addTest(DcmSwiftTests(selector: #selector(ageStringInitWithString)))
-            suite.addTest(DcmSwiftTests(selector: #selector(ageStringAge)))
-            suite.addTest(DcmSwiftTests(selector: #selector(ageStringValidate)))
-            suite.addTest(DcmSwiftTests(selector: #selector(ageStringVariations)))
-        }
-        
-        if testUID {
-            suite.addTest(DcmSwiftTests(selector: #selector(validateUID)))
-            suite.addTest(DcmSwiftTests(selector: #selector(generateUID)))
-        }
-        
-        if testDicomDir {
-            suite.addTest(DcmSwiftTests(selector: #selector(testParseDicomDir)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testIsDicomDir)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testIndex)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testIndexForStudy)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testAmputation)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testCreateDirectoryRecordSequence)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testWriteDicomDir)))
-        }
+
         
         if testDicomFileRead {
             paths.forEach { path in
@@ -194,159 +164,7 @@ class DcmSwiftTests: XCTestCase {
     
     
     
-    
-    //MARK: -
-    public func ageStringPositiveAge() {
-        let currentDate = Date()
-        var dateComponent = DateComponents()
-        
-        // two years in the past
-        dateComponent.year = -2
-                
-        if let futureDate = Calendar.current.date(byAdding: dateComponent, to: currentDate) {
-            // should not be nil
-            XCTAssertNotNil(AgeString(birthdate: futureDate))
-        }
-    }
-    
-    public func ageStringNegativeAge() {
-        let currentDate = Date()
-        var dateComponent = DateComponents()
-        
-        // two years in the future
-        dateComponent.year = 2
-                
-        if let futureDate = Calendar.current.date(byAdding: dateComponent, to: currentDate) {
-            // should be nil
-            XCTAssertNil(AgeString(birthdate: futureDate))
-        }
-    }
 
-    // Tests Colombe
-    
-    func ageStringInitWithString() {
-        let works = "005D"
-        if let res = AgeString.init(ageString: works) {
-            XCTAssertNotNil(res)
-        }
-        
-        let dsntWorks = "marche pas"
-        if let res = AgeString.init(ageString: dsntWorks) {
-            XCTAssertNil(res)
-        }
-    }
-
-    
-    func ageStringValidate() {
-        let works = "005D"
-        if let astrWorks = AgeString.init(ageString: works) {
-            XCTAssertTrue(astrWorks.validate(age: works))
-        }
-        
-        let dsntWorks = "hello"
-        if let astrDsntWorks = AgeString.init(ageString: dsntWorks) {
-            XCTAssertFalse(astrDsntWorks.validate(age: dsntWorks))
-        }
-    }
-    
-    func ageStringAge() {
-        let works = "005D"
-        let astrWorks = AgeString.init(ageString: works)
-        XCTAssertNotNil(astrWorks?.age(withPrecision: .days))
-        
-        let dsntWorks = "hello"
-        let astrDsntWorks = AgeString.init(ageString: dsntWorks)
-        XCTAssertNil(astrDsntWorks?.age(withPrecision: .days))
-    }
-    
-    func ageStringVariations() {
-        let ages = ["012A", "220M", "034W", "005D"]
-        for age in ages  {
-            if let astrWorks = AgeString.init(ageString: age) {
-                XCTAssertTrue(astrWorks.validate(age: age))
-            }
-        }
-    }
-    
-    func ageStringFormat() {
-        let source  = ["334D", "034Y", "111W", "002D"]
-        let dest    = ["10 months", "34 ans", "2 years", "2 days"]
-        
-        var index = 0
-        
-        for s in source {
-            let agStr = AgeString.init(ageString: s)
-            
-            if let a = agStr  {
-                XCTAssertEqual(a.format(), dest[index])
-            }
-            
-            index += 1
-        }
-    }
-    
-    
-    // UID
-    public func validateUID() {
-        let valUID = "1.102.99"
-        XCTAssertTrue(UID.validate(uid: valUID))
-        
-        let invalUID1 = "1.012.5"
-        let invalUID2 = "coucou"
-        
-        XCTAssertFalse(UID.validate(uid: invalUID1))
-        XCTAssertFalse(UID.validate(uid: invalUID2))
-    }
-    
-    public func generateUID() {
-        let valUID = "1.102.99"
-        XCTAssertNotNil(UID.generate(root: valUID))
-    }
-    
-    
-    
-    //MARK: TESTS DICOMDIR
-    
-    func testParseDicomDir() {
-        
-    }
-    
-    func testIsDicomDir() {
-        let pathTrue = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR/DICOMDIR"
-        let b:Bool = DicomDir.isDicomDir(forPath:pathTrue)
-        XCTAssertTrue(b)
-        
-        let pathFalse = "/Users/home/Downloads/commons-io-2.10.0-bin.zip"
-        let p:Bool = DicomDir.isDicomDir(forPath:pathFalse)
-        XCTAssertFalse(p)
-    }
-    
-    func testIndex() {
-        let pathFolder = "/Users/home/Documents/2_skull_ct/DICOM"
-        if let dir = DicomDir.parse(atPath: pathFolder) {
-            for(a,b) in dir.studies {
-                Logger.info("a : \(a) b : \(b)")
-            }
-        }
-    }
-    
-    func testIndexForStudy() {
-        
-    }
-    
-    func testAmputation() {
-        let path = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR/DICOMDIR"
-        let path_2 = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR"
-        XCTAssertEqual(DicomDir.amputation(forPath: path),path_2)
-    }
-    
-    func testCreateDirectoryRecordSequence() {
-        
-    }
-    
-    func testWriteDicomDir() {
-        //XCTAssertTrue()
-    }
     
     
     // MARK: -

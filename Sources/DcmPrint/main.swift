@@ -27,8 +27,17 @@ import ArgumentParser
 
 let pathFolder = "/Users/home/Documents/2_skull_ct/DICOM"
 
+/*
 if let dir = DicomDir.parse(atPath: pathFolder) {
     for (a,b) in dir.studies {
         print("key : \(a) value : \(b)")
     }
 }
+*/
+
+let dcmDir = DicomDir.init()
+let d = DicomDir.parse(atPath: pathFolder)
+let dir = d!.writeDicomDir(atPath: "/Users/home/Documents/Test write DICOMDIR/")
+
+//let d2 = DicomDir.init(forPath: "/Users/home/Documents/Test write DICOMDIR/DICOMDIR")
+//print(d2?.index)
