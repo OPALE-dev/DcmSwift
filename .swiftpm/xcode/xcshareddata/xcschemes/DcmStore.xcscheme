@@ -92,7 +92,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/Users/nark/Desktop/US0001"
+            argument = "&apos;/Users/nark/Pictures/DICOM/MG-MONO2-16 (Little Endian Explicit VR).dcm&apos;"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

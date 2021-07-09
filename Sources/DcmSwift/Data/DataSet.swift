@@ -34,14 +34,19 @@ public class DataSet: DicomObject {
         
         sortElements()
         
-        string += "# Dicom-Meta-Information-Header\n"
-        string += "# Used TransferSyntax: \(VRMethod.Explicit)\n"
+        
+        if metaInformationHeaderElements.count > 0 {
+            string += "# Dicom-Meta-Information-Header\n"
+            string += "# Used TransferSyntax: \(VRMethod.Explicit)\n"
+        }
+        
         for e in metaInformationHeaderElements {
             string += e.description + "\n"
         }
+        
         string += "\n"
         string += "# Dicom-Dataset\n"
-        string += "# Used TransferSyntax: \(self.transferSyntax)\n"
+        string += "# Used TransferSyntax: \(self.transferSyntax?.tsName ?? "Unknow")\n"
         for e in datasetElements {
             string += e.description + "\n"
         }
@@ -211,7 +216,9 @@ public class DataSet: DicomObject {
     public func date(forTag tag:String ) -> Date? {
         for el in allElements {
             if el.name == tag {
-                if let str = el.value as? String {
+                if let date = el.value as? Date {
+                    return date
+                } else if let str = el.value as? String {
                     return Date(dicomDate: str)
                 }
             }
@@ -332,7 +339,16 @@ public class DataSet: DicomObject {
     
 
     
-    
+    public func add(element:DataElement) {
+        if element.group != DicomConstants.metaInformationGroup {
+            datasetElements.append(element)
+        }
+        else {
+            metaInformationHeaderElements.append(element)
+        }
+        
+        allElements.append(element)
+    }
     
     
     public func write(
@@ -366,16 +382,6 @@ public class DataSet: DicomObject {
         return FileManager.default.createFile(atPath: path, contents: data, attributes: nil)
     }
     
-    public func add(element:DataElement) {
-        if element.group != DicomConstants.metaInformationGroup {
-            datasetElements.append(element)
-        }
-        else {
-            metaInformationHeaderElements.append(element)
-        }
-            
-        allElements.append(element)
-    }
 }
 
 // MARK: - Private DataSet methods

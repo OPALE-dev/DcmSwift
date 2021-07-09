@@ -23,13 +23,13 @@ class DcmSwiftTests: XCTestCase {
     // Configure the test suite with the following boolean attributes
     
     /// Run tests on DICOM Date and Time
-    private static var testDicomDateAndTime     = false
+    private static var testDicomDateAndTime     = true
     
     /// Run tests to read files (rely on embedded test files, dynamically generated)
-    private static var testDicomFileRead        = false
+    private static var testDicomFileRead        = true
     
     /// Run tests to write files (rely on embedded test files, dynamically generated)
-    private static var testDicomFileWrite       = false
+    private static var testDicomFileWrite       = true
     
     /// Run tests to update dataset (rely on embedded test files, dynamically generated)
     private static var testDicomDataSet         = false
@@ -38,15 +38,13 @@ class DcmSwiftTests: XCTestCase {
     private static var testDicomImage           = false
     
     /// Run Age String (AS VR) related tests
-    private static var testAgeString            = false
+    private static var testAgeString            = true
     
     /// Run
     private static var testUID                  = false
     
     private static var testDicomDir             = true
     
-    // TODO: add tests for DicomUID
-    // TODO: add tests for AgeString
     
     internal var filePath:String!
     private var finderTestDir:String = ""
@@ -176,7 +174,7 @@ class DcmSwiftTests: XCTestCase {
     private class func addFileTest(withName name: String, inSuite suite: XCTestSuite, withPath path:String, block: Any) {
         var fileName = String((path as NSString).deletingPathExtension.split(separator: "/").last!)
         fileName = (fileName as NSString).replacingOccurrences(of: "-", with: "_")
-        
+                 
         // with help of ObjC runtime we add new test method to class
         let implementation = imp_implementationWithBlock(block)
         let selectorName = "test_\(name)_\(fileName)"
@@ -303,6 +301,51 @@ class DcmSwiftTests: XCTestCase {
     public func generateUID() {
         let valUID = "1.102.99"
         XCTAssertNotNil(UID.generate(root: valUID))
+    }
+    
+    
+    
+    //MARK: TESTS DICOMDIR
+    
+    func testParseDicomDir() {
+        
+    }
+    
+    func testIsDicomDir() {
+        let pathTrue = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR/DICOMDIR"
+        let b:Bool = DicomDir.isDicomDir(forPath:pathTrue)
+        XCTAssertTrue(b)
+        
+        let pathFalse = "/Users/home/Downloads/commons-io-2.10.0-bin.zip"
+        let p:Bool = DicomDir.isDicomDir(forPath:pathFalse)
+        XCTAssertFalse(p)
+    }
+    
+    func testIndex() {
+        let pathFolder = "/Users/home/Documents/2_skull_ct/DICOM"
+        if let dir = DicomDir.parse(atPath: pathFolder) {
+            for(a,b) in dir.studies {
+                Logger.info("a : \(a) b : \(b)")
+            }
+        }
+    }
+    
+    func testIndexForStudy() {
+        
+    }
+    
+    func testAmputation() {
+        let path = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR/DICOMDIR"
+        let path_2 = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR"
+        XCTAssertEqual(DicomDir.amputation(forPath: path),path_2)
+    }
+    
+    func testCreateDirectoryRecordSequence() {
+        
+    }
+    
+    func testWriteDicomDir() {
+        //XCTAssertTrue()
     }
     
     
@@ -696,9 +739,12 @@ class DcmSwiftTests: XCTestCase {
             Logger.info("#########################################################")
             
             return true
+        } else {
+            Logger.info("# Error: cannot open file: \(writePath)")
+            Logger.info("#")
+            Logger.info("#########################################################")
+            return false
         }
-        
-        return true
     }
     
     
@@ -729,9 +775,12 @@ class DcmSwiftTests: XCTestCase {
             Logger.info("#########################################################")
             
             return true
+        } else {
+            Logger.info("# Error: cannot open file: \(writePath)")
+            Logger.info("#")
+            Logger.info("#########################################################")
+            return false
         }
-        
-        return true
     }
     
     
@@ -774,48 +823,5 @@ class DcmSwiftTests: XCTestCase {
         let output: String = String(data: data, encoding: String.Encoding.utf8)!
         
         return output
-    }
-    
-    //MARK: TESTS DICOMDIR
-    
-    func testParseDicomDir() {
-        
-    }
-    
-    func testIsDicomDir() {
-        let pathTrue = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR/DICOMDIR"
-        let b:Bool = DicomDir.isDicomDir(forPath:pathTrue)
-        XCTAssertTrue(b)
-        
-        let pathFalse = "/Users/home/Downloads/commons-io-2.10.0-bin.zip"
-        let p:Bool = DicomDir.isDicomDir(forPath:pathFalse)
-        XCTAssertFalse(p)
-    }
-    
-    func testIndex() {
-        let pathFolder = "/Users/home/Documents/2_skull_ct/DICOM"
-        if let dir = DicomDir.parse(atPath: pathFolder) {
-            for(a,b) in dir.studies {
-                Logger.info("a : \(a) b : \(b)")
-            }
-        }
-    }
-    
-    func testIndexForStudy() {
-        
-    }
-    
-    func testAmputation() {
-        let path = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR/DICOMDIR"
-        let path_2 = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR"
-        XCTAssertEqual(DicomDir.amputation(forPath: path),path_2)
-    }
-    
-    func testCreateDirectoryRecordSequence() {
-        
-    }
-    
-    func testWriteDicomDir() {
-        //XCTAssertTrue()
     }
 }

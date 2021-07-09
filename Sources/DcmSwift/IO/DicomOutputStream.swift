@@ -52,9 +52,6 @@ public class DicomOutputStream {
             
             // DICM magic word
             try write(data: DicomConstants.dicomMagicWord.data(using: .ascii)!)
-        } else {
-            // write empty 0008,0000 tag
-            try write(data: Data([0x08, 0x00, 0x00, 0x00]))
         }
         
         // make sure element are in correct order

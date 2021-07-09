@@ -25,7 +25,7 @@ public class Abort: PDUMessage {
         return data
     }
     
-    public override func decodeData(data: Data) -> Bool {
-        return false
+    public override func decodeData(data: Data) -> DIMSEStatus.Status {
+        return .Success
     }
 }

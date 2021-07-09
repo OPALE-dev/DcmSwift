@@ -15,14 +15,15 @@ public class CEchoRQ: DataTF {
     
     public override func data() -> Data {
         var data = Data()
-        
+          
         let pdvDataset = DataSet()
         _ = pdvDataset.set(value: CommandField.C_ECHO_RQ.rawValue.bigEndian, forTagName: "CommandField")
         _ = pdvDataset.set(value: self.association.abstractSyntax, forTagName: "AffectedSOPClassUID")
         _ = pdvDataset.set(value: self.messageID, forTagName: "MessageID")
         _ = pdvDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
-        
-        let commandGroupLength = pdvDataset.toData().count
+
+        // Why implicit endian ??.LittleEndian
+        let commandGroupLength = pdvDataset.toData(vrMethod: .Implicit, byteOrder: .LittleEndian).count
         _ = pdvDataset.set(value: UInt32(commandGroupLength).bigEndian, forTagName: "CommandGroupLength")
         
         var pdvData = Data()
@@ -30,7 +31,7 @@ public class CEchoRQ: DataTF {
         pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
         pdvData.append(uint8: association.presentationContexts.keys.first!, bigEndian: true) // Context
         pdvData.append(byte: 0x03) // Flags
-        pdvData.append(pdvDataset.toData())
+        pdvData.append(pdvDataset.toData(vrMethod: .Implicit, byteOrder: .LittleEndian))
         
         let pduLength = UInt32(pdvLength + 4)
         data.append(uint8: self.pduType.rawValue, bigEndian: true)
@@ -41,9 +42,12 @@ public class CEchoRQ: DataTF {
         return data
     }
     
-    public override func decodeData(data: Data) -> Bool {
-        print("TODO: decodeData")
-        return true
+    public override func decodeData(data: Data) -> DIMSEStatus.Status {
+        super.decodeDIMSEStatus(data: data)
+        
+        print("TODO: decodeData \(self.dimseStatus)")
+        
+        return .Success
     }
     
     public override func handleResponse(data:Data) -> PDUMessage? {

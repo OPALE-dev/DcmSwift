@@ -27,8 +27,8 @@ public class ReleaseRQ: PDUMessage {
         return data
     }
     
-    public override func decodeData(data: Data) -> Bool {
-        return true
+    public override func decodeData(data: Data) -> DIMSEStatus.Status {
+        return self.dimseStatus.status
     }
     
     public override func handleRequest() -> PDUMessage? {

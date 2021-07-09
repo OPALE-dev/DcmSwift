@@ -14,10 +14,10 @@ public class CStoreRSP: DataTF {
     }
     
     
-    public override func decodeData(data: Data) -> Bool {
+    public override func decodeData(data: Data) -> DIMSEStatus.Status {
         super.decodeDIMSEStatus(data: data)
         
-        return true
+        return self.dimseStatus.status
     }
     
     

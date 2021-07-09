@@ -14,12 +14,15 @@ let package = Package(
         .executable(name: "DcmPrint", targets: ["DcmPrint"]),
         .executable(name: "DcmServer", targets: ["DcmServer"]),
         .executable(name: "DcmEcho", targets: ["DcmEcho"]),
-        .executable(name: "DcmStore", targets: ["DcmStore"])
+        .executable(name: "DcmStore", targets: ["DcmStore"]),
+        .executable(name: "DcmSR", targets: ["DcmSR"])
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         .package(name: "Socket", url: "https://github.com/Kitura/BlueSocket.git", from:"1.0.8"),
-        .package(url: "https://github.com/apple/swift-argument-parser", from: "0.4.0")
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "0.4.0"),
+        .package(name: "Html", url: "https://github.com/pointfreeco/swift-html.git", from: "0.3.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -27,7 +30,7 @@ let package = Package(
         
         .target(
             name: "DcmSwift",
-            dependencies: [ "Socket" ]),
+            dependencies: [ "Socket", .product(name: "NIO", package: "swift-nio"), "Html" ]),
         .target(
             name: "DcmAnonymize",
             dependencies: [
@@ -36,6 +39,12 @@ let package = Package(
             ]),
         .target(
             name: "DcmPrint",
+            dependencies: [
+                "DcmSwift",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ]),
+        .target(
+            name: "DcmSR",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
@@ -58,11 +67,19 @@ let package = Package(
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
+        .target(
+            name: "DcmFind",
+            dependencies: [
+                "DcmSwift",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ]),
         .testTarget(
             name: "DcmSwiftTests",
             dependencies: ["DcmSwift"],
             resources: [
-                .process("Resources")
+                .process("Resources/DICOM"),
+                .process("Resources/SR"),
+                .process("Resources/RT")
             ]
         )
     ]

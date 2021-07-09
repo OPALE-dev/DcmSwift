@@ -35,7 +35,7 @@ public class AssociationRJ: PDUMessage {
     }
     
     
-    public override func decodeData(data: Data) -> Bool {
+    public override func decodeData(data: Data) -> DIMSEStatus.Status {
 //        let pduLength = data.subdata(in: 2..<6).toInt32().bigEndian
 //        let result = data.subdata(in: 7..<8).toInt8().bigEndian
 //        let source = data.subdata(in: 8..<9).toInt8().bigEndian
@@ -45,9 +45,9 @@ public class AssociationRJ: PDUMessage {
         if reason == 0x07 {
             let error = DicomError(code: 7, level: .error, realm: .network)
             self.errors.append(error)
-            return true
+            return .Success
         }
         
-        return false
+        return .Refused
     }
 }
