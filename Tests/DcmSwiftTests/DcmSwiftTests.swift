@@ -162,6 +162,9 @@ class DcmSwiftTests: XCTestCase {
             suite.addTest(DcmSwiftTests(selector: #selector(testIsValid)))
             suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImageWidth)))
             suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImageHeight)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testToPNG)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetUnscaledDose)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetDose)))
         }
         
         return suite
@@ -789,8 +792,8 @@ class DcmSwiftTests: XCTestCase {
         paths = paths.filter { $0.contains("rt_") }
         
         paths.forEach { path in
-            let rtDose = RTDose.init(forPath: path)
-            _ = rtDose?.isValid()
+            let dicomRT = DicomRT.init(forPath: path)//RTDose.init(forPath: path)
+            _ = dicomRT?.isValid()
         }
         
         let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
@@ -798,19 +801,17 @@ class DcmSwiftTests: XCTestCase {
             return
         }
         
-        if let rtDose = RTDose.init(forPath: p) {
-            XCTAssertTrue(rtDose.isValid())
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertTrue(dicomRT.isValid())
         }
-        
-        
         
         let path2 = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular", ofType: "dcm")
         guard let p2 = path2 else {
             return
         }
         
-        if let rtDose = RTDose.init(forPath: p2) {
-            XCTAssertFalse(rtDose.isValid())
+        if let dicomRT2 = DicomRT.init(forPath: p2) {
+            XCTAssertFalse(dicomRT2.isValid())
         }
     }
     
@@ -821,8 +822,8 @@ class DcmSwiftTests: XCTestCase {
             return
         }
         
-        if let rtDose = RTDose.init(forPath: p) {
-            XCTAssertEqual((rtDose.getDoseImageWidth()), 10)
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertEqual((dicomRT.getDoseImageWidth()), 10)
         }
     }
     
@@ -832,8 +833,8 @@ class DcmSwiftTests: XCTestCase {
             return
         }
         
-        if let rtDose = RTDose.init(forPath: p) {
-            XCTAssertEqual((rtDose.getDoseImageHeight()), 10)
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertEqual((dicomRT.getDoseImageHeight()), 10)
         }
     }
     
@@ -871,12 +872,18 @@ class DcmSwiftTests: XCTestCase {
             return
         }
         
-        if let rtDose = RTDose.init(forPath: p) {
-            XCTAssertNotNil(rtDose.getUnscaledDose(column: 1, row: 1, frame: 1))
-            if let unscaledDose = rtDose.getUnscaledDose(column: 1, row: 1, frame: 1) {
-                XCTAssertTrue(unscaledDose is UInt32)
+        if let dicomRT = DicomRT.init(forPath: p) {
+            if let rtDose = RTDose.init(dicomRTFile: dicomRT, column: 1, row: 1, frame: 1) {
+                if let unscaledDose = rtDose.unscaledDose {
+                    XCTAssertTrue(unscaledDose is UInt32)
+                }
             }
         }
+    }
+    
+    public func testGetDose() {
+        let s = "1.07734e-008"
+        print(Double(s))
     }
 }
 
