@@ -13,6 +13,9 @@ import Foundation
     a small DICOM database, or an index of DICOM files, placed in the root folder of the media (like a DVD).
  */
 public class DicomDir:DicomFile {
+    
+    //MARK: Properties
+    
     private var offset:Int = 0
     private var offsetFirst:Int = 0
     private var offsetLast:Int = 0
@@ -25,15 +28,15 @@ public class DicomDir:DicomFile {
     // StudyInstanceUID:[PatientID,StudyDate,StudyTime,StudyDescription]
     public var studies:[String:[Any]] = [:]
     
-    // SeriesInstanceUID:[StudyInstanceUID
-    public var series:[String:String] = [:]
+    // SeriesInstanceUID:[StudyInstanceUID,SeriesNumber]
+    public var series:[String:[String]] = [:]
     //public var series:[String:[String]] = [:]
     
     // ReferencedSOPInstanceUIDInFile:[SeriesInstanceUID,filepath]
     public var images:[String:[String]] = [:]
     
     
-    // MARK: - Methods
+    // MARK: Methods
     
     /**
         Load a DICOMDIR for a given path
@@ -71,7 +74,9 @@ public class DicomDir:DicomFile {
         return false
     }
     
-    
+    /**
+        Read a DicomDir surcharging the DicomFile read method
+     */
     override func read() -> Bool {
         let rez = super.read()
         
@@ -95,7 +100,7 @@ public class DicomDir:DicomFile {
                 for(studyUID, arrayStudies) in studies {
                     if(patientsID == arrayStudies[0] as? String) {
                         for(seriesUID, studyUID_2) in series {
-                            if(studyUID == studyUID_2) {
+                            if(studyUID == studyUID_2[0]) {
                                 for(_,array) in images {
                                     if(array[0] == seriesUID) {
                                         let path = array[1]
@@ -123,7 +128,7 @@ public class DicomDir:DicomFile {
             for(studyUID, _) in studies {
                 if(studyUID == givenStudyUID) {
                     for(seriesUID, studyUID_2) in series {
-                        if(studyUID == studyUID_2) {
+                        if(studyUID == studyUID_2[0]) {
                             for(_,array) in images {
                                 if(array[0] == seriesUID) {
                                     let path = array[1]
@@ -167,6 +172,24 @@ public class DicomDir:DicomFile {
         return resultat
     }
     
+    /**
+        Return a String without the last part (after the last /)
+     */
+    public static func amputation(forPath filepath: String) -> String {
+        var stringAmputee = ""
+        let array = filepath.components(separatedBy: "/")
+        let size = array.count
+        for i in 0 ..< size-1 {
+            if i == size-2 {
+                stringAmputee += array[i]
+            } else {
+                stringAmputee += array[i] + "/"
+            }
+        }
+        return stringAmputee
+    }
+    
+    //MARK: Read a DicomDir
     /**
         Load all the properties of a DicomDir instance (patients, index etc)
      */
@@ -235,12 +258,13 @@ public class DicomDir:DicomFile {
                         if element.name == "SeriesInstanceUID" {
                             serieUID = "\(element.value)"
                             if serieUID.count > 0 {
-                                series[serieUID] = studyUID
+                                series[serieUID]?.insert(studyUID, at: 0)
                             }
                         }
                         
                         if element.name == "SeriesNumber" {
                             studyDate = "\(element.value)"
+                            series[serieUID]?.insert(studyUID, at: 1)
                         }
                     
                     // Load the images property
@@ -262,30 +286,89 @@ public class DicomDir:DicomFile {
         }
     }
     
-    public static func studies(forPath filepath: String) {
+    /**
+        Create a DicomDir instance wich contains the interesting data of the given folder
+     */
+    public static func parse(atPath folderPath:String) -> DicomDir? {
         
+        let dcmDir = DicomDir.init()
+        dcmDir.filepath = amputation(forPath:folderPath)
+        
+        do {
+            let files = try FileManager.default.contentsOfDirectory(atPath: folderPath)
+            
+            var pathFolder = folderPath
+            if(pathFolder.last != "/") {
+                pathFolder += "/"
+            }
+            
+            for file in files {
+                // add to DicomDir.index the file path
+                let absolutePath = pathFolder+file
+                
+                dcmDir.index.append(absolutePath)
+                
+                guard let dcmFile = DicomFile(forPath: absolutePath) else {
+                    return nil
+                }
+            
+                // fill patient property
+                let patientKey = dcmFile.dataset.string(forTag: "PatientID")
+                let patientVal = dcmFile.dataset.string(forTag: "PatientName")
+                if let key = patientKey {
+                    dcmDir.patients[key] = patientVal
+                }
+                
+                // fill study property
+                let studyKey = dcmFile.dataset.string(forTag: "StudyInstanceUID")
+                let date = dcmFile.dataset.date(forTag: "StudyDate")
+                let time = dcmFile.dataset.date(forTag: "StudyTime")
+                let description = dcmFile.dataset.string(forTag: "StudyDescription")
+                let studyVal = patientKey
+                
+                if let key = studyKey {
+                    if dcmDir.studies[key] == nil {
+                        dcmDir.studies[key] = []
+                        dcmDir.studies[key]?.insert(studyVal as Any, at: 0)
+                        dcmDir.studies[key]?.insert(date as Any, at: 1)
+                        dcmDir.studies[key]?.insert(time as Any, at: 2)
+                        dcmDir.studies[key]?.insert(description as Any, at: 3)
+                    }
+                }
+                
+                // fill serie property
+                let serieKey = dcmFile.dataset.string(forTag: "SeriesInstanceUID")
+                let seriesNumber = dcmFile.dataset.string(forTag: "SeriesNumber")
+                let serieVal = studyKey
+                if let key = serieKey {
+                    if dcmDir.series[key] == nil {
+                        dcmDir.series[key] = []
+                        dcmDir.series[key]?.insert(serieVal ?? "", at: 0)
+                        dcmDir.series[key]?.insert(seriesNumber ?? "", at: 1)
+                    }
+                }
+                
+                // fill images property
+                let imageKey = dcmFile.dataset.string(forTag: "SOPInstanceUID")
+                if let serieKeyUnwrapped = serieKey {
+                    let imageVal = [serieKeyUnwrapped,absolutePath]
+                    if let key = imageKey {
+                        dcmDir.images[key] = imageVal
+                    }
+                }
+            }
+        } catch {
+            print(error)
+            return nil
+        }
+        return dcmDir
     }
     
 //    private func truncate(forPath filepath: String) -> String  {
 //        return NSString(string: filepath).deletingLastPathComponent
 //    }
     
-    /**
-        Return a String without the last part (after the last /)
-     */
-    public static func amputation(forPath filepath: String) -> String {
-        var stringAmputee = ""
-        let array = filepath.components(separatedBy: "/")
-        let size = array.count
-        for i in 0 ..< size-1 {
-            if i == size-2 {
-                stringAmputee += array[i]
-            } else {
-                stringAmputee += array[i] + "/"
-            }
-        }
-        return stringAmputee
-    }
+    //MARK: Write a DicomDir
     
     /**
         Create the DirectoryRecordSequence using the given properties : patients, studies, series, images.
@@ -299,14 +382,14 @@ public class DicomDir:DicomFile {
         for(patientID,patientName) in patients {
             let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
             let item = DataItem(withTag: tagItem, parent: sequence)
-            
             if(cpt == 1) {
                 offsetFirst = offset
-                print("offsetFirst \(offsetFirst)")
+                offsetLast = 0
             } else if(cpt == patients.count) {
                 offsetLast = offset
-                print("offsetLast \(offsetLast)")
             }
+            print("offsetFirst \(offsetFirst)")
+            print("offsetLast \(offsetLast)")
             
             offset += item.toData().count
             
@@ -350,7 +433,7 @@ public class DicomDir:DicomFile {
             
             for(studyID,patientID_2) in studies {
                 
-                if(patientID == patientID_2[0] as? String) {
+                if(patientID == (patientID_2[0]) as? String) {
                 
                     let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
                     let item = DataItem(withTag: tagItem, parent: sequence)
@@ -390,7 +473,7 @@ public class DicomDir:DicomFile {
                     
                     for(serieID,studyID_2) in series {
                         
-                        if(studyID == studyID_2) {
+                        if(studyID == studyID_2[0]) {
                         
                             let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
                             let item = DataItem(withTag: tagItem, parent: sequence)
@@ -494,78 +577,5 @@ public class DicomDir:DicomFile {
         let dicomDirPAth = folderPath.last == "/" ? folderPath + "DICOMDIR" : folderPath + "/DICOMDIR"
         
         return self.write(atPath: dicomDirPAth)
-    }
-    
-    /**
-        Create a DicomDir instance wich contains the interesting data of the given folder
-     */
-    public static func parse(atPath folderPath:String) -> DicomDir? {
-        
-        let dcmDir = DicomDir.init()
-        dcmDir.filepath = amputation(forPath:folderPath)
-        
-        do {
-            let files = try FileManager.default.contentsOfDirectory(atPath: folderPath)
-            
-            var pathFolder = folderPath
-            if(pathFolder.last != "/") {
-                pathFolder += "/"
-            }
-            
-            for file in files {
-                // add to DicomDir.index the file path
-                let absolutePath = pathFolder+file
-                
-                dcmDir.index.append(absolutePath)
-                
-                guard let dcmFile = DicomFile(forPath: absolutePath) else {
-                    return nil
-                }
-            
-                // fill patient property
-                let patientKey = dcmFile.dataset.string(forTag: "PatientID")
-                let patientVal = dcmFile.dataset.string(forTag: "PatientName")
-                if let key = patientKey {
-                    dcmDir.patients[key] = patientVal
-                }
-                
-                // fill study property
-                let studyKey = dcmFile.dataset.string(forTag: "StudyInstanceUID")
-                let date = dcmFile.dataset.date(forTag: "StudyDate")
-                let time = dcmFile.dataset.time(forTag: "StudyTime")
-                let description = dcmFile.dataset.time(forTag: "StudyDescription")
-                let studyVal = patientKey
-                
-                if let key = studyKey {
-                    if dcmDir.studies[key] == nil {
-                        dcmDir.studies[key] = []
-                        dcmDir.studies[key]?.insert(studyVal!, at: 0)
-                        dcmDir.studies[key]?.insert(date as Any, at: 1)
-                        dcmDir.studies[key]?.insert(time as Any, at: 2)
-                        dcmDir.studies[key]?.insert(description as Any, at: 3)
-                    }
-                }
-                
-                // fill serie property
-                let serieKey = dcmFile.dataset.string(forTag: "SeriesInstanceUID")
-                let serieVal = studyKey
-                if let key = serieKey {
-                    dcmDir.series[key] = serieVal
-                }
-                
-                // fill images property
-                let imageKey = dcmFile.dataset.string(forTag: "SOPInstanceUID")
-                if let serieKeyUnwrapped = serieKey {
-                    let imageVal = [serieKeyUnwrapped,absolutePath]
-                    if let key = imageKey {
-                        dcmDir.images[key] = imageVal
-                    }
-                }
-            }
-        } catch {
-            print(error)
-            return nil
-        }
-        return dcmDir
     }
 }
