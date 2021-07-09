@@ -160,6 +160,15 @@ Run the command:
     
     swift test
     
+## Documentation
+
+Documentation can be generated using `jazzy`:
+
+    jazzy \
+      --module DcmSwift \
+      --swift-build-tool spm \
+      --build-tool-arguments -Xswiftc,-swift-version,-Xswiftc,5
+    
 ## Side notes
 
 ### For testing/debuging networking
