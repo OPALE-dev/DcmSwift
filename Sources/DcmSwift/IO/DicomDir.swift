@@ -102,10 +102,11 @@ public class DicomDir:DicomFile {
                         for(seriesUID, studyUID_2) in series {
                             if(studyUID == studyUID_2[0]) {
                                 for(_,array) in images {
-                                    if(array[0] == seriesUID) {
+                                    if(array[0] as? String == seriesUID) {
                                         let path = array[1]
-                                        if(path != DicomDir.amputation(forPath: filepath)) {
-                                            resultat.append(path)
+                                        let pathString = "\(path)"
+                                        if(pathString != DicomDir.amputation(forPath: filepath)) {
+                                            resultat.append(pathString)
                                         }
                                     }
                                 }
@@ -130,10 +131,11 @@ public class DicomDir:DicomFile {
                     for(seriesUID, studyUID_2) in series {
                         if(studyUID == studyUID_2[0]) {
                             for(_,array) in images {
-                                if(array[0] == seriesUID) {
+                                if(array[0] as? String == seriesUID) {
                                     let path = array[1]
-                                    if(path != DicomDir.amputation(forPath: filepath)) {
-                                        resultat.append(path)
+                                    let pathString = "\(path)"
+                                    if(pathString != DicomDir.amputation(forPath: filepath)) {
+                                        resultat.append(pathString)
                                     }
                                 }
                             }
@@ -156,11 +158,12 @@ public class DicomDir:DicomFile {
                 for(seriesUID, _) in series {
                     if(seriesUID == givenSeriesUID) {
                         for(_,array) in images {
-                            if(array[0] == seriesUID) {
+                            if(array[0] as? String == seriesUID) {
                                 let path = array[1]
-                                if(path != DicomDir.amputation(forPath: filepath)) {
-                                    if !resultat.contains(path) {
-                                        resultat.append(path)
+                                let pathString = "\(path)"
+                                if(pathString != DicomDir.amputation(forPath: filepath)) {
+                                    if !resultat.contains(pathString) {
+                                        resultat.append(pathString)
                                     }
                                 }
                             }
@@ -296,7 +299,9 @@ public class DicomDir:DicomFile {
         }
     }
     
-    
+    /**
+        Recursive method to browse a directory, return a string array containing all the filepaths
+     */
     private static func browse(atPath folderPath:String) -> [String] {
         var paths:[String] = []
         
@@ -356,8 +361,6 @@ public class DicomDir:DicomFile {
         let files = DicomDir.browse(atPath: folderPath)
         
         for absolutePath in files {
-            print("file \(absolutePath)")
-            
             // add to DicomDir.index the file path
             dcmDir.index.append(absolutePath)
             
@@ -404,7 +407,10 @@ public class DicomDir:DicomFile {
             // fill images property
             let imageKey = dcmFile.dataset.string(forTag: "SOPInstanceUID")
             if let serieKeyUnwrapped = serieKey {
-                let imageVal = [serieKeyUnwrapped,absolutePath]
+                let index = pathFolder.lastIndex(of: "/")
+                let imgPath = absolutePath[index!...]
+                //TODO: Remove first / and put \
+                let imageVal = [serieKeyUnwrapped,imgPath as Any]
                 if let key = imageKey {
                     dcmDir.images[key] = imageVal
                 }
@@ -424,13 +430,33 @@ public class DicomDir:DicomFile {
         Create the DirectoryRecordSequence using the given properties : patients, studies, series, images.
      */
     public func createDirectoryRecordSequence() -> DataSequence? {
+        // All the useful tags
         let dataTag = DataTag.init(withGroup: "0004", element: "1220", byteOrder: .LittleEndian)
+        let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
+        let tagOffsetNext = DataTag.init(withGroup: "0004", element: "1400", byteOrder: .LittleEndian)
+        let tagRecordInUseFlag = DataTag.init(withGroup: "0004", element: "1410", byteOrder: .LittleEndian)
+        let tagID = DataTag.init(withGroup: "0010", element: "0020", byteOrder: .LittleEndian)
+        let tagName = DataTag.init(withGroup: "0010", element: "0010", byteOrder: .LittleEndian)
+        let tagType = DataTag.init(withGroup: "0004", element: "1430", byteOrder: .LittleEndian)
+        let tagCharacterSet = DataTag.init(withGroup: "0008", element: "0005", byteOrder: .LittleEndian)
+        let tagstID = DataTag.init(withGroup: "0020", element: "000d", byteOrder: .LittleEndian)
+        let tagstDate = DataTag.init(withGroup: "0008", element: "0020", byteOrder: .LittleEndian)
+        let tagstTime = DataTag.init(withGroup: "0008", element: "0030", byteOrder: .LittleEndian)
+        let tagstDescription = DataTag.init(withGroup: "0008", element: "1030", byteOrder: .LittleEndian)
+        let tagseID = DataTag.init(withGroup: "0020", element: "000e", byteOrder: .LittleEndian)
+        let tagseNb = DataTag.init(withGroup: "0020", element: "0011", byteOrder: .LittleEndian)
+        let tagSOP = DataTag.init(withGroup: "0004", element: "1511", byteOrder: .LittleEndian)
+        let tagPath = DataTag.init(withGroup: "0004", element: "1500", byteOrder: .LittleEndian)
+        let tagNextRecordImg = DataTag.init(withGroup: "0004", element: "1400", byteOrder: .LittleEndian)
+        let tagLowerRecordImg = DataTag.init(withGroup: "0004", element: "1420", byteOrder: .LittleEndian)
+        
+        // Creation of the sequence
         let sequence:DataSequence = DataSequence(withTag: dataTag, parent: nil)
         var cpt = 1
         offset += sequence.toData().count
         
-        for(patientID,patientName) in patients {
-            let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
+        for(patientID, patientName) in patients {
+            
             let item = DataItem(withTag: tagItem, parent: sequence)
             if(cpt == 1) {
                 offsetFirst = offset
@@ -438,151 +464,108 @@ public class DicomDir:DicomFile {
             } else if(cpt == patients.count) {
                 offsetLast = offset
             }
-            print("offsetFirst \(offsetFirst)")
-            print("offsetLast \(offsetLast)")
             
             offset += item.toData().count
             
             sequence.items.append(item)
             
-            let tagOffsetNext = DataTag.init(withGroup: "0004", element: "1400", byteOrder: .LittleEndian)
-            let tagRecordInUseFlag = DataTag.init(withGroup: "0004", element: "1410", byteOrder: .LittleEndian)
-            let tagID = DataTag.init(withGroup: "0010", element: "0020", byteOrder: .LittleEndian)
-            let tagName = DataTag.init(withGroup: "0010", element: "0010", byteOrder: .LittleEndian)
-            let tagType = DataTag.init(withGroup: "0004", element: "1430", byteOrder: .LittleEndian)
-            let tagCharacterSet = DataTag.init(withGroup: "0008", element: "0005", byteOrder: .LittleEndian)
             
-            let elementOffsetNext = DataElement(withTag: tagOffsetNext, parent: item)
-            let elementRecordInUseFlag = DataElement(withTag: tagRecordInUseFlag, parent: item)
-            let elementPatientID = DataElement(withTag: tagID, parent: item)
-            let elementPatientName = DataElement(withTag: tagName, parent: item)
-            let elementPatientType = DataElement(withTag: tagType, parent: item)
-            let elementCharacterSet = DataElement(withTag: tagCharacterSet, parent: item)
+            let paOffsetNext = addValue(addInteger: 4820, forTag: tagOffsetNext, withParent: item)
+            item.elements.append(paOffsetNext)
             
-            _ = elementOffsetNext.setValue(UInt32(4820).bigEndian) //TODO:INSERT REAL VALUE
-            _ = elementRecordInUseFlag.setValue(-1)
-            _ = elementPatientID.setValue(patientID)
-            _ = elementPatientName.setValue(patientName)
-            _ = elementPatientType.setValue("PATIENT")
-            _ = elementCharacterSet.setValue("ISO_IR 100")
+            let recordInUseFlag = addValue(addInteger: -1, forTag: tagRecordInUseFlag, withParent: item)
+            item.elements.append(recordInUseFlag)
             
+            let paID = addValue(addString: patientID, forTag: tagID, withParent: item)
+            item.elements.append(paID)
             
-            offset += elementOffsetNext.toData().count
-            offset += elementRecordInUseFlag.toData().count
-            offset += elementPatientID.toData().count
-            offset += elementPatientName.toData().count
-            offset += elementPatientType.toData().count
-            offset += elementCharacterSet.toData().count
-        
-            item.elements.append(elementOffsetNext)
-            item.elements.append(elementRecordInUseFlag)
-            item.elements.append(elementPatientType)
-            item.elements.append(elementCharacterSet)
-            item.elements.append(elementPatientName)
-            item.elements.append(elementPatientID)
+            let paName = addValue(addString: patientName, forTag: tagName, withParent: item)
+            item.elements.append(paName)
             
-            for(studyID,patientID_2) in studies {
+            let paType = addValue(addString: "PATIENT", forTag: tagType, withParent: item)
+            item.elements.append(paType)
+            
+            let paCharacterSet = addValue(addString: "ISO_IR 100", forTag: tagCharacterSet, withParent: item)
+            item.elements.append(paCharacterSet)
+            
+            for(studyID, studyArray) in studies {
                 
-                if(patientID == (patientID_2[0]) as? String) {
-                
-                    let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
+                if(patientID == (studyArray[0]) as? String) {
+                    
                     let item = DataItem(withTag: tagItem, parent: sequence)
                     sequence.items.append(item)
                     
-                    let tagstID = DataTag.init(withGroup: "0020", element: "000d", byteOrder: .LittleEndian)
-                    let tagstDescription = DataTag.init(withGroup: "0008", element: "1030", byteOrder: .LittleEndian)
-                    let tagstDate = DataTag.init(withGroup: "0008", element: "0020", byteOrder: .LittleEndian)
-                    let tagstTime = DataTag.init(withGroup: "0008", element: "0030", byteOrder: .LittleEndian)
+                    let studyInstanceUID = addValue(addString: studyID, forTag: tagstID, withParent: item)
+                    item.elements.append(studyInstanceUID)
                     
-                    let elementStudyInstanceUID = DataElement(withTag: tagstID, parent: item)
-                    let elementStudyType = DataElement(withTag: tagType, parent: item)
-                    let elementStudyDate = DataElement(withTag: tagstDate, parent: item)
-                    let elementStudyTime = DataElement(withTag: tagstTime, parent: item)
-                    let elementStudyDescri = DataElement(withTag: tagstDescription, parent: item)
+                    let studyType = addValue(addString: "STUDY", forTag: tagType, withParent: item)
+                    item.elements.append(studyType)
                     
-                    _ = elementRecordInUseFlag.setValue(-1)
-                    _ = elementStudyType.setValue("STUDY")
-                    _ = elementStudyDate.setValue(patientID_2[1])
-                    _ = elementStudyTime.setValue(patientID_2[2])
-                    _ = elementStudyDescri.setValue(patientID_2[3])
-                    _ = elementStudyInstanceUID.setValue(studyID)
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyy-MM-dd"
+                    var stDate:Date = Date()
+                    let d = String(describing: studyArray[1])
+                    print("d : \(d)")
+                        if let s = dateFormatter.date(from: d) {
+                            print("ici")
+                            stDate = s
+                        }
                     
-                    offset += elementRecordInUseFlag.toData().count
-                    offset += elementStudyType.toData().count
-                    offset += elementStudyDate.toData().count
-                    offset += elementStudyTime.toData().count
-                    offset += elementStudyDescri.toData().count
-                    offset += elementStudyInstanceUID.toData().count
+                    let studyDate = addValue(addDate: stDate, forTag: tagstDate, withParent: item)
+                    item.elements.append(studyDate)
                     
-                    item.elements.append(elementRecordInUseFlag)
-                    item.elements.append(elementStudyType)
-                    item.elements.append(elementStudyDate)
-                    item.elements.append(elementStudyTime)
-                    //item.elements.append(elementCharacterSet)
-                    item.elements.append(elementStudyInstanceUID)
+                    let studyTime = addValue(addString: "\(studyArray[2])", forTag: tagstTime, withParent: item)
+                    item.elements.append(studyTime)
+                    
+                    let studyDescri = addValue(addString: "\(studyArray[3])", forTag: tagstDescription, withParent: item)
+                    item.elements.append(studyDescri)
+                    
+                    item.elements.append(recordInUseFlag)
+                    offset += recordInUseFlag.toData().count
                     
                     for(serieID,arraySerie) in series {
                         
                         if(studyID == arraySerie[0]) {
                             
                             let serieNumber = arraySerie[1]
-                            let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
                             let item = DataItem(withTag: tagItem, parent: sequence)
                             sequence.items.append(item)
                             
-                            let tagseID = DataTag.init(withGroup: "0020", element: "000e", byteOrder: .LittleEndian)
-                            let tagseNb = DataTag.init(withGroup: "0020", element: "0011", byteOrder: .LittleEndian)
+                            let serieType = addValue(addString: "SERIES", forTag: tagType, withParent: item)
+                            item.elements.append(serieType)
                             
-                            let elementSerieType = DataElement(withTag: tagType, parent: item)
-                            let elementSerieInstanceUID = DataElement(withTag: tagseID, parent: item)
-                            let elementSerieNumber = DataElement(withTag: tagseNb, parent: item)
+                            let serieInstanceUID = addValue(addString: serieID, forTag: tagseID, withParent: item)
+                            item.elements.append(serieInstanceUID)
                             
-                            _ = elementSerieType.setValue("SERIES")
-                            _ = elementSerieInstanceUID.setValue(serieID)
-                            _ = elementSerieType.setValue(serieNumber)
-                            
-                            offset += elementRecordInUseFlag.toData().count
-                            offset += elementSerieType.toData().count
-                            offset += elementSerieNumber.toData().count
-                            offset += elementSerieInstanceUID.toData().count
-                            
-                            item.elements.append(elementRecordInUseFlag)
-                            item.elements.append(elementSerieType)
-                            item.elements.append(elementSerieInstanceUID)
-                            item.elements.append(elementSerieNumber)
+                            let serieNum = addValue(addString: serieNumber, forTag: tagseNb, withParent: item)
+                            item.elements.append(serieNum)
+                    
+                            item.elements.append(recordInUseFlag)
+                            offset += recordInUseFlag.toData().count
                             
                             for(sop,array) in images {
                                 
-                                if(array[0] == serieID) {
-                                    let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
+                                if("\(array[0])" == serieID) {
+                                    let pathImage = "\(array[1])"
                                     let item = DataItem(withTag: tagItem, parent: sequence)
                                     sequence.items.append(item)
                                     
-                                    let tagNextRecordImg = DataTag.init(withGroup: "0004", element: "1400", byteOrder: .LittleEndian)
-                                    let tagLowerRecordImg = DataTag.init(withGroup: "0004", element: "1420", byteOrder: .LittleEndian)
-                                    let tagSOP = DataTag.init(withGroup: "0004", element: "1511", byteOrder: .LittleEndian)
+                                    let imageOffsetNext = addValue(addInteger: 1466, forTag: tagNextRecordImg, withParent: item)
+                                    item.elements.append(imageOffsetNext)
                                     
-                                    let elementImageOffsetNext = DataElement(withTag: tagNextRecordImg, parent: item)
-                                    let elementImageOffsetLower = DataElement(withTag: tagLowerRecordImg, parent: item)
-                                    let elementImageSOP = DataElement(withTag: tagSOP, parent: item)
-                                    let elementImageType = DataElement(withTag: tagType, parent: item)
+                                    let imageOffsetLower = addValue(addInteger: 0, forTag: tagLowerRecordImg, withParent: item)
+                                    item.elements.append(imageOffsetLower)
                                     
-                                    _ = elementImageOffsetNext.setValue(1466)
-                                    _ = elementImageOffsetLower.setValue(0)
-                                    _ = elementImageSOP.setValue(sop)
-                                    _ = elementImageType.setValue("IMAGE")
+                                    let imageType = addValue(addString: "IMAGE", forTag: tagType, withParent: item)
+                                    item.elements.append(imageType)
                                     
-                                    offset += elementImageOffsetNext.toData().count
-                                    offset += elementImageOffsetLower.toData().count
-                                    offset += elementRecordInUseFlag.toData().count
-                                    offset += elementImageSOP.toData().count
-                                    offset += elementImageType.toData().count
+                                    let imagePath = addValue(addString: pathImage, forTag: tagPath, withParent: item)
+                                    item.elements.append(imagePath)
                                     
-                                    item.elements.append(elementImageOffsetNext)
-                                    item.elements.append(elementImageOffsetLower)
-                                    item.elements.append(elementRecordInUseFlag)
-                                    item.elements.append(elementImageType)
-                                    item.elements.append(elementImageSOP)
+                                    let imageSOP = addValue(addString: sop, forTag: tagSOP, withParent: item)
+                                    item.elements.append(imageSOP)
+                                    
+                                    item.elements.append(recordInUseFlag)
                                 }
                             }
                         }
@@ -591,8 +574,40 @@ public class DicomDir:DicomFile {
             }
             cpt += 1
         }
+        print("offsetFirst \(offsetFirst)")
+        print("offsetLast \(offsetLast)")
         
         return sequence
+    }
+
+    /**
+        Add a String value to the Directory Record Sequence
+     */
+    private func addValue(addString value:String, forTag tag:DataTag, withParent parent:DataElement?) -> DataElement {
+        let element = DataElement(withTag: tag, parent: parent)
+        _ = element.setValue(value)
+        offset += element.toData().count
+        return element
+    }
+    
+    /**
+        Add an integer value  to the Directory Record Sequence
+     */
+    private func addValue(addInteger value:Int, forTag tag:DataTag, withParent parent:DataElement?) -> DataElement {
+        let element = DataElement(withTag: tag, parent: parent)
+        _ = element.setValue(value)
+        offset += element.toData().count
+        return element
+    }
+    
+    /**
+        Add a Date value to the Directory Record Sequence
+     */
+    private func addValue(addDate value:Date, forTag tag:DataTag, withParent parent:DataElement?) -> DataElement {
+        let element = DataElement(withTag: tag, parent: parent)
+        _ = element.setValue(value)
+        offset += element.toData().count
+        return element
     }
     
     /**
