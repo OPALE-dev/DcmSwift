@@ -25,7 +25,12 @@ import ArgumentParser
 //
 //DcmPrint.main()
 
-let pathFolder = "/Users/home/Documents/2_skull_ct/DICOM"
+let path = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR/"
+
+
+if let d = DicomDir.parse(atPath: path){
+    let dir = d.writeDicomDir(atPath: "/Users/home/Documents/Test write DICOMDIR/")
+}
 
 /*
 if let dir = DicomDir.parse(atPath: pathFolder) {
@@ -34,10 +39,6 @@ if let dir = DicomDir.parse(atPath: pathFolder) {
     }
 }
 */
-
-let dcmDir = DicomDir.init()
-let d = DicomDir.parse(atPath: pathFolder)
-let dir = d!.writeDicomDir(atPath: "/Users/home/Documents/Test write DICOMDIR/")
 
 //let d2 = DicomDir.init(forPath: "/Users/home/Documents/Test write DICOMDIR/DICOMDIR")
 //print(d2?.index)

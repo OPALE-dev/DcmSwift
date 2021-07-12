@@ -32,8 +32,8 @@ public class DicomDir:DicomFile {
     public var series:[String:[String]] = [:]
     //public var series:[String:[String]] = [:]
     
-    // ReferencedSOPInstanceUIDInFile:[SeriesInstanceUID,filepath]
-    public var images:[String:[String]] = [:]
+    // ReferencedSOPInstanceUIDInFile:[SeriesInstanceUID,filepath,DateImage,TimeImage]
+    public var images:[String:[Any]] = [:]
     
     
     // MARK: Methods
@@ -207,6 +207,7 @@ public class DicomDir:DicomFile {
                 var serieUID        = ""
                 var SOPUID          = ""
                 var path            = ""
+                var instanceNb      = ""
                 
                 for item in directoryRecordSequence.items {
                     
@@ -276,6 +277,15 @@ public class DicomDir:DicomFile {
                                 }
                             }
                         }
+                        
+                        if element.name == "InstanceNumber" {
+                            instanceNb = "\(element.value)"
+                            if SOPUID.count > 0 && serieUID.count > 0 {
+                                if(path != DicomDir.amputation(forPath: filepath)) {
+                                    images[SOPUID] = [serieUID,path,instanceNb]
+                                }
+                            }
+                        }
                     }
                     
                     if patientName.count > 0 && patientID.count > 0 {
@@ -286,6 +296,50 @@ public class DicomDir:DicomFile {
         }
     }
     
+    
+    private static func browse(atPath folderPath:String) -> [String] {
+        var paths:[String] = []
+        
+        do {
+            let files = try FileManager.default.contentsOfDirectory(atPath: folderPath)
+            
+            for file in files {
+                var pathFolder = folderPath
+                
+                if(pathFolder.last != "/") {
+                    pathFolder += "/"
+                }
+                
+                let filepath = pathFolder + file
+                
+                // ignore invisible system files
+                if file.first == "." {
+                    continue
+                }
+                
+                // switch between folder/file
+                var isDir:ObjCBool = false
+                                
+                if FileManager.default.fileExists(atPath: filepath, isDirectory: &isDir) {
+                    if isDir.boolValue {
+                        // if dir
+                        let files = browse(atPath: filepath)
+                        
+                        paths.append(contentsOf: files)
+                    }
+                    else {
+                        // if file
+                        paths.append(filepath)
+                    }
+                }
+            }
+        } catch {
+            
+        }
+        
+        return paths
+    }
+    
     /**
         Create a DicomDir instance wich contains the interesting data of the given folder
      */
@@ -294,73 +348,69 @@ public class DicomDir:DicomFile {
         let dcmDir = DicomDir.init()
         dcmDir.filepath = amputation(forPath:folderPath)
         
-        do {
-            let files = try FileManager.default.contentsOfDirectory(atPath: folderPath)
-            
-            var pathFolder = folderPath
-            if(pathFolder.last != "/") {
-                pathFolder += "/"
-            }
-            
-            for file in files {
-                // add to DicomDir.index the file path
-                let absolutePath = pathFolder+file
-                
-                dcmDir.index.append(absolutePath)
-                
-                guard let dcmFile = DicomFile(forPath: absolutePath) else {
-                    return nil
-                }
-            
-                // fill patient property
-                let patientKey = dcmFile.dataset.string(forTag: "PatientID")
-                let patientVal = dcmFile.dataset.string(forTag: "PatientName")
-                if let key = patientKey {
-                    dcmDir.patients[key] = patientVal
-                }
-                
-                // fill study property
-                let studyKey = dcmFile.dataset.string(forTag: "StudyInstanceUID")
-                let date = dcmFile.dataset.date(forTag: "StudyDate")
-                let time = dcmFile.dataset.date(forTag: "StudyTime")
-                let description = dcmFile.dataset.string(forTag: "StudyDescription")
-                let studyVal = patientKey
-                
-                if let key = studyKey {
-                    if dcmDir.studies[key] == nil {
-                        dcmDir.studies[key] = []
-                        dcmDir.studies[key]?.insert(studyVal as Any, at: 0)
-                        dcmDir.studies[key]?.insert(date as Any, at: 1)
-                        dcmDir.studies[key]?.insert(time as Any, at: 2)
-                        dcmDir.studies[key]?.insert(description as Any, at: 3)
-                    }
-                }
-                
-                // fill serie property
-                let serieKey = dcmFile.dataset.string(forTag: "SeriesInstanceUID")
-                let seriesNumber = dcmFile.dataset.string(forTag: "SeriesNumber")
-                let serieVal = studyKey
-                if let key = serieKey {
-                    if dcmDir.series[key] == nil {
-                        dcmDir.series[key] = []
-                        dcmDir.series[key]?.insert(serieVal ?? "", at: 0)
-                        dcmDir.series[key]?.insert(seriesNumber ?? "", at: 1)
-                    }
-                }
-                
-                // fill images property
-                let imageKey = dcmFile.dataset.string(forTag: "SOPInstanceUID")
-                if let serieKeyUnwrapped = serieKey {
-                    let imageVal = [serieKeyUnwrapped,absolutePath]
-                    if let key = imageKey {
-                        dcmDir.images[key] = imageVal
-                    }
-                }
-            }
-        } catch {
-            print(error)
-            return nil
+        var pathFolder = folderPath
+        if(pathFolder.last != "/") {
+            pathFolder += "/"
         }
+            
+        let files = DicomDir.browse(atPath: folderPath)
+        
+        for absolutePath in files {
+            print("file \(absolutePath)")
+            
+            // add to DicomDir.index the file path
+            dcmDir.index.append(absolutePath)
+            
+            guard let dcmFile = DicomFile(forPath: absolutePath) else {
+                return nil
+            }
+        
+            // fill patient property
+            let patientKey = dcmFile.dataset.string(forTag: "PatientID")
+            let patientVal = dcmFile.dataset.string(forTag: "PatientName")
+            if let key = patientKey {
+                dcmDir.patients[key] = patientVal
+            }
+            
+            // fill study property
+            let studyKey = dcmFile.dataset.string(forTag: "StudyInstanceUID")
+            let date = dcmFile.dataset.date(forTag: "StudyDate")
+            let time = dcmFile.dataset.date(forTag: "StudyTime")
+            let description = dcmFile.dataset.string(forTag: "StudyDescription")
+            let studyVal = patientKey
+            
+            if let key = studyKey {
+                if dcmDir.studies[key] == nil {
+                    dcmDir.studies[key] = []
+                    dcmDir.studies[key]?.insert(studyVal as Any, at: 0)
+                    dcmDir.studies[key]?.insert(date as Any, at: 1)
+                    dcmDir.studies[key]?.insert(time as Any, at: 2)
+                    dcmDir.studies[key]?.insert(description as Any, at: 3)
+                }
+            }
+            
+            // fill serie property
+            let serieKey = dcmFile.dataset.string(forTag: "SeriesInstanceUID")
+            let seriesNumber = dcmFile.dataset.string(forTag: "SeriesNumber")
+            let serieVal = studyKey
+            if let key = serieKey {
+                if dcmDir.series[key] == nil {
+                    dcmDir.series[key] = []
+                    dcmDir.series[key]?.insert(serieVal ?? "", at: 0)
+                    dcmDir.series[key]?.insert(seriesNumber ?? "", at: 1)
+                }
+            }
+            
+            // fill images property
+            let imageKey = dcmFile.dataset.string(forTag: "SOPInstanceUID")
+            if let serieKeyUnwrapped = serieKey {
+                let imageVal = [serieKeyUnwrapped,absolutePath]
+                if let key = imageKey {
+                    dcmDir.images[key] = imageVal
+                }
+            }
+        }
+
         return dcmDir
     }
     
@@ -471,47 +521,66 @@ public class DicomDir:DicomFile {
                     //item.elements.append(elementCharacterSet)
                     item.elements.append(elementStudyInstanceUID)
                     
-                    for(serieID,studyID_2) in series {
+                    for(serieID,arraySerie) in series {
                         
-                        if(studyID == studyID_2[0]) {
-                        
+                        if(studyID == arraySerie[0]) {
+                            
+                            let serieNumber = arraySerie[1]
                             let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
                             let item = DataItem(withTag: tagItem, parent: sequence)
                             sequence.items.append(item)
                             
                             let tagseID = DataTag.init(withGroup: "0020", element: "000e", byteOrder: .LittleEndian)
+                            let tagseNb = DataTag.init(withGroup: "0020", element: "0011", byteOrder: .LittleEndian)
                             
-                            let elementSerieInstanceUID = DataElement(withTag: tagseID, parent: item)
                             let elementSerieType = DataElement(withTag: tagType, parent: item)
+                            let elementSerieInstanceUID = DataElement(withTag: tagseID, parent: item)
+                            let elementSerieNumber = DataElement(withTag: tagseNb, parent: item)
                             
+                            _ = elementSerieType.setValue("SERIES")
                             _ = elementSerieInstanceUID.setValue(serieID)
-                            _ = elementSerieType.setValue("SERIE")
+                            _ = elementSerieType.setValue(serieNumber)
                             
-                            offset += elementSerieInstanceUID.toData().count
+                            offset += elementRecordInUseFlag.toData().count
                             offset += elementSerieType.toData().count
+                            offset += elementSerieNumber.toData().count
+                            offset += elementSerieInstanceUID.toData().count
                             
+                            item.elements.append(elementRecordInUseFlag)
                             item.elements.append(elementSerieType)
                             item.elements.append(elementSerieInstanceUID)
+                            item.elements.append(elementSerieNumber)
                             
                             for(sop,array) in images {
                                 
                                 if(array[0] == serieID) {
-                                
                                     let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
                                     let item = DataItem(withTag: tagItem, parent: sequence)
                                     sequence.items.append(item)
                                     
+                                    let tagNextRecordImg = DataTag.init(withGroup: "0004", element: "1400", byteOrder: .LittleEndian)
+                                    let tagLowerRecordImg = DataTag.init(withGroup: "0004", element: "1420", byteOrder: .LittleEndian)
                                     let tagSOP = DataTag.init(withGroup: "0004", element: "1511", byteOrder: .LittleEndian)
                                     
+                                    let elementImageOffsetNext = DataElement(withTag: tagNextRecordImg, parent: item)
+                                    let elementImageOffsetLower = DataElement(withTag: tagLowerRecordImg, parent: item)
                                     let elementImageSOP = DataElement(withTag: tagSOP, parent: item)
                                     let elementImageType = DataElement(withTag: tagType, parent: item)
                                     
+                                    _ = elementImageOffsetNext.setValue(1466)
+                                    _ = elementImageOffsetLower.setValue(0)
                                     _ = elementImageSOP.setValue(sop)
                                     _ = elementImageType.setValue("IMAGE")
                                     
+                                    offset += elementImageOffsetNext.toData().count
+                                    offset += elementImageOffsetLower.toData().count
+                                    offset += elementRecordInUseFlag.toData().count
                                     offset += elementImageSOP.toData().count
                                     offset += elementImageType.toData().count
                                     
+                                    item.elements.append(elementImageOffsetNext)
+                                    item.elements.append(elementImageOffsetLower)
+                                    item.elements.append(elementRecordInUseFlag)
                                     item.elements.append(elementImageType)
                                     item.elements.append(elementImageSOP)
                                 }
