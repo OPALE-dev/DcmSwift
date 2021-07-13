@@ -13,11 +13,11 @@ import Foundation
  */
 public class RTDose {
     
+    // The following properties are redundant with dose of the same dicom file
+    // (the number of columns, rows and frames are the same for example)
     public let dicomRT: DicomRT
-    
     public var pixelRepresentation: DicomImage.PixelRepresentation!
     public var bitsAllocated: Int16
-    
     public var columns: Int16
     public var rows: Int16
     public var frames: Int16
@@ -25,7 +25,8 @@ public class RTDose {
     public var column: Int16
     public var row: Int16
     public var frame: Int16
-    
+
+    /// column, row and frame begins at 1 (not 0 !)
     public init?(dicomRTFile: DicomRT, column: Int16, row: Int16, frame: Int16) {
 
         guard let imageParams = dicomRTFile.getImageParameters() else {
@@ -40,6 +41,7 @@ public class RTDose {
         
         if frame > frames || column > columns || row > rows {
             Logger.warning("frame > frames, or column > columns, or row > rows")
+            Logger.warning("frame: \(frame) / frames: \(frames) ; column: \(column) / columns: \(columns) ; row: \(row) / rows: \(rows)")
             return nil
         }
         
@@ -59,7 +61,7 @@ public class RTDose {
     }
     
     
-    //public func getDose(column: UInt, row: UInt, frame: UInt) -> Float64? {
+    // unscaled dose * grid scaling
     public lazy var dose: Float64? = {
         guard let doseGridScaling: String = self.dicomRT.dataset.string(forTag: "DoseGridScaling") else {
             return nil
@@ -114,8 +116,8 @@ public class RTDose {
     }()
     
     public lazy var unscaledDose: Any? = {
-        var pixelNumber = frame * columns * rows
-        pixelNumber += row * columns + column
+        var pixelNumber = (frame - 1) * columns * rows
+        pixelNumber += (row - 1) * columns + (column - 1)
         
         guard let pixelData = self.dicomRT.dataset.element(forTagName: "PixelData") else {
             return nil

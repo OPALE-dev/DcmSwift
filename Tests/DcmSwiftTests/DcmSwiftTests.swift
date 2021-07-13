@@ -873,17 +873,55 @@ class DcmSwiftTests: XCTestCase {
         }
         
         if let dicomRT = DicomRT.init(forPath: p) {
+            // 0
             if let rtDose = RTDose.init(dicomRTFile: dicomRT, column: 1, row: 1, frame: 1) {
                 if let unscaledDose = rtDose.unscaledDose {
                     XCTAssertTrue(unscaledDose is UInt32)
+                    XCTAssertEqual(unscaledDose as! UInt32, 0)
                 }
+            } else {
+                Logger.error("UNSCALED no rtdose (1)")
+            }
+            
+            // 137984544
+            if let rtDose = RTDose.init(dicomRTFile: dicomRT, column: 4, row: 5, frame: 2) {
+                if let unscaledDose = rtDose.unscaledDose {
+                    XCTAssertTrue(unscaledDose is UInt32)
+                    XCTAssertEqual(unscaledDose as! UInt32, 137984544)
+                }
+            } else {
+                Logger.error("UNSCALED no rtdose (2)")
             }
         }
     }
     
     public func testGetDose() {
-        let s = "1.07734e-008"
-        print(Double(s))
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            // 0
+            if let rtDose = RTDose.init(dicomRTFile: dicomRT, column: 1, row: 1, frame: 1) {
+                if let dose = rtDose.dose {
+                    XCTAssertEqual(dose, 0)
+                }
+            } else {
+                Logger.error("no rtdose (1)")
+            }
+            
+            // 137984544
+            if let rtDose = RTDose.init(dicomRTFile: dicomRT, column: 4, row: 5, frame: 2) {
+                if let dose = rtDose.dose {
+                    XCTAssertEqual(dose, 1.4865626863296)
+                }
+            } else {
+                Logger.error("no rtdose (2)")
+            }
+        } else {
+            Logger.error("no dicom file")
+        }
     }
 }
 
