@@ -34,10 +34,10 @@ struct DcmStore: ParsableCommand {
         client.connect {
             client.store([filePath]) { (progress) in
                 print("progress \(progress)")
-            } pduCompletion: { (message) in
+            } pduCompletion: { (request, message, assoc) in
                 print("receive message \(message.messageName())")
-            } errorCompletion: { (message, error) in
-                print(error)
+            } abortCompletion: { (message, error) in
+                print("abortCompletion \(error?.description)")
             } closeCompletion: { (assoc) in
                 print("closed")
             }

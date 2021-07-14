@@ -41,7 +41,10 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    public func connect(connectCompletion: ConnectCompletion, errorCompletion:ConnectErrorCompletion) {
+    public func connect(
+        connectCompletion: ConnectCompletion,
+        errorCompletion:ConnectErrorCompletion
+    ) {
         bootstrap  = ClientBootstrap(group: group)
             .channelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
         
@@ -75,10 +78,10 @@ public class DicomClient : DicomService, StreamDelegate {
     
     public func echo(
         pduCompletion: @escaping PDUCompletion,
-        errorCompletion: @escaping ErrorCompletion,
+        abortCompletion: @escaping AbortCompletion,
         closeCompletion: @escaping CloseCompletion
     ) {
-        if !self.checkConnected(errorCompletion) { return }
+        if !self.checkConnected(abortCompletion) { return }
 
         let association = DicomAssociation(
             channel: self.channel,
@@ -87,7 +90,7 @@ public class DicomClient : DicomService, StreamDelegate {
         
         association.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP)
         
-        association.request { (message, response) in
+        association.request { (message, response, assoc) in
             // if association is rejected
             if response.pduType == PDUType.associationRJ {
                 if let associationRJ = message as? AssociationRJ {
@@ -97,7 +100,7 @@ public class DicomClient : DicomService, StreamDelegate {
                         level: .error,
                         realm: .custom)
                     
-                    errorCompletion(associationRJ, error)
+                    abortCompletion(associationRJ, error)
                     
                     association.close()
                 }
@@ -112,12 +115,12 @@ public class DicomClient : DicomService, StreamDelegate {
                         message: response,
                         readResponse: true,
                         pduCompletion: pduCompletion,
-                        errorCompletion: errorCompletion,
+                        abortCompletion: abortCompletion,
                         closeCompletion: closeCompletion)
                 }
             }
-        } errorCompletion: { (message, error) in
-            errorCompletion(message, error)
+        } abortCompletion: { (message, error) in
+            abortCompletion(message, error)
             
             association.close()
             
@@ -130,10 +133,10 @@ public class DicomClient : DicomService, StreamDelegate {
     public func find(
         _ queryDataset:DataSet,
         pduCompletion: @escaping PDUCompletion,
-        errorCompletion: @escaping ErrorCompletion,
+        abortCompletion: @escaping AbortCompletion,
         closeCompletion: @escaping CloseCompletion
      )  {
-        if !self.checkConnected(errorCompletion) { return }
+        if !self.checkConnected(abortCompletion) { return }
 
         // create assoc between local and remote
         let association = DicomAssociation(
@@ -145,14 +148,14 @@ public class DicomClient : DicomService, StreamDelegate {
         association.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND)
         
         // request assoc
-        association.request { (request, response)  in
+        association.request { (request, response, assoc)  in
             // create C-FIND-RQ message
             guard let message = PDUEncoder.shared.createDIMSEMessage(
                     pduType: PDUType.dataTF,
                     commandField: .C_FIND_RQ,
                     association: association
             ) as? CFindRQ else {
-                errorCompletion(nil, DicomError(description: "Cannot create C_FIND_RQ message", level: .error))
+                abortCompletion(nil, DicomError(description: "Cannot create C_FIND_RQ message", level: .error))
                 return
             }
             
@@ -167,11 +170,11 @@ public class DicomClient : DicomService, StreamDelegate {
                 message: message,
                 readResponse: true,
                 pduCompletion: pduCompletion,
-                errorCompletion: errorCompletion,
+                abortCompletion: abortCompletion,
                 closeCompletion: closeCompletion)
             
-        } errorCompletion: { (message, error) in
-            errorCompletion(message, error)
+        } abortCompletion: { (message, error) in
+            abortCompletion(message, error)
             
             association.close()
             
@@ -186,10 +189,10 @@ public class DicomClient : DicomService, StreamDelegate {
         _ files:[String],
         progression: @escaping (_ index:Int) -> Void,
         pduCompletion: @escaping PDUCompletion,
-        errorCompletion: @escaping ErrorCompletion,
+        abortCompletion: @escaping AbortCompletion,
         closeCompletion: @escaping CloseCompletion
     )  {
-        if !self.checkConnected(errorCompletion) { return }
+        if !self.checkConnected(abortCompletion) { return }
 
         let association = DicomAssociation(
             channel: self.channel,
@@ -202,7 +205,7 @@ public class DicomClient : DicomService, StreamDelegate {
         }
 
         // request assoc
-        association.request { (request, response) in
+        association.request { (request, response, assoc) in
             var index = 0
             for f in files {
                 if let message = PDUEncoder.shared.createDIMSEMessage(
@@ -216,7 +219,7 @@ public class DicomClient : DicomService, StreamDelegate {
                         message: message,
                         readResponse: false,
                         pduCompletion: pduCompletion,
-                        errorCompletion: errorCompletion,
+                        abortCompletion: abortCompletion,
                         closeCompletion: closeCompletion)
                     
                     progression(index)
@@ -224,12 +227,14 @@ public class DicomClient : DicomService, StreamDelegate {
                     index += 1
                 }
             }
-        } errorCompletion: { (message, error) in
-            errorCompletion(message, error)
+        }
+        abortCompletion: { (message, error) in
+            abortCompletion(message, error)
             
             association.close()
             
-        } closeCompletion: { (associtaion) in
+        }
+        closeCompletion: { (associtaion) in
             closeCompletion(association)
         }
     }
@@ -248,7 +253,7 @@ public class DicomClient : DicomService, StreamDelegate {
     
     
     
-    private func checkConnected(_ errorCompletion: ErrorCompletion) -> Bool {
+    private func checkConnected(_ errorCompletion: AbortCompletion) -> Bool {
         if !self.isConnected {
             errorCompletion(nil, DicomError(description: "Socket is not connected, please connect first.",
                                                level: .error,
