@@ -8,6 +8,11 @@
 
 import Foundation
 
+/**
+ The `DataTag` class represents DICOM Data Element Tags and provides APIs to encode/decode them.
+ 
+ http://dicom.nema.org/medical/dicom/current/output/chtml/part06/chapter_6.html
+ */
 public class DataTag : DicomObject {
     public var data:Data!
     public var group:String     = ""

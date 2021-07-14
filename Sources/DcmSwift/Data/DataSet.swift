@@ -8,6 +8,13 @@
 
 import Foundation
 
+/**
+ `DataSet` are a collection of ordered `DataElement` as defined by the part. 05, chap. 7 of the DICOM standard.
+ 
+ `DataSet` can be read from files or data stream using the `DicomFile` and `DicomInputStream` classes.
+ 
+ http://dicom.nema.org/medical/dicom/current/output/chtml/part05/chapter_7.html
+ */
 public class DataSet: DicomObject {
     public var transferSyntax:TransferSyntax!
     public var fileMetaInformationGroupLength       = 0

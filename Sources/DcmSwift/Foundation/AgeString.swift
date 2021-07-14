@@ -67,8 +67,7 @@ public class AgeString: VR {
         
         if(validate(age:ageString)) {
             guard let lastChar = ageString.last else {
-                print("problem")
-                exit(0)
+                return nil
             }
             
             let currentDate = Date()

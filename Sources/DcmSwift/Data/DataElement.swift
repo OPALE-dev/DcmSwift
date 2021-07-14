@@ -8,7 +8,15 @@
 
 import Foundation
 
-
+/**
+ The `DataElement` class represent Data Element of the DICOM Data Set defined in Part. 05, Chap. 7 of the standard.
+ 
+ A `DataElement` object is uniquely identified `DataTag` instance and has a `value` which the representation is defined by the `VR` property.
+ 
+ `DataElement` can be read from files or data stream using the `DicomFile` and `DicomInputStream` classes.
+ 
+ http://dicom.nema.org/medical/dicom/current/output/chtml/part05/chapter_7.html
+ */
 public class DataElement : DicomObject {
     public var startOffset:Int      = 0
     public var vrOffset:Int         = 0

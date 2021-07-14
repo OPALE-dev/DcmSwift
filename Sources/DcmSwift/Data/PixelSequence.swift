@@ -9,7 +9,12 @@
 import Foundation
 
 
-
+/**
+ A class used to handle multiframe Pixel Sequence
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_A.4.html
+ http://dicom.nema.org/medical/Dicom/2018d/output/chtml/part03/sect_C.7.6.3.html
+ */
 class PixelSequence: DataSequence {
     enum PixelEncoding {
         case Native

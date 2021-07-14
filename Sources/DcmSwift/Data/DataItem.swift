@@ -8,7 +8,13 @@
 
 import Foundation
 
-// TODO: make DataItem inherit from DataSet to behave more like a collection?
+/**
+ `DataItem` are used in `DataSequence` to organize the nesting of `DataElement` objects.
+ 
+ TODO: make DataItem inherit from DataSet to behave more like a collection?
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.5.html
+ */
 public class DataItem: DataElement {
     public var elements:[DataElement]   = []
     
