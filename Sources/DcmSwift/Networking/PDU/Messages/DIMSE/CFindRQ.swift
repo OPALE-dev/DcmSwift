@@ -22,7 +22,9 @@ public class CFindRQ: DataTF {
     public override func data() -> Data {
         var data = Data()
 
-        let pc = association.presentationContexts[association.presentationContexts.keys.first!]
+        let pc = association.acceptedPresentationContexts[association.acceptedPresentationContexts.keys.first!]
+        
+        print(pc?.transferSyntaxes.first)
 
         let pdvDataset = DataSet()
         _ = pdvDataset.set(value: CommandField.C_FIND_RQ.rawValue.bigEndian, forTagName: "CommandField")
@@ -58,7 +60,7 @@ public class CFindRQ: DataTF {
             var datasetData = Data()
                         
             for e in qrDataset.allElements {
-                datasetData.append(e.toData(vrMethod: .Implicit, byteOrder: .LittleEndian))
+                datasetData.append(e.toData(vrMethod: .Explicit, byteOrder: .LittleEndian))
             }
             
             var pdvData2 = Data()
@@ -88,10 +90,12 @@ public class CFindRQ: DataTF {
     override public func handleResponse(data: Data) -> PDUMessage? {
         if let command:UInt8 = data.first {
             if command == self.pduType.rawValue {
-                if let message = PDUDecoder.shared.receiveDIMSEMessage(data: data, pduType: PDUType.dataTF, commandField: .C_FIND_RSP, association: self.association) as? PDUMessage {
-                    if let responseDataset = message.responseDataset {
-                        self.queryResults.append(responseDataset.toJSONArray())
+                if let message = PDUDecoder.shared.receiveDIMSEMessage(data: data, pduType: PDUType.dataTF, commandField: .C_FIND_RSP, association: self.association) as? CFindRSP {
+                                        
+                    if let studiesDataset = message.studiesDataset {
+                        self.queryResults.append(studiesDataset.toJSONArray())
                     }
+                    
                     return message
                 }
             }

@@ -23,23 +23,42 @@ struct DcmEcho: ParsableCommand {
     var calledPort: Int = 11112
     
     mutating func run() throws {
-        let callingAE   = DicomEntity(title: callingAET, hostname: "127.0.0.1", port: 11115)
-        let calledAE    = DicomEntity(title: calledAET, hostname: calledHostname, port: calledPort)
+        // create a calling AE, aka your local client (port is totally random and unused)
+        let callingAE = DicomEntity(title: callingAET, hostname: "127.0.0.1", port: 11112)
+        
+        // create a called AE, aka the remote AE you want to connect to
+        let calledAE = DicomEntity(title: calledAET, hostname: calledHostname, port: calledPort)
 
+        // create a `DicomClient` instance
         let client = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
         
+        // connect the client
         client.connect {
-            client.echo { (request, message) in
-                Logger.info("ECHO Succeeded: \(message.messageName())")
+            // send C-ECHO-RQ message
+            client.echo {
+            // receive C-ECHO-RSP message
+            (request, message, assoc) in
+                // if DIMSE status is Success
+                if message.dimseStatus.status == .Success {
+                    Logger.info("ECHO Succeeded: \(message.dimseStatus.status)")
+                } else {
+                    // else other status
+                    Logger.error("ECHO Failed: \(message.dimseStatus.status)")
+                }
             }
-            errorCompletion: { (message, error) in
+            
+            // receive A-ABORT message or other processing error
+            abortCompletion: { (message, error) in
                 if let e = error?.description {
                     Logger.error("ECHO Failed: \(e)")
                 }
             }
+            
+            // when association closed
             closeCompletion: { (association) in
                 
             }
+        // client connection error
         } errorCompletion: { (error) in
             if let e = error?.description {
                 Logger.error("CONNECT Error: \(e)")

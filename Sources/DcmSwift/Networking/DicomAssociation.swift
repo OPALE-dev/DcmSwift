@@ -10,8 +10,8 @@ import Foundation
 import NIO
 
 
-public typealias PDUCompletion = (_ message:PDUMessage?, _ response:PDUMessage) -> Void
-public typealias ErrorCompletion = (_ response:PDUMessage?, _ error:DicomError?) -> Void
+public typealias PDUCompletion = (_ message:PDUMessage?, _ response:PDUMessage, _ assoc:DicomAssociation) -> Void
+public typealias AbortCompletion = (_ response:PDUMessage?, _ error:DicomError?) -> Void
 public typealias CloseCompletion = (_ association:DicomAssociation?) -> Void
 
 
@@ -98,7 +98,7 @@ public class DicomAssociation : ChannelInboundHandler {
     private var connectedAssociations = [ObjectIdentifier: DicomAssociation]()
     private var currentDIMSEMessage:PDUMessage?
     private var currentPDUCompletion:PDUCompletion!
-    private var currentErrorCompletion:ErrorCompletion!
+    private var currentAbortCompletion:AbortCompletion!
     private var currentCloseCompletion:CloseCompletion!
     private var origin:Origin
     
@@ -169,7 +169,7 @@ public class DicomAssociation : ChannelInboundHandler {
     private func handleError(description: String, message: PDUMessage?, closeAssoc: Bool) {
         Logger.error(description)
         
-        currentErrorCompletion?(message, DicomError(description: description, level: .error, realm: .custom))
+        currentAbortCompletion?(message, DicomError(description: description, level: .error, realm: .custom))
         
         if closeAssoc {
             abort()
@@ -205,9 +205,9 @@ public class DicomAssociation : ChannelInboundHandler {
                 }
                 
                 if let associationAC = PDUEncoder.shared.createAssocMessage(pduType: .associationAC, association: self) as? AssociationAC {
-                    self.write(message: associationAC) { (message, response) in
+                    self.write(message: associationAC) { (message, response, self) in
                         
-                    } errorCompletion: { (message, err) in
+                    } abortCompletion: { (message, err) in
                         
                     } closeCompletion: { (assoc) in
                         
@@ -216,7 +216,13 @@ public class DicomAssociation : ChannelInboundHandler {
             }
         }
         else if origin == .Local {
-            currentPDUCompletion?(currentDIMSEMessage, message)
+            if message.pduType == .abort {
+                handleError(description: "Association aborted", message: message, closeAssoc: false)
+                currentDIMSEMessage = nil
+                return
+            }
+            
+            currentPDUCompletion?(currentDIMSEMessage, message, self)
         }
     }
     
@@ -234,7 +240,7 @@ public class DicomAssociation : ChannelInboundHandler {
             
         }
         else if origin == .Local {
-            currentPDUCompletion?(currentDIMSEMessage, message)
+            currentPDUCompletion?(currentDIMSEMessage, message, self)
             
             // TODO: make sure it is always the case
             if message.dimseStatus.status != .Pending {
@@ -300,7 +306,7 @@ public class DicomAssociation : ChannelInboundHandler {
         else {
             // we received an association message
             guard let message = PDUDecoder.shared.receiveAssocMessage(data: readData, pduType: pt, association: self) as? PDUMessage else {
-                currentErrorCompletion?(nil, DicomError(description: "Cannot decode \(pt) message", level: .error))
+                currentAbortCompletion?(nil, DicomError(description: "Cannot decode \(pt) message", level: .error))
                 return
             }
             
@@ -314,7 +320,7 @@ public class DicomAssociation : ChannelInboundHandler {
 
     
     public func errorCaught(context: ChannelHandlerContext, error: Error) {
-        currentErrorCompletion?(nil, DicomError(description: error.localizedDescription, level: .error))
+        currentAbortCompletion?(nil, DicomError(description: error.localizedDescription, level: .error))
         
         // As we are not really interested getting notified on success or failure we just pass nil as promise to
         // reduce allocations.
@@ -330,7 +336,7 @@ public class DicomAssociation : ChannelInboundHandler {
      */
     public func request(
         pduCompletion:   @escaping PDUCompletion,
-        errorCompletion: @escaping ErrorCompletion,
+        abortCompletion: @escaping AbortCompletion,
         closeCompletion: @escaping CloseCompletion
     ) {
         if let message = PDUEncoder.shared.createAssocMessage(pduType: .associationRQ, association: self) as? PDUMessage {
@@ -349,12 +355,12 @@ public class DicomAssociation : ChannelInboundHandler {
             message.debugDescription.append("  -> User Informations:\n")
             message.debugDescription.append("    -> Local Max PDU: \(self.maxPDULength)\n")
             
-            self.write(message: message, readResponse: true, pduCompletion: pduCompletion, errorCompletion: errorCompletion, closeCompletion: closeCompletion)
+            self.write(message: message, readResponse: true, pduCompletion: pduCompletion, abortCompletion: abortCompletion, closeCompletion: closeCompletion)
             
             return
         }
         
-        errorCompletion(nil, DicomError(description: "Cannot create AssociationRQ message", level: .error))
+        abortCompletion(nil, DicomError(description: "Cannot create AssociationRQ message", level: .error))
     }
     
     
@@ -457,14 +463,14 @@ public class DicomAssociation : ChannelInboundHandler {
         message:PDUMessage,
         readResponse:Bool = false,
         pduCompletion: @escaping PDUCompletion,
-        errorCompletion: @escaping ErrorCompletion,
+        abortCompletion: @escaping AbortCompletion,
         closeCompletion: @escaping CloseCompletion)
     {
         let data = message.data()
                 
         if readResponse {
             currentPDUCompletion    = pduCompletion
-            currentErrorCompletion  = errorCompletion
+            currentAbortCompletion  = abortCompletion
             currentCloseCompletion  = closeCompletion
         }
         
