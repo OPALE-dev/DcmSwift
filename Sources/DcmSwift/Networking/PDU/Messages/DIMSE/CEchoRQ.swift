@@ -2,12 +2,18 @@
 //  EchoRQ.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 03/05/2019.
+//  Created by Rafael Warnault, OPALE on 03/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
+/**
+ The `CEchoRQ` class represent a C-ECHO-RQ message of the DICOM standard.
+ 
+ It inherits most of its behavior from `DataTF` and `PDUMessage` and their
+ related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ */
 public class CEchoRQ: DataTF {
     public override func messageName() -> String {
         return "C-ECHO-RQ"

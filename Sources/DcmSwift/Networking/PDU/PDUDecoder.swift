@@ -2,22 +2,32 @@
 //  PDUDecoder.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 03/05/2019.
+//  Created by Rafael Warnault, OPALE on 03/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
-
+/**
+ The `PDUDecodable` protocol defines …
+ */
 public protocol PDUDecodable {
     func decodeData(data:Data) -> DIMSEStatus.Status
 }
 
 
-
+/**
+ `PDUDecoder` is a factory class that will create `PDUDecodable` (aka `PDUMessage`) instances based on
+ received data, the current association and a given `PDUType` and/or `CommandField` for DATA-TF type of messages.
+ 
+ For example, with data for a given `.associationAC` PDU type, the facory will produce a `AssociationAC` object instance.
+ */
 public class PDUDecoder {
     public static let shared = PDUDecoder()
     
+    /**
+     Decode ASSOCIATION related PDU messages
+     */
     public func receiveAssocMessage(data:Data, pduType:PDUType, association:DicomAssociation) -> PDUDecodable? {
         if pduType == .associationAC {
             return AssociationAC(data: data, pduType: pduType, association: association)
@@ -35,7 +45,7 @@ public class PDUDecoder {
             return ReleaseRQ(data: data, pduType: pduType, association: association)
         }
         else if pduType == .releaseRP {
-            return ReleaseRP(data: data, pduType: pduType, association: association)
+            return ReleaseRSP(data: data, pduType: pduType, association: association)
         }
         else if pduType == .abort {
             return Abort(data: data, pduType: pduType, association: association)
@@ -48,7 +58,9 @@ public class PDUDecoder {
     }
 
     
-    
+    /**
+     Decode DIMSE related PDU messages
+     */
     public func receiveDIMSEMessage(data:Data, pduType:PDUType, commandField:CommandField, association:DicomAssociation) -> PDUDecodable? {
         var message:PDUMessage? = nil
         

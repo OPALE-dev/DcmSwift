@@ -2,12 +2,20 @@
 //  CStoreRQ.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 08/05/2019.
+//  Created by Rafael Warnault, OPALE on 08/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
+/**
+ The `CStoreRQ` class represent a C-STORE-RQ message of the DICOM standard.
+ 
+ Its main property is a `DicomFile` object, the one that will be transfered over the DIMSE service.
+ 
+ It inherits most of its behavior from `DataTF` and `PDUMessage` and their
+ related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ */
 public class CStoreRQ: DataTF {
     public var dicomFile:DicomFile?
     

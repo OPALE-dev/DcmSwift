@@ -2,12 +2,26 @@
 //  DataTF.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 03/05/2019.
+//  Created by Rafael Warnault, OPALE on 03/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
+
+/**
+ The `DataTF` class represent a DATA-TF message of the DICOM standard.
+ 
+ This class serves as a base for all the DIMSE messages.
+ 
+ It decodes most of the generic part of the message, like the PDU, the Command dataset and the DIMSE status (see `decodeData()`).
+ When inheriting from `DataTF`, `super.decodeData()` must be called in order to primarilly decode this generic attributes.
+ 
+ It inherits most of its behavior from the `PDUMessage` class and its
+ related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#table_9-22
+ */
 public class DataTF: PDUMessage {
     public override func messageName() -> String {
         return "DATA-TF"

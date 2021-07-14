@@ -2,21 +2,34 @@
 //  PDUEncoder.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 03/05/2019.
+//  Created by Rafael Warnault, OPALE on 03/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
-
+/**
+ The `PDUEncodable` protocol defines weither or not the message is designed to encodable in DICOM data.
+ */
 public protocol PDUEncodable {
-    func data() -> Data
+    /**
+     This method is reponsible from converting the `PDUMessage` object in its actuel corresponding DICOM binary data.
+     */
+    func data() -> Data?
 }
 
-
+/**
+ `PDUEncoder` is a factory class that will create `PDUEncodable` (aka `PDUMessage`) instances based on
+ the current association and a given `PDUType` and/or `CommandField` for DATA-TF type of messages.
+ 
+ For example, for a given `.associationAC` PDU type, the facory will produce a `AssociationAC` object instance.
+ */
 class PDUEncoder {
     public static let shared = PDUEncoder()
     
+    /**
+     Encode ASSOCIATION related PDU messages
+     */
     public func createAssocMessage(pduType:PDUType, association:DicomAssociation) -> PDUEncodable? {
         if pduType == .associationAC {
             return AssociationAC(pduType: pduType, association: association)
@@ -34,7 +47,7 @@ class PDUEncoder {
             return ReleaseRQ(pduType: pduType, association: association)
         }
         else if pduType == .releaseRP {
-            return ReleaseRP(pduType: pduType, association: association)
+            return ReleaseRSP(pduType: pduType, association: association)
         }
         else if pduType == .abort {
             return Abort(pduType: pduType, association: association)
@@ -46,7 +59,9 @@ class PDUEncoder {
         return nil
     }
     
-    
+    /**
+     Encode DIMSE related PDU messages
+     */
     public func createDIMSEMessage(pduType:PDUType, commandField:CommandField, association:DicomAssociation) -> PDUEncodable? {
         var encodable:PDUMessage? = nil
         

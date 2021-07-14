@@ -2,7 +2,7 @@
 //  DicomClient.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 19/03/2019.
+//  Created by Rafael Warnault, OPALE on 19/03/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
@@ -53,6 +53,8 @@ public class DicomClient : DicomService, StreamDelegate {
             
             self.isConnected = true
             
+            Logger.info("CONNECT \(self.remoteEntity)", "DicomClient")
+            
             connectCompletion()
             
             try channel.closeFuture.wait()
@@ -62,13 +64,15 @@ public class DicomClient : DicomService, StreamDelegate {
             self.isConnected = false
         }
         
-        errorCompletion(DicomError(description:  "Cannot connect", level: .error, realm: .custom))
+        errorCompletion(DicomError(description: "Cannot connect", level: .error, realm: .custom))
     }
     
     public func disconnect() -> Bool {
-        try! channel.close().wait()
+        try? channel.close().wait()
         
         self.isConnected = false
+        
+        Logger.info("DISCONNECT \(self.remoteEntity)", "DicomClient")
         
         return true
     }

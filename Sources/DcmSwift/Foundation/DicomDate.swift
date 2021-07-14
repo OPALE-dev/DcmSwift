@@ -2,7 +2,7 @@
 //  DicomDate.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 26/10/2017.
+//  Created by Rafael Warnault, OPALE on 26/10/2017.
 //  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 

@@ -2,12 +2,17 @@
 //  UserInfo.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 02/05/2019.
+//  Created by Rafael Warnault, OPALE on 02/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
+/**
+ User Information Item Structure
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#sect_9.3.3.3
+ */
 public class UserInfo {
     public var implementationUID:String = DicomConstants.implementationUID
     public var implementationVersion:String = DicomConstants.implementationVersion

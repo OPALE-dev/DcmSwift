@@ -52,14 +52,14 @@ struct DcmFind: ParsableCommand {
                 if message.dimseStatus.status == .Success {
                     // infer to CFindRQ subtype of PDUMessage
                     if let m = request as? CFindRQ {
-                        Logger.info(m.queryResults.description)
+                        Logger.info(m.queryResults.description, "DcmFind")
                     }
                 }
             }
             // receive A-ABORT message or other processing error
             abortCompletion: { (message, error) in
                 if let e = error?.description {
-                    Logger.error("C-FIND Error: \(e)")
+                    Logger.error("C-FIND Error: \(e)", "DcmFind")
                 }
             }
             // when assoc close
@@ -69,9 +69,11 @@ struct DcmFind: ParsableCommand {
         // client connect error
         } errorCompletion: { (error) in
             if let e = error?.description {
-                Logger.error("CONNECT Error: \(e)")
+                Logger.error("CONNECT Error: \(e)", "DcmFind")
             }
         }
+        
+        _ = client.disconnect()
     }
 }
 

@@ -2,7 +2,7 @@
 //  DicomString.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 02/11/2017.
+//  Created by Rafael Warnault, OPALE on 02/11/2017.
 //  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 

@@ -1,13 +1,21 @@
 //
-//  File.swift
+//  PDUMessageDecoder.swift
 //  
 //
-//  Created by Rafael Warnault on 14/07/2021.
+//  Created by Rafael Warnault, OPALE on 14/07/2021.
 //
 
 import Foundation
 import NIO
 
+/**
+ The `PDUMessageDecoder` is `ByteToMessageDecoder` subclass used by `SwiftNIO` channel pipeline
+ to smooth the decoding of received message at the byte level.
+ 
+ What is done here is to read the PDU length of the received message in order to know if we have enougth bytes in the buffer.
+ When the PDU length is reached it call `fireChannelRead()` method to pass to completed buffer to the
+ next Channel Handler, here it is `DicomAssociation`.
+ */
 public struct PDUMessageDecoder: ByteToMessageDecoder {
     public typealias InboundOut = ByteBuffer
     

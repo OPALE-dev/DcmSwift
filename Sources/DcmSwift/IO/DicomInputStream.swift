@@ -2,7 +2,7 @@
 //  DicomInputStream.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 10/06/2021.
+//  Created by Rafael Warnault, OPALE on 10/06/2021.
 //  Copyright © 2021 OPALE. All rights reserved.
 //
 

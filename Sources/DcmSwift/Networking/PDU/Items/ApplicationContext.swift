@@ -2,13 +2,17 @@
 //  ApplicationContext.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 02/05/2019.
+//  Created by Rafael Warnault, OPALE on 02/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
-
+/**
+ Application Context Item Structure
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#sect_9.3.2.1
+ */
 public class ApplicationContext {
     var applicationContextName:String = DicomConstants.applicationContextName
     

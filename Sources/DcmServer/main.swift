@@ -2,7 +2,7 @@
 //  File.swift
 //  
 //
-//  Created by Rafael Warnault on 25/06/2021.
+//  Created by Rafael Warnault, OPALE on 25/06/2021.
 //
 
 import Foundation

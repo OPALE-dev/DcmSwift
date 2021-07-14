@@ -2,13 +2,23 @@
 //  AssociationRJ.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 03/05/2019.
+//  Created by Rafael Warnault, OPALE on 03/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
+/**
+ The `AssociationRJ` class represent a A-ASSOCIATE-RJ message of the DICOM standard.
 
+ The message you receive when the association is rejected.
+ You can find more context about it in `result`, `source` and `reason` properties.
+ 
+ It inherits most of its behavior from the `PDUMessage` class and its
+ related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#sect_9.3.4
+ */
 public class AssociationRJ: PDUMessage {
     public var result:DicomAssociation.RejectResult = DicomAssociation.RejectResult.RejectedPermanent
     public var source:DicomAssociation.RejectSource = DicomAssociation.RejectSource.DICOMULServiceUser
