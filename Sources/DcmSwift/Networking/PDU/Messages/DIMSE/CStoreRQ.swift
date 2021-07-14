@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- The `CStoreRQ` class represent a C-STORE-RQ message of the DICOM standard.
+ The `CStoreRQ` class represents a C-STORE-RQ message of the DICOM standard.
  
  Its main property is a `DicomFile` object, the one that will be transfered over the DIMSE service.
  

@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- The `CFindRSP` class represent a C-FIND-RSP message of the DICOM standard.
+ The `CFindRSP` class represents a C-FIND-RSP message of the DICOM standard.
  
  It inherits most of its behavior from `DataTF` and `PDUMessage` and their
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).

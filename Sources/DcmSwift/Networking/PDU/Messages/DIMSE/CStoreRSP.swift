@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- The `CStoreRSP` class represent a C-STORE-RSP message of the DICOM standard.
+ The `CStoreRSP` class represents a C-STORE-RSP message of the DICOM standard.
 
  It inherits most of its behavior from `DataTF` and `PDUMessage` and their
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).

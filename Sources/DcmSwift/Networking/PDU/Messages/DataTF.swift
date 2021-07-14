@@ -10,7 +10,7 @@ import Foundation
 
 
 /**
- The `DataTF` class represent a DATA-TF message of the DICOM standard.
+ The `DataTF` class represents a DATA-TF message of the DICOM standard.
  
  This class serves as a base for all the DIMSE messages.
  

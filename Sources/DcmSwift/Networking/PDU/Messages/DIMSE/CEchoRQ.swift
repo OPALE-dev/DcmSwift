@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- The `CEchoRQ` class represent a C-ECHO-RQ message of the DICOM standard.
+ The `CEchoRQ` class represents a C-ECHO-RQ message of the DICOM standard.
  
  It inherits most of its behavior from `DataTF` and `PDUMessage` and their
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
