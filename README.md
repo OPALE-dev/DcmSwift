@@ -15,6 +15,10 @@ DcmSwift is a (partial, work in progress) DICOM implementation written in Swift.
 
 *Dependencies are managed by SPM.*
 
+## Disclamer
+
+DcmSwift is *not* a medical imaging nor diagnosis oriented library and is not intented to be used as such. It focuses on the computing aspects of the DICOM standard, and provide a powerful set of tools to deal with DICOM files at the atomic level. The authors of this source code cannot be held responsible for its misuses or malfunctions, as it is defined in the license below.
+
 ## Overview
 
 DcmSwift is written in Swift 5.3 and mainly rely on the Foundation core library, in order to stay as compliant as possible with most of the common Swift toolchains.
@@ -190,7 +194,7 @@ See source code of embbeded binaries for more network related examples (`DcmFind
 
 ## Using binaries
 
-The DcmSwift package embbeded some binaries known as `DcmPrint`, `DcmAnonymize`, `DcmEcho`, etc. which you can build as follow:
+The DcmSwift package embbed some binaries known as `DcmPrint`, `DcmAnonymize`, `DcmEcho`, etc. which you can build as follow:
 
     swift build
     
@@ -241,10 +245,6 @@ DCMTK proposes also a server, for testing `cfind` program:
     dcmqrscp 11112 --log-level trace -c /path/to/config/dcmqrscp.cfg
 
 All the executables from both `DCMTK` and `dcm4chee` are very good reference for testing DICOM features.
-
-## Disclamer
-
-DcmSwift is *not* a medical imaging nor diagnosis oriented library and is not intented to be used as such. It focuses on the computing aspects of the DICOM standard, and provide a powerful set of tools to deal with DICOM files at the atomic level. The authors of this source code cannot be held responsible for its misuses or malfunctions, as it is defined in the license below.
 
 ## License
 

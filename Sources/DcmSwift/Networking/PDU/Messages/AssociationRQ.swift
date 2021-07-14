@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- The `AssociationRQ` class represent a A-ASSOCIATE-RQ message of the DICOM standard.
+ The `AssociationRQ` class represents a A-ASSOCIATE-RQ message of the DICOM standard.
  
  It inherits most of its behavior from the `PDUMessage` class and its
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).

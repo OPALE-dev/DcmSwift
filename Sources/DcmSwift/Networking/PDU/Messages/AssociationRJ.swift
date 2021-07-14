@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- The `AssociationRJ` class represent a A-ASSOCIATE-RJ message of the DICOM standard.
+ The `AssociationRJ` class represents a A-ASSOCIATE-RJ message of the DICOM standard.
 
  The message you receive when the association is rejected.
  You can find more context about it in `result`, `source` and `reason` properties.

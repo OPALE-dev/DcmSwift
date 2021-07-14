@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- The `ReleaseRSP` class represent a A-RELEASE-RSP message of the DICOM standard.
+ The `ReleaseRSP` class represents a A-RELEASE-RSP message of the DICOM standard.
 
  It inherits most of its behavior from the `PDUMessage` class and its
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).

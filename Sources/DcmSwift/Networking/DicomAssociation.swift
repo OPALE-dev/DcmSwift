@@ -27,7 +27,7 @@ public typealias CloseCompletion = (_ association:DicomAssociation?) -> Void
 
 
 /**
- The `DicomAssociation` class represent an association betwwen two DICOM AEs over the network.
+ The `DicomAssociation` class represents an association betwwen two DICOM AEs over the network.
  
  As `DcmSwift` relies on `SwiftNIO` to handle the network, the `DicomAssociation` class
  is the best candidate to implement the `ChannelInboundHandler` protocol.

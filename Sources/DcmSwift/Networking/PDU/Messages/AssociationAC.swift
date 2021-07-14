@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- The `AssociationAC` class represent a A-ASSOCIATE-AC message of the DICOM standard.
+ The `AssociationAC` class represents a A-ASSOCIATE-AC message of the DICOM standard.
 
  It inherits most of its behavior from the `PDUMessage` class and its
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).

@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- The `Abort` class represent a A-ABORT message of the DICOM standard.
+ The `Abort` class represents a A-ABORT message of the DICOM standard.
 
  It inherits most of its behavior from the `PDUMessage` class and its
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
