@@ -280,6 +280,11 @@ public class DataElement : DicomObject {
     
     
     
+    public override func toData(transferSyntax: TransferSyntax) -> Data {
+        return toData(vrMethod: transferSyntax.vrMethod, byteOrder: transferSyntax.byteOrder)
+    }
+    
+    
     public override func toData(vrMethod inVrMethod:VRMethod = .Explicit, byteOrder inByteOrder:ByteOrder = .LittleEndian) -> Data {
         var data = Data()
         
