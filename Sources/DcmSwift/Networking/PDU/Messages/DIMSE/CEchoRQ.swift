@@ -42,19 +42,19 @@ public class CEchoRQ: DataTF {
         return data
     }
     
-    public override func decodeData(data: Data) -> DIMSEStatus.Status {
-        super.decodeDIMSEStatus(data: data)
-        
-        print("TODO: decodeData \(self.dimseStatus)")
-        
+    public override func decodeData(data: Data) -> DIMSEStatus.Status {        
         return .Success
     }
     
     public override func handleResponse(data:Data) -> PDUMessage? {
         if let type:UInt8 = data.first {
             if type == PDUType.dataTF.rawValue {
-                if let message = PDUDecoder.shared.receiveDIMSEMessage(data: data, pduType: PDUType.dataTF, commandField: .C_ECHO_RSP, association: self.association) as? PDUMessage {
-
+                if let message = PDUDecoder.shared.receiveDIMSEMessage(
+                    data: data,
+                    pduType: PDUType.dataTF,
+                    commandField: .C_ECHO_RSP,
+                    association: self.association
+                ) as? PDUMessage {
                     return message
                 }
             }
@@ -63,8 +63,11 @@ public class CEchoRQ: DataTF {
     }
     
     public override func handleRequest() -> PDUMessage? {
-        if let response = PDUEncoder.shared.createDIMSEMessage(pduType: .dataTF, commandField: .C_ECHO_RSP, association: self.association) as? PDUMessage {
-            
+        if let response = PDUEncoder.shared.createDIMSEMessage(
+            pduType: .dataTF,
+            commandField: .C_ECHO_RSP,
+            association: self.association
+        ) as? PDUMessage {
             response.requestMessage = self
             
             return response

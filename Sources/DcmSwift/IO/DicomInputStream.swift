@@ -8,48 +8,35 @@
 
 import Foundation
 
-public class DicomInputStream {
+public class DicomInputStream: OffsetInputStream {
     private var dataset:DataSet!
     
     public var hasPreamble:Bool         = false
     public var vrMethod:VRMethod        = .Explicit
     public var byteOrder:ByteOrder      = .LittleEndian
     
-    var stream:InputStream!
-    /// A copy of the original stream used if we need to reset the read offset
-    var backstream:InputStream!
-    
-    var offset = 0
-    var total  = 0
-    
     /**
      Init a DicomInputStream with a file path
      */
-    public init(filePath:String) {
-        dataset     = DataSet()
-        stream      = InputStream(fileAtPath: filePath)
-        backstream  = InputStream(fileAtPath: filePath)
-        total       = Int(DicomFile.fileSize(path: filePath))
+    public override init(filePath:String) {
+        super.init(filePath: filePath)
+        dataset = DataSet()
     }
     
     /**
     Init a DicomInputStream with a file URL
     */
-    public init(url:URL) {
-        dataset     = DataSet()
-        stream      = InputStream(url: url)
-        backstream  = InputStream(url: url)
-        total       = Int(DicomFile.fileSize(path: url.path))
+    public override init(url:URL) {
+        super.init(url: url)
+        dataset = DataSet()
     }
     
     /**
     Init a DicomInputStream with a Data object
     */
-    public init(data:Data) {
-        dataset     = DataSet()
-        stream      = InputStream(data: data)
-        backstream  = InputStream(data: data)
-        total       = data.count
+    public override init(data:Data) {
+        super.init(data: data)
+        dataset = DataSet()
     }
     
     
@@ -59,7 +46,7 @@ public class DicomInputStream {
             throw StreamError.cannotOpenStream(message: "Cannot open stream, init failed")
         }
                 
-        stream.open()
+        self.open()
         
         // try to read 128 00H + DCIM magic world
         let preambleData = read(length: 132)
@@ -100,7 +87,7 @@ public class DicomInputStream {
             stream = backstream
             offset = 0
         }
-                
+                        
         // preambule processing is done
         dataset.hasPreamble = hasPreamble
         dataset.vrMethod = vrMethod
@@ -168,44 +155,12 @@ public class DicomInputStream {
         
         dataset.sortElements()
         
-        backstream.close()
-        stream.close()
+        self.close()
         
         return dataset
     }
     
 
-
-    
-    private func forward(by bytes: Int) {
-        // read into the void...
-        _ = read(length: bytes)
-    }
-    
-    
-    internal func read(length:Int) -> Data? {
-        // allocate memory buffer with given length
-        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: length)
-        
-        // fill the buffer by reading bytes with given length
-        let read = stream.read(buffer, maxLength: length)
-        
-        if read < 0 || read < length {
-            //Logger.warning("Cannot read \(length) bytes")
-            return nil
-        }
-        
-        // create a Data object with filled buffer
-        let data = Data(bytes: buffer, count: length)
-        
-        // maintain local offset
-        offset += read
-        
-        // clean the memory
-        buffer.deallocate()
-        
-        return data
-    }
 
     
     
