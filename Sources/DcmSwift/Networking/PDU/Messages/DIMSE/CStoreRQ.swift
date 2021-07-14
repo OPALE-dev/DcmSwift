@@ -136,13 +136,13 @@ public class CStoreRQ: DataTF {
     }
     
     public override func handleResponse(data: Data) -> PDUMessage? {
-        if let command:UInt8 = data.first {
-            if command == self.pduType.rawValue {
-                if let message = PDUDecoder.shared.receiveDIMSEMessage(data: data, pduType: PDUType.dataTF, commandField: CommandField.C_STORE_RSP, association: self.association) as? PDUMessage {
-                    return message
-                }
-            }
-        }
+//        if let command:UInt8 = data.first {
+//            if command == self.pduType.rawValue {
+//                if let message = PDUDecoder.shared.receiveDIMSEMessage(data: data, pduType: PDUType.dataTF, commandField: CommandField.C_STORE_RSP, association: self.association) as? PDUMessage {
+//                    return message
+//                }
+//            }
+//        }
         return nil
     }
 }

@@ -87,18 +87,34 @@ public class DicomClient : DicomService, StreamDelegate {
         
         association.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP)
         
-        association.request { (message) in
-            if let response = PDUEncoder.shared.createDIMSEMessage(
-                pduType: PDUType.dataTF,
-                commandField: .C_ECHO_RQ,
-                association: association
-            ) as? PDUMessage {
-                association.write(
-                    message: response,
-                    readResponse: true,
-                    pduCompletion: pduCompletion,
-                    errorCompletion: errorCompletion,
-                    closeCompletion: closeCompletion)
+        association.request { (message, response) in
+            // if association is rejected
+            if response.pduType == PDUType.associationRJ {
+                if let associationRJ = message as? AssociationRJ {
+                    // read reject reason
+                    let error = DicomError(
+                        description: "Association rejected (\(associationRJ.reason))",
+                        level: .error,
+                        realm: .custom)
+                    
+                    errorCompletion(associationRJ, error)
+                    
+                    association.close()
+                }
+            } else {
+                // if association is accepted
+                if let response = PDUEncoder.shared.createDIMSEMessage(
+                    pduType: PDUType.dataTF,
+                    commandField: .C_ECHO_RQ,
+                    association: association
+                ) as? PDUMessage {
+                    association.write(
+                        message: response,
+                        readResponse: true,
+                        pduCompletion: pduCompletion,
+                        errorCompletion: errorCompletion,
+                        closeCompletion: closeCompletion)
+                }
             }
         } errorCompletion: { (message, error) in
             errorCompletion(message, error)
@@ -129,7 +145,7 @@ public class DicomClient : DicomService, StreamDelegate {
         association.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND)
         
         // request assoc
-        association.request { (message) in
+        association.request { (request, response)  in
             // create C-FIND-RQ message
             guard let message = PDUEncoder.shared.createDIMSEMessage(
                     pduType: PDUType.dataTF,
@@ -186,7 +202,7 @@ public class DicomClient : DicomService, StreamDelegate {
         }
 
         // request assoc
-        association.request { (message) in
+        association.request { (request, response) in
             var index = 0
             for f in files {
                 if let message = PDUEncoder.shared.createDIMSEMessage(

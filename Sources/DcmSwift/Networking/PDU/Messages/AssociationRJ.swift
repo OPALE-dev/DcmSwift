@@ -12,7 +12,7 @@ import Foundation
 public class AssociationRJ: PDUMessage {
     public var result:DicomAssociation.RejectResult = DicomAssociation.RejectResult.RejectedPermanent
     public var source:DicomAssociation.RejectSource = DicomAssociation.RejectSource.DICOMULServiceUser
-    public var reason:UInt8 = 0
+    public var reason:DicomAssociation.UserReason = DicomAssociation.UserReason.NoReasonGiven
     
     public override func messageName() -> String {
         return "A-ASSOCIATE-RJ"
@@ -29,25 +29,39 @@ public class AssociationRJ: PDUMessage {
         data.append(byte: 0x00) // reserved
         data.append(uint8: self.result.rawValue) // result
         data.append(uint8: self.source.rawValue) // source
-        data.append(uint8: self.reason) // reason
+        data.append(uint8: self.reason.rawValue) // reason
         
         return data
     }
     
     
     public override func decodeData(data: Data) -> DIMSEStatus.Status {
-//        let pduLength = data.subdata(in: 2..<6).toInt32().bigEndian
-//        let result = data.subdata(in: 7..<8).toInt8().bigEndian
-//        let source = data.subdata(in: 8..<9).toInt8().bigEndian
-        let reason = data.subdata(in: 9..<10).toInt8().bigEndian
+        let status = super.decodeData(data: data)
         
-        // TODO: handle all reason ?
-        if reason == 0x07 {
-            let error = DicomError(code: 7, level: .error, realm: .network)
-            self.errors.append(error)
-            return .Success
+        // dead byte
+        _ = stream.read(length: 1)
+        
+        // read reject result
+        if let r = stream.read(length: 1)?.toInt8().bigEndian {
+            if let rr = DicomAssociation.RejectResult(rawValue: UInt8(r)) {
+                result = rr
+            }
         }
         
-        return .Refused
+        // read reject source
+        if let r = stream.read(length: 1)?.toInt8().bigEndian {
+            if let rr = DicomAssociation.RejectSource(rawValue: UInt8(r)) {
+                source = rr
+            }
+        }
+        
+        // read reject reason
+        if let r = stream.read(length: 1)?.toInt8().bigEndian {
+            if let rr = DicomAssociation.UserReason(rawValue: UInt8(r)) {
+                reason = rr
+            }
+        }
+        
+        return status
     }
 }

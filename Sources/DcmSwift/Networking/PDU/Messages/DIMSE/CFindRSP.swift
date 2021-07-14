@@ -9,7 +9,8 @@
 import Foundation
 
 public class CFindRSP: DataTF {
-    public var queryResults:[Any] = []
+    public var studiesDataset:DataSet?
+    
     
     public override func messageName() -> String {
         return "C-FIND-RSP"
@@ -17,22 +18,34 @@ public class CFindRSP: DataTF {
     
     
     override public func decodeData(data: Data) -> DIMSEStatus.Status {
-        super.decodeDIMSEStatus(data: data)
+        let status = super.decodeData(data: data)
         
-        print("decodeData \(data.toHex())")
-                        
-        let commandData = data.subdata(in: 12..<data.count)
-                        
-        if commandData.count > 0 {
-            if self.flags == 0x02 {
-                let inputStream = DicomInputStream(data: commandData)
+        // if data if available
+        if commandDataSetType == 0 {
+            // read data PDV length
+            guard let dataPDVLength = stream.read(length: 4)?.toInt32(byteOrder: .BigEndian) else {
+                Logger.error("Cannot read data PDV Length")
+                return .Refused
+            }
             
-                if let dataset = try? inputStream.readDataset() {
-                    responseDataset = dataset
+            // context + flags
+            stream.forward(by: 2)
+            
+            // read dataset data
+            guard let datasetData = stream.read(length: Int(dataPDVLength - 2)) else {
+                Logger.error("Cannot read dataset data")
+                return .Refused
+            }
+            
+            let dis = DicomInputStream(data: datasetData)
+                        
+            if commandField == .C_FIND_RSP {
+                if let resultDataset = try? dis.readDataset() {
+                    studiesDataset = resultDataset
                 }
             }
         }
         
-        return self.dimseStatus.status
+        return status
     }
 }

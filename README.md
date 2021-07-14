@@ -171,7 +171,10 @@ Documentation can be generated using `jazzy`:
       
 Or with swift doc:
 
-    swift doc generate --module-name DcmSwift Sources/DcmSwift/Data --minimum-access-level private --output docs --format html
+    swift doc generate \
+        --module-name DcmSwift Sources/DcmSwift/Data \
+        --minimum-access-level private \
+        --output docs --format html
     
 ## Side notes
 

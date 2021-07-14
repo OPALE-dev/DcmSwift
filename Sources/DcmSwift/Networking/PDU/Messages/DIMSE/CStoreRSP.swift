@@ -15,8 +15,6 @@ public class CStoreRSP: DataTF {
     
     
     public override func decodeData(data: Data) -> DIMSEStatus.Status {
-        super.decodeDIMSEStatus(data: data)
-        
         return self.dimseStatus.status
     }
     

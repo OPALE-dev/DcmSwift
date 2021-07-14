@@ -30,13 +30,18 @@ struct DcmFind: ParsableCommand {
         
         client.connect {
             let dataset = DataSet()
-            //_ = dataset.set(value:"*", forTagName: "PatientID")
+            _ = dataset.set(value:"", forTagName: "PatientID")
+            _ = dataset.set(value:"", forTagName: "PatientName")
+            _ = dataset.set(value:"", forTagName: "PatientBirthDate")
+            _ = dataset.set(value:"", forTagName: "StudyDescription")
+            _ = dataset.set(value:"", forTagName: "StudyDate")
+            _ = dataset.set(value:"", forTagName: "StudyTime")
             
-            client.find(dataset) { (message) in
-                if message.dimseStatus.status == DIMSEStatus.Status.Success {
-                    print("C-FIND-RSP dataset: \(message.responseDataset != nil)")
-                } else {
-                    Logger.error("C-FIND-RSP Failed")
+            client.find(dataset) { (request, message) in
+                if message.dimseStatus.status == .Success {
+                    if let m = request as? CFindRQ {
+                       print(m.queryResults)
+                    }
                 }
                 
             } errorCompletion: { (message, error) in

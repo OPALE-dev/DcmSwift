@@ -13,49 +13,78 @@ public class DataTF: PDUMessage {
         return "DATA-TF"
     }
     
-    public func decodeFlags(data: Data) {
-        let flags = data.subdata(in: 11..<12).toInt8().bigEndian
-        let commandData = data.subdata(in: 12..<data.count)
-        
-        if commandData.count > 0 {
-            self.flags = UInt8(flags)
+    override public func decodeData(data: Data) -> DIMSEStatus.Status {
+        var status = super.decodeData(data: data)
+                                        
+        // read PDV length
+        guard let pdvLength = stream.read(length: 4)?.toInt32(byteOrder: .BigEndian) else {
+            Logger.error("Cannot read PDV Length")
+            return .Refused
         }
-    }
-    
-    
-    public func decodeDIMSEStatus(data: Data) {
-        self.decodeFlags(data: data)
         
-        let commandData = data.subdata(in: 12..<data.count)
+        self.pdvLength = Int(pdvLength)
+                                
+        // read context
+        guard let _ = stream.read(length: 1)?.toInt8(byteOrder: .BigEndian) else {
+            Logger.error("Cannot read context")
+            return .Refused
+        }
         
-        if commandData.count > 0 {
-            if self.flags == 0x03 {
-                let inputStream = DicomInputStream(data: commandData)
-                
-                if let dataset = try? inputStream.readDataset() {
-                    // decode DIMSE status
-                    if let status = dataset.element(forTagName: "Status") {
-                        let s = status.data.toUInt16(byteOrder: .LittleEndian)
-                        if let ds = DIMSEStatus.Status(rawValue: s) {
-                            self.dimseStatus = DIMSEStatus(status: ds, command: self.commandField!)
-                        }
-                    }
+        // read flags
+        guard let flags = stream.read(length: 1)?.toInt8(byteOrder: .BigEndian) else {
+            Logger.error("Cannot read flags")
+            return .Refused
+        }
+        
+        self.flags = UInt8(flags)
+        
+        // read dataset data
+        guard let commandData = stream.read(length: Int(pdvLength) - 2) else {
+            Logger.error("Cannot read dataset data")
+            return .Refused
+        }
+        
+        let dis = DicomInputStream(data: commandData)
+        
+        // read command dataset
+        guard let commandDataset = try? dis.readDataset() else {
+            Logger.error("Cannot read command dataset")
+            return .Refused
+        }
+        
+        self.commandDataset = commandDataset
+                                
+        guard let command = commandDataset.element(forTagName: "CommandField") else {
+            Logger.error("Cannot read CommandField in command Dataset")
+            return .Refused
+        }
 
-                    // also decode command field
-                    // TODO: rename `decodeDIMSEStatus` method
-                    if let command = dataset.element(forTagName: "CommandField") {
-                        let c = command.data.toUInt16(byteOrder: .LittleEndian)
-                        self.commandField = CommandField(rawValue: c)
-                    }
-                }
-            }
+        // we create a response (PDUMessage of DIMSE family) based on received CommandField value using PDUDecoder
+        let c = command.data.toUInt16(byteOrder: .LittleEndian)
+
+        guard let commandField = CommandField(rawValue: c) else {
+            Logger.error("Cannot read CommandField in command Dataset")
+            return .Refused
         }
-    }
-    
-    
-    public override func decodeData(data: Data) -> DIMSEStatus.Status {
-        //self.decodeDIMSEStatus(data: data)
         
-        return DIMSEStatus.Status.Unknow
+        self.commandField = commandField
+                    
+        guard let s = commandDataset.element(forTagName: "Status"),
+              let ss = DIMSEStatus.Status(rawValue: s.data.toUInt16(byteOrder: .LittleEndian)) else {
+            Logger.error("Cannot read DIMSE Status")
+            return .Refused
+        }
+        
+        status = ss
+                    
+        guard let commandDataSetType = commandDataset.integer16(forTag: "CommandDataSetType")?.bigEndian else {
+            Logger.error("Cannot read Command Data Set Type")
+            return .Refused
+        }
+        
+        self.commandDataSetType = commandDataSetType
+        self.dimseStatus = DIMSEStatus(status: status, command: commandField)
+        
+        return status
     }
 }
