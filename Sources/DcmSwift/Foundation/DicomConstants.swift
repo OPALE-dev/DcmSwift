@@ -3,7 +3,7 @@
 //  Dcm.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 21/03/2019.
+//  Created by Rafael Warnault, OPALE on 21/03/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 

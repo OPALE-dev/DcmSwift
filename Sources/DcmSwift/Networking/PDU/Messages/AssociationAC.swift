@@ -2,16 +2,29 @@
 //  AssociationAC.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 03/05/2019.
+//  Created by Rafael Warnault, OPALE on 03/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
+/**
+ The `AssociationAC` class represent a A-ASSOCIATE-AC message of the DICOM standard.
 
+ It inherits most of its behavior from the `PDUMessage` class and its
+ related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#sect_9.3.3
+ */
 public class AssociationAC: PDUMessage {
     public var remoteCalledAETitle:String?
     public var remoteCallingAETitle:String?
+    
+    
+    public override func messageName() -> String {
+        return "A-ASSOCIATE-AC"
+    }
+    
     
     public override func data() -> Data {
         var data = Data()
@@ -50,10 +63,6 @@ public class AssociationAC: PDUMessage {
         data.append(uiData)
         
         return data
-    }
-    
-    public override func messageName() -> String {
-        return "A-ASSOCIATE-AC"
     }
     
     

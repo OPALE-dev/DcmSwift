@@ -2,16 +2,27 @@
 //  AssociationRQ.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 03/05/2019.
+//  Created by Rafael Warnault, OPALE on 03/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
-
+/**
+ The `AssociationRQ` class represent a A-ASSOCIATE-RQ message of the DICOM standard.
+ 
+ It inherits most of its behavior from the `PDUMessage` class and its
+ related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#sect_9.3.2
+ */
 public class AssociationRQ: PDUMessage {
     public var remoteCalledAETitle:String?
     public var remoteCallingAETitle:String?
+    
+    public override func messageName() -> String {
+        return "A-ASSOCIATE-RQ"
+    }
     
     public override func data() -> Data {
         var data = Data()
@@ -122,11 +133,7 @@ public class AssociationRQ: PDUMessage {
         
         return .Success
     }
-    
-    
-    public override func messageName() -> String {
-        return "A-ASSOCIATE-RQ"
-    }
+
     
     
     override public func handleResponse(data:Data) -> PDUMessage?  {

@@ -2,19 +2,27 @@
 //  PDUMessage.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 02/05/2019.
+//  Created by Rafael Warnault, OPALE on 02/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
 
+/**
+ The `PDUResponsable` protocol indicates if the target class should manage the response handling by itself, using the `handleResponse()` method.
+ This allows the `DicomAssociation` class to automatically decode the corresponding response for a sent request. For example, the association will
+ call the `handleResponse()` method of the sent `CEchoRQ` object to automatically decode the corresponding response as a `CEchoRSP` type of message.
+ */
 public protocol PDUResponsable {
     func handleResponse(data:Data) -> PDUMessage?
     func handleRequest() -> PDUMessage?
 }
 
 
+/**
+ `PDUMessage` is a superclass used to form Protocol Data Units type of messages.
+ */
 public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     
     public var pduType:PDUType!
@@ -78,11 +86,11 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     }
     
     
-    public func data() -> Data {
+    public func data() -> Data? {
         if let p = self.pduType {
             Logger.warning("Not implemented yet \(#function) \(p)")
         }
-        return Data()
+        return nil
     }
     
     

@@ -2,7 +2,7 @@
 //  DicomSpec.swift
 //  DICOM Test
 //
-//  Created by Rafael Warnault on 19/10/2017.
+//  Created by Rafael Warnault, OPALE on 19/10/2017.
 //  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 

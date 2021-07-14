@@ -2,14 +2,21 @@
 //  ReleaseRP.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 03/05/2019.
+//  Created by Rafael Warnault, OPALE on 03/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
+/**
+ The `ReleaseRSP` class represent a A-RELEASE-RSP message of the DICOM standard.
 
-public class ReleaseRP: PDUMessage {
+ It inherits most of its behavior from the `PDUMessage` class and its
+ related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#sect_9.3.7
+ */
+public class ReleaseRSP: PDUMessage {
     public override func messageName() -> String {
         return "A-RELEASE-RSP"
     }

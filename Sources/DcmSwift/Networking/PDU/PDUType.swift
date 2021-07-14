@@ -2,12 +2,19 @@
 //  PDUType.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 03/05/2019.
+//  Created by Rafael Warnault, OPALE on 03/05/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
 import Foundation
 
+/**
+ Enum representing the different PDU types of a DICOM message.
+ 
+ See 9.3 DICOM Upper Layer Protocol for TCP/IP Data Units Structure:
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html
+ */
 public enum PDUType: UInt8 {
     case associationRQ  = 0x01
     case associationAC  = 0x02

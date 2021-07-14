@@ -2,7 +2,7 @@
 //  DcmSwiftTests.swift
 //  DcmSwiftTests
 //
-//  Created by Rafael Warnault on 29/10/2017.
+//  Created by Rafael Warnault, OPALE on 29/10/2017.
 //  Copyright © 2017 OPALE, Rafaël Warnault. All rights reserved.
 //
 

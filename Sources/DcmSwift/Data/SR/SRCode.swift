@@ -2,7 +2,7 @@
 //  SRCode.swift
 //  
 //
-//  Created by Rafael Warnault on 05/07/2021.
+//  Created by Rafael Warnault, OPALE on 05/07/2021.
 //
 
 import Foundation

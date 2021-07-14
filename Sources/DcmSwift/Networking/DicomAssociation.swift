@@ -2,7 +2,7 @@
 //  DicomAssociation.swift
 //  DcmSwift
 //
-//  Created by Rafael Warnault on 20/03/2019.
+//  Created by Rafael Warnault, OPALE on 20/03/2019.
 //  Copyright © 2019 OPALE. All rights reserved.
 //
 
@@ -26,6 +26,8 @@ public class DicomAssociation : ChannelInboundHandler {
     
     // http://dicom.nema.org/medical/dicom/2017e/output/chtml/part08/sect_9.3.4.html
     // http://dicom.nema.org/medical/dicom/2014c/output/chtml/part02/sect_F.4.2.2.4.html#table_F.4.2-14
+    //
+    // TODO: State Machine http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.2.html#sect_9.2.3
     //
     // rejection result
     public enum RejectResult: UInt8 {
@@ -109,7 +111,7 @@ public class DicomAssociation : ChannelInboundHandler {
     
     
     /*
-     Initialize an Association for a Local to Remote connection, i.e. send to a remote DICOM entity
+     Initialize an Association for a Local to Remote connection, i.e. WRIT to a remote DICOM entity
      */
     public init(
         channel:Channel,
@@ -180,7 +182,7 @@ public class DicomAssociation : ChannelInboundHandler {
     
     
     private func handleAssociation(message:PDUMessage) {
-        Logger.info("[\(origin)] RECEIVE \(message.messageName())")
+        Logger.info("READ \(message.messageName())", "Association")
                     
         if origin == .Remote {
             // read AA-RQ
@@ -188,7 +190,7 @@ public class DicomAssociation : ChannelInboundHandler {
                 if associationRQ.remoteCallingAETitle == nil || self.calledAET.title != associationRQ.remoteCalledAETitle {
                     Logger.error("Called AE title not recognized")
                     
-                    // send ASSOCIATION-RJ
+                    // WRIT ASSOCIATION-RJ
                     self.reject(withResult: .RejectedPermanent,
                                 source: .DICOMULServiceUser,
                                 reason: DicomAssociation.UserReason.CalledAETitleNotRecognized)
@@ -227,7 +229,7 @@ public class DicomAssociation : ChannelInboundHandler {
     }
     
     private func handleDIMSE(message:PDUMessage) {
-        Logger.info("[\(origin)] RECEIVE \(message.messageName())")
+        Logger.info("READ \(message.messageName())", "Association")
         
         if  message.dimseStatus.status != .Success &&
             message.dimseStatus.status != .Pending {
@@ -371,7 +373,7 @@ public class DicomAssociation : ChannelInboundHandler {
 //            if associationRQ.remoteCallingAETitle == nil || self.calledAET.title != associationRQ.remoteCalledAETitle {
 //                Logger.error("Called AE title not recognized")
 //
-//                // send ASSOCIATION-RJ
+//                // WRIT ASSOCIATION-RJ
 //                self.reject(withResult: .RejectedPermanent,
 //                            source: .DICOMULServiceUser,
 //                            reason: DicomAssociation.UserReason.CalledAETitleNotRecognized.rawValue)
@@ -384,7 +386,7 @@ public class DicomAssociation : ChannelInboundHandler {
 //
 //            // check presentation contexts ?
 //
-//            // send ASSOCIATION-AC
+//            // WRIT ASSOCIATION-AC
 //            if let associationAC = PDUEncoder.shared.createAssocMessage(pduType: .associationAC, association: self) as? AssociationAC {
 //                self.write(message: associationAC, readResponse: false, completion: nil)
 //            }
@@ -402,7 +404,7 @@ public class DicomAssociation : ChannelInboundHandler {
     
     
     public func reject(withResult result: RejectResult, source: RejectSource, reason: UserReason) {
-        // send A-Association-RJ message
+        // WRIT A-Association-RJ message
         if let message = PDUEncoder.shared.createAssocMessage(pduType: .associationRJ, association: self) as? AssociationRJ {
             message.result = result
             message.source = source
@@ -410,7 +412,7 @@ public class DicomAssociation : ChannelInboundHandler {
             
             let data = message.data()
             
-            Logger.info("SEND A-ASSOCIATION-RJ")
+            Logger.info("WRIT A-ASSOCIATION-RJ", "Association")
             
             self.write(data)
         }
@@ -420,33 +422,50 @@ public class DicomAssociation : ChannelInboundHandler {
     
     
     public func close() {
-        if self.associationAccepted {
-            // send A-Release-RQ message
-            if let message = PDUEncoder.shared.createAssocMessage(pduType: .releaseRQ, association: self) {
-                let data = message.data()
-                
-                Logger.info("SEND A-RELEASE-RQ", "Association")
-                
-                self.write(data)
-                
-                channel.close(mode: .all, promise: nil)
-                
-                currentCloseCompletion?(self)
-            }
+        if !self.associationAccepted {
+            return
         }
+            
+        // WRIT A-Release-RQ message
+        guard let message = PDUEncoder.shared.createAssocMessage(pduType: .releaseRQ, association: self) else {
+            Logger.error("Cannot create A-RELEASE-RQ message")
+            return
+        }
+        
+        guard let data = message.data() else {
+            Logger.error("Cannot generate A-RELEASE-RQ message", "Association")
+            return
+        }
+        
+        Logger.info("WRIT A-RELEASE-RQ", "Association")
+        
+        self.write(data)
+        
+        channel.close(mode: .all, promise: nil)
+        
+        currentCloseCompletion?(self)
+            
     }
     
     
     
     public func abort() {
-        // send A-Abort message
-        if let message = PDUEncoder.shared.createAssocMessage(pduType: .abort, association: self) {
-            let data = message.data()
-            
-            Logger.info("SEND A-ABORT", "Association")
-            
-            self.write(data)
+        // create A-Abort message
+        guard let message = PDUEncoder.shared.createAssocMessage(pduType: .abort, association: self) else {
+            Logger.error("Cannot create A-ABORT message")
+            return
         }
+        
+        // get message data
+        guard let data = message.data() else {
+            Logger.error("Cannot generate A-ABORT message")
+            return
+        }
+        
+        Logger.info("WRIT A-ABORT", "Association")
+            
+        // write message
+        self.write(data)
     }
     
     
@@ -466,7 +485,10 @@ public class DicomAssociation : ChannelInboundHandler {
         abortCompletion: @escaping AbortCompletion,
         closeCompletion: @escaping CloseCompletion)
     {
-        let data = message.data()
+        guard let data = message.data() else {
+            Logger.error("WRITE ERROR: no data to write")
+            return
+        }
                 
         if readResponse {
             currentPDUCompletion    = pduCompletion
@@ -481,11 +503,11 @@ public class DicomAssociation : ChannelInboundHandler {
         
         self.write(data)
                 
-        Logger.info("[\(origin)] SEND \(message.messageName() )")
+        Logger.info("WRIT \(message.messageName() )", "Association")
         //Logger.debug(message.debugDescription)
                 
         for messageData in message.messagesData() {
-            Logger.info("[\(origin)] SEND \(message.messageName())-DATA")
+            Logger.info("WRIT \(message.messageName())-DATA", "Association")
             if messageData.count > 0 {
                 self.write(messageData)
             }
