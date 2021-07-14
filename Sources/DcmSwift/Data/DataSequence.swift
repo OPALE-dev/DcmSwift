@@ -9,7 +9,12 @@
 import Foundation
 
 
-
+/**
+ `DataSequence` is a specific type of `DataElement` with the ability of nesting n `DataItem` objects.
+ Each `DataItem` object can have n `DataElement` objects.
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.5.html
+ */
 public class DataSequence: DataElement {
     public var items:[DataItem] = []
     

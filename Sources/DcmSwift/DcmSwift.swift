@@ -6,6 +6,8 @@ struct DcmSwift {
 
 /**
  The ByteOrder enumeration defines 2 endianess methods, little and big endian
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.3.html
  */
 public enum ByteOrder {
     case BigEndian
