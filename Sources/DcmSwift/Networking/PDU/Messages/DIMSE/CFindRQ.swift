@@ -22,13 +22,17 @@ public class CFindRQ: DataTF {
     public override func data() -> Data {
         var data = Data()
 
+        let spc = association.presentationContexts[association.acceptedPresentationContexts.keys.first!]
         let pc = association.acceptedPresentationContexts[association.acceptedPresentationContexts.keys.first!]
+        let ts = pc?.transferSyntaxes.first
         
-        print(pc?.transferSyntaxes.first)
-
+        if ts == nil {
+            return data
+        }
+        
         let pdvDataset = DataSet()
         _ = pdvDataset.set(value: CommandField.C_FIND_RQ.rawValue.bigEndian, forTagName: "CommandField")
-        _ = pdvDataset.set(value: pc!.abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
+        _ = pdvDataset.set(value: spc!.abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
         _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
         _ = pdvDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
         _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
@@ -56,11 +60,20 @@ public class CFindRQ: DataTF {
     public override func messagesData() -> [Data] {
         var data = Data()
         
-        if let qrDataset = self.queryDataset, qrDataset.allElements.count > 0 {
+        let pc = association.acceptedPresentationContexts[association.acceptedPresentationContexts.keys.first!]
+        let ts = pc?.transferSyntaxes.first
+        
+        if ts == nil {
+            return [data]
+        }
+
+        let transferSyntax = TransferSyntax(ts!)
+                
+        if let qrDataset = self.queryDataset, qrDataset.allElements.count > 0, transferSyntax != nil {
             var datasetData = Data()
                         
             for e in qrDataset.allElements {
-                datasetData.append(e.toData(vrMethod: .Explicit, byteOrder: .LittleEndian))
+                datasetData.append(e.toData(transferSyntax: transferSyntax!))
             }
             
             var pdvData2 = Data()

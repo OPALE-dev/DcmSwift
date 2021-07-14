@@ -89,6 +89,34 @@ public class DataSet: DicomObject {
     }
     
     
+    public override func toData(transferSyntax: TransferSyntax) -> Data {
+        var newData     = Data()
+        
+        // be sure element are sorted properly before write
+        sortElements()
+
+        // append meta header elements as binary data
+        for element in allElements {
+            var finalVR     = transferSyntax.vrMethod
+            var finalOrder  = transferSyntax.byteOrder
+            
+            if hasPreamble {
+                if element.group == "0002" {
+                    finalVR = .Explicit
+                    finalOrder = .LittleEndian
+                }
+            }
+            
+            newData.append(write(dataElement: element, vrMethod:finalVR, byteOrder:finalOrder))
+        }
+        
+        print("newData \(newData)")
+
+        return newData
+    }
+    
+    
+    
     public func DIMSEData(vrMethod inVrMethod:VRMethod = .Explicit, byteOrder inByteOrder:ByteOrder = .LittleEndian) -> Data {
         var data = Data()
         
