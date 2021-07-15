@@ -946,5 +946,87 @@ class DcmSwiftTests: XCTestCase {
             Logger.error("no dicom file")
         }
     }
+    
+    // test Plan
+    
+    public func testGetToleranceTableItem() {
+        // rt_RTXPLAN.20110509.1010_Irregular.dcm
+        
+        let path = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular.dcm", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "1"))
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "2"))
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "3"))
+            
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "4"))
+       
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetFractionGroupItem() {
+        // rt_RTXPLAN.20110509.1010_Irregular.dcm
+        
+        let path = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular.dcm", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "FractionGroupSequence", withNumber: "1"))
+            
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "FractionGroupSequence", withNumber: "2"))
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "FractionGroupSequence", withNumber: "3"))
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "FractionGroupSequence", withNumber: "4"))
+       
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetBeamItem() {
+        // rt_RTXPLAN.20110509.1010_Irregular.dcm
+        
+        let path = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular.dcm", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "BeamSequence", withNumber: "1"))
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "BeamSequence", withNumber: "2"))
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "BeamSequence", withNumber: "3"))
+            
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "BeamSequence", withNumber: "4"))
+       
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetPatientItem() {
+        // rt_RTXPLAN.20110509.1010_Irregular.dcm
+        
+        let path = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular.dcm", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "1"))
+            
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "2"))
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "3"))
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "4"))
+       
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
 }
 

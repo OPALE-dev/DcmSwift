@@ -8,34 +8,55 @@
 import Foundation
 
 
+let SEQUENCE_WITH_NUMBER: [String: String] = ["PatientSetupSequence": "PatientSetupNumber",
+                                           "ToleranceTableSequence": "ToleranceTableNumber",
+                                           "BeamSequence": "BeamNumber",
+                                           "FractionGroupSequence": "FractionGroupNumber",
+                                           "DoseReferenceSequence": "DoseReferenceNumber",
+                                           "ApplicationSetupSequence": "ApplicationSetupNumber"]
+
+
 /**
- Helpers concerning RTPlan modality; we return data element instead of data sequence because there's no helper
- to get a sequence for a tag name out of a dataset
+ Helpers concerning RTPlan modality; we take an item from a sequence in which the "number" corresponds to the one given
+ in the parameters
  */
 public class Plan {
-    public static func getPatientSetupSequence(dicomRT: DicomRT) -> DataElement? {
-        return dicomRT.dataset.element(forTagName: "PatientSetupSequence")
+    
+    
+    public static func getItemInSequenceForNumber(dicomRT: DicomRT, forSequence: String, withNumber: String) -> DataItem? {
+        if !SEQUENCE_WITH_NUMBER.keys.contains(forSequence) {
+            return nil
+        }
+        
+        guard let sequence = dicomRT.dataset.sequence(forTagName: forSequence) else { return nil }
+        
+        for item in sequence.items {
+            guard let number = item.element(withName: SEQUENCE_WITH_NUMBER[forSequence] ?? "") else { return nil }
+            
+            if number.value as! String == withNumber {
+                return item
+            }
+        }
+        
+        return nil
     }
     
-    public static func getToleranceTableSequence(dicomRT: DicomRT) -> DataElement? {
-        return dicomRT.dataset.element(forTagName: "ToleranceTableSequence")
-    }
-    
-    public static func getBeamSequence(dicomRT: DicomRT) -> DataElement? {
-        return dicomRT.dataset.element(forTagName: "BeamSequence")
-    }
-    
-    public static func getFractionGroupSequence(dicomRT: DicomRT) -> DataElement? {
-        return dicomRT.dataset.element(forTagName: "FractionGroupSequence")
-    }
-    
-    // data elements not found
-    
-    public static func getDoseReferenceSequence(dicomRT: DicomRT) -> DataElement? {
-        return dicomRT.dataset.element(forTagName: "DoseReferenceSequence")
-    }
-    
-    public static func getApplicationSetupSequence(dicomRT: DicomRT) -> DataElement? {
-        return dicomRT.dataset.element(forTagName: "ApplicationSetupSequence")
+    public static func getPatientSetup(dicomRT: DicomRT, withNumber: String) -> DataItem? {
+        guard let patientSetupSequence = dicomRT.dataset.sequence(forTagName: "PatientSetupSequence") else {
+            return nil
+        }
+        
+        
+        for patientSetupSequenceItem in patientSetupSequence.items {
+            guard let patientSetupNumber = patientSetupSequenceItem.element(withName: "PatientSetupNumber") else {
+                continue
+            }
+            
+            if patientSetupNumber.value as! String == withNumber {
+                return patientSetupSequenceItem
+            }
+        }
+        
+        return nil
     }
 }
