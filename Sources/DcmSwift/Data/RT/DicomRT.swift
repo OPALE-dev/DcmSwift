@@ -8,8 +8,26 @@
 import Foundation
 
 public class DicomRT : DicomFile {
-
-    public func getImageParameters() -> (Int16, Int16, Int16, Int16, Int16)? {
+    
+    public var frames: Int16
+    public var rows: Int16
+    public var columns: Int16
+    public var bitsAllocated: Int16
+    public var bitsStored:Int16
+    public var highBit: Int16
+    public var pixelRepresentation: DicomImage.PixelRepresentation
+    
+    public override init?(forPath filepath: String) {
+        frames = 0
+        rows = 0
+        columns = 0
+        bitsAllocated = 0
+        bitsStored = 0
+        highBit = 0
+        pixelRepresentation = DicomImage.PixelRepresentation.Signed
+        
+        super.init(forPath: filepath)
+        
         guard let numberOfFrames = self.dataset.string(forTag: "NumberOfFrames"),// String, cast to Int16 later
         let rows = self.dataset.integer16(forTag: "Rows"),// Int16
         let columns = self.dataset.integer16(forTag: "Columns"),// Int16
@@ -17,6 +35,7 @@ public class DicomRT : DicomFile {
         let bitsStored = self.dataset.integer16(forTag: "BitsStored"),// Int16
         let highBit = self.dataset.integer16(forTag: "HighBit"),// Int16
         let pixelRepresentation = self.dataset.integer16(forTag: "PixelRepresentation") else {// Int16
+            
             return nil
         }
 
@@ -24,15 +43,22 @@ public class DicomRT : DicomFile {
             return nil
         }
         
-        guard let frameCount = Int16(numberOfFrames) else {
-            return nil
-        }
-    
-        if frameCount < 0 {
+        guard let frames = Int16(numberOfFrames) else {
             return nil
         }
         
-        if bitsStored != bitsAllocated {
+        self.frames = frames
+        self.rows = rows
+        self.columns = columns
+        self.bitsAllocated = bitsAllocated
+        self.bitsStored = bitsStored
+        self.highBit = highBit
+    
+        if self.frames < 0 {
+            return nil
+        }
+        
+        if bitsStored != bitsAllocated && (bitsStored != 16 && bitsStored != 32) && (bitsAllocated != 16 && bitsAllocated != 32) {
             return nil
         }
         
@@ -40,43 +66,9 @@ public class DicomRT : DicomFile {
             return nil
         }
         
-        return (frameCount, rows, columns, bitsAllocated, pixelRepresentation)
-    }
-    
-    
-    public func getDoseImage() {
-        // TODO
-    }
-    
-    public func getDoseImages() {
-        // TODO
-    }
-    
-    public func getDoseImageWidth() -> Int16? {
-        if let columns = self.dataset.value(forTag: "Columns") {
-            return columns as? Int16
-        } else {
-            Logger.debug("No column data element")
+        guard let pr = DicomImage.PixelRepresentation.init(rawValue: Int(pixelRepresentation)) else {
             return nil
         }
-    }
-    
-    public func getDoseImageHeight() -> Int16? {
-        if let rows = self.dataset.value(forTag: "Rows") {
-            return rows as? Int16
-        } else {
-            Logger.debug("No row data element")
-            return nil
-        }
-    }
-    
-    public func isValid() -> Bool {
-        guard let imageParams = getImageParameters() else {
-            return false
-        }
-        
-        let (_, _, _, bitsAllocated, _) = imageParams
-        
-        return bitsAllocated == 16 || bitsAllocated == 32
+        self.pixelRepresentation = pr
     }
 }
