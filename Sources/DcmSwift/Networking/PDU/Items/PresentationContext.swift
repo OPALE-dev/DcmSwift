@@ -89,9 +89,9 @@ public class PresentationContext {
             }
             
             offset = offset+Int(tsLength)
-            
-            if offset < data.count {
-                tsType = data.subdata(in: offset..<1).toInt8(byteOrder: .BigEndian)
+
+            if offset <= data.count && offset+1 <= data.count {
+                tsType = data.subdata(in: offset..<offset+1).toInt8(byteOrder: .BigEndian)
             } else {
                 tsType = 0
             }

@@ -18,7 +18,7 @@ import Foundation
  */
 public class ReleaseRQ: PDUMessage {
     public override func messageName() -> String {
-        return "A-RELEASE-RJ"
+        return "A-RELEASE-RQ"
     }
     
     
@@ -35,7 +35,7 @@ public class ReleaseRQ: PDUMessage {
     }
     
     public override func decodeData(data: Data) -> DIMSEStatus.Status {
-        return self.dimseStatus.status
+        return super.decodeData(data: data)
     }
     
     public override func handleRequest() -> PDUMessage? {

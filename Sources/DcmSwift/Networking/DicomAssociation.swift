@@ -160,8 +160,6 @@ public class DicomAssociation : ChannelInboundHandler {
     ) {
         self.origin     = origin
         self.calledAET  = calledAET
-
-        _ = channel.pipeline.addHandlers([ByteToMessageHandler(PDUMessageDecoder(withAssociation: self)), self])
     }
     
     
@@ -204,7 +202,7 @@ public class DicomAssociation : ChannelInboundHandler {
         }
         
         let readData = Data(bytes)
-        
+                
         guard let f = readData.first, PDUType.isSupported(f) else {
             handleError(description: "Unsupported PDU Type (channelRead)", message: nil, closeAssoc: true)
             return
@@ -215,16 +213,22 @@ public class DicomAssociation : ChannelInboundHandler {
             return
         }
                 
+        // we received an DIMSE message
         if pt.rawValue == PDUType.dataTF.rawValue {
-            guard let message = currentDIMSEMessage?.handleResponse(data: readData) else {
-                handleError(description: "Cannot read DIMSE message of type \(pt)", message: nil, closeAssoc: true)
-                return
+            if origin == .Local {
+                // handle message received from remote
+                if let message = currentDIMSEMessage?.handleResponse(data: readData) {
+                    handleDIMSE(message: message)
+                }
+            } else if origin == .Remote {
+                // handle message received as remote
+                if let message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, association: self) as? PDUMessage {
+                    handleDIMSE(message: message)
+                }
             }
-                            
-            handleDIMSE(message: message)
         }
         else {
-            // we received an association message
+        // we received an association message
             guard let message = PDUDecoder.shared.receiveAssocMessage(data: readData, pduType: pt, association: self) as? PDUMessage else {
                 currentAbortCompletion?(nil, DicomError(description: "Cannot decode \(pt) message", level: .error))
                 return
@@ -245,17 +249,24 @@ public class DicomAssociation : ChannelInboundHandler {
     public func channelActive(context: ChannelHandlerContext) {
         // setup accepted presentation contexts
         self.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP, result: 0x00)
-        self.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND, result: 0x00)
-
-        for sop in DicomConstants.storageSOPClasses {
-            self.addPresentationContext(abstractSyntax: sop, result: 0x00)
-        }
+//        self.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND, result: 0x00)
+//
+//        for sop in DicomConstants.storageSOPClasses {
+//            self.addPresentationContext(abstractSyntax: sop, result: 0x00)
+//        }
         
         Logger.verbose("Server Presentation Contexts: \(self.presentationContexts)");
         
+        // set the remote channel
         self.channel = context.channel
+        
+        // add channel handlers to decode messages
+        _ = self.channel.pipeline.addHandlers([ByteToMessageHandler(PDUMessageDecoder(withAssociation: self)), self])
+        
+        // store a reference of the connected association
         self.connectedAssociations[ObjectIdentifier(context.channel)] = self
     }
+    
     
     public func errorCaught(context: ChannelHandlerContext, error: Error) {
         currentAbortCompletion?(nil, DicomError(description: error.localizedDescription, level: .error))
@@ -474,6 +485,18 @@ public class DicomAssociation : ChannelInboundHandler {
 
 //MARK: - Private
 private extension DicomAssociation {
+    private func write(message:PDUMessage) {
+        guard let data = message.data() else {
+            Logger.error("Cannot encode message of type `\(message.pduType!)`")
+            return
+        }
+        
+        Logger.info("WRIT \(message.messageName())", "Association")
+        
+        write(data)
+    }
+    
+    
     private func write(_ data:Data) {
         let buffer = channel.allocator.buffer(bytes: data)
         
@@ -492,42 +515,63 @@ private extension DicomAssociation {
     }
     
     
+    private func associationRQ(associationRQ:AssociationRQ) {
+        // check for called AE title
+        if associationRQ.remoteCallingAETitle == nil || self.calledAET.title != associationRQ.remoteCalledAETitle {
+            Logger.error("Called AE title not recognized")
+
+            // WRIT ASSOCIATION-RJ
+            self.reject(withResult: .RejectedPermanent,
+                        source: .DICOMULServiceUser,
+                        reason: DicomAssociation.UserReason.CalledAETitleNotRecognized)
+        }
+
+        // create calling AE
+        if let hostname = channel.remoteAddress?.description,
+           let remoteCallingAETitle = associationRQ.remoteCallingAETitle,
+           let port = channel.remoteAddress?.port
+        {
+            self.callingAET = DicomEntity(
+                title: remoteCallingAETitle,
+                hostname: hostname,
+                port: port)
+        }
+
+        guard let response = associationRQ.handleRequest() else {
+            // Reject ??
+            Logger.error("Cannot handle request of type `\(associationRQ.pduType!)`")
+            return
+        }
+        
+        write(message: response)
+    }
+    
+    
+    private func releaseRQ(releaseRQ:ReleaseRQ) {
+        guard let response = releaseRQ.handleRequest() else {
+            // Reject ??
+            Logger.error("Cannot handle request of type `\(releaseRQ.pduType!)`")
+            return
+        }
+        
+        write(message: response)
+    }
+    
+    
     private func handleAssociation(message:PDUMessage) {
         Logger.info("READ \(message.messageName())", "Association")
                     
+        // messages received as remote
         if origin == .Remote {
-            // read AA-RQ
-//            if let associationRQ = message as? AssociationRQ {
-//                if associationRQ.remoteCallingAETitle == nil || self.calledAET.title != associationRQ.remoteCalledAETitle {
-//                    Logger.error("Called AE title not recognized")
-//
-//                    // WRIT ASSOCIATION-RJ
-//                    self.reject(withResult: .RejectedPermanent,
-//                                source: .DICOMULServiceUser,
-//                                reason: DicomAssociation.UserReason.CalledAETitleNotRecognized)
-//                }
-//
-//                if let hostname = channel.remoteAddress?.description,
-//                   let remoteCallingAETitle = associationRQ.remoteCallingAETitle,
-//                   let port = channel.remoteAddress?.port
-//                {
-//                    self.callingAET = DicomEntity(
-//                        title: remoteCallingAETitle,
-//                        hostname: hostname,
-//                        port: port)
-//                }
-//
-//                if let associationAC = PDUEncoder.shared.createAssocMessage(pduType: .associationAC, association: self) as? AssociationAC {
-//                    self.write(message: associationAC) { (message, response, self) in
-//
-//                    } abortCompletion: { (message, err) in
-//
-//                    } closeCompletion: { (assoc) in
-//
-//                    }
-//                }
-//            }
+            // handle requests
+            if let aRQ = message as? AssociationRQ {
+                associationRQ(associationRQ: aRQ)
+            }
+            else if let rRQ = message as? ReleaseRQ {
+                releaseRQ(releaseRQ: rRQ)
+            }
         }
+        // messages received as client
         else if origin == .Local {
             if message.pduType == .abort {
                 handleError(description: "Association aborted", message: message, closeAssoc: false)
@@ -543,33 +587,38 @@ private extension DicomAssociation {
     private func handleDIMSE(message:PDUMessage) {
         Logger.info("READ \(message.messageName())", "Association")
         
-        if  message.dimseStatus.status != .Success &&
-            message.dimseStatus.status != .Pending {
-            currentDIMSEMessage = nil
-            currentPDUCompletion = nil
-            currentAbortCompletion = nil
-            currentCloseCompletion = nil
-            handleError(description: "Wrong DIMSE status: \(message.dimseStatus.status)", message: message, closeAssoc: true)
-            return
-        }
-        
         if origin == .Remote {
-            
+            // generate and send request
+            if let response = message.handleRequest() {
+                write(message: response)
+            }
         }
         else if origin == .Local {
+            if  message.dimseStatus.status != .Success &&
+                message.dimseStatus.status != .Pending {
+                currentDIMSEMessage     = nil
+                
+                currentPDUCompletion    = nil
+                currentAbortCompletion  = nil
+                currentCloseCompletion  = nil
+                
+                handleError(description: "Wrong DIMSE status: \(message.dimseStatus.status)", message: message, closeAssoc: true)
+                return
+            }
+            
             currentPDUCompletion?(currentDIMSEMessage, message, self)
             
             if message.dimseStatus.status != .Pending {
                 close()
             }
-        }
-        
-        if message.dimseStatus.status == .Success {
-            // no more response to handle
-            currentDIMSEMessage = nil
-            currentPDUCompletion = nil
-            currentAbortCompletion = nil
-            currentCloseCompletion = nil
+            
+            if message.dimseStatus.status == .Success {
+                // no more response to handle
+                currentDIMSEMessage = nil
+                currentPDUCompletion = nil
+                currentAbortCompletion = nil
+                currentCloseCompletion = nil
+            }
         }
     }
     

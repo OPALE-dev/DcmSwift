@@ -48,6 +48,8 @@ struct DcmStore: ParsableCommand {
                 Logger.error("CONNECT Error: \(e)")
             }
         }
+        
+        _ = client.disconnect()
     }
 }
 

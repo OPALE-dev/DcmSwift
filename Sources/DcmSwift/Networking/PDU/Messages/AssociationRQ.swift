@@ -130,7 +130,6 @@ public class AssociationRQ: PDUMessage {
         self.association?.remoteImplementationVersion = userInfo.implementationVersion
         self.association?.associationAccepted = true
         
-        
         return .Success
     }
 
@@ -163,6 +162,16 @@ public class AssociationRQ: PDUMessage {
             }
         }
 
+        return nil
+    }
+    
+    
+    public override func handleRequest() -> PDUMessage? {
+        if let response = PDUEncoder.shared.createAssocMessage(pduType: PDUType.associationAC, association: self.association) as? PDUMessage {
+            response.requestMessage = self
+            
+            return response
+        }
         return nil
     }
 }
