@@ -146,7 +146,7 @@ public class DicomClient : DicomService, StreamDelegate {
      )  {
         if !self.checkConnected(abortCompletion) { return }
 
-        // create assoc between local and remote
+        // create assoc between local and remote AEs
         let association = DicomAssociation(
             channel: self.channel,
             callingAET: self.localEntity,
@@ -163,7 +163,7 @@ public class DicomClient : DicomService, StreamDelegate {
                     commandField: .C_FIND_RQ,
                     association: association
             ) as? CFindRQ else {
-                abortCompletion(nil, DicomError(description: "Cannot create C_FIND_RQ message", level: .error))
+                abortCompletion(nil, DicomError(description: "Cannot create C-FIND-RQ message", level: .error))
                 return
             }
             
@@ -201,7 +201,8 @@ public class DicomClient : DicomService, StreamDelegate {
         closeCompletion: @escaping CloseCompletion
     )  {
         if !self.checkConnected(abortCompletion) { return }
-
+        
+        // create assoc between local and remote AEs
         let association = DicomAssociation(
             channel: self.channel,
             callingAET: self.localEntity,
@@ -216,24 +217,27 @@ public class DicomClient : DicomService, StreamDelegate {
         association.request { (request, response, assoc) in
             var index = 0
             for f in files {
-                if let message = PDUEncoder.shared.createDIMSEMessage(
+                guard let message = PDUEncoder.shared.createDIMSEMessage(
                     pduType: PDUType.dataTF,
                     commandField: .C_STORE_RQ,
                     association: association
-                ) as? CStoreRQ {
-                    message.dicomFile = DicomFile(forPath: f)
-
-                    association.write(
-                        message: message,
-                        readResponse: false,
-                        pduCompletion: pduCompletion,
-                        abortCompletion: abortCompletion,
-                        closeCompletion: closeCompletion)
-                    
-                    progression(index)
-                    
-                    index += 1
+                ) as? CStoreRQ else {
+                    abortCompletion(nil, DicomError(description: "Cannot create C-STORE-RQ message", level: .error))
+                    return
                 }
+                
+                message.dicomFile = DicomFile(forPath: f)
+
+                association.write(
+                    message: message,
+                    readResponse: true,
+                    pduCompletion: pduCompletion,
+                    abortCompletion: abortCompletion,
+                    closeCompletion: closeCompletion)
+                
+                index += 1
+                
+                progression(index)
             }
         }
         abortCompletion: { (message, error) in

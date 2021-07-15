@@ -23,8 +23,8 @@ public protocol PDUResponsable {
 /**
  `PDUMessage` is a superclass used to form Protocol Data Units type of messages.
  */
-public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
-    
+public class PDUMessage:
+    PDUResponsable, PDUDecodable, PDUEncodable {
     public var pduType:PDUType!
     public var pduLength:Int = -1
     public var pdvLength:Int = -1
@@ -40,8 +40,7 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     public var responseDataset:DataSet!
     public var messageID = UInt16(1).bigEndian
     public var stream:OffsetInputStream!
-    
-    
+
     
     public init(pduType:PDUType, association:DicomAssociation) {
         self.pduType = pduType
@@ -53,7 +52,6 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
         self.init(pduType: pduType, association: association)
         self.commandField = commandField
     }
-
 
     
     public convenience init?(data:Data, pduType:PDUType, association:DicomAssociation) {
@@ -83,11 +81,12 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     
     
     public func messagesData() -> [Data] {
-//        if let p = self.pduType {
-//            Logger.warning("Not implemented yet \(#function) \(p)")
-//        }
+        // if let p = self.pduType {
+        //     Logger.warning("Not implemented yet \(#function) \(p)")
+        // }
         return []
     }
+    
     
     /**
      Encoded representation of the PDUMessage as binary data
@@ -127,6 +126,7 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
         return nil
     }
 
+    
     public func handleRequest() -> PDUMessage? {
         return nil
     }

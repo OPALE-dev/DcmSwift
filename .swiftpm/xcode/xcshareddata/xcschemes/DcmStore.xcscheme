@@ -80,7 +80,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "DCM4CHEE"
+            argument = "HOROSRW"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -88,11 +88,11 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "11112"
+            argument = "4097"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "&apos;/Users/nark/Pictures/DICOM/MG-MONO2-16 (Little Endian Explicit VR).dcm&apos;"
+            argument = "&apos;/Users/nark/Pictures/DICOM/MR-MONO2-16-knee (Little Endian Implicit VR).dcm&apos;"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

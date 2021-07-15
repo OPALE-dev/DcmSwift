@@ -420,7 +420,7 @@ public class DicomAssociation : ChannelInboundHandler {
         }
         
         // handle response later
-        if let cf = message.commandField {
+        if message.commandField != nil {
             currentDIMSEMessage = message
         }
         
@@ -497,36 +497,36 @@ private extension DicomAssociation {
                     
         if origin == .Remote {
             // read AA-RQ
-            if let associationRQ = message as? AssociationRQ {
-                if associationRQ.remoteCallingAETitle == nil || self.calledAET.title != associationRQ.remoteCalledAETitle {
-                    Logger.error("Called AE title not recognized")
-                    
-                    // WRIT ASSOCIATION-RJ
-                    self.reject(withResult: .RejectedPermanent,
-                                source: .DICOMULServiceUser,
-                                reason: DicomAssociation.UserReason.CalledAETitleNotRecognized)
-                }
-                
-                if let hostname = channel.remoteAddress?.description,
-                   let remoteCallingAETitle = associationRQ.remoteCallingAETitle,
-                   let port = channel.remoteAddress?.port
-                {
-                    self.callingAET = DicomEntity(
-                        title: remoteCallingAETitle,
-                        hostname: hostname,
-                        port: port)
-                }
-                
-                if let associationAC = PDUEncoder.shared.createAssocMessage(pduType: .associationAC, association: self) as? AssociationAC {
-                    self.write(message: associationAC) { (message, response, self) in
-                        
-                    } abortCompletion: { (message, err) in
-                        
-                    } closeCompletion: { (assoc) in
-                        
-                    }
-                }
-            }
+//            if let associationRQ = message as? AssociationRQ {
+//                if associationRQ.remoteCallingAETitle == nil || self.calledAET.title != associationRQ.remoteCalledAETitle {
+//                    Logger.error("Called AE title not recognized")
+//
+//                    // WRIT ASSOCIATION-RJ
+//                    self.reject(withResult: .RejectedPermanent,
+//                                source: .DICOMULServiceUser,
+//                                reason: DicomAssociation.UserReason.CalledAETitleNotRecognized)
+//                }
+//
+//                if let hostname = channel.remoteAddress?.description,
+//                   let remoteCallingAETitle = associationRQ.remoteCallingAETitle,
+//                   let port = channel.remoteAddress?.port
+//                {
+//                    self.callingAET = DicomEntity(
+//                        title: remoteCallingAETitle,
+//                        hostname: hostname,
+//                        port: port)
+//                }
+//
+//                if let associationAC = PDUEncoder.shared.createAssocMessage(pduType: .associationAC, association: self) as? AssociationAC {
+//                    self.write(message: associationAC) { (message, response, self) in
+//
+//                    } abortCompletion: { (message, err) in
+//
+//                    } closeCompletion: { (assoc) in
+//
+//                    }
+//                }
+//            }
         }
         else if origin == .Local {
             if message.pduType == .abort {
@@ -546,6 +546,9 @@ private extension DicomAssociation {
         if  message.dimseStatus.status != .Success &&
             message.dimseStatus.status != .Pending {
             currentDIMSEMessage = nil
+            currentPDUCompletion = nil
+            currentAbortCompletion = nil
+            currentCloseCompletion = nil
             handleError(description: "Wrong DIMSE status: \(message.dimseStatus.status)", message: message, closeAssoc: true)
             return
         }
@@ -564,6 +567,9 @@ private extension DicomAssociation {
         if message.dimseStatus.status == .Success {
             // no more response to handle
             currentDIMSEMessage = nil
+            currentPDUCompletion = nil
+            currentAbortCompletion = nil
+            currentCloseCompletion = nil
         }
     }
     
