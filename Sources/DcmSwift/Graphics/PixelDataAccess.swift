@@ -80,10 +80,10 @@ public class PixelDataAccess {
         var i = 0
         
         while i != at {
-            let d = pixelDataElement.data.subdata(in: i..<i+16)
+            let d = pixelDataElement.data.subdata(in: i..<i+2)
             upixels.append(d.toUInt16(byteOrder: byteOrder))
             
-            i += 16
+            i += 2
         }
         
         return upixels
@@ -94,10 +94,10 @@ public class PixelDataAccess {
         var i = 0
         
         while i != at {
-            let d = pixelDataElement.data.subdata(in: i..<i+32)
+            let d = pixelDataElement.data.subdata(in: i..<i+4)
             upixels.append(d.toUInt32(byteOrder: byteOrder))
             
-            i += 32
+            i += 4
         }
         
         return upixels
@@ -108,10 +108,10 @@ public class PixelDataAccess {
         var i = 0
         
         while i != at {
-            let d = pixelDataElement.data.subdata(in: i..<i+16)
+            let d = pixelDataElement.data.subdata(in: i..<i+2)
             upixels.append(d.toInt16(byteOrder: byteOrder))
             
-            i += 16
+            i += 2
         }
         
         return upixels
@@ -122,10 +122,10 @@ public class PixelDataAccess {
         var i = 0
         
         while i != at {
-            let d = pixelDataElement.data.subdata(in: i..<i+32)
+            let d = pixelDataElement.data.subdata(in: i..<i+4)
             upixels.append(d.toInt32(byteOrder: byteOrder))
             
-            i += 32
+            i += 4
         }
         
         return upixels
