@@ -7,6 +7,9 @@
 
 import Foundation
 
+/**
+ For Dicom RT (Radiation Therapy) files
+ */
 public class DicomRT : DicomFile {
     
     public var frames: Int16
@@ -18,6 +21,8 @@ public class DicomRT : DicomFile {
     public var pixelRepresentation: DicomImage.PixelRepresentation
     
     public override init?(forPath filepath: String) {
+        // can't call super init without initiating the properties first
+        // TODO refactor?
         frames = 0
         rows = 0
         columns = 0
@@ -39,10 +44,6 @@ public class DicomRT : DicomFile {
             return nil
         }
 
-        if pixelRepresentation != 0 && pixelRepresentation != 1 {
-            return nil
-        }
-        
         guard let frames = Int16(numberOfFrames) else {
             return nil
         }

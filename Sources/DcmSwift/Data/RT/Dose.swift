@@ -7,7 +7,16 @@
 
 import Foundation
 
+/**
+ Inspired byt DCMTK DRTDose class : https://support.dcmtk.org/docs/classDRTDose.html
+ */
 public class Dose {
+    
+    /**
+     A dose is a pixel. The pixel can be signed or unsigned, on 32 bits or 16 bits
+     We multiply the pixel by DoseGridScaling (called the scale), and we get the dose
+     Be careful ! row, column and frame starts at 1, not 0
+     */
     public static func getDose(dicomRT: DicomRT, row: Int16, column: Int16, frame: Int16) -> Double? {
         guard let doseGridScaling: String = dicomRT.dataset.string(forTag: "DoseGridScaling") else {
             return nil
@@ -61,6 +70,9 @@ public class Dose {
         return self.unscaledDose(dicomRT: dicomRT, row: row, column: column, frame: frame) as? Int16
     }
     
+    /**
+     Returns an unscaled dose, meaning we take the pixel out of the pixel data, but we don't multiply it by the scale (the dose grid scaling)
+     */
     public static func unscaledDose(dicomRT: DicomRT, row: Int16, column: Int16, frame: Int16) -> Any? {
         var pixelNumber = (frame - 1) * dicomRT.columns * dicomRT.rows
         pixelNumber += (row - 1) * dicomRT.columns + (column - 1)
@@ -93,14 +105,15 @@ public class Dose {
         return dicomRT.rows
     }
     
+    /**
+     Returns an array of doses for a frame
+     */
     public static func getDoseImage(dicomRT: DicomRT, atFrame: UInt) -> [Float64] {
         let theFrame = Int16(atFrame)
         
         let offset = Int((theFrame - 1) * dicomRT.rows * dicomRT.columns * dicomRT.bitsAllocated / 8)
         let end = Int((theFrame) * dicomRT.rows * dicomRT.columns * dicomRT.bitsAllocated / 8)
-        
-        print(" \(offset)...\(end)")
-        
+                
         guard let doseGridScaling: String = dicomRT.dataset.string(forTag: "DoseGridScaling") else {
             return []
         }
@@ -143,6 +156,9 @@ public class Dose {
         }
     }
     
+    /**
+     Return an array of dose image for all frames
+     */
     public static func getDoseImages(dicomRT: DicomRT) -> [[Float64]] {
         var images: [[Float64]] = []
         
