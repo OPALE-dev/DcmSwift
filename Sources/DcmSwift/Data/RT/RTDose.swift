@@ -8,23 +8,6 @@
 import Foundation
 
 
-
-
-
-extension Collection where Iterator.Element == Int16 {
-    var doubleArray: [Double] {
-        return flatMap{ Double($0) }
-    }
-    var floatArray: [Float] {
-        return flatMap{ Float($0) }
-    }
-}
-
-
-
-
-
-
 /**
  Helper functions
  TODO why not extension ?
@@ -43,10 +26,10 @@ public class RTDose {
     public var column: Int16
     public var row: Int16
     public var frame: Int16
-
+    
     /// column, row and frame begins at 1 (not 0 !)
     public init?(dicomRTFile: DicomRT, column: Int16, row: Int16, frame: Int16) {
-
+        
         guard let imageParams = dicomRTFile.getImageParameters() else {
             return nil
         }
@@ -116,7 +99,7 @@ public class RTDose {
         
         return nil
     }()
-
+    
     public lazy var unscaledDoseU32: UInt32? = {
         return self.unscaledDose as! UInt32
     }()
@@ -140,7 +123,7 @@ public class RTDose {
         guard let pixelData = self.dicomRT.dataset.element(forTagName: "PixelData") else {
             return nil
         }
-     
+        
         switch self.pixelRepresentation {
         case .Signed:
             if bitsAllocated == 16 {
@@ -159,10 +142,14 @@ public class RTDose {
         }
     }()
     
-    public lazy var doseImage: [Float64] = {
-        let offset = Int((frame - 1) * rows * columns * bitsAllocated)
-        let end = Int((frame) * rows * columns * bitsAllocated)
-
+    public func getDoseImage(atFrame: UInt) -> [Float64] {
+        let theFrame = Int16(atFrame)
+        
+        let offset = Int((theFrame - 1) * rows * columns * bitsAllocated / 8)
+        let end = Int((theFrame) * rows * columns * bitsAllocated / 8)
+        
+        print(" \(offset)...\(end)")
+        
         guard let doseGridScaling: String = self.dicomRT.dataset.string(forTag: "DoseGridScaling") else {
             return []
         }
@@ -175,28 +162,28 @@ public class RTDose {
         guard let pixelData = self.dicomRT.dataset.element(forTagName: "PixelData") else {
             return []
         }
-     
+        
         switch self.pixelRepresentation {
         case .Signed:
             if bitsAllocated == 16 {
-                var p = PixelDataAccess.getSigned16Pixels(pixelDataElement: pixelData, from: offset, at: end, byteOrder: pixelData.byteOrder)
+                let p = PixelDataAccess.getSigned16Pixels(pixelDataElement: pixelData, from: offset, at: end, byteOrder: pixelData.byteOrder)
                 let a = p.compactMap{ Float64($0) }
                 return a.map { $0 * dgs }
                 
             } else {
-                var p: [Int32] = PixelDataAccess.getSigned32Pixels(pixelDataElement: pixelData, from: offset, at: end, byteOrder: pixelData.byteOrder)
+                let p: [Int32] = PixelDataAccess.getSigned32Pixels(pixelDataElement: pixelData, from: offset, at: end, byteOrder: pixelData.byteOrder)
                 let a = p.compactMap{ Float64($0) }
                 return a.map { $0 * dgs }
                 
             }
         case .Unsigned:
             if bitsAllocated == 16 {
-                var p: [UInt16] = PixelDataAccess.getUnsigned16Pixels(pixelDataElement: pixelData, from: offset, at: end, byteOrder: pixelData.byteOrder)
+                let p: [UInt16] = PixelDataAccess.getUnsigned16Pixels(pixelDataElement: pixelData, from: offset, at: end, byteOrder: pixelData.byteOrder)
                 let a = p.compactMap{ Float64($0) }
                 return a.map { $0 * dgs }
                 
             } else {
-                var p: [UInt32] = PixelDataAccess.getUnsigned32Pixels(pixelDataElement: pixelData, from: offset, at: end, byteOrder: pixelData.byteOrder)
+                let p: [UInt32] = PixelDataAccess.getUnsigned32Pixels(pixelDataElement: pixelData, from: offset, at: end, byteOrder: pixelData.byteOrder)
                 let a = p.compactMap{ Float64($0) }
                 
                 return a.map { $0 * dgs }
@@ -205,6 +192,22 @@ public class RTDose {
         case .none:
             return []
         }
+    }
+    
+    public lazy var doseImage: [Float64] = {
+        let theFrame = UInt(self.frame)
         
+        return self.getDoseImage(atFrame: theFrame)
+    }()
+    
+    public lazy var doseImages: [[Float64]] = {
+        var images: [[Float64]] = []
+        
+        for f in 1...self.frames {
+            print("f \(f)")
+            images.append(self.getDoseImage(atFrame: UInt(f)))
+        }
+        
+        return images
     }()
 }
