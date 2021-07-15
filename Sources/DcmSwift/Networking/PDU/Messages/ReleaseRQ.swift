@@ -39,7 +39,10 @@ public class ReleaseRQ: PDUMessage {
     }
     
     public override func handleRequest() -> PDUMessage? {
-        if let response = PDUEncoder.shared.createAssocMessage(pduType: .releaseRP, association: self.association) as? PDUMessage {
+        if let response = PDUEncoder.createAssocMessage(
+            pduType: .releaseRP,
+            association: self.association
+        ) as? PDUMessage {
             response.requestMessage = self
             return response
         }

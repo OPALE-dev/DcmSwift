@@ -33,7 +33,7 @@ public class DicomServer: DicomService {
             .serverChannelOption(ChannelOptions.backlog, value: 256)
             .serverChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
             .childChannelInitializer { channel in
-                    // we create a new DicomAssociation for each new activating channe
+                    // we create a new DicomAssociation for each new activating channel
                     let assoc = DicomAssociation(calledAET: self.calledAET)
                 
                     return channel.pipeline.addHandlers([ByteToMessageHandler(PDUMessageDecoder(withAssociation: assoc)), assoc])

@@ -23,12 +23,34 @@ public protocol PDUDecodable {
  For example, with data for a given `.associationAC` PDU type, the facory will produce a `AssociationAC` object instance.
  */
 public class PDUDecoder {
-    public static let shared = PDUDecoder()
+    private static let shared = PDUDecoder()
     
     /**
      Decode ASSOCIATION related PDU messages
      */
-    public func receiveAssocMessage(data:Data, pduType:PDUType, association:DicomAssociation) -> PDUDecodable? {
+    public class func receiveAssocMessage(data:Data, pduType:PDUType, association:DicomAssociation) -> PDUDecodable? {
+        PDUDecoder.shared.receiveAssocMessage(data:data, pduType: pduType, association: association)
+    }
+    
+    /**
+     Decode DIMSE related PDU messages
+     */
+    public class func receiveDIMSEMessage(data:Data, pduType:PDUType, commandField:CommandField, association:DicomAssociation) -> PDUDecodable? {
+        PDUDecoder.shared.receiveDIMSEMessage(data:data, pduType: pduType, commandField: commandField, association: association)
+    }
+    
+    /**
+     This variation is used on server-side only to identify the received message and return
+     the corresponding response type.
+     */
+    public class func receiveDIMSEMessage(data:Data, pduType:PDUType, association:DicomAssociation) -> PDUDecodable? {
+        PDUDecoder.shared.receiveDIMSEMessage(data:data, pduType: pduType, association: association)
+    }
+}
+    
+
+extension PDUDecoder {
+    private func receiveAssocMessage(data:Data, pduType:PDUType, association:DicomAssociation) -> PDUDecodable? {
         if pduType == .associationAC {
             return AssociationAC(data: data, pduType: pduType, association: association)
         }
@@ -58,10 +80,8 @@ public class PDUDecoder {
     }
 
     
-    /**
-     Decode DIMSE related PDU messages
-     */
-    public func receiveDIMSEMessage(data:Data, pduType:PDUType, commandField:CommandField, association:DicomAssociation) -> PDUDecodable? {
+    
+    private func receiveDIMSEMessage(data:Data, pduType:PDUType, commandField:CommandField, association:DicomAssociation) -> PDUDecodable? {
         var message:PDUMessage? = nil
         
         if pduType == .dataTF {
@@ -88,11 +108,8 @@ public class PDUDecoder {
         return message
     }
     
-    /**
-     This variation is used on server-side only to identify the received message and return
-     the corresponding response type.
-     */
-    public func receiveDIMSEMessage(data:Data, pduType:PDUType, association:DicomAssociation) -> PDUDecodable? {
+    
+    private func receiveDIMSEMessage(data:Data, pduType:PDUType, association:DicomAssociation) -> PDUDecodable? {
         // use DataTF class to decode commandField before dispatching to subclasses
         guard let dataTF = DataTF(data: data, pduType: pduType, association: association),
               let commandField = dataTF.commandField else {

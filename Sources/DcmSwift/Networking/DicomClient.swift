@@ -114,7 +114,7 @@ public class DicomClient : DicomService, StreamDelegate {
                 }
             } else {
                 // if association is accepted
-                if let response = PDUEncoder.shared.createDIMSEMessage(
+                if let response = PDUEncoder.createDIMSEMessage(
                     pduType: PDUType.dataTF,
                     commandField: .C_ECHO_RQ,
                     association: association
@@ -158,7 +158,7 @@ public class DicomClient : DicomService, StreamDelegate {
         // request assoc
         association.request { (request, response, assoc)  in
             // create C-FIND-RQ message
-            guard let message = PDUEncoder.shared.createDIMSEMessage(
+            guard let message = PDUEncoder.createDIMSEMessage(
                     pduType: PDUType.dataTF,
                     commandField: .C_FIND_RQ,
                     association: association
@@ -217,7 +217,7 @@ public class DicomClient : DicomService, StreamDelegate {
         association.request { (request, response, assoc) in
             var index = 0
             for f in files {
-                guard let message = PDUEncoder.shared.createDIMSEMessage(
+                guard let message = PDUEncoder.createDIMSEMessage(
                     pduType: PDUType.dataTF,
                     commandField: .C_STORE_RQ,
                     association: association

@@ -222,14 +222,22 @@ public class DicomAssociation : ChannelInboundHandler {
                 }
             } else if origin == .Remote {
                 // handle message received as remote
-                if let message = PDUDecoder.shared.receiveDIMSEMessage(data: readData, pduType: pt, association: self) as? PDUMessage {
+                if let message = PDUDecoder.receiveDIMSEMessage(
+                    data: readData,
+                    pduType: pt,
+                    association: self
+                ) as? PDUMessage {
                     handleDIMSE(message: message)
                 }
             }
         }
         else {
         // we received an association message
-            guard let message = PDUDecoder.shared.receiveAssocMessage(data: readData, pduType: pt, association: self) as? PDUMessage else {
+            guard let message = PDUDecoder.receiveAssocMessage(
+                    data: readData,
+                    pduType: pt,
+                    association: self
+            ) as? PDUMessage else {
                 currentAbortCompletion?(nil, DicomError(description: "Cannot decode \(pt) message", level: .error))
                 return
             }
@@ -249,18 +257,18 @@ public class DicomAssociation : ChannelInboundHandler {
     public func channelActive(context: ChannelHandlerContext) {
         // setup accepted presentation contexts
         self.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP, result: 0x00)
-//        self.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND, result: 0x00)
-//
-//        for sop in DicomConstants.storageSOPClasses {
-//            self.addPresentationContext(abstractSyntax: sop, result: 0x00)
-//        }
+        self.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND, result: 0x00)
+
+        for sop in DicomConstants.storageSOPClasses {
+            self.addPresentationContext(abstractSyntax: sop, result: 0x00)
+        }
         
-        Logger.verbose("Server Presentation Contexts: \(self.presentationContexts)");
+        // Logger.verbose("Server Presentation Contexts: \(self.presentationContexts)");
         
         // set the remote channel
         self.channel = context.channel
         
-        // add channel handlers to decode messages
+        // add channel handlers to decode messages for this child association
         _ = self.channel.pipeline.addHandlers([ByteToMessageHandler(PDUMessageDecoder(withAssociation: self)), self])
         
         // store a reference of the connected association
@@ -288,7 +296,7 @@ public class DicomAssociation : ChannelInboundHandler {
         abortCompletion: @escaping AbortCompletion,
         closeCompletion: @escaping CloseCompletion
     ) {
-        if let message = PDUEncoder.shared.createAssocMessage(pduType: .associationRQ, association: self) as? PDUMessage {
+        if let message = PDUEncoder.createAssocMessage(pduType: .associationRQ, association: self) as? PDUMessage {
             message.debugDescription = "\n  -> Application Context Name: \(DicomConstants.applicationContextName)\n"
             message.debugDescription.append("  -> Called Application Entity: \(calledAET.fullname())\n")
             if let caet = callingAET {
@@ -311,46 +319,11 @@ public class DicomAssociation : ChannelInboundHandler {
         
         abortCompletion(nil, DicomError(description: "Cannot create AssociationRQ message", level: .error))
     }
-    
-    
-    public func acknowledge() -> Bool {
-        // TODO: server side
-//        // read ASSOCIATION-RQ
-//        if let associationRQ = self.readMessage() as? AssociationRQ {
-//            // check AETs are properly defined
-//            if associationRQ.remoteCallingAETitle == nil || self.calledAET.title != associationRQ.remoteCalledAETitle {
-//                Logger.error("Called AE title not recognized")
-//
-//                // WRIT ASSOCIATION-RJ
-//                self.reject(withResult: .RejectedPermanent,
-//                            source: .DICOMULServiceUser,
-//                            reason: DicomAssociation.UserReason.CalledAETitleNotRecognized.rawValue)
-//
-//                return false
-//            }
-//
-//            // Build calling AET Dicom Entity
-//            self.callingAET = DicomEntity(title: associationRQ.remoteCallingAETitle!, hostname: channel!.remoteAddress!.description, port: channel!.remoteAddress!.port!)
-//
-//            // check presentation contexts ?
-//
-//            // WRIT ASSOCIATION-AC
-//            if let associationAC = PDUEncoder.shared.createAssocMessage(pduType: .associationAC, association: self) as? AssociationAC {
-//                self.write(message: associationAC, readResponse: false, completion: nil)
-//            }
-//
-//            self.associationAccepted = true
-//
-//            return true
-//        }
 
-        return false
-    }
-    
     
     public func reject(withResult result: RejectResult, source: RejectSource, reason: UserReason) {
         // WRIT A-Association-RJ message
-        if let message = PDUEncoder.shared.createAssocMessage(pduType: .associationRJ, association: self) as? AssociationRJ {
+        if let message = PDUEncoder.createAssocMessage(pduType: .associationRJ, association: self) as? AssociationRJ {
             message.result = result
             message.source = source
             message.reason = reason
@@ -371,7 +344,7 @@ public class DicomAssociation : ChannelInboundHandler {
         }
             
         // WRIT A-Release-RQ message
-        guard let message = PDUEncoder.shared.createAssocMessage(pduType: .releaseRQ, association: self) else {
+        guard let message = PDUEncoder.createAssocMessage(pduType: .releaseRQ, association: self) else {
             Logger.error("Cannot create A-RELEASE-RQ message")
             return
         }
@@ -394,7 +367,7 @@ public class DicomAssociation : ChannelInboundHandler {
     
     public func abort() {
         // create A-Abort message
-        guard let message = PDUEncoder.shared.createAssocMessage(pduType: .abort, association: self) else {
+        guard let message = PDUEncoder.createAssocMessage(pduType: .abort, association: self) else {
             Logger.error("Cannot create A-ABORT message")
             return
         }

@@ -55,7 +55,7 @@ public class CEchoRQ: DataTF {
     public override func handleResponse(data:Data) -> PDUMessage? {
         if let type:UInt8 = data.first {
             if type == PDUType.dataTF.rawValue {
-                if let message = PDUDecoder.shared.receiveDIMSEMessage(
+                if let message = PDUDecoder.receiveDIMSEMessage(
                     data: data,
                     pduType: PDUType.dataTF,
                     commandField: .C_ECHO_RSP,
@@ -69,7 +69,7 @@ public class CEchoRQ: DataTF {
     }
     
     public override func handleRequest() -> PDUMessage? {
-        if let response = PDUEncoder.shared.createDIMSEMessage(
+        if let response = PDUEncoder.createDIMSEMessage(
             pduType: .dataTF,
             commandField: .C_ECHO_RSP,
             association: self.association
