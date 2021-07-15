@@ -26,77 +26,35 @@ public class CStoreRQ: DataTF {
     }
     
     
-    public override func data() -> Data {
-        var data = Data()
-        
+    public override func data() -> Data? {
         // get file SOPClassUID
         if let sopClassUID    = dicomFile?.dataset.string(forTag: "SOPClassUID"),
-           let sopInstanceUID = dicomFile?.dataset.string(forTag: "SOPInstanceUID") {
-            // find context ID in accepted presentation context
-            let pcs:[PresentationContext] = self.association.acceptedPresentationContexts(forSOPClassUID: sopClassUID)
+           let sopInstanceUID = dicomFile?.dataset.string(forTag: "SOPInstanceUID"),
+           let transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian),
+           let pc = self.association.acceptedPresentationContexts(forSOPClassUID: sopClassUID).first {
             
-            if !pcs.isEmpty {
-                let commandDataset = DataSet()
-                _ = commandDataset.set(value: CommandField.C_STORE_RQ.rawValue.bigEndian, forTagName: "CommandField")
-                _ = commandDataset.set(value: sopClassUID, forTagName: "AffectedSOPClassUID")
-                _ = commandDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
-                _ = commandDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
-                _ = commandDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
-                _ = commandDataset.set(value: sopInstanceUID, forTagName: "AffectedSOPInstanceUID")
-                
-                Logger.debug("Waaaaaaaaaa")
-                Logger.debug(self.association.acceptedTransferSyntax ?? "")
-                
-                var vrMethod: VRMethod = .Explicit
-                var byteOrder: ByteOrder  = .LittleEndian
+            let commandDataset = DataSet()
+            _ = commandDataset.set(value: CommandField.C_STORE_RQ.rawValue.bigEndian, forTagName: "CommandField")
+            _ = commandDataset.set(value: sopClassUID, forTagName: "AffectedSOPClassUID")
+            _ = commandDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
+            _ = commandDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
+            _ = commandDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
+            _ = commandDataset.set(value: sopInstanceUID, forTagName: "AffectedSOPInstanceUID")
+                        
+            let pduData = PDUData(
+                pduType: self.pduType,
+                commandDataset: commandDataset,
+                abstractSyntax: pc.abstractSyntax,
+                transferSyntax: transferSyntax,
+                pcID: pc.contextID, flags: 0x03)
 
-                
-                if let transferSyntax = self.association.acceptedTransferSyntax {
-                    Logger.debug("LALALILALALALA")
-                    let tsName  = DicomSpec.shared.nameForUID(withUID: transferSyntax)
-                    
-                    if tsName == TransferSyntax.implicitVRLittleEndian {
-                        vrMethod    = .Implicit
-                        byteOrder   = .LittleEndian
-                    } else if tsName == TransferSyntax.explicitVRBigEndian {
-                        vrMethod    = .Explicit
-                        byteOrder   = .BigEndian
-                    } else if tsName == TransferSyntax.explicitVRLittleEndian {
-                        vrMethod    = .Explicit
-                        byteOrder   = .LittleEndian
-                    }
-                    
-                } else {
-                    Logger.debug("Booooooooooon")
-                    vrMethod    = .Explicit
-                    byteOrder   = .LittleEndian
-                    // TODO warning
-                    // Little endian explicit
-                }
-                
-                
-                let commandGroupLength = commandDataset.toData(vrMethod: vrMethod, byteOrder: byteOrder).count
-                _ = commandDataset.set(value: UInt32(commandGroupLength).bigEndian, forTagName: "CommandGroupLength")
-                
-                var pdvData = Data()
-                let pdvLength = commandGroupLength + 14
-                pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
-                pdvData.append(uint8: pcs.first!.contextID, bigEndian: true) // Context
-                pdvData.append(byte: 0x03) // Flags
-                pdvData.append(commandDataset.toData(vrMethod: vrMethod, byteOrder: byteOrder))
-                                                
-                let pduLength = UInt32(pdvLength + 4)
-                data.append(uint8: self.pduType.rawValue, bigEndian: true)
-                data.append(byte: 0x00) // reserved
-                data.append(uint32: pduLength, bigEndian: true)
-                data.append(pdvData)
-            }
+            return pduData.data()
         }
         else {
             print("No SOPClassUID found, file not sent.")
         }
         
-        return data
+        return nil
     }
     
     
@@ -146,13 +104,18 @@ public class CStoreRQ: DataTF {
     }
     
     public override func handleResponse(data: Data) -> PDUMessage? {
-//        if let command:UInt8 = data.first {
-//            if command == self.pduType.rawValue {
-//                if let message = PDUDecoder.shared.receiveDIMSEMessage(data: data, pduType: PDUType.dataTF, commandField: CommandField.C_STORE_RSP, association: self.association) as? PDUMessage {
-//                    return message
-//                }
-//            }
-//        }
+        if let command:UInt8 = data.first {
+            if command == self.pduType.rawValue {
+                if let message = PDUDecoder.shared.receiveDIMSEMessage(
+                    data: data,
+                    pduType: PDUType.dataTF,
+                    commandField: CommandField.C_STORE_RSP,
+                    association: self.association
+                ) as? PDUMessage {
+                    return message
+                }
+            }
+        }
         return nil
     }
 }
