@@ -117,8 +117,6 @@ public class DataSet: DicomObject {
             newData.append(write(dataElement: element, vrMethod:finalVR, byteOrder:finalOrder))
         }
         
-        print("newData \(newData)")
-
         return newData
     }
     
