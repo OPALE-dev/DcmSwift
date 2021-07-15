@@ -28,18 +28,16 @@ import ArgumentParser
 let path = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR/"
 
 if let d = DicomDir.parse(atPath: path){
-    //let _ = d.writeDicomDir(atPath: "/Users/home/Documents/Test write DICOMDIR/")
     //print(d.series)
-    let a = d.index(forSeriesInstanceUID: "1.2.840.113619.2.5.1762879363.1818.1029819454.163")
-    print(a)
+    let _ = d.writeDicomDir(atPath: "/Users/home/Documents/Test write DICOMDIR/")
 }
 
 
 /*
-if let dir = DicomDir.parse(atPath: pathFolder) {
-    for (a,b) in dir.studies {
-        print("key : \(a) value : \(b)")
-    }
+if let dir = DicomDir.parse(atPath: path) {
+    print(dir.studies)
+    let a = dir.index(forSeriesInstanceUID: "1.2.840.113619.2.5.1762879363.1818.1029819454.163")
+    print(a)
 }
 */
 
