@@ -7,13 +7,6 @@
 
 import Foundation
 
-// TODO refactor, can't pass byte order https://stackoverflow.com/questions/30195267/how-to-byte-reverse-nsdata-output-in-swift-the-littleendian-way
-extension Data {
-    var uint32: UInt32 {
-        withUnsafeBytes { $0.bindMemory(to: UInt32.self) }[0]
-    }
-}
-
 /**
  Inspired by dcmtk rt files : https://github.com/DCMTK/dcmtk/blob/master/dcmrt/libsrc/drmdose.cc
  TODO refactor? uint16, int16, uint32, int32
@@ -46,6 +39,7 @@ public class PixelDataAccess {
         return nil
     }
     
+    
     public static func getPixelSigned32(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> Int32? {
         let lowerBound = pixelNumber * 4
         let upperBound = pixelNumber * 4 + 32
@@ -58,9 +52,8 @@ public class PixelDataAccess {
         let lowerBound = pixelNumber * 4
         let upperBound = pixelNumber * 4 + 32
         let  d = pixelDataElement.data.subdata(in: lowerBound..<upperBound)
-            
-        // TODO zqmrgiojqemrgijqermgioj refactor
-        return d.uint32
+
+        return d.toUInt32(byteOrder: byteOrder)
     }
     
     public static func getPixelSigned16(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> Int16? {
@@ -77,5 +70,64 @@ public class PixelDataAccess {
         let  d = pixelDataElement.data.subdata(in: lowerBound..<upperBound)
 
         return d.toUInt16(byteOrder: byteOrder)
+    }
+    
+    
+    
+    
+    public static func getUnsigned16Pixels(pixelDataElement: DataElement, from: Int, at: Int, byteOrder: ByteOrder) -> [UInt16] {
+        var upixels: [UInt16] = []
+        var i = 0
+        
+        while i != at {
+            let d = pixelDataElement.data.subdata(in: i..<i+16)
+            upixels.append(d.toUInt16(byteOrder: byteOrder))
+            
+            i += 16
+        }
+        
+        return upixels
+    }
+
+    public static func getUnsigned32Pixels(pixelDataElement: DataElement, from: Int, at: Int, byteOrder: ByteOrder) -> [UInt32] {
+        var upixels: [UInt32] = []
+        var i = 0
+        
+        while i != at {
+            let d = pixelDataElement.data.subdata(in: i..<i+32)
+            upixels.append(d.toUInt32(byteOrder: byteOrder))
+            
+            i += 32
+        }
+        
+        return upixels
+    }
+
+    public static func getSigned16Pixels(pixelDataElement: DataElement, from: Int, at: Int, byteOrder: ByteOrder) -> [Int16] {
+        var upixels: [Int16] = []
+        var i = 0
+        
+        while i != at {
+            let d = pixelDataElement.data.subdata(in: i..<i+16)
+            upixels.append(d.toInt16(byteOrder: byteOrder))
+            
+            i += 16
+        }
+        
+        return upixels
+    }
+
+    public static func getSigned32Pixels(pixelDataElement: DataElement, from: Int, at: Int, byteOrder: ByteOrder) -> [Int32] {
+        var upixels: [Int32] = []
+        var i = 0
+        
+        while i != at {
+            let d = pixelDataElement.data.subdata(in: i..<i+32)
+            upixels.append(d.toInt32(byteOrder: byteOrder))
+            
+            i += 32
+        }
+        
+        return upixels
     }
 }
