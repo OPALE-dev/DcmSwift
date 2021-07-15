@@ -13,6 +13,8 @@ import Foundation
 
  It inherits most of its behavior from `DataTF` and `PDUMessage` and their
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part07/sect_9.3.html
  */
 public class CStoreRSP: DataTF {
     public override func messageName() -> String {
@@ -21,7 +23,9 @@ public class CStoreRSP: DataTF {
     
     
     public override func decodeData(data: Data) -> DIMSEStatus.Status {
-        return self.dimseStatus.status
+        let status = super.decodeData(data: data)
+        
+        return status
     }
     
     

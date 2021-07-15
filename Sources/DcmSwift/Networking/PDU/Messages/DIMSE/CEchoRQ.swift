@@ -13,6 +13,8 @@ import Foundation
  
  It inherits most of its behavior from `DataTF` and `PDUMessage` and their
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ 
+ http://dicom.nema.org/medical/dicom/current/output/chtml/part07/sect_9.3.5.html
  */
 public class CEchoRQ: DataTF {
     public override func messageName() -> String {
@@ -28,15 +30,16 @@ public class CEchoRQ: DataTF {
             return nil
         }
           
-        let pdvDataset = DataSet()
-        _ = pdvDataset.set(value: CommandField.C_ECHO_RQ.rawValue.bigEndian, forTagName: "CommandField")
-        _ = pdvDataset.set(value: self.association.abstractSyntax, forTagName: "AffectedSOPClassUID")
-        _ = pdvDataset.set(value: self.messageID, forTagName: "MessageID")
-        _ = pdvDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
+        
+        let commandDataset = DataSet()
+        _ = commandDataset.set(value: CommandField.C_ECHO_RQ.rawValue.bigEndian, forTagName: "CommandField")
+        _ = commandDataset.set(value: self.association.abstractSyntax, forTagName: "AffectedSOPClassUID")
+        _ = commandDataset.set(value: self.messageID, forTagName: "MessageID")
+        _ = commandDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
 
         let pduData = PDUData(
             pduType: self.pduType,
-            commandDataset: pdvDataset,
+            commandDataset: commandDataset,
             abstractSyntax: abstractSyntax,
             transferSyntax: transferSyntax,
             pcID: pcID, flags: 0x03)

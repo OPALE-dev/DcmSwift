@@ -13,6 +13,8 @@ import Foundation
  
  It inherits most of its behavior from `DataTF` and `PDUMessage` and their
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ 
+ http://dicom.nema.org/medical/dicom/current/output/chtml/part07/sect_9.3.2.html
  */
 public class CFindRQ: DataTF {
     /// the query dataset given by the user
@@ -37,16 +39,16 @@ public class CFindRQ: DataTF {
         }
         
         // build comand dataset
-        let pdvDataset = DataSet()
-        _ = pdvDataset.set(value: CommandField.C_FIND_RQ.rawValue.bigEndian, forTagName: "CommandField")
-        _ = pdvDataset.set(value: abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
-        _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
-        _ = pdvDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
-        _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
+        let commandDataset = DataSet()
+        _ = commandDataset.set(value: CommandField.C_FIND_RQ.rawValue.bigEndian, forTagName: "CommandField")
+        _ = commandDataset.set(value: abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
+        _ = commandDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
+        _ = commandDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
+        _ = commandDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
         
         let pduData = PDUData(
             pduType: self.pduType,
-            commandDataset: pdvDataset,
+            commandDataset: commandDataset,
             abstractSyntax: abstractSyntax,
             transferSyntax: transferSyntax,
             pcID: pcID, flags: 0x03)

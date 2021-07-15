@@ -7,6 +7,13 @@
 
 import Foundation
 
+/**
+ This internal class is a helper to encode/decode PDU Data at the binary level.
+ 
+ It is mainly used by `PDUMessage` subclasses to encode/decode PDU/PDV Data.
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html
+ */
 internal class PDUData {
     var pduType:PDUType
     var abstractSyntax:String
