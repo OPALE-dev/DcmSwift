@@ -138,7 +138,11 @@ public class AssociationRQ: PDUMessage {
     override public func handleResponse(data:Data) -> PDUMessage?  {
         if let command:UInt8 = data.first {
             if command == PDUType.associationAC.rawValue {
-                if let response = PDUDecoder.shared.receiveAssocMessage(data: data, pduType: PDUType.associationAC, association: self.association) as? AssociationAC {
+                if let response = PDUDecoder.receiveAssocMessage(
+                    data: data,
+                    pduType: PDUType.associationAC,
+                    association: self.association
+                ) as? AssociationAC {
                     debugDescription = "  -> Called AE Title: \(response.remoteCalledAETitle ?? "UNDEFINED")\n"
                     debugDescription.append("  -> Calling AE Title: \(response.remoteCallingAETitle ?? "UNDEFINED")\n")
                     debugDescription.append("  -> Application Context Name: \(response.association.remoteApplicationContext?.applicationContextName ?? "UNDEFINED")\n")
@@ -156,7 +160,11 @@ public class AssociationRQ: PDUMessage {
                 }
             }
             else if command == PDUType.associationRJ.rawValue {
-                if let response = PDUDecoder.shared.receiveAssocMessage(data: data, pduType: PDUType.associationRJ, association: self.association) as? PDUMessage {
+                if let response = PDUDecoder.receiveAssocMessage(
+                    data: data,
+                    pduType: PDUType.associationRJ,
+                    association: self.association
+                ) as? PDUMessage {
                     return response
                 }
             }
@@ -167,7 +175,10 @@ public class AssociationRQ: PDUMessage {
     
     
     public override func handleRequest() -> PDUMessage? {
-        if let response = PDUEncoder.shared.createAssocMessage(pduType: PDUType.associationAC, association: self.association) as? PDUMessage {
+        if let response = PDUEncoder.createAssocMessage(
+            pduType: PDUType.associationAC,
+            association: self.association
+        ) as? PDUMessage {
             response.requestMessage = self
             
             return response

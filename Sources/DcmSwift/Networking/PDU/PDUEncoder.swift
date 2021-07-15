@@ -24,13 +24,28 @@ public protocol PDUEncodable {
  
  For example, for a given `.associationAC` PDU type, the facory will produce a `AssociationAC` object instance.
  */
-class PDUEncoder {
-    public static let shared = PDUEncoder()
+public class PDUEncoder {
+    private static let shared = PDUEncoder()
     
     /**
      Encode ASSOCIATION related PDU messages
      */
-    public func createAssocMessage(pduType:PDUType, association:DicomAssociation) -> PDUEncodable? {
+    public class func createAssocMessage(pduType:PDUType, association:DicomAssociation) -> PDUEncodable? {
+        return PDUEncoder.shared.createAssocMessage(pduType:pduType, association:association)
+    }
+    
+    /**
+     Encode DIMSE related PDU messages
+     */
+    public class func createDIMSEMessage(pduType:PDUType, commandField:CommandField, association:DicomAssociation) -> PDUEncodable? {
+        return PDUEncoder.shared.createDIMSEMessage(pduType:pduType, commandField:commandField, association:association)
+    }
+}
+
+
+
+private extension PDUEncoder {
+    func createAssocMessage(pduType:PDUType, association:DicomAssociation) -> PDUEncodable? {
         if pduType == .associationAC {
             return AssociationAC(pduType: pduType, association: association)
         }
@@ -59,10 +74,8 @@ class PDUEncoder {
         return nil
     }
     
-    /**
-     Encode DIMSE related PDU messages
-     */
-    public func createDIMSEMessage(pduType:PDUType, commandField:CommandField, association:DicomAssociation) -> PDUEncodable? {
+    
+    func createDIMSEMessage(pduType:PDUType, commandField:CommandField, association:DicomAssociation) -> PDUEncodable? {
         var encodable:PDUMessage? = nil
         
         if pduType == .dataTF {

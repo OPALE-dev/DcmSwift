@@ -156,7 +156,11 @@ public class AssociationAC: PDUMessage {
     public override func handleResponse(data: Data) -> PDUMessage? {
         if let command:UInt8 = data.first {
             if command == PDUType.dataTF.rawValue {
-                if let response = PDUDecoder.shared.receiveAssocMessage(data: data, pduType: PDUType.associationAC, association: self.association) as? AssociationAC {
+                if let response = PDUDecoder.receiveAssocMessage(
+                    data: data,
+                    pduType: PDUType.associationAC,
+                    association: self.association
+                ) as? AssociationAC {
                     return response
                 }
             }
