@@ -11,6 +11,8 @@ import Foundation
 /**
  Application Context Item Structure
  
+ TODO: rewrite with OffsetInputStream
+ 
  http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#sect_9.3.2.1
  */
 public class ApplicationContext {

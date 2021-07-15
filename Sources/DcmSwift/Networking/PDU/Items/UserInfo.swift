@@ -11,6 +11,8 @@ import Foundation
 /**
  User Information Item Structure
  
+ TODO: rewrite with OffsetInputStream
+ 
  http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#sect_9.3.3.3
  */
 public class UserInfo {

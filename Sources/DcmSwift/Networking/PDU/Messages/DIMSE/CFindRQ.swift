@@ -8,6 +8,7 @@
 
 import Foundation
 
+
 /**
  The `CFindRQ` class represents a C-FIND-RQ message of the DICOM standard.
  
@@ -22,9 +23,11 @@ public class CFindRQ: DataTF {
     /// the query results of the C-FIND
     public var queryResults:[Any] = []
     
+    
     public override func messageName() -> String {
         return "C-FIND-RQ"
     }
+    
     
     /**
      This implementation of `data()` encodes PDU and Command part of the `C-FIND-RQ` message.
@@ -55,6 +58,7 @@ public class CFindRQ: DataTF {
         
         return pduData.data()
     }
+    
     
     /**
      This implementation of `messagesData()` encodes the query dataset into a valid `DataTF` message.
@@ -109,7 +113,7 @@ public class CFindRQ: DataTF {
             if command == self.pduType.rawValue {
                 if let message = PDUDecoder.shared.receiveDIMSEMessage(data: data, pduType: PDUType.dataTF, commandField: .C_FIND_RSP, association: self.association) as? CFindRSP {
                                         
-                    // fill result with dataset from each DATA_TF message
+                    // fill result with dataset from each DATA-TF message
                     if let studiesDataset = message.studiesDataset {
                         self.queryResults.append(studiesDataset.toJSONArray())
                     }
