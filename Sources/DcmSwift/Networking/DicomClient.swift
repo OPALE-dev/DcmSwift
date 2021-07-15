@@ -68,11 +68,15 @@ public class DicomClient : DicomService, StreamDelegate {
     }
     
     public func disconnect() -> Bool {
-        try? channel.close().wait()
+        if channel != nil {
+            try? channel.close().wait()
+        }
+        
+        if self.isConnected {
+            Logger.info("DISCONNECT \(self.remoteEntity)", "DicomClient")
+        }
         
         self.isConnected = false
-        
-        Logger.info("DISCONNECT \(self.remoteEntity)", "DicomClient")
         
         return true
     }

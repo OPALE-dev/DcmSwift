@@ -19,8 +19,14 @@ public class CEchoRQ: DataTF {
         return "C-ECHO-RQ"
     }
     
-    public override func data() -> Data {
-        var data = Data()
+    public override func data() -> Data? {
+        // fetch accepted PC
+        guard let pcID = association.acceptedPresentationContexts.keys.first,
+              let spc = association.presentationContexts[pcID],
+              let transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian),
+              let abstractSyntax = spc.abstractSyntax else {
+            return nil
+        }
           
         let pdvDataset = DataSet()
         _ = pdvDataset.set(value: CommandField.C_ECHO_RQ.rawValue.bigEndian, forTagName: "CommandField")
@@ -28,24 +34,14 @@ public class CEchoRQ: DataTF {
         _ = pdvDataset.set(value: self.messageID, forTagName: "MessageID")
         _ = pdvDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
 
-        // Why implicit endian ??.LittleEndian
-        let commandGroupLength = pdvDataset.toData(vrMethod: .Implicit, byteOrder: .LittleEndian).count
-        _ = pdvDataset.set(value: UInt32(commandGroupLength).bigEndian, forTagName: "CommandGroupLength")
+        let pduData = PDUData(
+            pduType: self.pduType,
+            commandDataset: pdvDataset,
+            abstractSyntax: abstractSyntax,
+            transferSyntax: transferSyntax,
+            pcID: pcID, flags: 0x03)
         
-        var pdvData = Data()
-        let pdvLength = commandGroupLength + 14
-        pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
-        pdvData.append(uint8: association.presentationContexts.keys.first!, bigEndian: true) // Context
-        pdvData.append(byte: 0x03) // Flags
-        pdvData.append(pdvDataset.toData(vrMethod: .Implicit, byteOrder: .LittleEndian))
-        
-        let pduLength = UInt32(pdvLength + 4)
-        data.append(uint8: self.pduType.rawValue, bigEndian: true)
-        data.append(byte: 0x00) // reserved
-        data.append(uint32: pduLength, bigEndian: true)
-        data.append(pdvData)
-        
-        return data
+        return pduData.data()
     }
     
     public override func decodeData(data: Data) -> DIMSEStatus.Status {        

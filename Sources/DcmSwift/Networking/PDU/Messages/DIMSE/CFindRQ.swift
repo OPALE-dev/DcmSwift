@@ -28,80 +28,58 @@ public class CFindRQ: DataTF {
      This implementation of `data()` encodes PDU and Command part of the `C-FIND-RQ` message.
      */
     public override func data() -> Data? {
-        var data = Data()
-
         // fetch accepted PC
-        guard let key = association.acceptedPresentationContexts.keys.first,
-              let spc = association.presentationContexts[key] else {
+        guard let pcID = association.acceptedPresentationContexts.keys.first,
+              let spc = association.presentationContexts[pcID],
+              let transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian),
+              let abstractSyntax = spc.abstractSyntax else {
             return nil
         }
         
         // build comand dataset
         let pdvDataset = DataSet()
         _ = pdvDataset.set(value: CommandField.C_FIND_RQ.rawValue.bigEndian, forTagName: "CommandField")
-        _ = pdvDataset.set(value: spc.abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
+        _ = pdvDataset.set(value: abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
         _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
         _ = pdvDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
         _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
-
-        // get command dataset length for CommandGroupLength element
-        let commandGroupLength = pdvDataset.toData(vrMethod: .Implicit, byteOrder: .LittleEndian).count
-        _ = pdvDataset.set(value: UInt32(commandGroupLength).bigEndian, forTagName: "CommandGroupLength")
-
-        // build PDV data
-        var pdvData = Data()
-        let pdvLength = commandGroupLength + 14
-        pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
-        pdvData.append(uint8: association.presentationContexts.keys.first!, bigEndian: true) // Context
-        pdvData.append(byte: 0x03) // Flags
-        pdvData.append(pdvDataset.toData(vrMethod: .Implicit, byteOrder: .LittleEndian))
-
-        // build PDU data
-        let pduLength = UInt32(pdvLength + 4)
-        data.append(uint8: self.pduType.rawValue, bigEndian: true)
-        data.append(byte: 0x00) // reserved
-        data.append(uint32: pduLength, bigEndian: true)
-        data.append(pdvData)
-
-        return data
+        
+        let pduData = PDUData(
+            pduType: self.pduType,
+            commandDataset: pdvDataset,
+            abstractSyntax: abstractSyntax,
+            transferSyntax: transferSyntax,
+            pcID: pcID, flags: 0x03)
+        
+        return pduData.data()
     }
     
     /**
      This implementation of `messagesData()` encodes the query dataset into a valid `DataTF` message.
      */
     public override func messagesData() -> [Data] {
-        var data = Data()
-        
         // fetch accepted TS from association
-        guard let ats = self.association.acceptedTransferSyntax,
-              let transferSyntax = TransferSyntax(ats) else {
+        guard let pcID = association.acceptedPresentationContexts.keys.first,
+              let spc = association.presentationContexts[pcID],
+              let ats = self.association.acceptedTransferSyntax,
+              let transferSyntax = TransferSyntax(ats),
+              let abstractSyntax = spc.abstractSyntax else {
             return []
         }
                 
         // encode query dataset elements
         if let qrDataset = self.queryDataset, qrDataset.allElements.count > 0 {
-            var datasetData = Data()
-                        
-            for e in qrDataset.allElements {
-                datasetData.append(e.toData(transferSyntax: transferSyntax))
-            }
+            let pduData = PDUData(
+                pduType: self.pduType,
+                commandDataset: qrDataset,
+                abstractSyntax: abstractSyntax,
+                transferSyntax: transferSyntax,
+                pcID: pcID, flags: 0x02)
             
-            var pdvData2 = Data()
-            let pdvLength2 = datasetData.count + 2
-            
-            pdvData2.append(uint32: UInt32(pdvLength2), bigEndian: true)
-            pdvData2.append(uint8: association.presentationContexts.keys.first!, bigEndian: true) // Context
-            pdvData2.append(byte: 0x02) // Flags
-            pdvData2.append(datasetData)
-            
-            let pduLength2 = UInt32(pdvLength2 + 4)
-            data.append(uint8: self.pduType.rawValue, bigEndian: true)
-            data.append(byte: 0x00) // reserved
-            data.append(uint32: pduLength2, bigEndian: true)
-            data.append(pdvData2)
+            return [pduData.data()]
         }
         
-        return [data]
+        return []
     }
     
     
