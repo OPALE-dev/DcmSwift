@@ -26,16 +26,16 @@ public class DicomDir:DicomFile {
     public var patients:[String:String] = [:]
     public var patientsKeys:[String] = []
     
-    // StudyInstanceUID:[PatientID,StudyDate,StudyTime,StudyDescription]
-    public var studies:[String:[Any]] = [:]
+    // StudyInstanceUID:[PatientID,StudyDate,StudyTime,AccessionNumber,StudyDescription]
+    public var studies:[String:[String:Any]] = [:]
     public var studiesKeys:[String] = []
     
     // SeriesInstanceUID:[StudyInstanceUID,SeriesNumber]
-    public var series:[String:[String]] = [:]
+    public var series:[String:[String:String]] = [:]
     public var seriesKeys:[String] = []
     
     // ReferencedSOPInstanceUIDInFile:[SeriesInstanceUID,filepath,DateImage,TimeImage]
-    public var images:[String:[Any]] = [:]
+    public var images:[String:[String:Any]] = [:]
     public var imagesKeys:[String] = []
     
     // MARK: Methods
@@ -62,7 +62,6 @@ public class DicomDir:DicomFile {
         
         do {
             if let dataset = try inputStream.readDataset() {
-                //print("offset : \(inputStream.offset)")
                 
                 if dataset.hasElement(forTagName:"DirectoryRecordSequence") {
                     return true
@@ -99,16 +98,23 @@ public class DicomDir:DicomFile {
         
         for(patientsID,_) in patients {
             if(patientsID == givenID) {
-                for(studyUID, arrayStudies) in studies {
-                    if(patientsID == arrayStudies[0] as? String) {
-                        for(seriesUID, studyUID_2) in series {
-                            if(studyUID == studyUID_2[0]) {
-                                for(_,array) in images {
-                                    if(array[0] as? String == seriesUID) {
-                                        let path = array[1]
-                                        let pathString = "\(path)"
-                                        if(pathString != DicomDir.amputation(forPath: filepath)) {
-                                            resultat.append(pathString)
+                for studyUID in studiesKeys {
+                    if let studyDictionary = studies[studyUID] {
+                        let paID = studyDictionary["PatientID"] as? String
+                        if(patientsID == paID) {
+                            for seriesUID in seriesKeys {
+                                if let seriesDictionary = series[seriesUID] {
+                                    if(studyUID == seriesDictionary["StudyInstanceUID"]) {
+                                        for imgSOPinstance in imagesKeys {
+                                            if let imagesDictionary = images[imgSOPinstance] {
+                                                if(seriesUID == imagesDictionary["SeriesInstanceUID"] as? String) {
+                                                    let path = imagesDictionary["ReferencedFileID"] ?? ""
+                                                    let pathString = "\(path)"
+                                                    if(pathString != DicomDir.amputation(forPath: filepath)) {
+                                                        resultat.append(pathString)
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -127,17 +133,21 @@ public class DicomDir:DicomFile {
     public func index(forStudyInstanceUID givenStudyUID:String) -> [String] {
         var resultat : [String] = []
         
-        for(_,_) in patients {
-            for(studyUID, _) in studies {
+        for _ in patientsKeys {
+            for studyUID in studiesKeys {
                 if(studyUID == givenStudyUID) {
-                    for(seriesUID, studyUID_2) in series {
-                        if(studyUID == studyUID_2[0]) {
-                            for(_,array) in images {
-                                if(array[0] as? String == seriesUID) {
-                                    let path = array[1]
-                                    let pathString = "\(path)"
-                                    if(pathString != DicomDir.amputation(forPath: filepath)) {
-                                        resultat.append(pathString)
+                    for(seriesUID, _) in series {
+                        if let seriesDictionary = series[seriesUID] {
+                            if(studyUID == seriesDictionary["StudyInstanceUID"]) {
+                                for imgSOPinstance in imagesKeys {
+                                    if let imagesDictionary = images[imgSOPinstance] {
+                                        if(seriesUID == imagesDictionary["SeriesInstanceUID"] as? String) {
+                                            let path = imagesDictionary["ReferencedFileID"] ?? ""
+                                            let pathString = "\(path)"
+                                            if(pathString != DicomDir.amputation(forPath: filepath)) {
+                                                resultat.append(pathString)
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -155,17 +165,19 @@ public class DicomDir:DicomFile {
     public func index(forSeriesInstanceUID givenSeriesUID:String) -> [String] {
         var resultat : [String] = []
         
-        for(_,_) in patients {
-            for(_,_) in studies {
-                for(seriesUID, _) in series {
+        for _ in patientsKeys {
+            for _ in studiesKeys {
+                for seriesUID in seriesKeys {
                     if(seriesUID == givenSeriesUID) {
-                        for(_,array) in images {
-                            if(array[0] as? String == seriesUID) {
-                                let path = array[1]
-                                let pathString = "\(path)"
-                                if(pathString != DicomDir.amputation(forPath: filepath)) {
-                                    if !resultat.contains(pathString) {
-                                        resultat.append(pathString)
+                        for imgSOPinstance in imagesKeys {
+                            if let imagesDictionary = images[imgSOPinstance] {
+                                if(seriesUID == imagesDictionary["SeriesInstanceUID"] as? String) {
+                                    let path = imagesDictionary["ReferencedFileID"] ?? ""
+                                    let pathString = "\(path)"
+                                    if(pathString != DicomDir.amputation(forPath: filepath)) {
+                                        if !resultat.contains(pathString) {
+                                            resultat.append(pathString)
+                                        }
                                     }
                                 }
                             }
@@ -202,17 +214,25 @@ public class DicomDir:DicomFile {
     private func load() {
         if let dataset = self.dataset {
             if let directoryRecordSequence = dataset.element(forTagName: "DirectoryRecordSequence") as? DataSequence {
+                
                 var patientName     = ""
                 var patientID       = ""
                 
                 var studyUID        = ""
                 var studyDate       = ""
                 var studyTime       = ""
+                var accessionNb     = ""
                 var studyDescri     = ""
+                var studyID         = ""
                 
+                var modality        = ""
                 var serieUID        = ""
-                var SOPUID          = ""
+                var seriesNb        = ""
+                
                 var path            = ""
+                var SOPClassUID     = ""
+                var SOPUID          = ""
+                var transferSyntax  = ""
                 var instanceNb      = ""
                 
                 for item in directoryRecordSequence.items {
@@ -242,55 +262,90 @@ public class DicomDir:DicomFile {
                     // Load the studies property
                         if element.name == "StudyInstanceUID" {
                             studyUID = "\(element.value)"
-                            if studyUID.count > 0 {
-                                studies[studyUID]?.insert(patientID, at: 0)
+                        }
+                    
+                        if var studyDictionary:[String:Any] = studies[studyUID] {
+                            studyDictionary["PatientID"] = patientID
+                            
+                            if element.name == "StudyDate" {
+                                studyDate = "\(element.value)"
+                                studyDictionary["StudyDate"] = studyDate
                             }
-                        }
-                        
-                        if element.name == "StudyDate" {
-                            studyDate = "\(element.value)"
-                            studies[studyUID]?.insert(studyDate, at: 1)
-                        }
-                        
-                        if element.name == "StudyTime" {
-                            studyTime = "\(element.value)"
-                            studies[studyUID]?.insert(studyTime, at: 2)
-                        }
-                        
-                        if element.name == "StudyDescription" {
-                            studyDescri = "\(element.value)"
-                            studies[studyUID]?.insert(studyDescri, at: 3)
+                            
+                            if element.name == "StudyTime" {
+                                studyTime = "\(element.value)"
+                                studyDictionary["StudyTime"] = studyTime
+                            }
+                            
+                            if element.name == "AccessionNumber" {
+                                accessionNb = "\(element.value)"
+                                studyDictionary["AccessionNumber"] = accessionNb
+                            }
+                            
+                            if element.name == "StudyDescription" {
+                                studyDescri = "\(element.value)"
+                                studyDictionary["StudyDescription"] = studyDescri
+                            }
+                            
+                            if element.name == "StudyID" {
+                                studyID = "\(element.value)"
+                                studyDictionary["StudyID"] = studyID
+                            }
                         }
                         
                     // Load the series property
                         if element.name == "SeriesInstanceUID" {
                             serieUID = "\(element.value)"
-                            if serieUID.count > 0 {
-                                series[serieUID]?.insert(studyUID, at: 0)
-                            }
                         }
                         
-                        if element.name == "SeriesNumber" {
-                            studyDate = "\(element.value)"
-                            series[serieUID]?.insert(studyUID, at: 1)
+                        if var serieDictionary:[String:String] = series[serieUID] {
+                            
+                            if element.name == "Modality" {
+                                modality = "\(element.value)"
+                                serieDictionary["Modality"] = modality
+                            }
+                
+                            if element.name == "SeriesNumber" {
+                                seriesNb = "\(element.value)"
+                                serieDictionary["SeriesNumber"] = seriesNb
+                            }
                         }
                     
                     // Load the images property
                         if element.name == "ReferencedSOPInstanceUIDInFile" {
                             SOPUID = "\(element.value)"
-                            if SOPUID.count > 0 && serieUID.count > 0 {
-                                if(path != DicomDir.amputation(forPath: filepath)) {
-                                    images[SOPUID] = [serieUID,path]
-                                }
-                            }
                         }
                         
-                        if element.name == "InstanceNumber" {
-                            instanceNb = "\(element.value)"
-                            if SOPUID.count > 0 && serieUID.count > 0 {
-                                if(path != DicomDir.amputation(forPath: filepath)) {
-                                    images[SOPUID] = [serieUID,path,instanceNb]
+                        if var imageDictionary:[String:Any] = images[SOPUID] {
+                            
+                            if element.name == "ReferencedFileID" {
+                                path = "\(element.value)"
+                                if SOPUID.count > 0 && serieUID.count > 0 {
+                                    if(path != DicomDir.amputation(forPath: filepath)) {
+                                        imageDictionary["ReferencedFileID"] = path
+                                    }
                                 }
+                            }
+                            
+                            imageDictionary["SeriesInstanceUID"] = serieUID
+                            
+                            if element.name == "InstanceNumber" {
+                                instanceNb = "\(element.value)"
+                                if SOPUID.count > 0 && serieUID.count > 0 {
+                                    if(path != DicomDir.amputation(forPath: filepath)) {
+                                        imageDictionary["InstanceNumber"] = instanceNb
+                                    }
+                                }
+                            }
+                            
+                            if element.name == "ReferencedSOPClassUIDInFile" {
+                                SOPClassUID = "\(element.value)"
+                                imageDictionary["ReferencedSOPClassUIDInFile"] = SOPClassUID
+                            }
+                            
+                            if element.name == "ReferencedTransferSyntaxUIDInFile" {
+                                transferSyntax = "\(element.value)"
+                                imageDictionary["ReferencedTransferSyntaxUIDInFile"] = transferSyntax
                             }
                         }
                     }
@@ -385,61 +440,109 @@ public class DicomDir:DicomFile {
             
             // fill study property
             let studyKey = dcmFile.dataset.string(forTag: "StudyInstanceUID")
-            let date = dcmFile.dataset.date(forTag: "StudyDate")
-            let time = dcmFile.dataset.date(forTag: "StudyTime")
+            let date = dcmFile.dataset.string(forTag: "StudyDate")
+            let time = dcmFile.dataset.string(forTag: "StudyTime")
+            let accession = dcmFile.dataset.string(forTag: "AccessionNumber")
             let description = dcmFile.dataset.string(forTag: "StudyDescription")
+            let studyID = dcmFile.dataset.string(forTag: "StudyID")
             let studyVal = patientKey
             
             if let key = studyKey {
                 if dcmDir.studies[key] == nil {
-                    dcmDir.studies[key] = []
-                    dcmDir.studies[key]?.insert(studyVal as Any, at: 0)
                     
+                    var studyDictionary:[String:Any] = [:]
+                        
+                    studyDictionary["PatientID"] = studyVal as Any
+                        
                     if(!dcmDir.studiesKeys.contains(key)) {
                         dcmDir.studiesKeys.append(key)
                     }
-                    
+                        
                     if let d = date {
-                        dcmDir.studies[key]?.insert(d as Any, at: 1)
+                        studyDictionary["StudyDate"] = d as Any
                     }
                     if let t = time {
-                        dcmDir.studies[key]?.insert(t as Any, at: 2)
+                        studyDictionary["StudyTime"] = t as Any
+                    }
+                    if let a = accession {
+                        studyDictionary["AccessionNumber"] = a as Any
                     }
                     if let descri = description {
-                        dcmDir.studies[key]?.insert(descri as Any, at: 3)
+                            studyDictionary["StudyDescription"] = descri as Any
                     }
+                    if let stID = studyID {
+                        studyDictionary["StudyID"] = stID as Any
+                    }
+                    dcmDir.studies[key] = studyDictionary
                 }
             }
             
             // fill serie property
-            let serieKey = dcmFile.dataset.string(forTag: "SeriesInstanceUID")
+            let serieUID = dcmFile.dataset.string(forTag: "SeriesInstanceUID")
             let seriesNumber = dcmFile.dataset.string(forTag: "SeriesNumber")
-            let serieVal = studyKey
-            if let key = serieKey {
+            let modality = dcmFile.dataset.string(forTag: "Modality")
+            if let key = serieUID {
                 if dcmDir.series[key] == nil {
-                    dcmDir.series[key] = []
-                    dcmDir.series[key]?.insert(serieVal ?? "", at: 0)
-                    dcmDir.series[key]?.insert(seriesNumber ?? "", at: 1)
+                    
+                    var serieDictionary:[String:String] = [:]
+                    
+                    if let seNb = seriesNumber {
+                        serieDictionary["SeriesNumber"] = seNb as String
+                    }
+                    
+                    if let seVal = studyKey {
+                        serieDictionary["StudyInstanceUID"] = seVal as String
+                    }
+                    
+                    if let m = modality {
+                        serieDictionary["Modality"] = m as String
+                    }
                     
                     if(!dcmDir.seriesKeys.contains(key)) {
                         dcmDir.seriesKeys.append(key)
                     }
+                    dcmDir.series[key] = serieDictionary
                 }
             }
             
             // fill images property
-            let imageKey = dcmFile.dataset.string(forTag: "SOPInstanceUID")
-            if let serieKeyUnwrapped = serieKey {
-                let index = pathFolder.lastIndex(of: "/")
-                let imgPath = absolutePath[index!...]
-                let pathFormatted = String(formatPath(forPath: String(imgPath)))
-                let imageVal = [serieKeyUnwrapped,pathFormatted as Any]
-                if let key = imageKey {
-                    dcmDir.images[key] = imageVal
+            let imageSOPinstance = dcmFile.dataset.string(forTag: "SOPInstanceUID")
+            let syntax = dcmFile.dataset.string(forTag: "TransferSyntaxUID")
+            let instanceNumber = dcmFile.dataset.string(forTag: "InstanceNumber")
+            let SOPClassUID = dcmFile.dataset.string(forTag: "SOPClassUID")
+            
+            let index = pathFolder.lastIndex(of: "/")
+            let imgPath = absolutePath[index!...]
+            let pathFormatted = String(formatPath(forPath: String(imgPath)))
+            
+            if let key = imageSOPinstance {
+                if dcmDir.images[key] == nil {
                     
                     if(!dcmDir.imagesKeys.contains(key)) {
                         dcmDir.imagesKeys.append(key)
                     }
+                    
+                    var imageDictionary:[String:Any] = [:]
+                    
+                    imageDictionary["ReferencedFileID"] = pathFormatted as Any
+                    
+                    if let insNb = instanceNumber {
+                        imageDictionary["InstanceNumber"] = insNb as Any
+                    }
+                    
+                    if let seUID = serieUID {
+                        imageDictionary["SeriesInstanceUID"] = seUID as Any
+                    }
+                    
+                    if let syn = syntax {
+                        imageDictionary["ReferencedTransferSyntaxUIDInFile"] = syn as Any
+                    }
+                    
+                    if let sopclass = SOPClassUID {
+                        imageDictionary["ReferencedSOPClassUIDInFile"] = sopclass as Any
+                    }
+                    
+                    dcmDir.images[key] = imageDictionary
                 }
             }
         }
@@ -465,7 +568,7 @@ public class DicomDir:DicomFile {
 //    private func truncate(forPath filepath: String) -> String  {
 //        return NSString(string: filepath).deletingLastPathComponent
 //    }
-    
+    /*
     //MARK: Write a DicomDir
     
     /**
@@ -487,6 +590,7 @@ public class DicomDir:DicomFile {
         let tagstID = DataTag.init(withGroup: "0020", element: "000d", byteOrder: .LittleEndian)
         let tagstDate = DataTag.init(withGroup: "0008", element: "0020", byteOrder: .LittleEndian)
         let tagstTime = DataTag.init(withGroup: "0008", element: "0030", byteOrder: .LittleEndian)
+        let tagAccession = DataTag.init(withGroup: "0008", element: "0050", byteOrder: .LittleEndian)
         let tagstDescription = DataTag.init(withGroup: "0008", element: "1030", byteOrder: .LittleEndian)
         
         let tagseID = DataTag.init(withGroup: "0020", element: "000e", byteOrder: .LittleEndian)
@@ -580,7 +684,8 @@ public class DicomDir:DicomFile {
                         let studyTime = addValue(addString: stTime, forTag: tagstTime, withParent: item)
                         item.elements.append(studyTime)
                         
-                        //TODO: add accession number
+                        let accessionNumber = addValue(addString: "\(studyArray[3])", forTag: tagAccession, withParent: item)
+                        item.elements.append(accessionNumber)
                         
                         let studyDescri = addValue(addString: "\(studyArray[3])", forTag: tagstDescription, withParent: item)
                         item.elements.append(studyDescri)
@@ -742,5 +847,5 @@ public class DicomDir:DicomFile {
         let dicomDirPAth = folderPath.last == "/" ? folderPath + "DICOMDIR" : folderPath + "/DICOMDIR"
         
         return self.write(atPath: dicomDirPAth)
-    }
+    }*/
 }

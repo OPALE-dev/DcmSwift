@@ -27,10 +27,13 @@ import ArgumentParser
 
 let path = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR/"
 
-
 if let d = DicomDir.parse(atPath: path){
-    let dir = d.writeDicomDir(atPath: "/Users/home/Documents/Test write DICOMDIR/")
+    //let _ = d.writeDicomDir(atPath: "/Users/home/Documents/Test write DICOMDIR/")
+    //print(d.series)
+    let a = d.index(forSeriesInstanceUID: "1.2.840.113619.2.5.1762879363.1818.1029819454.163")
+    print(a)
 }
+
 
 /*
 if let dir = DicomDir.parse(atPath: pathFolder) {
