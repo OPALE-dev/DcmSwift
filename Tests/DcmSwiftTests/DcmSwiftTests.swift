@@ -885,7 +885,7 @@ class DcmSwiftTests: XCTestCase {
             }
             
             // 137984544
-            let unscaledDose2 = Dose.unscaledDose(dicomRT: dicomRT, row: 4, column: 5, frame: 2)
+            let unscaledDose2 = Dose.unscaledDose(dicomRT: dicomRT, row: 5, column: 4, frame: 2)
             XCTAssertNotNil(unscaledDose2)
             if let dose = unscaledDose2 {
                 XCTAssertTrue(dose is UInt32)
@@ -907,7 +907,7 @@ class DcmSwiftTests: XCTestCase {
             XCTAssertEqual(dose!, 0)
 
             
-            let dose2 = Dose.getDose(dicomRT: dicomRT, row: 4, column: 5, frame: 2)
+            let dose2 = Dose.getDose(dicomRT: dicomRT, row: 5, column: 4, frame: 2)
             XCTAssertNotNil(dose2)
             XCTAssertEqual(dose2!, 1.4865626863296)
             
