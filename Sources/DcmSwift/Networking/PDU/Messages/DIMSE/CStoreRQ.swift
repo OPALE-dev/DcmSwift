@@ -15,6 +15,8 @@ import Foundation
  
  It inherits most of its behavior from `DataTF` and `PDUMessage` and their
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ 
+ http://dicom.nema.org/dicom/2013/output/chtml/part07/sect_9.3.html
  */
 public class CStoreRQ: DataTF {
     public var dicomFile:DicomFile?
@@ -34,13 +36,13 @@ public class CStoreRQ: DataTF {
             let pcs:[PresentationContext] = self.association.acceptedPresentationContexts(forSOPClassUID: sopClassUID)
             
             if !pcs.isEmpty {
-                let pdvDataset = DataSet()
-                _ = pdvDataset.set(value: CommandField.C_STORE_RQ.rawValue.bigEndian, forTagName: "CommandField")
-                _ = pdvDataset.set(value: sopClassUID, forTagName: "AffectedSOPClassUID")
-                _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
-                _ = pdvDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
-                _ = pdvDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
-                _ = pdvDataset.set(value: sopInstanceUID, forTagName: "AffectedSOPInstanceUID")
+                let commandDataset = DataSet()
+                _ = commandDataset.set(value: CommandField.C_STORE_RQ.rawValue.bigEndian, forTagName: "CommandField")
+                _ = commandDataset.set(value: sopClassUID, forTagName: "AffectedSOPClassUID")
+                _ = commandDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
+                _ = commandDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
+                _ = commandDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
+                _ = commandDataset.set(value: sopInstanceUID, forTagName: "AffectedSOPInstanceUID")
                 
                 Logger.debug("Waaaaaaaaaa")
                 Logger.debug(self.association.acceptedTransferSyntax ?? "")
@@ -73,15 +75,15 @@ public class CStoreRQ: DataTF {
                 }
                 
                 
-                let commandGroupLength = pdvDataset.toData(vrMethod: vrMethod, byteOrder: byteOrder).count
-                _ = pdvDataset.set(value: UInt32(commandGroupLength).bigEndian, forTagName: "CommandGroupLength")
+                let commandGroupLength = commandDataset.toData(vrMethod: vrMethod, byteOrder: byteOrder).count
+                _ = commandDataset.set(value: UInt32(commandGroupLength).bigEndian, forTagName: "CommandGroupLength")
                 
                 var pdvData = Data()
                 let pdvLength = commandGroupLength + 14
                 pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
                 pdvData.append(uint8: pcs.first!.contextID, bigEndian: true) // Context
                 pdvData.append(byte: 0x03) // Flags
-                pdvData.append(pdvDataset.toData(vrMethod: vrMethod, byteOrder: byteOrder))
+                pdvData.append(commandDataset.toData(vrMethod: vrMethod, byteOrder: byteOrder))
                                                 
                 let pduLength = UInt32(pdvLength + 4)
                 data.append(uint8: self.pduType.rawValue, bigEndian: true)

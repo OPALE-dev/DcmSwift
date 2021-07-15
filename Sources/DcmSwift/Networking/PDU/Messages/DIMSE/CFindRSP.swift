@@ -13,6 +13,8 @@ import Foundation
  
  It inherits most of its behavior from `DataTF` and `PDUMessage` and their
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ 
+ http://dicom.nema.org/medical/dicom/current/output/chtml/part07/sect_9.3.2.2.html
  */
 public class CFindRSP: DataTF {
     public var studiesDataset:DataSet?

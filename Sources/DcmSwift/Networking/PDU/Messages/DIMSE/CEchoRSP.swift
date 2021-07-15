@@ -13,44 +13,41 @@ import Foundation
  
  It inherits most of its behavior from `DataTF` and `PDUMessage` and their
  related protocols (`PDUResponsable`, `PDUDecodable`, `PDUEncodable`).
+ 
+ http://dicom.nema.org/medical/dicom/current/output/chtml/part07/sect_9.3.5.2.html
  */
 public class CEchoRSP: DataTF {
     public override func messageName() -> String {
         return "C-ECHO-RSP"
     }
     
-    public override func data() -> Data {
-        var data = Data()
-        
-        if let pc = self.association.acceptedPresentationContexts.values.first {
-            let pdvDataset = DataSet()
-            _ = pdvDataset.set(value: CommandField.C_ECHO_RSP.rawValue.bigEndian, forTagName: "CommandField")
-            _ = pdvDataset.set(value: pc.abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
+    
+    public override func data() -> Data? {
+        if let pc = self.association.acceptedPresentationContexts.values.first,
+           let transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian) {
+            let commandDataset = DataSet()
+            _ = commandDataset.set(value: CommandField.C_ECHO_RSP.rawValue.bigEndian, forTagName: "CommandField")
+            _ = commandDataset.set(value: pc.abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
+            
             if let request = self.requestMessage {
-                _ = pdvDataset.set(value: request.messageID, forTagName: "MessageIDBeingRespondedTo")
+                _ = commandDataset.set(value: request.messageID, forTagName: "MessageIDBeingRespondedTo")
             }
-            _ = pdvDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
-            _ = pdvDataset.set(value: UInt16(0).bigEndian, forTagName: "Status")
+            _ = commandDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
+            _ = commandDataset.set(value: UInt16(0).bigEndian, forTagName: "Status")
             
-            let commandGroupLength = pdvDataset.toData().count
-            _ = pdvDataset.set(value: UInt32(commandGroupLength).bigEndian, forTagName: "CommandGroupLength")
+            let pduData = PDUData(
+                pduType: self.pduType,
+                commandDataset: commandDataset,
+                abstractSyntax: pc.abstractSyntax,
+                transferSyntax: transferSyntax,
+                pcID: pc.contextID, flags: 0x03)
             
-            var pdvData = Data()
-            let pdvLength = commandGroupLength + 14
-            pdvData.append(uint32: UInt32(pdvLength), bigEndian: true)
-            pdvData.append(uint8: pc.contextID, bigEndian: true) // Context
-            pdvData.append(byte: 0x03) // Flags
-            pdvData.append(pdvDataset.toData())
-            
-            let pduLength = UInt32(pdvLength + 4)
-            data.append(uint8: self.pduType.rawValue, bigEndian: true)
-            data.append(byte: 0x00) // reserved
-            data.append(uint32: pduLength, bigEndian: true)
-            data.append(pdvData)
+            return pduData.data()
         }
         
-        return data
+        return nil
     }
+    
 
     public override func decodeData(data: Data) -> DIMSEStatus.Status {
         let status = super.decodeData(data: data)
