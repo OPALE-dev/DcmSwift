@@ -794,8 +794,9 @@ class DcmSwiftTests: XCTestCase {
         paths = paths.filter { $0.contains("rt_") }
         
         paths.forEach { path in
-            let dicomRT = DicomRT.init(forPath: path)//RTDose.init(forPath: path)
-            _ = dicomRT?.isValid()
+            if let dicomRT = DicomRT.init(forPath: path) {
+                _ = Dose.isValid(dicomRT: dicomRT)
+            }
         }
         
         let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
@@ -804,7 +805,7 @@ class DcmSwiftTests: XCTestCase {
         }
         
         if let dicomRT = DicomRT.init(forPath: p) {
-            XCTAssertTrue(dicomRT.isValid())
+            XCTAssertTrue(Dose.isValid(dicomRT: dicomRT))
         }
         
         let path2 = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular", ofType: "dcm")
@@ -813,7 +814,7 @@ class DcmSwiftTests: XCTestCase {
         }
         
         if let dicomRT2 = DicomRT.init(forPath: p2) {
-            XCTAssertFalse(dicomRT2.isValid())
+            XCTAssertFalse(Dose.isValid(dicomRT: dicomRT2))
         }
     }
     
@@ -825,7 +826,7 @@ class DcmSwiftTests: XCTestCase {
         }
         
         if let dicomRT = DicomRT.init(forPath: p) {
-            XCTAssertEqual((dicomRT.getDoseImageWidth()), 10)
+            XCTAssertEqual(Dose.getDoseImageWidth(dicomRT: dicomRT), 10)
         }
     }
     
@@ -836,7 +837,7 @@ class DcmSwiftTests: XCTestCase {
         }
         
         if let dicomRT = DicomRT.init(forPath: p) {
-            XCTAssertEqual((dicomRT.getDoseImageHeight()), 10)
+            XCTAssertEqual(Dose.getDoseImageHeight(dicomRT: dicomRT), 10)
         }
     }
     
@@ -876,23 +877,19 @@ class DcmSwiftTests: XCTestCase {
         
         if let dicomRT = DicomRT.init(forPath: p) {
             // 0
-            if let rtDose = RTDose.init(dicomRTFile: dicomRT, column: 1, row: 1, frame: 1) {
-                if let unscaledDose = rtDose.unscaledDose {
-                    XCTAssertTrue(unscaledDose is UInt32)
-                    XCTAssertEqual(unscaledDose as! UInt32, 0)
-                }
-            } else {
-                Logger.error("UNSCALED no rtdose (1)")
+            let unscaledDose = Dose.unscaledDose(dicomRT: dicomRT, row: 1, column: 1, frame: 1)
+            XCTAssertNotNil(unscaledDose)
+            if let dose = unscaledDose {
+                XCTAssertTrue(dose is UInt32)
+                XCTAssertEqual(dose as! UInt32, 0)
             }
             
             // 137984544
-            if let rtDose = RTDose.init(dicomRTFile: dicomRT, column: 4, row: 5, frame: 2) {
-                if let unscaledDose = rtDose.unscaledDose {
-                    XCTAssertTrue(unscaledDose is UInt32)
-                    XCTAssertEqual(unscaledDose as! UInt32, 137984544)
-                }
-            } else {
-                Logger.error("UNSCALED no rtdose (2)")
+            let unscaledDose2 = Dose.unscaledDose(dicomRT: dicomRT, row: 4, column: 5, frame: 2)
+            XCTAssertNotNil(unscaledDose2)
+            if let dose = unscaledDose2 {
+                XCTAssertTrue(dose is UInt32)
+                XCTAssertEqual(dose as! UInt32, 137984544)
             }
         }
     }
@@ -905,22 +902,15 @@ class DcmSwiftTests: XCTestCase {
         
         if let dicomRT = DicomRT.init(forPath: p) {
             // 0
-            if let rtDose = RTDose.init(dicomRTFile: dicomRT, column: 1, row: 1, frame: 1) {
-                if let dose = rtDose.dose {
-                    XCTAssertEqual(dose, 0)
-                }
-            } else {
-                Logger.error("no rtdose (1)")
-            }
+            let dose = Dose.getDose(dicomRT: dicomRT, row: 1, column: 1, frame: 1)
+            XCTAssertNotNil(dose)
+            XCTAssertEqual(dose!, 0)
+
             
-            // 137984544
-            if let rtDose = RTDose.init(dicomRTFile: dicomRT, column: 4, row: 5, frame: 2) {
-                if let dose = rtDose.dose {
-                    XCTAssertEqual(dose, 1.4865626863296)
-                }
-            } else {
-                Logger.error("no rtdose (2)")
-            }
+            let dose2 = Dose.getDose(dicomRT: dicomRT, row: 4, column: 5, frame: 2)
+            XCTAssertNotNil(dose2)
+            XCTAssertEqual(dose2!, 1.4865626863296)
+            
         } else {
             Logger.error("no dicom file")
         }
@@ -933,15 +923,9 @@ class DcmSwiftTests: XCTestCase {
         }
         
         if let dicomRT = DicomRT.init(forPath: p) {
-            let r = RTDose.init(dicomRTFile: dicomRT, column: 1, row: 1, frame: 1)
-            XCTAssertNotNil(r)
+            let r = Dose.getDoseImage(dicomRT: dicomRT, atFrame: 1)
             
-            if let rtDose = r {
-                XCTAssert(!rtDose.doseImage.isEmpty)
-            } else {
-                Logger.error("no rtdose (1)")
-            }
-       
+            XCTAssert(!r.isEmpty)
         } else {
             Logger.error("no dicom file")
         }
@@ -954,14 +938,9 @@ class DcmSwiftTests: XCTestCase {
         }
         
         if let dicomRT = DicomRT.init(forPath: p) {
-            let r = RTDose.init(dicomRTFile: dicomRT, column: 1, row: 1, frame: 1)
-            XCTAssertNotNil(r)
+            let r = Dose.getDoseImages(dicomRT: dicomRT)
             
-            if let rtDose = r {
-                XCTAssert(!rtDose.doseImages.isEmpty)
-            } else {
-                Logger.error("no rtdose (1)")
-            }
+            XCTAssert(!r.isEmpty)
        
         } else {
             Logger.error("no dicom file")
