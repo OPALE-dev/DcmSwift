@@ -219,7 +219,7 @@ public class DicomDir:DicomFile {
                 var patientID       = ""
                 
                 var studyUID        = ""
-                var studyDate       = ""
+                var studyDate:Any
                 var studyTime       = ""
                 var accessionNb     = ""
                 var studyDescri     = ""
@@ -268,7 +268,8 @@ public class DicomDir:DicomFile {
                             studyDictionary["PatientID"] = patientID
                             
                             if element.name == "StudyDate" {
-                                studyDate = "\(element.value)"
+                                //studyDate = "\(element.value)"
+                                studyDate = element.value
                                 studyDictionary["StudyDate"] = studyDate
                             }
                             
@@ -440,8 +441,8 @@ public class DicomDir:DicomFile {
             
             // fill study property
             let studyKey = dcmFile.dataset.string(forTag: "StudyInstanceUID")
-            let date = dcmFile.dataset.string(forTag: "StudyDate")
-            let time = dcmFile.dataset.string(forTag: "StudyTime")
+            let date = dcmFile.dataset.date(forTag: "StudyDate")
+            let time = dcmFile.dataset.date(forTag: "StudyTime")
             let accession = dcmFile.dataset.string(forTag: "AccessionNumber")
             let description = dcmFile.dataset.string(forTag: "StudyDescription")
             let studyID = dcmFile.dataset.string(forTag: "StudyID")
@@ -457,7 +458,6 @@ public class DicomDir:DicomFile {
                     if(!dcmDir.studiesKeys.contains(key)) {
                         dcmDir.studiesKeys.append(key)
                     }
-                        
                     if let d = date {
                         studyDictionary["StudyDate"] = d as Any
                     }
@@ -568,7 +568,7 @@ public class DicomDir:DicomFile {
 //    private func truncate(forPath filepath: String) -> String  {
 //        return NSString(string: filepath).deletingLastPathComponent
 //    }
-    /*
+    
     //MARK: Write a DicomDir
     
     /**
@@ -587,19 +587,22 @@ public class DicomDir:DicomFile {
         let tagID = DataTag.init(withGroup: "0010", element: "0020", byteOrder: .LittleEndian)
         let tagName = DataTag.init(withGroup: "0010", element: "0010", byteOrder: .LittleEndian)
         
-        let tagstID = DataTag.init(withGroup: "0020", element: "000d", byteOrder: .LittleEndian)
+        let tagstUID = DataTag.init(withGroup: "0020", element: "000d", byteOrder: .LittleEndian)
         let tagstDate = DataTag.init(withGroup: "0008", element: "0020", byteOrder: .LittleEndian)
         let tagstTime = DataTag.init(withGroup: "0008", element: "0030", byteOrder: .LittleEndian)
         let tagAccession = DataTag.init(withGroup: "0008", element: "0050", byteOrder: .LittleEndian)
         let tagstDescription = DataTag.init(withGroup: "0008", element: "1030", byteOrder: .LittleEndian)
+        let tagstID = DataTag.init(withGroup: "0020", element: "0010", byteOrder: .LittleEndian)
         
         let tagseID = DataTag.init(withGroup: "0020", element: "000e", byteOrder: .LittleEndian)
         let tagseNb = DataTag.init(withGroup: "0020", element: "0011", byteOrder: .LittleEndian)
+        let tagModality = DataTag.init(withGroup: "0008", element: "0060", byteOrder: .LittleEndian)
         
         let tagSOP = DataTag.init(withGroup: "0004", element: "1511", byteOrder: .LittleEndian)
         let tagPath = DataTag.init(withGroup: "0004", element: "1500", byteOrder: .LittleEndian)
         let tagSOPClass = DataTag.init(withGroup: "0004", element: "1510", byteOrder: .LittleEndian)
         let tagInstanceNumber = DataTag.init(withGroup: "0020", element: "0013", byteOrder: .LittleEndian)
+        let tagRefSyntax = DataTag.init(withGroup: "0004", element: "1512", byteOrder: .LittleEndian)
         
         // Creation of the sequence
         let sequence:DataSequence = DataSequence(withTag: dataTag, parent: nil)
@@ -644,9 +647,9 @@ public class DicomDir:DicomFile {
             item.elements.append(paID)
             
             for studyID in studiesKeys {
-                if let studyArray = studies[studyID] {
-                
-                    if(patientID == (studyArray[0]) as? String) {
+                if let studyDictionary = studies[studyID] {
+                    
+                    if(patientID == (studyDictionary["PatientID"]) as? String) {
                         
                         let item = DataItem(withTag: tagItem, parent: sequence)
                         sequence.items.append(item)
@@ -665,43 +668,60 @@ public class DicomDir:DicomFile {
                         
                         item.elements.append(characterSet)
                         
-                        let dateString = String(describing: studyArray[1])
-                        var stDate = ""
-                        
-                        if let index = dateString.firstIndex(of: " ") {
-                            let dCut = dateString[..<index]
-                            stDate = dCut.replacingOccurrences(of: "-", with: "")
+                        if let studyDate = studyDictionary["StudyDate"] {
+                            
+                            let dateString = "\(studyDate)"
+                            var stDate = ""
+                            
+                            if let index = dateString.firstIndex(of: " ") {
+                                let dCut = dateString[..<index]
+                                stDate = dCut.replacingOccurrences(of: "-", with: "")
+                            }
+                            
+                            let studyDate = addValue(addString: stDate, forTag: tagstDate, withParent: item)
+                            item.elements.append(studyDate)
                         }
                         
-                        let studyDate = addValue(addString: stDate, forTag: tagstDate, withParent: item)
-                        item.elements.append(studyDate)
+                        if let studyTime = studyDictionary["StudyTime"] {
+                            
+                            let timeString = "\(studyTime)"
+                            let components:[String] = timeString.components(separatedBy: " ")
+                            var stTime = ""
+                            if components.count > 1 {
+                                let compo:[String] = components[1].components(separatedBy: ":")
+                                stTime = compo[0] + compo[1] + compo[2]
+                            }
+                            
+                            let studyTime = addValue(addString: stTime, forTag: tagstTime, withParent: item)
+                            item.elements.append(studyTime)
+                        }
                         
-                        let timeString = String(describing: studyArray[2])
-                        let components:[String] = timeString.components(separatedBy: " ")
-                        let compo:[String] = components[1].components(separatedBy: ":")
-                        let stTime = compo[0] + compo[1] + compo[2]
+                        if let studyAcessNb = studyDictionary["AccessionNumber"] {
+                            
+                            let accessionNumber = addValue(addString: "\(studyAcessNb)", forTag: tagAccession, withParent: item)
+                            item.elements.append(accessionNumber)
+                        }
                         
-                        let studyTime = addValue(addString: stTime, forTag: tagstTime, withParent: item)
-                        item.elements.append(studyTime)
-                        
-                        let accessionNumber = addValue(addString: "\(studyArray[3])", forTag: tagAccession, withParent: item)
-                        item.elements.append(accessionNumber)
-                        
-                        let studyDescri = addValue(addString: "\(studyArray[3])", forTag: tagstDescription, withParent: item)
-                        item.elements.append(studyDescri)
-                        
-                        let studyInstanceUID = addValue(addString: studyID, forTag: tagstID, withParent: item)
+                        if let description = studyDictionary["AccessionNumber"] {
+                            let studyDescri = addValue(addString: "\(description)", forTag: tagstDescription, withParent: item)
+                            item.elements.append(studyDescri)
+                        }
+                            
+                        let studyInstanceUID = addValue(addString: studyID, forTag: tagstUID, withParent: item)
                         item.elements.append(studyInstanceUID)
                         
-                        //TODO: add studyID
+                        if let studyID = studyDictionary["StudyID"] {
+                            let stID = addValue(addString: "\(studyID)", forTag: tagstID, withParent: item)
+                            item.elements.append(stID)
+                        }
                         
                         for serieID in seriesKeys {
                             
-                            if let arraySerie = series[serieID] {
+                            if let serieDictionary = series[serieID] {
                                 
-                                if(studyID == arraySerie[0]) {
+                                if(studyID == serieDictionary["StudyInstanceUID"]) {
                                     
-                                    let serieNumber:String = arraySerie[1]
+                                    let serieNumber:String = serieDictionary["SeriesNumber"] ?? ""
                                     let item = DataItem(withTag: tagItem, parent: sequence)
                                     sequence.items.append(item)
                                     
@@ -717,7 +737,8 @@ public class DicomDir:DicomFile {
                                     let serieType = addValue(addString: "SERIES", forTag: tagType, withParent: item)
                                     item.elements.append(serieType)
                                     
-                                    //TODO: add modality
+                                    let modality = addValue(addString: serieDictionary["Modality"] ?? "", forTag: tagModality, withParent: item)
+                                    item.elements.append(modality)
                                     
                                     let serieInstanceUID = addValue(addString: serieID, forTag: tagseID, withParent: item)
                                     item.elements.append(serieInstanceUID)
@@ -727,41 +748,65 @@ public class DicomDir:DicomFile {
                                     
                                     for sop in imagesKeys {
                                         
-                                        if let array = images[sop] {
-                                        
-                                            if("\(array[0])" == serieID) {
-                                                let pathImage = "\(array[1])"
-                                                let item = DataItem(withTag: tagItem, parent: sequence)
-                                                sequence.items.append(item)
-                                                
-                                                let imageOffsetNext = addValue(addInteger: 1466, forTag: tagNextRecord, withParent: item)
-                                                item.elements.append(imageOffsetNext)
-                                                
-                                                item.elements.append(recordInUseFlag)
-                                                
-                                                let imageOffsetLower = addValue(addInteger: 0, forTag: tagLowerRecord, withParent: item)
-                                                item.elements.append(imageOffsetLower)
-                                                
-                                                let imageType = addValue(addString: "IMAGE", forTag: tagType, withParent: item)
-                                                item.elements.append(imageType)
-                                                
-                                                let imagePath = addValue(addString: pathImage, forTag: tagPath, withParent: item)
-                                                item.elements.append(imagePath)
-                                                
-                                                //TODO : ci dessous
-                                                let imageSOPClass = addValue(addString: "TO DO", forTag: tagSOPClass, withParent: item)
-                                                item.elements.append(imageSOPClass)
-                                                
-                                                let imageSOP = addValue(addString: sop, forTag: tagSOP, withParent: item)
-                                                item.elements.append(imageSOP)
-                                                
-                                                //TODO: add referenced transfer syntax
-                                                
-                                                let instanceNumber = addValue(addInteger: 0, forTag: tagInstanceNumber, withParent: item) //TODO
-                                                item.elements.append(instanceNumber)
+                                        if let imagesDictionary = images[sop] {
+                                            
+                                            if let serieUIDInImg = imagesDictionary["SeriesInstanceUID"] {
+                                                if("\(serieUIDInImg)" == serieID) {
+                                                    let item = DataItem(withTag: tagItem, parent: sequence)
+                                                    sequence.items.append(item)
+                                                    
+                                                    let imageOffsetNext = addValue(addInteger: 1466, forTag: tagNextRecord, withParent: item)
+                                                    item.elements.append(imageOffsetNext)
+                                                    
+                                                    item.elements.append(recordInUseFlag)
+                                                    offset += recordInUseFlag.toData().count
+                                                    
+                                                    let imageOffsetLower = addValue(addInteger: 0, forTag: tagLowerRecord, withParent: item)
+                                                    item.elements.append(imageOffsetLower)
+                                                    
+                                                    let imageType = addValue(addString: "IMAGE", forTag: tagType, withParent: item)
+                                                    item.elements.append(imageType)
+                                                    
+                                                    if let imgPath = imagesDictionary["ReferencedFileID"] {
+                                                        let imagePath = addValue(addString: "\(imgPath)", forTag: tagPath, withParent: item)
+                                                        item.elements.append(imagePath)
+                                                    }
+                                                    
+                                                    if let sopClass = imagesDictionary["ReferencedSOPClassUIDInFile"] {
+                                                        let imageSOPClass = addValue(addString: "\(sopClass)", forTag: tagSOPClass, withParent: item)
+                                                        item.elements.append(imageSOPClass)
+                                                    }
+                                                    
+                                                    let imageSOP = addValue(addString: sop, forTag: tagSOP, withParent: item)
+                                                    item.elements.append(imageSOP)
+                                                    
+                                                    if let refSyntax = imagesDictionary["ReferencedTransferSyntaxUIDInFile"] {
+                                                        let imageSyntax = addValue(addString: "\(refSyntax)", forTag: tagRefSyntax, withParent: item)
+                                                        item.elements.append(imageSyntax)
+                                                    }
+                                                    
+                                                    if let number = imagesDictionary["InstanceNumber"] {
+                                                        let instanceNumber = addValue(addString: "\(number)", forTag: tagInstanceNumber, withParent: item)
+                                                        item.elements.append(instanceNumber)
+                                                    }
+                                                }
                                             }
                                         }
                                     }
+                                    let transitionOffsetNext = addValue(addInteger: 0, forTag: tagNextRecord, withParent: item)
+                                    item.elements.append(transitionOffsetNext)
+                                    
+                                    item.elements.append(recordInUseFlag)
+                                    offset += recordInUseFlag.toData().count
+                                    
+                                    let transitionOffsetLower = addValue(addInteger: 0, forTag: tagLowerRecord, withParent: item)
+                                    item.elements.append(transitionOffsetLower)
+                                    
+                                    let transitionType = addValue(addString: "PRIVATE", forTag: tagType, withParent: item)
+                                    item.elements.append(transitionType)
+                                    
+                                    let dirName = addValue(addString: "DICOMDIR", forTag: tagPath, withParent: item)
+                                    item.elements.append(dirName)
                                 }
                             }
                         }
@@ -847,5 +892,5 @@ public class DicomDir:DicomFile {
         let dicomDirPAth = folderPath.last == "/" ? folderPath + "DICOMDIR" : folderPath + "/DICOMDIR"
         
         return self.write(atPath: dicomDirPAth)
-    }*/
+    }
 }
