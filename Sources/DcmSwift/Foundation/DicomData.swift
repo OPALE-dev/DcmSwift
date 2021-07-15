@@ -85,6 +85,12 @@ extension Data {
         })
     }
     
+    public func toUInt32(byteOrder: ByteOrder = .LittleEndian) -> UInt32 {
+        return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
+            let pointer = ptr.baseAddress!.assumingMemoryBound(to: UInt32.self).pointee
+            return byteOrder == .LittleEndian ? pointer : pointer.bigEndian
+        })
+    }
     
     public func toFloat32(byteOrder: ByteOrder = .LittleEndian) -> Float32 {
         return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in

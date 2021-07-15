@@ -7,6 +7,24 @@
 
 import Foundation
 
+
+
+
+
+extension Collection where Iterator.Element == Int16 {
+    var doubleArray: [Double] {
+        return flatMap{ Double($0) }
+    }
+    var floatArray: [Float] {
+        return flatMap{ Float($0) }
+    }
+}
+
+
+
+
+
+
 /**
  Helper functions
  TODO why not extension ?
@@ -139,5 +157,54 @@ public class RTDose {
         case .none:
             return nil
         }
+    }()
+    
+    public lazy var doseImage: [Float64] = {
+        let offset = Int((frame - 1) * rows * columns * bitsAllocated)
+        let end = Int((frame) * rows * columns * bitsAllocated)
+
+        guard let doseGridScaling: String = self.dicomRT.dataset.string(forTag: "DoseGridScaling") else {
+            return []
+        }
+        
+        guard let dgs = Float64(doseGridScaling) else {
+            return []
+        }
+        
+        
+        guard let pixelData = self.dicomRT.dataset.element(forTagName: "PixelData") else {
+            return []
+        }
+     
+        switch self.pixelRepresentation {
+        case .Signed:
+            if bitsAllocated == 16 {
+                var p = PixelDataAccess.getSigned16Pixels(pixelDataElement: pixelData, from: offset, at: end, byteOrder: pixelData.byteOrder)
+                let a = p.compactMap{ Float64($0) }
+                return a.map { $0 * dgs }
+                
+            } else {
+                var p: [Int32] = PixelDataAccess.getSigned32Pixels(pixelDataElement: pixelData, from: offset, at: end, byteOrder: pixelData.byteOrder)
+                let a = p.compactMap{ Float64($0) }
+                return a.map { $0 * dgs }
+                
+            }
+        case .Unsigned:
+            if bitsAllocated == 16 {
+                var p: [UInt16] = PixelDataAccess.getUnsigned16Pixels(pixelDataElement: pixelData, from: offset, at: end, byteOrder: pixelData.byteOrder)
+                let a = p.compactMap{ Float64($0) }
+                return a.map { $0 * dgs }
+                
+            } else {
+                var p: [UInt32] = PixelDataAccess.getUnsigned32Pixels(pixelDataElement: pixelData, from: offset, at: end, byteOrder: pixelData.byteOrder)
+                let a = p.compactMap{ Float64($0) }
+                
+                return a.map { $0 * dgs }
+                
+            }
+        case .none:
+            return []
+        }
+        
     }()
 }

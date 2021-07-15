@@ -165,6 +165,8 @@ class DcmSwiftTests: XCTestCase {
             suite.addTest(DcmSwiftTests(selector: #selector(testToPNG)))
             suite.addTest(DcmSwiftTests(selector: #selector(testGetUnscaledDose)))
             suite.addTest(DcmSwiftTests(selector: #selector(testGetDose)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImage)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImages)))
         }
         
         return suite
@@ -922,6 +924,31 @@ class DcmSwiftTests: XCTestCase {
         } else {
             Logger.error("no dicom file")
         }
+    }
+    
+    public func testGetDoseImage() {
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            let r = RTDose.init(dicomRTFile: dicomRT, column: 1, row: 1, frame: 1)
+            XCTAssertNotNil(r)
+            
+            if let rtDose = r {
+                XCTAssert(!rtDose.doseImage.isEmpty)
+            } else {
+                Logger.error("no rtdose (1)")
+            }
+       
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetDoseImages() {
+        
     }
 }
 
