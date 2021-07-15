@@ -64,6 +64,8 @@ struct DcmEcho: ParsableCommand {
                 Logger.error("CONNECT Error: \(e)")
             }
         }
+        
+        _ = client.disconnect()
     }
 }
 

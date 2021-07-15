@@ -21,6 +21,7 @@ import Foundation
 public class CStoreRQ: DataTF {
     public var dicomFile:DicomFile?
     
+    
     public override func messageName() -> String {
         return "C-STORE-RQ"
     }
@@ -50,13 +51,11 @@ public class CStoreRQ: DataTF {
 
             return pduData.data()
         }
-        else {
-            print("No SOPClassUID found, file not sent.")
-        }
+        
+        Logger.error("File cannot be sent because oo SOP Class UID was found.")
         
         return nil
     }
-    
     
     
     public override func messagesData() -> [Data] {
@@ -72,6 +71,7 @@ public class CStoreRQ: DataTF {
                     let chunks = fileData.chunck(into: 16372)
                     var index = 0
                     
+                    // TODO: switch to PDUData class?
                     for chunkData in chunks {
                         var data = Data()
                         var pdvData2 = Data()
@@ -102,6 +102,7 @@ public class CStoreRQ: DataTF {
         
         return datas
     }
+    
     
     public override func handleResponse(data: Data) -> PDUMessage? {
         if let command:UInt8 = data.first {

@@ -21,6 +21,7 @@ public class CEchoRQ: DataTF {
         return "C-ECHO-RQ"
     }
     
+    
     public override func data() -> Data? {
         // fetch accepted PC
         guard let pcID = association.acceptedPresentationContexts.keys.first,
@@ -73,8 +74,8 @@ public class CEchoRQ: DataTF {
             commandField: .C_ECHO_RSP,
             association: self.association
         ) as? PDUMessage {
+            response.dimseStatus = DIMSEStatus(status: .Success, command: .C_ECHO_RSP)
             response.requestMessage = self
-            
             return response
         }
         return nil

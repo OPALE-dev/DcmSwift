@@ -27,8 +27,10 @@ public class DataTF: PDUMessage {
         return "DATA-TF"
     }
     
+    
+    
     override public func decodeData(data: Data) -> DIMSEStatus.Status {
-        var status = super.decodeData(data: data)
+        _ = super.decodeData(data: data)
                                         
         // read PDV length
         guard let pdvLength = stream.read(length: 4)?.toInt32(byteOrder: .BigEndian) else {
@@ -82,23 +84,22 @@ public class DataTF: PDUMessage {
         }
         
         self.commandField = commandField
-                    
-        guard let s = commandDataset.element(forTagName: "Status"),
-              let ss = DIMSEStatus.Status(rawValue: s.data.toUInt16(byteOrder: .LittleEndian)) else {
-            Logger.error("Cannot read DIMSE Status")
-            return .Refused
-        }
         
-        status = ss
-                    
         guard let commandDataSetType = commandDataset.integer16(forTag: "CommandDataSetType")?.bigEndian else {
             Logger.error("Cannot read Command Data Set Type")
             return .Refused
         }
         
         self.commandDataSetType = commandDataSetType
-        self.dimseStatus = DIMSEStatus(status: status, command: commandField)
         
-        return status
+        if let s = commandDataset.element(forTagName: "Status") {
+            if let ss = DIMSEStatus.Status(rawValue: s.data.toUInt16(byteOrder: .LittleEndian)) {
+                self.dimseStatus = DIMSEStatus(status: ss, command: commandField)
+                
+                return ss
+            }
+        }
+        
+        return .Success
     }
 }
