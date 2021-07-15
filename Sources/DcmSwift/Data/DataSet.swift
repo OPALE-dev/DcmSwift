@@ -316,6 +316,15 @@ public class DataSet: DicomObject {
         return nil
     }
     
+    public func sequence(forTagName name:String) -> DataSequence? {
+        for el in allElements {
+            if el.name == name && el.vr == .SQ {
+                return el as? DataSequence
+            }
+        }
+        return nil
+    }
+    
     
     public func remove(elementForTagName name:String) -> DataElement? {
         guard let el = self.element(forTagName: name) else {
