@@ -74,9 +74,13 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
     }
     
     
+    /**
+     The human readable name of the DICOM message
+     */
     public func messageName() -> String {
         return "UNKNOW-DIMSE"
     }
+    
     
     public func messagesData() -> [Data] {
 //        if let p = self.pduType {
@@ -85,7 +89,9 @@ public class PDUMessage: PDUResponsable, PDUDecodable, PDUEncodable {
         return []
     }
     
-    
+    /**
+     Encoded representation of the PDUMessage as binary data
+     */
     public func data() -> Data? {
         if let p = self.pduType {
             Logger.warning("Not implemented yet \(#function) \(p)")
