@@ -8,7 +8,7 @@
 import Foundation
 
 
-let SEQUENCE_WITH_NUMBER: [String: String] = ["PatientSetupSequence": "PatientSetupNumber",
+let PSEQUENCE_WITH_NUMBER: [String: String] = ["PatientSetupSequence": "PatientSetupNumber",
                                            "ToleranceTableSequence": "ToleranceTableNumber",
                                            "BeamSequence": "BeamNumber",
                                            "FractionGroupSequence": "FractionGroupNumber",
@@ -24,14 +24,14 @@ let SEQUENCE_WITH_NUMBER: [String: String] = ["PatientSetupSequence": "PatientSe
 public class Plan {
     
     public static func getItemInSequenceForNumber(dicomRT: DicomRT, forSequence: String, withNumber: String) -> DataItem? {
-        if !SEQUENCE_WITH_NUMBER.keys.contains(forSequence) {
+        if !PSEQUENCE_WITH_NUMBER.keys.contains(forSequence) {
             return nil
         }
         
         guard let sequence = dicomRT.dataset.sequence(forTagName: forSequence) else { return nil }
         
         for item in sequence.items {
-            guard let number = item.element(withName: SEQUENCE_WITH_NUMBER[forSequence] ?? "") else { return nil }
+            guard let number = item.element(withName: PSEQUENCE_WITH_NUMBER[forSequence] ?? "") else { continue }
             
             if number.value as! String == withNumber {
                 return item
