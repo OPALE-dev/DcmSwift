@@ -147,7 +147,7 @@ public class DicomAssociation : ChannelInboundHandler {
         self.channel    = channel
         self.origin     = origin
  
-        _ = channel.pipeline.addHandlers([ByteToMessageHandler(PDUMessageDecoder(withAssociation: self)), self])
+        _ = channel.pipeline.addHandlers([ByteToMessageHandler(PDUBytesDecoder(withAssociation: self)), self])
     }
     
     
@@ -202,7 +202,7 @@ public class DicomAssociation : ChannelInboundHandler {
         }
         
         let readData = Data(bytes)
-                
+                        
         guard let f = readData.first, PDUType.isSupported(f) else {
             handleError(description: "Unsupported PDU Type (channelRead)", message: nil, closeAssoc: true)
             return
@@ -226,7 +226,7 @@ public class DicomAssociation : ChannelInboundHandler {
                     data: readData,
                     pduType: pt,
                     association: self
-                ) as? PDUMessage {
+                ) as? PDUMessage {                    
                     handleDIMSE(message: message)
                 }
             }
@@ -269,7 +269,7 @@ public class DicomAssociation : ChannelInboundHandler {
         self.channel = context.channel
         
         // add channel handlers to decode messages for this child association
-        _ = self.channel.pipeline.addHandlers([ByteToMessageHandler(PDUMessageDecoder(withAssociation: self)), self])
+        _ = self.channel.pipeline.addHandlers([ByteToMessageHandler(PDUBytesDecoder(withAssociation: self)), self])
         
         // store a reference of the connected association
         self.connectedAssociations[ObjectIdentifier(context.channel)] = self

@@ -23,6 +23,8 @@ import Foundation
  http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#table_9-22
  */
 public class DataTF: PDUMessage {
+    var completed:Bool = false
+    
     public override func messageName() -> String {
         return "DATA-TF"
     }
@@ -53,51 +55,56 @@ public class DataTF: PDUMessage {
         }
         
         self.flags = UInt8(flags)
-        
-        // read dataset data
-        guard let commandData = stream.read(length: Int(pdvLength) - 2) else {
-            Logger.error("Cannot read dataset data")
-            return .Refused
-        }
-        
-        let dis = DicomInputStream(data: commandData)
-        
-        // read command dataset
-        guard let commandDataset = try? dis.readDataset() else {
-            Logger.error("Cannot read command dataset")
-            return .Refused
-        }
-        
-        self.commandDataset = commandDataset
-                                
-        guard let command = commandDataset.element(forTagName: "CommandField") else {
-            Logger.error("Cannot read CommandField in command Dataset")
-            return .Refused
-        }
-
-        // we create a response (PDUMessage of DIMSE family) based on received CommandField value using PDUDecoder
-        let c = command.data.toUInt16(byteOrder: .LittleEndian)
-
-        guard let commandField = CommandField(rawValue: c) else {
-            Logger.error("Cannot read CommandField in command Dataset")
-            return .Refused
-        }
-        
-        self.commandField = commandField
-        
-        guard let commandDataSetType = commandDataset.integer16(forTag: "CommandDataSetType")?.bigEndian else {
-            Logger.error("Cannot read Command Data Set Type")
-            return .Refused
-        }
-        
-        self.commandDataSetType = commandDataSetType
-        
-        if let s = commandDataset.element(forTagName: "Status") {
-            if let ss = DIMSEStatus.Status(rawValue: s.data.toUInt16(byteOrder: .LittleEndian)) {
-                self.dimseStatus = DIMSEStatus(status: ss, command: commandField)
                 
-                return ss
+        if self.flags == 0x3 {
+            // read dataset data
+            guard let commandData = stream.read(length: Int(pdvLength) - 2) else {
+                Logger.error("Cannot read dataset data")
+                return .Refused
             }
+            
+            let dis = DicomInputStream(data: commandData)
+            
+            // read command dataset
+            guard let commandDataset = try? dis.readDataset() else {
+                Logger.error("Cannot read command dataset")
+                return .Refused
+            }
+            
+            self.commandDataset = commandDataset
+                                    
+            guard let command = commandDataset.element(forTagName: "CommandField") else {
+                Logger.error("Cannot read CommandField in command Dataset")
+                return .Refused
+            }
+
+            // we create a response (PDUMessage of DIMSE family) based on received CommandField value using PDUDecoder
+            let c = command.data.toUInt16(byteOrder: .LittleEndian)
+
+            guard let commandField = CommandField(rawValue: c) else {
+                Logger.error("Cannot read CommandField in command Dataset")
+                return .Refused
+            }
+            
+            self.commandField = commandField
+            
+            guard let commandDataSetType = commandDataset.integer16(forTag: "CommandDataSetType")?.bigEndian else {
+                Logger.error("Cannot read Command Data Set Type")
+                return .Refused
+            }
+            
+            self.commandDataSetType = commandDataSetType
+            
+            if let s = commandDataset.element(forTagName: "Status") {
+                if let ss = DIMSEStatus.Status(rawValue: s.data.toUInt16(byteOrder: .LittleEndian)) {
+                    self.dimseStatus = DIMSEStatus(status: ss, command: commandField)
+                    
+                    return ss
+                }
+            }
+        }
+        else if self.flags == 0x2 {
+            self.dimseStatus = DIMSEStatus(status: .Pending, command: .NONE)
         }
         
         return .Success
