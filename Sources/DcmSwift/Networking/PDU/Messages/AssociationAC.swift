@@ -26,6 +26,15 @@ public class AssociationAC: PDUMessage {
     }
     
     
+    public override func messageInfos() -> String {
+        if let ats = self.association.acceptedTransferSyntax {
+            return "\(DicomSpec.shared.nameForUID(withUID: self.association.abstractSyntax)) : \(DicomSpec.shared.nameForUID(withUID: ats))"
+        }
+        
+        return super.messageInfos()
+    }
+    
+    
     public override func data() -> Data {
         var data = Data()
         

@@ -24,6 +24,16 @@ public class AssociationRQ: PDUMessage {
         return "A-ASSOCIATE-RQ"
     }
     
+    
+    public override func messageInfos() -> String {
+        if let called = remoteCalledAETitle, let calling = remoteCallingAETitle {
+            return "\(calling) > \(called)"
+        }
+        
+        return super.messageInfos()
+    }
+    
+    
     public override func data() -> Data {
         var data = Data()
         

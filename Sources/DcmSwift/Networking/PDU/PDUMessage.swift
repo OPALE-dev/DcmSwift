@@ -80,6 +80,11 @@ public class PDUMessage:
     }
     
     
+    public func messageInfos() -> String {
+        return ""
+    }
+    
+    
     public func messagesData() -> [Data] {
         // if let p = self.pduType {
         //     Logger.warning("Not implemented yet \(#function) \(p)")
