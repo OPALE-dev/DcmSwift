@@ -46,7 +46,7 @@ public class PresentationContext {
         }
         
         // let length = data.subdata(in: 2..<4).toInt16(byteOrder: .BigEndian)
-        let pcContextID = data.subdata(in: 4..<5).toInt8(byteOrder: .BigEndian)
+        let pcContextID = data.subdata(in: 4..<5).toUInt8(byteOrder: .BigEndian)
         
         // if we send the RQ ? :-\
         if pcType == ItemType.acPresentationContext.rawValue {
@@ -55,7 +55,7 @@ public class PresentationContext {
         
         var offset = 8
         
-        self.contextID = UInt8(pcContextID)
+        self.contextID = pcContextID// pcContextID == -127 ?  UInt8(128) : UInt8(pcContextID)
         
         // if we receive the RQ
         if pcType == ItemType.rqPresentationContext.rawValue {
