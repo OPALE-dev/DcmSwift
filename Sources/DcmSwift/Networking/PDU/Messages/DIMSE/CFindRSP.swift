@@ -25,6 +25,11 @@ public class CFindRSP: DataTF {
     }
     
     
+    public override func messageInfos() -> String {
+        return dimseStatus.status.rawValue.description
+    }
+    
+    
     override public func decodeData(data: Data) -> DIMSEStatus.Status {
         let status = super.decodeData(data: data)
         

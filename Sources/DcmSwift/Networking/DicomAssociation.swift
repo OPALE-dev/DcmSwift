@@ -330,7 +330,7 @@ public class DicomAssociation : ChannelInboundHandler {
             
             let data = message.data()
             
-            Logger.info("WRIT A-ASSOCIATION-RJ", "Association")
+            log(message: message, write: true)
             
             self.write(data)
         }
@@ -344,7 +344,7 @@ public class DicomAssociation : ChannelInboundHandler {
         }
             
         // WRIT A-Release-RQ message
-        guard let message = PDUEncoder.createAssocMessage(pduType: .releaseRQ, association: self) else {
+        guard let message = PDUEncoder.createAssocMessage(pduType: .releaseRQ, association: self) as? PDUMessage else {
             Logger.error("Cannot create A-RELEASE-RQ message")
             return
         }
@@ -354,7 +354,7 @@ public class DicomAssociation : ChannelInboundHandler {
             return
         }
         
-        Logger.info("WRIT A-RELEASE-RQ", "Association")
+        log(message: message, write: true)
         
         self.write(data)
         
@@ -367,7 +367,7 @@ public class DicomAssociation : ChannelInboundHandler {
     
     public func abort() {
         // create A-Abort message
-        guard let message = PDUEncoder.createAssocMessage(pduType: .abort, association: self) else {
+        guard let message = PDUEncoder.createAssocMessage(pduType: .abort, association: self) as? PDUMessage else {
             Logger.error("Cannot create A-ABORT message")
             return
         }
@@ -378,7 +378,7 @@ public class DicomAssociation : ChannelInboundHandler {
             return
         }
         
-        Logger.info("WRIT A-ABORT", "Association")
+        log(message: message, write: true)
             
         // write message
         self.write(data)
@@ -410,7 +410,7 @@ public class DicomAssociation : ChannelInboundHandler {
         
         self.write(data)
                 
-        Logger.info("WRIT \(message.messageName() )", "Association")
+        log(message: message, write: true)
         //Logger.debug(message.debugDescription)
                 
         for messageData in message.messagesData() {
@@ -464,7 +464,7 @@ private extension DicomAssociation {
             return
         }
         
-        Logger.info("WRIT \(message.messageName())", "Association")
+        log(message: message, write: true)
         
         write(data)
     }
@@ -532,7 +532,7 @@ private extension DicomAssociation {
     
     
     private func handleAssociation(message:PDUMessage) {
-        Logger.info("READ \(message.messageName())", "Association")
+        log(message: message, write: false)
                     
         // messages received as remote
         if origin == .Remote {
@@ -558,7 +558,7 @@ private extension DicomAssociation {
     
     
     private func handleDIMSE(message:PDUMessage) {
-        Logger.info("READ \(message.messageName())", "Association")
+        log(message: message, write: false)
         
         if origin == .Remote {
             // generate and send request
@@ -604,5 +604,22 @@ private extension DicomAssociation {
         }
         
         return DicomAssociation.lastContextID
+    }
+    
+    
+    private func log(message:PDUMessage, write:Bool) {
+        let infos   = message.messageInfos()
+        var prefix  = ""
+        
+        if write {
+            prefix = "WRIT"
+        } else {
+            prefix = "READ"
+        }
+        
+        let from = message.pduType == .dataTF ? "DIMSE" : "ASSOC"
+        let info = infos.count > 0 ? "[\(infos)]" : ""
+        
+        Logger.info("\(prefix) [\(from)] \(message.messageName()) \(info)", "Association")
     }
 }
