@@ -104,6 +104,15 @@ public class CStoreRQ: DataTF {
     }
     
     
+    public override func decodeData(data: Data) -> DIMSEStatus.Status {
+        let status = super.decodeData(data: data)
+        
+        print(data.toHex())
+        
+        return status
+    }
+    
+    
     public override func handleResponse(data: Data) -> PDUMessage? {
         if let command:UInt8 = data.first {
             if command == self.pduType.rawValue {
@@ -116,6 +125,20 @@ public class CStoreRQ: DataTF {
                     return message
                 }
             }
+        }
+        return nil
+    }
+    
+    
+    public override func handleRequest() -> PDUMessage? {
+        if let response = PDUEncoder.createDIMSEMessage(
+            pduType: .dataTF,
+            commandField: .C_STORE_RSP,
+            association: self.association
+        ) as? PDUMessage {
+            response.dimseStatus = DIMSEStatus(status: .Success, command: .C_STORE_RSP)
+            response.requestMessage = self
+            return response
         }
         return nil
     }

@@ -61,6 +61,13 @@ extension Data {
         })
     }
     
+    public func toUInt8(byteOrder: ByteOrder = .LittleEndian) -> UInt8 {
+        return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
+            let pointer = ptr.baseAddress!.assumingMemoryBound(to: UInt8.self).pointee
+            return byteOrder == .LittleEndian ? pointer : pointer.bigEndian
+        })
+    }
+    
     
     public func toUInt16(byteOrder: ByteOrder = .LittleEndian) -> UInt16 {
         return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
