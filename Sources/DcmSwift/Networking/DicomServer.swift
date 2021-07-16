@@ -23,9 +23,8 @@ public class DicomServer: DicomService {
     public init(port: Int, localAET:String) {
         super.init(localAET: localAET)
         
-        self.calledAET = DicomEntity(title: localAET, hostname: "localhost", port: port)
-        
-        self.port = port
+        self.calledAET  = DicomEntity(title: localAET, hostname: "localhost", port: port)
+        self.port       = port
         
         self.group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         self.bootstrap = ServerBootstrap(group: group)
@@ -33,11 +32,10 @@ public class DicomServer: DicomService {
             .serverChannelOption(ChannelOptions.backlog, value: 256)
             .serverChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
             .childChannelInitializer { channel in
-                    // we create a new DicomAssociation for each new activating channel
+                // we create a new DicomAssociation for each new activating channel
                 let assoc = DicomAssociation(calledAET: self.calledAET)
-                    return channel.pipeline.addHandlers([ByteToMessageHandler(PDUBytesDecoder(withAssociation: assoc)), assoc])
-                }
-            
+                return channel.pipeline.addHandlers([ByteToMessageHandler(PDUBytesDecoder(withAssociation: assoc)), assoc])
+            }
             .childChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
             .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())

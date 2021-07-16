@@ -108,9 +108,14 @@ public class PDUMessage:
         stream = OffsetInputStream(data: data)
                 
         stream.open()
+        
+        guard let pt = stream.read(length: 1)?.toInt8() else {
+            Logger.error("Cannot read PDU Length")
+            return .Refused
+        }
  
-        // fake read PDU type + dead byte
-        stream.forward(by: 2)
+        // fake read PDU type
+        stream.forward(by: 1)
         
         // read PDU length
         guard let pduLength = stream.read(length: 4)?.toInt32(byteOrder: .BigEndian) else {
@@ -118,7 +123,8 @@ public class PDUMessage:
             return .Refused
         }
         
-        self.pduLength = Int(pduLength)
+        self.pduType    = PDUType(rawValue: UInt8(pt))
+        self.pduLength  = Int(pduLength)
         
         return .Success
     }

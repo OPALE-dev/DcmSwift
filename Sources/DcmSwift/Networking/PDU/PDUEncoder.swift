@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- The `PDUEncodable` protocol defines weither or not the message is designed to encodable in DICOM data.
+ The `PDUEncodable` protocol defines weither or not the message is designed to be encodable in DICOM data.
  */
 public protocol PDUEncodable {
     /**
