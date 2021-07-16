@@ -33,24 +33,44 @@ public class CFindRSP: DataTF {
     override public func decodeData(data: Data) -> DIMSEStatus.Status {
         let status = super.decodeData(data: data)
         
-        // if data if available
-        if commandDataSetType == 0 {
-            let pc = association.acceptedPresentationContexts[association.acceptedPresentationContexts.keys.first!]
-            let ts = pc?.transferSyntaxes.first
-            
-            if ts == nil {
+        let pc = association.acceptedPresentationContexts[association.acceptedPresentationContexts.keys.first!]
+        let ts = pc?.transferSyntaxes.first
+        
+        if ts == nil {
+            Logger.error("No transfer syntax found, refused")
+            return .Refused
+        }
+        
+        let transferSyntax = TransferSyntax(ts!)
+             
+        // if the PDU message as been segmented
+        if commandDataSetType == nil {
+            // read dataset data
+            guard let datasetData = stream.read(length: Int(self.pdvLength - 2)) else {
+                Logger.error("Cannot read dataset data")
                 return .Refused
             }
-
-            let transferSyntax = TransferSyntax(ts!)
-                        
+            
+            let dis = DicomInputStream(data: datasetData)
+            
+            dis.vrMethod    = transferSyntax!.vrMethod
+            dis.byteOrder   = transferSyntax!.byteOrder
+            
+            if commandField == .C_FIND_RSP {
+                if let resultDataset = try? dis.readDataset(enforceVR: false) {
+                    studiesDataset = resultDataset
+                }
+            }
+            
+        // if the PDU message is complete, and commandDataSetType indicates presence of dataset
+        } else if commandDataSetType == 0 {
             // read data PDV length
             guard let dataPDVLength = stream.read(length: 4)?.toInt32(byteOrder: .BigEndian) else {
-                Logger.error("Cannot read data PDV Length")
+                Logger.error("Cannot read data PDV Length (CFindRSP)")
                 return .Refused
             }
-            
-            // context + flags
+                        
+            // jump context + flags
             stream.forward(by: 2)
             
             // read dataset data

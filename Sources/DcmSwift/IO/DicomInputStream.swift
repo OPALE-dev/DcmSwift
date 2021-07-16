@@ -41,7 +41,7 @@ public class DicomInputStream: OffsetInputStream {
     
     
     // MARK: -
-    public func readDataset(headerOnly:Bool = false, withoutPixelData:Bool = false) throws -> DataSet? {
+    public func readDataset(headerOnly:Bool = false, withoutPixelData:Bool = false, enforceVR:Bool = true) throws -> DataSet? {
         if stream == nil {
             throw StreamError.cannotOpenStream(message: "Cannot open stream, init failed")
         }
@@ -69,7 +69,7 @@ public class DicomInputStream: OffsetInputStream {
             
             hasPreamble = true
         }
-
+        
         // enforce vr Method
         if hasPreamble {
             // we kill the 00000000 not-a-tag read earlier
@@ -77,9 +77,11 @@ public class DicomInputStream: OffsetInputStream {
             // we will parse the DICOM meta Info header as Explicit VR
             vrMethod = .Explicit
         } else {
-            // except for old ACR-NEMA file
-            dataset.transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian)
-            vrMethod = .Implicit
+            if enforceVR == true {
+                // except for old ACR-NEMA file
+                dataset.transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian)
+                vrMethod = .Implicit
+            }
             
             // reset stream and offset using backstream
             backstream.open()
@@ -87,7 +89,7 @@ public class DicomInputStream: OffsetInputStream {
             stream = backstream
             offset = 0
         }
-                        
+                                
         // preambule processing is done
         dataset.hasPreamble = hasPreamble
         dataset.vrMethod = vrMethod

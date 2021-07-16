@@ -55,6 +55,9 @@ struct DcmFind: ParsableCommand {
                         Logger.info(m.queryResults.description, "DcmFind")
                     }
                 }
+                else if message.dimseStatus.status == .Pending {
+                    
+                }
             }
             // receive A-ABORT message or other processing error
             abortCompletion: { (message, error) in

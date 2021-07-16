@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- The `PDUDecodable` protocol defines …
+ The `PDUDecodable` protocol provides a generic interface to decode PDU messages received as binary data
  */
 public protocol PDUDecodable {
     func decodeData(data:Data) -> DIMSEStatus.Status
@@ -110,7 +110,7 @@ extension PDUDecoder {
     
     
     private func receiveDIMSEMessage(data:Data, pduType:PDUType, association:DicomAssociation) -> PDUDecodable? {
-        // use DataTF class to decode commandField before dispatching to subclasses
+        // use DataTF class to lazy decode commandField before dispatching to DIMSE subclasses
         guard let dataTF = DataTF(data: data, pduType: pduType, association: association),
               let commandField = dataTF.commandField else {
             return nil
