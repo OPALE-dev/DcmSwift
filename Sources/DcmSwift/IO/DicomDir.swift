@@ -431,7 +431,8 @@ public class DicomDir:DicomFile {
         
             // fill patient property
             let patientKey = dcmFile.dataset.string(forTag: "PatientID")
-            let patientVal = dcmFile.dataset.string(forTag: "PatientName")
+            let patientVal = dcmFile.dataset.string(forTag: "PatientName", trim: false)
+                        
             if let key = patientKey {
                 dcmDir.patients[key] = patientVal
                 if(!dcmDir.patientsKeys.contains(key)) {
@@ -604,10 +605,14 @@ public class DicomDir:DicomFile {
         let tagInstanceNumber = DataTag.init(withGroup: "0020", element: "0013", byteOrder: .LittleEndian)
         let tagRefSyntax = DataTag.init(withGroup: "0004", element: "1512", byteOrder: .LittleEndian)
         
+        let tagPrivateRecordUID = DataTag.init(withGroup: "0004", element: "1432", byteOrder: .LittleEndian)
+        
         // Creation of the sequence
         let sequence:DataSequence = DataSequence(withTag: dataTag, parent: nil)
-        var cpt = 1
         offset += sequence.toData().count
+        
+        var cpt = 1
+        var cptPatients = 0
         
         for patientID in patientsKeys {
             
@@ -623,13 +628,15 @@ public class DicomDir:DicomFile {
             
             sequence.items.append(item)
             
-            let paOffsetNext = addValue(addInteger: 4820, forTag: tagNextRecord, withParent: item)
+            let paOffsetNext = addValue(addInteger: UInt32(4820), forTag: tagNextRecord, withParent: item)
             item.elements.append(paOffsetNext)
             
-            let recordInUseFlag = addValue(addInteger: 0, forTag: tagRecordInUseFlag, withParent: item)
+            let recordInUseFlag = DataElement(withTag: tagRecordInUseFlag, parent: item)
+            _ = recordInUseFlag.setValue(UInt16(0xFFFF))
+            offset += recordInUseFlag.toData().count
             item.elements.append(recordInUseFlag)
             
-            let paOffsetLower = addValue(addInteger: 486, forTag: tagLowerRecord, withParent: item)
+            let paOffsetLower = addValue(addInteger: UInt32(486), forTag: tagLowerRecord, withParent: item)
             item.elements.append(paOffsetLower)
             
             let paType = addValue(addString: "PATIENT", forTag: tagType, withParent: item)
@@ -793,20 +800,40 @@ public class DicomDir:DicomFile {
                                             }
                                         }
                                     }
-                                    let transitionOffsetNext = addValue(addInteger: 0, forTag: tagNextRecord, withParent: item)
-                                    item.elements.append(transitionOffsetNext)
                                     
-                                    item.elements.append(recordInUseFlag)
-                                    offset += recordInUseFlag.toData().count
+                                    cptPatients += 1
                                     
-                                    let transitionOffsetLower = addValue(addInteger: 0, forTag: tagLowerRecord, withParent: item)
-                                    item.elements.append(transitionOffsetLower)
-                                    
-                                    let transitionType = addValue(addString: "PRIVATE", forTag: tagType, withParent: item)
-                                    item.elements.append(transitionType)
-                                    
-                                    let dirName = addValue(addString: "DICOMDIR", forTag: tagPath, withParent: item)
-                                    item.elements.append(dirName)
+                                    if(cptPatients < patients.count) {
+                                        let itemTransition = DataItem(withTag: tagItem, parent: sequence)
+                                        sequence.items.append(itemTransition)
+                                        
+                                        let transitionOffsetNext = addValue(addInteger: 0, forTag: tagNextRecord, withParent: itemTransition)
+                                        itemTransition.elements.append(transitionOffsetNext)
+                                        
+                                        itemTransition.elements.append(recordInUseFlag)
+                                        offset += recordInUseFlag.toData().count
+                                        
+                                        let transitionOffsetLower = addValue(addInteger: 0, forTag: tagLowerRecord, withParent: itemTransition)
+                                        itemTransition.elements.append(transitionOffsetLower)
+                                        
+                                        let transitionType = addValue(addString: "PRIVATE", forTag: tagType, withParent: itemTransition)
+                                        itemTransition.elements.append(transitionType)
+                                        
+                                        let privRecordUID = addValue(addString: "1.2.840.10008.1.3.10", forTag: tagPrivateRecordUID, withParent: itemTransition)
+                                        itemTransition.elements.append(privRecordUID)
+                                        
+                                        let dirName = addValue(addString: "DICOMDIR", forTag: tagPath, withParent: itemTransition)
+                                        itemTransition.elements.append(dirName)
+                                        
+                                        let refSOPins = addValue(addString: "2.25.263396925751148424850033748771929175867", forTag: tagSOP, withParent: itemTransition)
+                                        itemTransition.elements.append(refSOPins)
+                                        
+                                        let refSOPclass = addValue(addString: "1.2.840.10008.1.3.10", forTag: tagSOPClass, withParent: itemTransition)
+                                        itemTransition.elements.append(refSOPclass)
+                                        
+                                        let refSyntax = addValue(addString: "ExplicitVRLittleEndian", forTag: tagRefSyntax, withParent: itemTransition)
+                                        itemTransition.elements.append(refSyntax)
+                                    }
                                 }
                             }
                         }
@@ -834,9 +861,9 @@ public class DicomDir:DicomFile {
     /**
         Add an integer value  to the Directory Record Sequence
      */
-    private func addValue(addInteger value:Int, forTag tag:DataTag, withParent parent:DataElement?) -> DataElement {
+    private func addValue(addInteger value:UInt32, forTag tag:DataTag, withParent parent:DataElement?) -> DataElement {
         let element = DataElement(withTag: tag, parent: parent)
-        _ = element.setValue(value)
+        _ = element.setValue(value.bigEndian)
         offset += element.toData().count
         return element
     }
