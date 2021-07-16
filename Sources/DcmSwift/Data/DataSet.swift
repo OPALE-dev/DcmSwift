@@ -179,10 +179,14 @@ public class DataSet: DicomObject {
     }
     
     
-    public func string(forTag tag:String ) -> String? {
+    public func string(forTag tag:String, trim: Bool = true) -> String? {
         for el in allElements {
             if el.name == tag {
-                return (el.value as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trim {
+                    return (el.value as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                } else {
+                    return el.value as? String
+                }
             }
         }
         return nil
