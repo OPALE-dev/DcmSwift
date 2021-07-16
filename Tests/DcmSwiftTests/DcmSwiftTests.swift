@@ -167,6 +167,15 @@ class DcmSwiftTests: XCTestCase {
             suite.addTest(DcmSwiftTests(selector: #selector(testGetDose)))
             suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImage)))
             suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImages)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetPatientItem)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetBeamItem)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetFractionGroupItem)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
+            // suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
+            // suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
+            // suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
+            // suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
+            // suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
         }
         
         return suite
@@ -1024,6 +1033,27 @@ class DcmSwiftTests: XCTestCase {
             XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "3"))
             XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "4"))
        
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    
+    // StructureSet
+    
+    public func testGetFrameOfReference() {
+        // rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010
+        
+        guard let path = Bundle.module.path(forResource: "rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010.dcm", ofType: "dcm") else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: path) {
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ReferencedFrameofReferenceSequence", withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.11"))
+            
+            // replaced 1 by 0 at the end
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.10"))
+            
         } else {
             Logger.error("no dicom file")
         }
