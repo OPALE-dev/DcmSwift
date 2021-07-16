@@ -171,11 +171,9 @@ class DcmSwiftTests: XCTestCase {
             suite.addTest(DcmSwiftTests(selector: #selector(testGetBeamItem)))
             suite.addTest(DcmSwiftTests(selector: #selector(testGetFractionGroupItem)))
             suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
-            // suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
-            // suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
-            // suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
-            // suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
-            // suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetFrameOfReference)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetObservation)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetObservationByROINumber)))
         }
         
         return suite
@@ -1049,10 +1047,48 @@ class DcmSwiftTests: XCTestCase {
         }
         
         if let dicomRT = DicomRT.init(forPath: path) {
-            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ReferencedFrameofReferenceSequence", withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.11"))
+            XCTAssertNotNil(StructureSet.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ReferencedFrameofReferenceSequence", withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.11"))
             
             // replaced 1 by 0 at the end
-            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.10"))
+            XCTAssertNil(StructureSet.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.10"))
+            
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetObservation() {
+        // rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010
+        
+        guard let path = Bundle.module.path(forResource: "rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010.dcm", ofType: "dcm") else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: path) {
+            XCTAssertNotNil(StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "1"))
+            XCTAssertNotNil(StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "2"))
+            XCTAssertNotNil(StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "3"))
+            
+            XCTAssertNil(StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "10"))
+            
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetObservationByROINumber() {
+        // rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010
+        
+        guard let path = Bundle.module.path(forResource: "rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010.dcm", ofType: "dcm") else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: path) {
+            XCTAssertNotNil(StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "1"))
+            XCTAssertNotNil(StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "2"))
+            XCTAssertNotNil(StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "3"))
+            
+            XCTAssertNil(StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "10"))
             
         } else {
             Logger.error("no dicom file")

@@ -14,6 +14,16 @@ let SSEQUENCE_WITH_NUMBER: [String: String] = ["ReferencedFrameofReferenceSequen
 
 /**
  Same class as Plan, provides helpers to get some item given a number/UID
+ Example below : find the item in SomeSequence, with Number2
+ ```
+ SomeSequence
+    - Item1
+        * SomeDataElement
+        * Number1
+    - Item2
+        * SomeDataElement
+        * Number2
+ ```
  */
 public class StructureSet {
     public static func getItemInSequenceForNumber(dicomRT: DicomRT, forSequence: String, withNumber: String) -> DataItem? {
