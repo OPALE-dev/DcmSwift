@@ -16,7 +16,7 @@ import NIO
  When the PDU length is reached it call `fireChannelRead()` method to pass to completed buffer to the
  next Channel Handler, here it is `DicomAssociation`.
  */
-public struct PDUMessageDecoder: ByteToMessageDecoder {
+public struct PDUBytesDecoder: ByteToMessageDecoder {
     public typealias InboundOut = ByteBuffer
     
     private var association:DicomAssociation!
@@ -64,7 +64,7 @@ public struct PDUMessageDecoder: ByteToMessageDecoder {
 
             data = d
         }
-
+        
         payload.writeBytes(pduType!)
         payload.writeBytes(deadByte!)
         payload.writeBytes(length!)
@@ -82,3 +82,4 @@ public struct PDUMessageDecoder: ByteToMessageDecoder {
         return .continue
     }
 }
+

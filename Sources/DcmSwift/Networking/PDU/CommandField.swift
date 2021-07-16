@@ -10,6 +10,7 @@ import Foundation
 
 
 public enum CommandField: UInt16 {
+    case NONE                   = 0x0000
     case C_STORE_RQ             = 0x0001
     case C_STORE_RSP            = 0x8001
     case C_GET_RQ               = 0x0010
@@ -37,6 +38,8 @@ public enum CommandField: UInt16 {
     var inverse:CommandField {
         get {
             switch self {
+            case .NONE:
+                return .NONE
             case .C_STORE_RQ:
                 return .C_STORE_RSP
             case .C_STORE_RSP:

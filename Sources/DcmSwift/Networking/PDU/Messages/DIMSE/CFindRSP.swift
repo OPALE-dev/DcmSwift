@@ -26,7 +26,7 @@ public class CFindRSP: DataTF {
     
     
     public override func messageInfos() -> String {
-        return dimseStatus.status.rawValue.description
+        return "\(dimseStatus.status)"
     }
     
     

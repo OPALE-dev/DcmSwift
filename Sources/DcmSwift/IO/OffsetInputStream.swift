@@ -15,6 +15,12 @@ public class OffsetInputStream {
     internal var offset = 0
     internal var total  = 0
     
+    public var hasReadableBytes:Bool {
+        get {
+            return offset < total
+        }
+    }
+    
     /**
      Init a DicomInputStream with a file path
      */
