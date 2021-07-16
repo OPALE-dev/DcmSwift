@@ -22,21 +22,26 @@ public class DicomDir:DicomFile {
     
     public var index:[String] = []
     
-    // PatientID:PatientName
     public var patients:[String:String] = [:]
     public var patientsKeys:[String] = []
     
-    // StudyInstanceUID:[PatientID,StudyDate,StudyTime,AccessionNumber,StudyDescription]
     public var studies:[String:[String:Any]] = [:]
     public var studiesKeys:[String] = []
     
-    // SeriesInstanceUID:[StudyInstanceUID,SeriesNumber]
     public var series:[String:[String:String]] = [:]
     public var seriesKeys:[String] = []
     
-    // ReferencedSOPInstanceUIDInFile:[SeriesInstanceUID,filepath,DateImage,TimeImage]
     public var images:[String:[String:Any]] = [:]
     public var imagesKeys:[String] = []
+    
+    public var offsetsNextPatients:[Int]    = []
+    public var offsetsNextSeries:[Int]      = []
+    public var offsetsNextStudies:[Int]     = []
+    public var offsetsNextImages:[Int]      = []
+    
+    public var offsetsLowerPatients:[Int]    = []
+    public var offsetsLowerSeries:[Int]      = []
+    public var offsetsLowerStudies:[Int]     = []
     
     // MARK: Methods
     
@@ -624,6 +629,8 @@ public class DicomDir:DicomFile {
                 offsetLast = offset
             }
             
+            offsetsNextPatients.append(offset)
+            
             offset += item.toData().count
             
             sequence.items.append(item)
@@ -657,6 +664,12 @@ public class DicomDir:DicomFile {
                 if let studyDictionary = studies[studyID] {
                     
                     if(patientID == (studyDictionary["PatientID"]) as? String) {
+                        
+                        if(studyID != studiesKeys.first) {
+                            offsetsNextStudies.append(offset)
+                        } else {
+                            offsetsNextStudies.append(0)
+                        }
                         
                         let item = DataItem(withTag: tagItem, parent: sequence)
                         sequence.items.append(item)
@@ -709,7 +722,7 @@ public class DicomDir:DicomFile {
                             item.elements.append(accessionNumber)
                         }
                         
-                        if let description = studyDictionary["AccessionNumber"] {
+                        if let description = studyDictionary["StudyDescription"] {
                             let studyDescri = addValue(addString: "\(description)", forTag: tagstDescription, withParent: item)
                             item.elements.append(studyDescri)
                         }
@@ -727,6 +740,8 @@ public class DicomDir:DicomFile {
                             if let serieDictionary = series[serieID] {
                                 
                                 if(studyID == serieDictionary["StudyInstanceUID"]) {
+                                    
+                                    offsetsNextSeries.append(offset)
                                     
                                     let serieNumber:String = serieDictionary["SeriesNumber"] ?? ""
                                     let item = DataItem(withTag: tagItem, parent: sequence)
@@ -759,6 +774,8 @@ public class DicomDir:DicomFile {
                                             
                                             if let serieUIDInImg = imagesDictionary["SeriesInstanceUID"] {
                                                 if("\(serieUIDInImg)" == serieID) {
+                                                    offsetsNextImages.append(offset)
+                                                    
                                                     let item = DataItem(withTag: tagItem, parent: sequence)
                                                     sequence.items.append(item)
                                                     
@@ -769,7 +786,7 @@ public class DicomDir:DicomFile {
                                                     offset += recordInUseFlag.toData().count
                                                     
                                                     let imageOffsetLower = addValue(addInteger: 0, forTag: tagLowerRecord, withParent: item)
-                                                    item.elements.append(imageOffsetLower)
+                                                    item.elements.append(imageOffsetLower) // on laisse 0 :-)
                                                     
                                                     let imageType = addValue(addString: "IMAGE", forTag: tagType, withParent: item)
                                                     item.elements.append(imageType)
@@ -801,9 +818,8 @@ public class DicomDir:DicomFile {
                                         }
                                     }
                                     
-                                    cptPatients += 1
                                     
-                                    if(cptPatients < patients.count) {
+                                    if(cptPatients < patients.count-1) {
                                         let itemTransition = DataItem(withTag: tagItem, parent: sequence)
                                         sequence.items.append(itemTransition)
                                         
@@ -825,13 +841,13 @@ public class DicomDir:DicomFile {
                                         let dirName = addValue(addString: "DICOMDIR", forTag: tagPath, withParent: itemTransition)
                                         itemTransition.elements.append(dirName)
                                         
-                                        let refSOPins = addValue(addString: "2.25.263396925751148424850033748771929175867", forTag: tagSOP, withParent: itemTransition)
-                                        itemTransition.elements.append(refSOPins)
-                                        
                                         let refSOPclass = addValue(addString: "1.2.840.10008.1.3.10", forTag: tagSOPClass, withParent: itemTransition)
                                         itemTransition.elements.append(refSOPclass)
                                         
-                                        let refSyntax = addValue(addString: "ExplicitVRLittleEndian", forTag: tagRefSyntax, withParent: itemTransition)
+                                        let refSOPins = addValue(addString: "2.25.263396925751148424850033748771929175867", forTag: tagSOP, withParent: itemTransition)
+                                        itemTransition.elements.append(refSOPins)
+                                        
+                                        let refSyntax = addValue(addString: TransferSyntax.explicitVRLittleEndian, forTag: tagRefSyntax, withParent: itemTransition)
                                         itemTransition.elements.append(refSyntax)
                                     }
                                 }
@@ -841,10 +857,61 @@ public class DicomDir:DicomFile {
                 }
             }
             cpt += 1
+            if cptPatients < patients.count-1 {
+                offsetsLowerPatients.insert(offset, at: cptPatients)
+            } else {
+                offsetsLowerPatients.append(0)
+            }
+            cptPatients += 1
         }
-        print("offsetFirst \(offsetFirst)")
-        print("offsetLast \(offsetLast)")
         
+        return sequence
+    }
+    
+    /**
+        Input : the directory record sequence fully written but with wrong offsets for each item
+        Output : the directory record sequence but with the rights offsets !
+     */
+    public func addOffsets(ForSequence sequence: DataSequence?) -> DataSequence? {
+        print(offsetsNextPatients)
+        print(offsetsNextStudies)
+        print(offsetsNextSeries)
+        print(offsetsNextImages)
+        
+        print(offsetsLowerPatients)
+        print(offsetsLowerStudies)
+        print(offsetsLowerSeries)
+        
+        let tagNextRecord = DataTag.init(withGroup: "0004", element: "1400", byteOrder: .LittleEndian)
+        let tagLowerRecord = DataTag.init(withGroup: "0004", element: "1420", byteOrder: .LittleEndian)
+        let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
+        
+        if let s = sequence {
+            for item in s.items {
+                for element in item.elements {
+                    if "\(element.tag)" != "\(tagItem)" {
+                        for i:Int in 0 ..< patientsKeys.count {
+                            let _ = addValue(addString: "\(offsetsNextPatients[i])", forTag: tagNextRecord, withParent: item)
+                            let _ = addValue(addString: "\(offsetsLowerPatients[i])", forTag: tagLowerRecord, withParent: item)
+                            
+                            for j:Int in 0 ..< studiesKeys.count {
+                                let _ = addValue(addString: "\(offsetsNextStudies[j])", forTag: tagNextRecord, withParent: item)
+                                let _ = addValue(addString: "\(offsetsLowerStudies[j])", forTag: tagLowerRecord, withParent: item)
+                                
+                                for k:Int in 0 ..< seriesKeys.count {
+                                    let _ = addValue(addString: "\(offsetsNextSeries[k])", forTag: tagNextRecord, withParent: item)
+                                   let _ = addValue(addString: "\(offsetsLowerSeries[k])", forTag: tagLowerRecord, withParent: item)
+                                    
+                                    for l:Int in 0 ..< imagesKeys.count {
+                                        let _ = addValue(addString: "\(offsetsNextStudies[l])", forTag: tagNextRecord, withParent: item)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return sequence
     }
 
@@ -877,7 +944,7 @@ public class DicomDir:DicomFile {
         
         // Write the Prefix Header
         _ = dataset.set(value: UInt32(0).bigEndian, forTagName: "FileMetaInformationGroupLength")
-        _ = dataset.set(value: Data(repeating: 0x00, count: 2), forTagName: "FileMetaInformationVersion") // WRONG DATA
+        _ = dataset.set(value: Data(repeating: 0x00, count: 2), forTagName: "FileMetaInformationVersion")
         _ = dataset.set(value: "1.2.840.10008.1.3.10", forTagName: "MediaStorageSOPClassUID")
         _ = dataset.set(value: "2.25.263396925751148424850033748771929175867", forTagName: "MediaStorageSOPInstanceUID")
         _ = dataset.set(value: "1.2.840.10008.1.2.1", forTagName: "TransferSyntaxUID")
@@ -904,11 +971,14 @@ public class DicomDir:DicomFile {
                 
         // Write the DirectoryRecordSequence
         if let c:DataSequence = createDirectoryRecordSequence() {
-            c.length = -1
-            for item in c.items {
-                item.length = -1
+            
+            if let d:DataSequence = addOffsets(ForSequence: c) {
+                for item in d.items {
+                    item.length = -1
+                }
+                d.length = -1
+                dataset.add(element: d as DataElement)
             }
-            dataset.add(element: c as DataElement)
         }
         
         _ = dataset.set(value: UInt32(offsetFirst).bigEndian, forTagName:  "OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity") // offsetFirst
