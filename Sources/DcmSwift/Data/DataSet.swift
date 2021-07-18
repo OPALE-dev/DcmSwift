@@ -212,10 +212,14 @@ public class DataSet: DicomObject {
     }
     
     
-    public func string(forTag tag:String ) -> String? {
+    public func string(forTag tag:String, trim: Bool = true) -> String? {
         for el in allElements {
             if el.name == tag {
-                return (el.value as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trim {
+                    return (el.value as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                } else {
+                    return el.value as? String
+                }
             }
         }
         return nil
@@ -308,10 +312,9 @@ public class DataSet: DicomObject {
         if let element = element(forTagName: name) {
             return set(value: value, toElement: element) ? element : nil
         }
-        
+                
         // element does not already exist in dataset
         if let element = DataElement(withTagName: name, dataset: self) {
-
             if element.setValue(value) {
                 allElements.append(element)
                 
@@ -415,6 +418,7 @@ public class DataSet: DicomObject {
         // write file to FS
         return FileManager.default.createFile(atPath: path, contents: data, attributes: nil)
     }
+    
 }
 
 // MARK: - Private DataSet methods
