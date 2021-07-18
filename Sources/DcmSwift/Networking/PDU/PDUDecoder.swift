@@ -111,11 +111,18 @@ extension PDUDecoder {
     
     private func receiveDIMSEMessage(data:Data, pduType:PDUType, association:DicomAssociation) -> PDUDecodable? {
         // use DataTF class to lazy decode commandField before dispatching to DIMSE subclasses
-        guard let dataTF = DataTF(data: data, pduType: pduType, association: association),
-              let commandField = dataTF.commandField else {
+        guard let dataTF = DataTF(data: data, pduType: pduType, association: association) else {
             return nil
         }
+    
+        if dataTF.commandField == nil  {
+            return dataTF
+        }
             
-        return receiveDIMSEMessage(data: data, pduType: pduType, commandField: commandField, association: association)
+        return receiveDIMSEMessage(
+            data: data,
+            pduType: pduType,
+            commandField: dataTF.commandField!,
+            association: association)
     }
 }

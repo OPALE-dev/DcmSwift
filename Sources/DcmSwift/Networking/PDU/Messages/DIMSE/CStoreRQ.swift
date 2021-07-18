@@ -8,6 +8,10 @@
 
 import Foundation
 
+public protocol CStoreRQDelegate {
+    func receive(message: CStoreRQ)
+}
+
 /**
  The `CStoreRQ` class represents a C-STORE-RQ message of the DICOM standard.
  
@@ -107,7 +111,7 @@ public class CStoreRQ: DataTF {
     public override func decodeData(data: Data) -> DIMSEStatus.Status {
         let status = super.decodeData(data: data)
         
-        print(data.toHex())
+        
         
         return status
     }
