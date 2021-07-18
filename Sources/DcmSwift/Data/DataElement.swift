@@ -45,6 +45,10 @@ public class DataElement : DicomObject {
     init(withTag tag:DataTag, parent:DataElement? = nil) {
         self.tag = tag
         
+        if let vr = DicomSpec.shared.vrForTag(withCode: tag.code) {
+            self.vr  = vr
+        }
+        
         if let p = parent {
             self.parent = p
         }
@@ -80,13 +84,19 @@ public class DataElement : DicomObject {
     public func setValue(_ val:Any) -> Bool {
         var ret = false
         
-        if  self.vr == .AT ||
-            self.vr == .OB ||
-            self.vr == .OW {
+        if  self.vr == .AT {
             // currently not implemented
             return ret
         }
-        
+        else if self.vr == .OB ||
+                self.vr == .OW {
+                if let d = val as? Data {
+                    self.data = d
+
+                    return true
+                }
+        }
+                
         if self.isMultiple {
             if let string = val as? String {
                 self.data       = string.data(using: .utf8)
@@ -129,7 +139,7 @@ public class DataElement : DicomObject {
                 ret = true
             }
             else {
-                print("not supported yet")
+                //print("not supported yet")
             }
             
         }
