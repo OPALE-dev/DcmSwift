@@ -20,7 +20,7 @@ struct DcmPrint: ParsableCommand {
                 Logger.info(dataset.description)
             }
         }
-    }CONFLICT (modify/delete): .swiftpm/xcode/xcshareddata/xcschemes/DcmFind.xcscheme deleted in origin/dicomdir_cb and modified in HEAD. Version HEAD of .swiftpm/xcode/xcshareddata/xcschemes/DcmFind.xcscheme left in tree.
+    }
 }
 
 DcmPrint.main()

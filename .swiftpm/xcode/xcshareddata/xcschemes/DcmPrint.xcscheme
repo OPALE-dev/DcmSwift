@@ -76,7 +76,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "/Users/nark/Downloads/DOSE.20110509.1010_Irregular.dcm"
+            argument = "/Users/paul/Downloads/RTXPLAN.20110509.1010_Irregular.dcm"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

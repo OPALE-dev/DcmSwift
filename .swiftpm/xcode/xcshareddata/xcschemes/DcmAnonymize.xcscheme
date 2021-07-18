@@ -77,10 +77,10 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "/Users/nark/Development/Opale/Swift/DcmSwift/Tests/DcmSwiftTests/Resources/MR_ImplicitVRLittleEndian_MULTI_MONOCHROME2_Philips_RTNC1_33.dcm"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/Users/nark/Desktop/MR_ImplicitVRLittleEndian_MULTI_MONOCHROME2_Philips_RTNC1_33_ANONYMIZED.dcm"
+            argument = "/Users/paul/Downloads/RTXPLAN.20110509.1010_Irregular.dcm"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
