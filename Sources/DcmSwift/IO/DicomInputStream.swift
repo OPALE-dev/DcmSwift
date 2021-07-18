@@ -165,7 +165,6 @@ public class DicomInputStream: OffsetInputStream {
 
 
     
-    
     // MARK: -
     private func readDataTag(order:ByteOrder = .LittleEndian) -> DataTag? {
         return DataTag(withStream: self, byteOrder:order)

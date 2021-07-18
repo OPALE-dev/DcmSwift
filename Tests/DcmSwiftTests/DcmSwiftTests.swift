@@ -36,6 +36,10 @@ class DcmSwiftTests: XCTestCase {
     
     /// Run tests to read image(s) (rely on embedded test files, dynamically generated)
     private static var testDicomImage           = false
+
+    /// Run DicomRT helpers tests
+    private static var testRT                   = true
+
     
     internal var filePath:String!
     private var finderTestDir:String = ""
@@ -135,6 +139,24 @@ class DcmSwiftTests: XCTestCase {
                 
                 DcmSwiftTests.addFileTest(withName: "DicomImage", inSuite: suite, withPath:path, block: block)
             }
+        }
+        
+        if testRT {
+            suite.addTest(DcmSwiftTests(selector: #selector(testIsValid)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImageWidth)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImageHeight)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testToPNG)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetUnscaledDose)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetDose)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImage)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImages)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetPatientItem)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetBeamItem)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetFractionGroupItem)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetFrameOfReference)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetObservation)))
+            suite.addTest(DcmSwiftTests(selector: #selector(testGetObservationByROINumber)))
         }
         
         return suite
@@ -641,5 +663,311 @@ class DcmSwiftTests: XCTestCase {
         let output: String = String(data: data, encoding: String.Encoding.utf8)!
         
         return output
+    }
+    
+    
+    // Poulpy
+    
+    // RTDose tests
+    
+    public func testIsValid() {
+
+        // TODO get files under RT folder, doesn't work atm; workaround, use filter to get "rt_" files
+        var paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
+        paths = paths.filter { $0.contains("rt_") }
+        
+        paths.forEach { path in
+            if let dicomRT = DicomRT.init(forPath: path) {
+                _ = Dose.isValid(dicomRT: dicomRT)
+            }
+        }
+        
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertTrue(Dose.isValid(dicomRT: dicomRT))
+        }
+        
+        let path2 = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular", ofType: "dcm")
+        guard let p2 = path2 else {
+            return
+        }
+        
+        if let dicomRT2 = DicomRT.init(forPath: p2) {
+            XCTAssertFalse(Dose.isValid(dicomRT: dicomRT2))
+        }
+    }
+    
+    public func testGetDoseImageWidth() {
+        
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertEqual(Dose.getDoseImageWidth(dicomRT: dicomRT), 10)
+        }
+    }
+    
+    public func testGetDoseImageHeight() {
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertEqual(Dose.getDoseImageHeight(dicomRT: dicomRT), 10)
+        }
+    }
+    
+    public func testToPNG() {
+        // finderTestDir
+        
+        var paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
+        paths = paths.filter { $0.contains("rt_") }
+        
+        paths.forEach { path in
+            if let dcmFile = DicomFile(forPath: path) {
+                if let dcmImage = DicomImage(dcmFile.dataset) {
+                    dcmImage.toPNG(path: finderTestDir, baseName: dcmFile.fileName())
+                }
+            }
+            
+        }
+        
+        /*
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        if let p = path {
+            
+            if let dcmFile = DicomFile(forPath: p) {
+                if let dcmImage = DicomImage(dcmFile.dataset) {
+                    dcmImage.toPNG(path: finderTestDir, baseName: dcmFile.fileName())
+                }
+            }
+        }
+         */
+    }
+    
+    public func testGetUnscaledDose() {
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            // 0
+            let unscaledDose = Dose.unscaledDose(dicomRT: dicomRT, row: 1, column: 1, frame: 1)
+            XCTAssertNotNil(unscaledDose)
+            if let dose = unscaledDose {
+                XCTAssertTrue(dose is UInt32)
+                XCTAssertEqual(dose as! UInt32, 0)
+            }
+            
+            // 137984544
+            let unscaledDose2 = Dose.unscaledDose(dicomRT: dicomRT, row: 5, column: 4, frame: 2)
+            XCTAssertNotNil(unscaledDose2)
+            if let dose = unscaledDose2 {
+                XCTAssertTrue(dose is UInt32)
+                XCTAssertEqual(dose as! UInt32, 137984544)
+            }
+        }
+    }
+    
+    public func testGetDose() {
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            // 0
+            let dose = Dose.getDose(dicomRT: dicomRT, row: 1, column: 1, frame: 1)
+            XCTAssertNotNil(dose)
+            XCTAssertEqual(dose!, 0)
+
+            
+            let dose2 = Dose.getDose(dicomRT: dicomRT, row: 5, column: 4, frame: 2)
+            XCTAssertNotNil(dose2)
+            XCTAssertEqual(dose2!, 1.4865626863296)
+            
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetDoseImage() {
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            let r = Dose.getDoseImage(dicomRT: dicomRT, atFrame: 1)
+            
+            XCTAssert(!r.isEmpty)
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetDoseImages() {
+        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            let r = Dose.getDoseImages(dicomRT: dicomRT)
+            
+            XCTAssert(!r.isEmpty)
+       
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    // test Plan
+    
+    public func testGetToleranceTableItem() {
+        // rt_RTXPLAN.20110509.1010_Irregular.dcm
+        
+        let path = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular.dcm", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "1"))
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "2"))
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "3"))
+            
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "4"))
+       
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetFractionGroupItem() {
+        // rt_RTXPLAN.20110509.1010_Irregular.dcm
+        
+        let path = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular.dcm", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "FractionGroupSequence", withNumber: "1"))
+            
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "FractionGroupSequence", withNumber: "2"))
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "FractionGroupSequence", withNumber: "3"))
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "FractionGroupSequence", withNumber: "4"))
+       
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetBeamItem() {
+        // rt_RTXPLAN.20110509.1010_Irregular.dcm
+        
+        let path = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular.dcm", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "BeamSequence", withNumber: "1"))
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "BeamSequence", withNumber: "2"))
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "BeamSequence", withNumber: "3"))
+            
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "BeamSequence", withNumber: "4"))
+       
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetPatientItem() {
+        // rt_RTXPLAN.20110509.1010_Irregular.dcm
+        
+        let path = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular.dcm", ofType: "dcm")
+        guard let p = path else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: p) {
+            XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "1"))
+            
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "2"))
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "3"))
+            XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "4"))
+       
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    
+    // StructureSet
+    
+    public func testGetFrameOfReference() {
+        // rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010
+        
+        guard let path = Bundle.module.path(forResource: "rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010.dcm", ofType: "dcm") else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: path) {
+            XCTAssertNotNil(StructureSet.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ReferencedFrameofReferenceSequence", withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.11"))
+            
+            // replaced 1 by 0 at the end
+            XCTAssertNil(StructureSet.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.10"))
+            
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetObservation() {
+        // rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010
+        
+        guard let path = Bundle.module.path(forResource: "rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010.dcm", ofType: "dcm") else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: path) {
+            XCTAssertNotNil(StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "1"))
+            XCTAssertNotNil(StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "2"))
+            XCTAssertNotNil(StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "3"))
+            
+            XCTAssertNil(StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "10"))
+            
+        } else {
+            Logger.error("no dicom file")
+        }
+    }
+    
+    public func testGetObservationByROINumber() {
+        // rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010
+        
+        guard let path = Bundle.module.path(forResource: "rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010.dcm", ofType: "dcm") else {
+            return
+        }
+        
+        if let dicomRT = DicomRT.init(forPath: path) {
+            XCTAssertNotNil(StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "1"))
+            XCTAssertNotNil(StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "2"))
+            XCTAssertNotNil(StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "3"))
+            
+            XCTAssertNil(StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "10"))
+            
+        } else {
+            Logger.error("no dicom file")
+        }
     }
 }
