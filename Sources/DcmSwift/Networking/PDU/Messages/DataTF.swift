@@ -22,9 +22,7 @@ import Foundation
  
  http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#table_9-22
  */
-public class DataTF: PDUMessage {
-    var completed:Bool = false
-    
+public class DataTF: PDUMessage {    
     public override func messageName() -> String {
         return "DATA-TF"
     }
@@ -56,6 +54,7 @@ public class DataTF: PDUMessage {
         
         self.flags = UInt8(flags)
                 
+        // command fragment
         if self.flags == 0x3 {
             // read dataset data
             guard let commandData = stream.read(length: Int(pdvLength) - 2) else {
@@ -78,7 +77,6 @@ public class DataTF: PDUMessage {
                 return .Refused
             }
 
-            // we create a response (PDUMessage of DIMSE family) based on received CommandField value using PDUDecoder
             let c = command.data.toUInt16(byteOrder: .LittleEndian)
 
             guard let commandField = CommandField(rawValue: c) else {
@@ -104,7 +102,27 @@ public class DataTF: PDUMessage {
             }
         }
         else if self.flags == 0x2 {
+            // last fragment
+            self.dimseStatus = DIMSEStatus(status: .Success, command: .NONE)
+            
+            // read data left
+            guard let data = stream.read(length: Int(pdvLength) - 2) else {
+                Logger.error("Cannot read data")
+                return .Refused
+            }
+            
+            receivedData = data
+        }
+        else if self.flags == 0x0 {
+            // more data fragment coming
             self.dimseStatus = DIMSEStatus(status: .Pending, command: .NONE)
+            
+            guard let data = stream.read(length: Int(pdvLength) - 2) else {
+                Logger.error("Cannot read data")
+                return .Refused
+            }
+            
+            receivedData = data
         }
         
         return .Success

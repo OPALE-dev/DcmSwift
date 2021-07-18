@@ -52,7 +52,7 @@ public class CStoreRSP: DataTF {
     public override func decodeData(data: Data) -> DIMSEStatus.Status {
         let status = super.decodeData(data: data)
         
-        print(data.toHex())
+        //print(data.toHex())
         
         return status
     }

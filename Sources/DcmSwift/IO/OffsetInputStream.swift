@@ -21,6 +21,12 @@ public class OffsetInputStream {
         }
     }
     
+    public var readableBytes:Int {
+        get {
+            return total - offset
+        }
+    }
+    
     /**
      Init a DicomInputStream with a file path
      */

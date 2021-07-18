@@ -96,6 +96,9 @@ public class DicomAssociation : ChannelInboundHandler {
         case Reserved8                          = 0x8
     }
     
+    
+    
+    
 
     
     private static var lastContextID:UInt8 = 1
@@ -118,6 +121,8 @@ public class DicomAssociation : ChannelInboundHandler {
     public var remoteMaxPDULength:Int = 0
     public var remoteImplementationUID:String?
     public var remoteImplementationVersion:String?
+    
+    public var cStoreRQDelegate:CStoreRQDelegate?
     
     private var channel:Channel!
     private var connectedAssociations = [ObjectIdentifier: DicomAssociation]()
@@ -202,6 +207,8 @@ public class DicomAssociation : ChannelInboundHandler {
         }
         
         let readData = Data(bytes)
+        
+        //print(readData.toHex())
                         
         guard let f = readData.first, PDUType.isSupported(f) else {
             handleError(description: "Unsupported PDU Type (channelRead)", message: nil, closeAssoc: true)
@@ -226,8 +233,33 @@ public class DicomAssociation : ChannelInboundHandler {
                     data: readData,
                     pduType: pt,
                     association: self
-                ) as? PDUMessage {                    
-                    handleDIMSE(message: message)
+                ) as? PDUMessage {
+                    // if request message
+                    if  message.commandField == .C_FIND_RQ ||
+                        message.commandField == .C_STORE_RQ {
+                        currentDIMSEMessage = message
+                    }
+                    
+                    if message.pduType == .dataTF {
+                        if let dataTF = message as? DataTF {
+                            if let cdm = currentDIMSEMessage {
+                                cdm.receivedData.append(dataTF.receivedData)
+                                                                    
+                                if dataTF.dimseStatus != nil && dataTF.dimseStatus.status == .Success {
+                                    handleDIMSE(message: cdm)
+                                    
+                                    // calling delegates
+                                    if let cStoreRQ = currentDIMSEMessage as? CStoreRQ {
+                                        if let d = cStoreRQDelegate {
+                                            d.receive(message: cStoreRQ)
+                                        }
+                                    }
+                                    
+                                    currentDIMSEMessage = nil
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -561,7 +593,7 @@ private extension DicomAssociation {
         log(message: message, write: false)
         
         if origin == .Remote {
-            // generate and send request
+            // generate and send response
             if let response = message.handleRequest() {
                 write(message: response)
             }
@@ -570,7 +602,6 @@ private extension DicomAssociation {
             if  message.dimseStatus.status != .Success &&
                 message.dimseStatus.status != .Pending {
                 currentDIMSEMessage     = nil
-                
                 currentPDUCompletion    = nil
                 currentAbortCompletion  = nil
                 currentCloseCompletion  = nil
@@ -587,10 +618,10 @@ private extension DicomAssociation {
             
             if message.dimseStatus.status == .Success {
                 // no more response to handle
-                currentDIMSEMessage = nil
-                currentPDUCompletion = nil
-                currentAbortCompletion = nil
-                currentCloseCompletion = nil
+                currentDIMSEMessage     = nil
+                currentPDUCompletion    = nil
+                currentAbortCompletion  = nil
+                currentCloseCompletion  = nil
             }
         }
     }
