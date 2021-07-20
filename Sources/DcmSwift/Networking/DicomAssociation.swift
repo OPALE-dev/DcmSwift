@@ -33,7 +33,7 @@ public typealias CloseCompletion = (_ association:DicomAssociation?) -> Void
  is the best candidate to implement the `ChannelInboundHandler` protocol.
  */
 public class DicomAssociation : ChannelInboundHandler {
-    public typealias InboundIn = ByteBuffer
+    public typealias InboundIn = PDUMessage
     public typealias OutboundOut = ByteBuffer
     
     public enum Origin {
@@ -198,86 +198,66 @@ public class DicomAssociation : ChannelInboundHandler {
      Called to read a new received message on the channel
      */
     public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-        var buffer          = self.unwrapInboundIn(data)
-        let messageLength   = buffer.readableBytes
-        
-        guard let bytes = buffer.readBytes(length: messageLength) else {
-            handleError(description: "Cannot read bytes", message: nil, closeAssoc: true)
-            return
-        }
-        
-        let readData = Data(bytes)
-        
-        //print(readData.toHex())
-                        
-        guard let f = readData.first, PDUType.isSupported(f) else {
-            handleError(description: "Unsupported PDU Type (channelRead)", message: nil, closeAssoc: true)
-            return
-        }
-        
-        guard let pt = PDUType(rawValue: f) else {
-            handleError(description: "Cannot read PDU Type", message: nil, closeAssoc: true)
-            return
-        }
+        var message = self.unwrapInboundIn(data)
+        //let messageLength   = buffer.readableBytes
                 
+//        guard let bytes = buffer.readBytes(length: messageLength) else {
+//            handleError(description: "Cannot read bytes", message: nil, closeAssoc: true)
+//            return
+//        }
+//
+//        let readData = Data(bytes)
+//
+//        //print(readData.toHex())
+//
+//        guard let f = readData.first, PDUType.isSupported(f) else {
+//            handleError(description: "Unsupported PDU Type (channelRead)", message: nil, closeAssoc: true)
+//            return
+//        }
+//
+//        guard let pt = PDUType(rawValue: f) else {
+//            handleError(description: "Cannot read PDU Type", message: nil, closeAssoc: true)
+//            return
+//        }
+//
         // we received an DIMSE message
-        if pt.rawValue == PDUType.dataTF.rawValue {
+        if message.pduType == .dataTF {
             if origin == .Local {
                 // handle message received from remote
-                if let message = currentDIMSEMessage?.handleResponse(data: readData) {
-                    handleDIMSE(message: message)
-                }
+                handleDIMSE(message: message)
             } else if origin == .Remote {
                 // handle message received as remote
-                if let message = PDUDecoder.receiveDIMSEMessage(
-                    data: readData,
-                    pduType: pt,
-                    association: self
-                ) as? PDUMessage {
-                    // if request message
-                    if  message.commandField == .C_FIND_RQ ||
-                        message.commandField == .C_STORE_RQ {
-                        currentDIMSEMessage = message
-                    }
-                    
-                    if message.pduType == .dataTF {
-                        if let dataTF = message as? DataTF {
-                            if let cdm = currentDIMSEMessage {
-                                cdm.receivedData.append(dataTF.receivedData)
-                                                                    
-                                if dataTF.dimseStatus != nil && dataTF.dimseStatus.status == .Success {
-                                    handleDIMSE(message: cdm)
-                                    
-                                    // calling delegates
-                                    if let cStoreRQ = currentDIMSEMessage as? CStoreRQ {
-                                        if let d = cStoreRQDelegate {
-                                            d.receive(message: cStoreRQ)
-                                        }
-                                    }
-                                    
-                                    currentDIMSEMessage = nil
+                // if request message
+                if  message.commandField == .C_FIND_RQ ||
+                    message.commandField == .C_STORE_RQ {
+                    currentDIMSEMessage = message
+                }
+
+                if let dataTF = message as? DataTF {
+                    if let cdm = currentDIMSEMessage {
+                        cdm.receivedData.append(dataTF.receivedData)
+
+                        if dataTF.dimseStatus != nil && dataTF.dimseStatus.status == .Success {
+                            handleDIMSE(message: cdm)
+
+                            // calling delegates
+                            if let cStoreRQ = currentDIMSEMessage as? CStoreRQ {
+                                if let d = cStoreRQDelegate {
+                                    d.receive(message: cStoreRQ)
                                 }
                             }
+
+                            currentDIMSEMessage = nil
                         }
                     }
                 }
             }
         }
         else {
-        // we received an association message
-            guard let message = PDUDecoder.receiveAssocMessage(
-                    data: readData,
-                    pduType: pt,
-                    association: self
-            ) as? PDUMessage else {
-                currentAbortCompletion?(nil, DicomError(description: "Cannot decode \(pt) message", level: .error))
-                return
-            }
-            
             if let transferSyntax = self.acceptedPresentationContexts.values.first?.transferSyntaxes.first {
                 self.acceptedTransferSyntax = transferSyntax
             }
-                
+
             handleAssociation(message: message)
         }
     }

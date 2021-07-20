@@ -23,6 +23,7 @@ import Foundation
  http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#table_9-22
  */
 public class DataTF: PDUMessage {    
+    
     public override func messageName() -> String {
         return "DATA-TF"
     }
@@ -110,6 +111,8 @@ public class DataTF: PDUMessage {
                 Logger.error("Cannot read data")
                 return .Refused
             }
+            
+            print("data \(data)")
             
             receivedData = data
         }

@@ -38,6 +38,7 @@ public class PDUMessage:
     public var commandDataset:DataSet!
     public var requestMessage:PDUMessage?
     public var responseDataset:DataSet!
+    public var resultsDataset:DataSet?
     public var receivedData:Data = Data()
     public var messageID = UInt16(1).bigEndian
     public var stream:OffsetInputStream!

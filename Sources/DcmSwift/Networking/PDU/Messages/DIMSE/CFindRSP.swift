@@ -17,9 +17,6 @@ import Foundation
  http://dicom.nema.org/medical/dicom/current/output/chtml/part07/sect_9.3.2.2.html
  */
 public class CFindRSP: DataTF {
-    public var studiesDataset:DataSet?
-    
-    
     public override func messageName() -> String {
         return "C-FIND-RSP"
     }
@@ -42,6 +39,8 @@ public class CFindRSP: DataTF {
         }
         
         let transferSyntax = TransferSyntax(ts!)
+        
+        print("commandDataSetType \(commandDataSetType)")
              
         // if the PDU message as been segmented
         if commandDataSetType == nil {
@@ -58,7 +57,7 @@ public class CFindRSP: DataTF {
             
             if commandField == .C_FIND_RSP {
                 if let resultDataset = try? dis.readDataset(enforceVR: false) {
-                    studiesDataset = resultDataset
+                    resultsDataset = resultDataset
                 }
             }
             
@@ -86,7 +85,7 @@ public class CFindRSP: DataTF {
             
             if commandField == .C_FIND_RSP {
                 if let resultDataset = try? dis.readDataset() {
-                    studiesDataset = resultDataset
+                    resultsDataset = resultDataset
                 }
             }
         }
