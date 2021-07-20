@@ -118,7 +118,7 @@ public class CFindRQ: DataTF {
                     association: self.association
                 ) as? CFindRSP {
                     // fill result with dataset from each DATA-TF message
-                    if let studiesDataset = message.studiesDataset {
+                    if let studiesDataset = message.resultsDataset {
                         self.queryResults.append(studiesDataset.toJSONArray())
                     }
                     

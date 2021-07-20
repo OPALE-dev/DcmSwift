@@ -47,6 +47,7 @@ public class DicomClient : DicomService, StreamDelegate {
     ) {
         bootstrap  = ClientBootstrap(group: group)
             .channelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
+            .channelOption(ChannelOptions.autoRead, value: true)
         
         do {
             channel = try bootstrap.connect(host: self.remoteEntity.hostname, port: self.remoteEntity.port).wait()
