@@ -17,6 +17,9 @@ import Foundation
  http://dicom.nema.org/medical/dicom/current/output/chtml/part07/sect_9.3.2.2.html
  */
 public class CFindRSP: DataTF {
+    public var studiesDataset:DataSet?
+    
+    
     public override func messageName() -> String {
         return "C-FIND-RSP"
     }
@@ -57,7 +60,7 @@ public class CFindRSP: DataTF {
             
             if commandField == .C_FIND_RSP {
                 if let resultDataset = try? dis.readDataset(enforceVR: false) {
-                    resultsDataset = resultDataset
+                    studiesDataset = resultDataset
                 }
             }
             
@@ -85,7 +88,7 @@ public class CFindRSP: DataTF {
             
             if commandField == .C_FIND_RSP {
                 if let resultDataset = try? dis.readDataset() {
-                    resultsDataset = resultDataset
+                    studiesDataset = resultDataset
                 }
             }
         }
