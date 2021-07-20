@@ -51,8 +51,8 @@ public class AssociationRQ: PDUMessage {
         data.append(uint32: length, bigEndian: true)
         data.append(Data([0x00, 0x01])) // Protocol version
         data.append(byte: 0x00, count: 2)
-        data.append(association.calledAET.paddedTitleData()!) // Called AET Title
-        data.append(association.callingAET!.paddedTitleData()!) // Calling AET Title
+        data.append(association.calledAE.paddedTitleData()!) // Called AET Title
+        data.append(association.callingAE!.paddedTitleData()!) // Calling AET Title
         data.append(Data(repeating: 0x00, count: 32)) // 00H
         
         data.append(apData)

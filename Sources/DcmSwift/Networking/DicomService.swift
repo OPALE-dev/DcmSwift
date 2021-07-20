@@ -1,18 +1,37 @@
 //
-//  DicomService.swift
-//  DcmSwift
+//  File.swift
+//  
 //
-//  Created by Rafael Warnault, OPALE on 19/03/2019.
-//  Copyright © 2019 OPALE. All rights reserved.
+//  Created by Rafael Warnault on 20/07/2021.
 //
 
 import Foundation
+import NIO
 
-public class DicomService: NSObject {
-    public var localAET:String = "DCMSWIFT"
-    
-    
-    public init(localAET:String) {
-        self.localAET = localAET
+public class DicomService {
+    public init() {
+        
     }
+    
+    
+    public func run(association:DicomAssociation, channel:Channel) -> EventLoopFuture<Void> {
+        if let message = PDUEncoder.createDIMSEMessage(pduType: .dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
+            let p:EventLoopPromise<Void> = channel.eventLoop.makePromise()
+            return association.write(message: message, promise: p)
+        }
+        return channel.eventLoop.makeSucceededVoidFuture()
+    }
+}
+
+
+public class CEchoSCUService: DicomService {
+    
+}
+
+public class CFindSCUService: DicomService {
+    
+}
+
+public class CSoreSCUService: DicomService {
+    
 }
