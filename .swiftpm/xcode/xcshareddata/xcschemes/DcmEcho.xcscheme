@@ -80,7 +80,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "STORESCP"
+            argument = "HOROSRW"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -88,7 +88,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "11112"
+            argument = "4097"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
