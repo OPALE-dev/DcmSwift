@@ -9,6 +9,7 @@ import Foundation
 import NIO
 
 public class DicomClient {
+    var eventLoopGroup:MultiThreadedEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
     var callingAE:DicomEntity
     var calledAE:DicomEntity
     
@@ -29,8 +30,7 @@ public class DicomClient {
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
         
-        assoc.service = CEchoSCUService()
-        assoc.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP)
+        assoc.setService(CEchoSCUService())
 
         do {
             _ = try assoc.handle(event: .AE1).wait()
@@ -48,7 +48,24 @@ public class DicomClient {
     }
     
     
-    public func find(queryDataset:DataSet) -> [DataSet] {
+    public func find(queryDataset:DataSet? = nil) -> [DataSet] {
+        let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+        let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
+        
+        assoc.setService(CFindSCUService(queryDataset))
+
+        do {
+            _ = try assoc.handle(event: .AE1).wait()
+            
+            if let status = try assoc.promise?.futureResult.wait(),
+               status == .Success {
+                return []
+            }
+            
+        } catch let e {
+            Logger.error(e.localizedDescription)
+        }
+        
         return []
     }
     

@@ -28,13 +28,21 @@ struct DcmEcho: ParsableCommand {
         Logger.setMaxLevel(.VERBOSE)
         
         // create a calling AE, aka your local client (port is totally random and unused)
-        let callingAE = DicomEntity(title: callingAET, hostname: "127.0.0.1", port: 11112)
+        let callingAE = DicomEntity(
+            title: callingAET,
+            hostname: "127.0.0.1",
+            port: 11112)
         
         // create a called AE, aka the remote AE you want to connect to
-        let calledAE = DicomEntity(title: calledAET, hostname: calledHostname, port: calledPort)
+        let calledAE = DicomEntity(
+            title: calledAET,
+            hostname: calledHostname,
+            port: calledPort)
 
         // create a DICOM client
-        let client = DicomClient(callingAE: callingAE, calledAE: calledAE)
+        let client = DicomClient(
+            callingAE: callingAE,
+            calledAE: calledAE)
         
         // run C-ECHO SCU service
         if client.echo() {
@@ -42,7 +50,6 @@ struct DcmEcho: ParsableCommand {
         } else {
             print("ECHO \(callingAE) FAILED")
         }
-        
     }
 }
 

@@ -276,14 +276,23 @@ public class DicomAssociation: ChannelInboundHandler {
     }
     
     
+    public func setService(_ service:DicomService) {
+        self.service = service
+        
+        for ast in service.abstractSyntaxes {
+            self.addPresentationContext(abstractSyntax: ast)
+        }
+    }
     
     // MARK: -
     /**
     State Machine transitions
      */
     private func transition(forEvent event: PDUAction) throws -> EventLoopFuture<Void> {
+        Logger.verbose("STAT [ FSM ] \(state) : \(event)", "Association")
+        
         switch (state, event) {
-            case (.Sta1, .AE1):                 return AE1()
+        case (.Sta1, .AE1):                     return AE1()
             case (.Sta4, .AE2):                 return AE2()
             case (.Sta5, .AE3):                 return AE3()
             case (.Sta6, .DT1):                 return DT1()
