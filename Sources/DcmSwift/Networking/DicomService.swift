@@ -8,6 +8,7 @@
 import Foundation
 import NIO
 
+
 public class DicomService {
     public init() {
         
@@ -19,8 +20,13 @@ public class DicomService {
     }
     
     
+    public var commandField:CommandField {
+        .NONE
+    }
+    
+    
     public func run(association:DicomAssociation, channel:Channel) -> EventLoopFuture<Void> {
-        if let message = PDUEncoder.createDIMSEMessage(pduType: .dataTF, commandField: .C_ECHO_RQ, association: association) as? PDUMessage {
+        if let message = PDUEncoder.createDIMSEMessage(pduType: .dataTF, commandField: self.commandField, association: association) as? PDUMessage {
             let p:EventLoopPromise<Void> = channel.eventLoop.makePromise()
             return association.write(message: message, promise: p)
         }
@@ -32,6 +38,10 @@ public class DicomService {
 
 
 public class CEchoSCUService: DicomService {
+    public override var commandField:CommandField {
+        .C_ECHO_RQ
+    }
+    
     public override var abstractSyntaxes:[String] {
         [DicomConstants.verificationSOP]
     }
@@ -41,6 +51,11 @@ public class CEchoSCUService: DicomService {
 
 public class CFindSCUService: DicomService {
     var queryDataset:DataSet
+    
+    
+    public override var commandField:CommandField {
+        .C_FIND_RQ
+    }
     
     
     public override var abstractSyntaxes:[String] {
@@ -70,6 +85,13 @@ public class CFindSCUService: DicomService {
 
 
 
-public class CSoreSCUService: DicomService {
+public class CStoreSCUService: DicomService {
+    public override var commandField:CommandField {
+        .C_STORE_RQ
+    }
     
+    
+    public override var abstractSyntaxes:[String] {
+        DicomConstants.storageSOPClasses
+    }
 }
