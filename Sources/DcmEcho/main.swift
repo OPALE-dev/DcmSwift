@@ -46,9 +46,9 @@ struct DcmEcho: ParsableCommand {
         
         // run C-ECHO SCU service
         if client.echo() {
-            print("ECHO \(calledAE) SUCCEEDED")
+            print("C-ECHO \(calledAE) SUCCEEDED")
         } else {
-            print("ECHO \(callingAE) FAILED")
+            print("C-ECHO \(callingAE) FAILED")
         }
     }
 }
