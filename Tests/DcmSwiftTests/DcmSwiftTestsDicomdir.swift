@@ -57,7 +57,7 @@ class DcmSwiftTestsDicomdir: XCTestCase {
     }
     
     func testWriteDicomDir() {
-        let dicomDirPaths = Bundle.module.paths(forResourcesOfType: "dicomdir", inDirectory: nil)
+        let _ = Bundle.module.paths(forResourcesOfType: "dicomdir", inDirectory: nil)
     }
     
 }
