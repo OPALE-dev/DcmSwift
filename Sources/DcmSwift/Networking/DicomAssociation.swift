@@ -139,6 +139,7 @@ public class DicomAssociation: ChannelInboundHandler {
     
     private static var lastContextID:UInt8 = 1
     
+    public var dicomTimeout:Int = DicomConstants.dicomTimeOut
     public var maxPDULength:Int = DicomConstants.maxPDULength
     public var associationAccepted:Bool = false
     public var abstractSyntax:String = "1.2.840.10008.1.1"
@@ -168,6 +169,7 @@ public class DicomAssociation: ChannelInboundHandler {
     public var service:DicomService?
     public var dimseStatus:DIMSEStatus.Status?
     
+    private var artimTimer:Timer?
     internal var origin:Origin
     private var _state = PDUState.Sta1
     private let lock = NSLock()
@@ -217,6 +219,11 @@ public class DicomAssociation: ChannelInboundHandler {
                 pduType: .associationAC,
                 association: self
             ) as? AssociationAC {
+                // get the first accepted TS in accepted presentation contexts
+                if let transferSyntax = self.acceptedPresentationContexts.values.first?.transferSyntaxes.first {
+                    self.acceptedTransferSyntax = transferSyntax
+                }
+                
                 log(message: message, write: false)
                 
                 _ = try? handle(event: .AE3(message))
@@ -240,6 +247,26 @@ public class DicomAssociation: ChannelInboundHandler {
                 ) as? CEchoRSP {
                     log(message: message, write: false)
                     
+                    _ = try? handle(event: .DT2(message))
+                }
+            case is CFindSCUService:
+                if let message = PDUDecoder.receiveDIMSEMessage(
+                    data: pduData,
+                    pduType: .dataTF,
+                    association: self
+                ) as? CFindRSP {
+                    log(message: message, write: false)
+                    
+                    _ = try? handle(event: .DT2(message))
+                }
+                // message can also be a single DATA-TF fragment
+                else if let message = PDUDecoder.receiveDIMSEMessage(
+                    data: pduData,
+                    pduType: .dataTF,
+                    association: self
+                ) as? DataTF {
+                    log(message: message, write: false)
+                                        
                     _ = try? handle(event: .DT2(message))
                 }
             default:
@@ -289,7 +316,7 @@ public class DicomAssociation: ChannelInboundHandler {
     State Machine transitions
      */
     private func transition(forEvent event: PDUAction) throws -> EventLoopFuture<Void> {
-        Logger.verbose("STAT [ FSM ] \(state) : \(event)", "Association")
+        Logger.verbose("FSM  [STATE] (\(state)) \(event)", "Association")
         
         switch (state, event) {
         case (.Sta1, .AE1):                     return AE1()
@@ -344,10 +371,13 @@ public class DicomAssociation: ChannelInboundHandler {
     private func AE2() -> EventLoopFuture<Void> {
         self.state = .Sta5
         
-        guard let associationRQ = PDUEncoder.createAssocMessage(pduType: .associationRQ, association: self) as? PDUMessage else {
+        guard let associationRQ = PDUEncoder.createAssocMessage(pduType: .associationRQ, association: self) as? AssociationRQ else {
             return channel!.eventLoop.makeFailedFuture(ClientError.internalError)
         }
-                    
+        
+        associationRQ.remoteCalledAETitle   = self.calledAE.title
+        associationRQ.remoteCallingAETitle  = self.callingAE.title
+        
         let p:EventLoopPromise<Void> = channel!.eventLoop.makePromise()
         
         return write(message: associationRQ, promise: p)
@@ -370,12 +400,9 @@ public class DicomAssociation: ChannelInboundHandler {
         self.state = .Sta6
         
         if origin == .Local {
-            // simulate DATA-TF send
-            switch self.service {
-            case is CEchoSCUService:
+            if let ser = self.service {
+                // rely on service
                 return self.service!.run(association: self, channel: self.channel!)
-            default:
-                break
             }
         }
 
@@ -401,6 +428,28 @@ public class DicomAssociation: ChannelInboundHandler {
                         }
                         else {
                             
+                        }
+                    }
+                case is CFindSCUService:
+                    if let s = service as? CFindSCUService {
+                        if let m = message as? CFindRSP {
+                            // C-FIND-RSP message (with or without DATA fragment)
+                            dimseStatus = message.dimseStatus.status
+                            
+                            s.receiveRSP(m)
+                            
+                            if message.dimseStatus.status == .Success {
+                                _ = try? handle(event: .AR1)
+                                
+                                return channel!.eventLoop.makeSucceededVoidFuture()
+                            }
+                        }
+                        else {
+                            // single DATA-TF fragment
+                            if let ats = acceptedTransferSyntax,
+                               let transferSyntax = TransferSyntax(ats) {
+                                s.receiveData(message, transferSyntax: transferSyntax)
+                            }
                         }
                     }
                 default:
@@ -501,9 +550,13 @@ public class DicomAssociation: ChannelInboundHandler {
     internal func write(message:PDUMessage, promise: EventLoopPromise<Void>) -> EventLoopFuture<Void> {
         log(message: message, write: true)
         
-        guard let data = message.data() else {
+        guard var data = message.data() else {
             Logger.error("Cannot encode message of type `\(message.pduType!)`")
             return channel!.eventLoop.makeFailedFuture(ClientError.internalError)
+        }
+        
+        for d in message.messagesData() {
+            data.append(d)
         }
                 
         return write(data, promise: promise)
@@ -511,8 +564,6 @@ public class DicomAssociation: ChannelInboundHandler {
     
     
     private func write(_ data:Data, promise: EventLoopPromise<Void>) -> EventLoopFuture<Void> {
-        //print("channelWrite")
-        
         let buffer = channel!.allocator.buffer(bytes: data)
         
         channel!.writeAndFlush(buffer, promise: promise)

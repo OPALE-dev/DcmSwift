@@ -24,7 +24,8 @@ public protocol PDUResponsable {
  `PDUMessage` is a superclass used to form Protocol Data Units type of messages.
  */
 public class PDUMessage:
-    PDUResponsable, PDUDecodable, PDUEncodable {
+    CustomStringConvertible, PDUResponsable, PDUDecodable, PDUEncodable {
+    
     public var pduType:PDUType!
     public var pduLength:Int = -1
     public var pdvLength:Int = -1
@@ -70,6 +71,12 @@ public class PDUMessage:
         if decodeData(data: data) == .Refused {
             return nil
         }
+    }
+    
+    
+    
+    public var description: String {
+        "\(messageName())"
     }
     
     

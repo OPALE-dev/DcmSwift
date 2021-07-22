@@ -51,7 +51,8 @@ public class CEchoSCUService: DicomService {
 
 public class CFindSCUService: DicomService {
     var queryDataset:DataSet
-    
+    var studiesDataset:[DataSet] = []
+    var lastFindRSP:CFindRSP?
     
     public override var commandField:CommandField {
         .C_FIND_RQ
@@ -80,6 +81,40 @@ public class CFindSCUService: DicomService {
         }
         
         super.init()
+    }
+    
+    public override func run(association:DicomAssociation, channel:Channel) -> EventLoopFuture<Void> {
+        if let message = PDUEncoder.createDIMSEMessage(pduType: .dataTF, commandField: self.commandField, association: association) as? CFindRQ {
+            let p:EventLoopPromise<Void> = channel.eventLoop.makePromise()
+
+            _ = queryDataset.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
+
+            message.queryDataset = queryDataset
+            
+            return association.write(message: message, promise: p)
+        }
+        return channel.eventLoop.makeSucceededVoidFuture()
+    }
+    
+    public func receiveRSP(_ message:CFindRSP) {
+        if let dataset = message.studiesDataset {
+            studiesDataset.append(dataset)
+        } else {
+            lastFindRSP = message
+        }
+    }
+    
+    public func receiveData(_ message:DataTF, transferSyntax:TransferSyntax) {
+        if message.receivedData.count > 0 {
+            let dis = DicomInputStream(data: message.receivedData)
+            
+            dis.vrMethod    = transferSyntax.vrMethod
+            dis.byteOrder   = transferSyntax.byteOrder
+        
+            if let resultDataset = try? dis.readDataset(enforceVR: false) {
+                studiesDataset.append(resultDataset)
+            }
+        }
     }
 }
 

@@ -42,9 +42,7 @@ public class CFindRSP: DataTF {
         }
         
         let transferSyntax = TransferSyntax(ts!)
-        
-        print("commandDataSetType \(commandDataSetType)")
-             
+                     
         // if the PDU message as been segmented
         if commandDataSetType == nil {
             // read dataset data
