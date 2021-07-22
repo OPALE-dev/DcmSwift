@@ -92,4 +92,16 @@ public class DicomClient {
         
         return false
     }
+    
+    
+    
+    public func move(uids:[String], aet:String) -> Bool {
+        return false
+    }
+    
+    
+    
+    public func get() -> Bool {
+        return false
+    }
 }
