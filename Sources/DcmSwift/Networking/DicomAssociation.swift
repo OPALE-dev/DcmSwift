@@ -158,8 +158,6 @@ public class DicomAssociation: ChannelInboundHandler {
             case .associationRejected(reason: let reason):
                 return "Association rejected: \(reason)"
             }
-            
-            return nil
         }
     }
     

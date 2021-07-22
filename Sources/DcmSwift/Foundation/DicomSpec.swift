@@ -558,7 +558,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         // check if VR is respected
         let neededVR = vrForTag(withCode: element.tagCode())
         if element.name != "Unknow" && element.vr != neededVR {
-            results.append(ValidationResult(element, message: "Value Representation mismatch, \(neededVR) required", severity: .Error))
+            results.append(ValidationResult(element, message: "Value Representation mismatch, \(element.tagCode()) required", severity: .Error))
         }
         
         return results

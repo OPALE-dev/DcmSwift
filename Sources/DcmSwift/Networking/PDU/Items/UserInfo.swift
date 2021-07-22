@@ -69,19 +69,18 @@ public class UserInfo {
         // Max PDU length item
         var pduData = Data()
         var itemLength = UInt16(4).bigEndian
-        var pduLength = UInt32(self.maxPDULength).bigEndian
+        let pduLength = UInt32(self.maxPDULength).bigEndian
         pduData.append(Data(repeating: ItemType.maxPduLength.rawValue, count: 1)) // 51H (Max PDU Length)
         pduData.append(Data(repeating: 0x00, count: 1)) // 00H
         pduData.append(UnsafeBufferPointer(start: &itemLength, count: 1)) // Length
-        pduData.append(UnsafeBufferPointer(start: &pduLength, count: 1)) // PDU Length
+        pduData.append(uint32: pduLength) // PDU Length
         
         // TODO: Application UID and version
         
         // Items
-        var length = UInt16(pduData.count).bigEndian
         data.append(Data(repeating: ItemType.userInfo.rawValue, count: 1)) // 50H
         data.append(Data(repeating: 0x00, count: 1)) // 00H
-        data.append(UnsafeBufferPointer(start: &length, count: 1)) // Length
+        data.append(uint16: UInt16(pduData.count)) // Length
         data.append(pduData) // Items
         
         return data
