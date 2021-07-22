@@ -72,6 +72,24 @@ public class DicomClient {
     
     
     public func store(filePaths:[String]) -> Bool {
+        let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+        let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
+        
+        assoc.setService(CStoreSCUService(filePaths))
+
+        do {
+            _ = try assoc.handle(event: .AE1).wait()
+            
+            let status = try assoc.promise?.futureResult.wait()
+                        
+            if status == .Success {
+                return true
+            }
+            
+        } catch let e {
+            Logger.error(e.localizedDescription)
+        }
+        
         return false
     }
 }
