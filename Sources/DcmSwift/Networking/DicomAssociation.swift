@@ -485,7 +485,7 @@ public class DicomAssociation: ChannelInboundHandler {
                                         
                                         Logger.error(error.localizedDescription, "Association")
                                         
-                                        promise!.fail(error)
+                                        //promise!.fail(error)
                                         
                                         return channel!.eventLoop.makeFailedFuture(error)
                                     }

@@ -80,7 +80,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "HOROSRW"
+            argument = "STORESCP"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -88,7 +88,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "4097"
+            argument = "11112"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -96,11 +96,11 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "&apos;/Users/nark/Pictures/DICOM/MR-MONO2-16-knee (Little Endian Implicit VR).dcm&apos;"
+            argument = "&apos;/Users/nark/Pictures/DICOM/ST1/SE2-17-sagital&apos;"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "&apos;/Users/nark/Pictures/DICOM/ST1/SE2-17-sagital&apos;"
+            argument = "&apos;/Users/nark/Pictures/DICOM/images/1.3.46.670589.5.2.14.2198403904.1100092395.803730.dcm&apos;"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
