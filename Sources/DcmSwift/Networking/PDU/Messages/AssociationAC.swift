@@ -81,7 +81,7 @@ public class AssociationAC: PDUMessage {
         // PDU type
         let pcPduType = data.first
         if pcPduType != 0x02 {
-            Logger.error("ERROR: Waiting for an A-ASSOCIATE-AC message, received \(String(describing: pcPduType))")
+            Logger.notice("WARNING: Waiting for an A-ASSOCIATE-AC message, received \(String(describing: pcPduType))")
             return .Refused
         }
         offset += 2

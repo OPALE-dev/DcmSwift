@@ -128,7 +128,7 @@ public class DicomAssociation: ChannelInboundHandler {
     }
  
         
-    internal enum ClientError: Error {
+    internal enum ClientError: LocalizedError {
         case notReady
         case cantBind
         case timeout
@@ -136,6 +136,31 @@ public class DicomAssociation: ChannelInboundHandler {
         case transitionNotFound
         case internalError
         case errorComment(message:String)
+        case associationRejected(reason:String)
+        
+        public var errorDescription: String? {
+            switch self {
+      
+            case .notReady:
+                return "Association is not ready"
+            case .cantBind:
+                return "Association cant bind"
+            case .timeout:
+                return "Timeout error"
+            case .connectionResetByPeer:
+                return "Connection reset by peer"
+            case .transitionNotFound:
+                return "Transition not found"
+            case .internalError:
+                return "Internal error"
+            case .errorComment(message: let message):
+                return "Error Comment: \(message)"
+            case .associationRejected(reason: let reason):
+                return "Association rejected: \(reason)"
+            }
+            
+            return nil
+        }
     }
     
     private static var lastContextID:UInt8 = 1
@@ -236,7 +261,10 @@ public class DicomAssociation: ChannelInboundHandler {
                         association: self
             ) as? AssociationRJ {
                 log(message: message, write: false)
-                print("REJECT \(message)")
+                                
+                promise?.fail(ClientError.associationRejected(reason: "\(message.reason)"))
+                
+                // _ = try? handle(event: .AR3(message))
             }
         case .Sta6:
             switch self.service {
@@ -517,17 +545,25 @@ public class DicomAssociation: ChannelInboundHandler {
     
     
     
-    private func AR3(_ message:ReleaseRSP) -> EventLoopFuture<Void> {
+    private func AR3(_ message:ReleaseRSP, error:Error? = nil) -> EventLoopFuture<Void> {
         self.state = .Sta1
                 
         // release the global promise with DIMSE status
         if let s = self.dimseStatus {
-            promise?.succeed(s)
+            if s == .Success {
+                promise?.succeed(s)
+            } else {
+                if let e = error {
+                    promise?.fail(e)
+                    
+                    return channel!.eventLoop.makeFailedFuture(e)
+                }
+            }
         }
         
         return channel!.eventLoop.makeSucceededVoidFuture()
     }
-    
+
     
 
     
