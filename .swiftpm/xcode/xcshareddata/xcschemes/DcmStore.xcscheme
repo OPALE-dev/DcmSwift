@@ -76,7 +76,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "-c DCMSTORE"
+            argument = "-c DCMCLIENT"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -92,7 +92,15 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "&apos;/Users/nark/Pictures/DICOM/ST1/SE1-9-scout-views/IM1&apos;"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "&apos;/Users/nark/Pictures/DICOM/MR-MONO2-16-knee (Little Endian Implicit VR).dcm&apos;"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "&apos;/Users/nark/Pictures/DICOM/ST1/SE2-17-sagital&apos;"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

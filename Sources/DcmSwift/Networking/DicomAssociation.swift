@@ -135,6 +135,7 @@ public class DicomAssociation: ChannelInboundHandler {
         case connectionResetByPeer
         case transitionNotFound
         case internalError
+        case errorComment(message:String)
     }
     
     private static var lastContextID:UInt8 = 1
@@ -269,6 +270,16 @@ public class DicomAssociation: ChannelInboundHandler {
                                         
                     _ = try? handle(event: .DT2(message))
                 }
+            case is CStoreSCUService:
+                if let message = PDUDecoder.receiveDIMSEMessage(
+                    data: pduData,
+                    pduType: .dataTF,
+                    association: self
+                ) as? CStoreRSP {
+                    log(message: message, write: false)
+                    
+                    _ = try? handle(event: .DT2(message))
+                }
             default:
                 break
             }
@@ -400,9 +411,9 @@ public class DicomAssociation: ChannelInboundHandler {
         self.state = .Sta6
         
         if origin == .Local {
-            if let ser = self.service {
+            if let service = self.service {
                 // rely on service
-                return self.service!.run(association: self, channel: self.channel!)
+                return service.run(association: self, channel: self.channel!)
             }
         }
 
@@ -430,6 +441,7 @@ public class DicomAssociation: ChannelInboundHandler {
                             
                         }
                     }
+                    
                 case is CFindSCUService:
                     if let s = service as? CFindSCUService {
                         if let m = message as? CFindRSP {
@@ -449,6 +461,35 @@ public class DicomAssociation: ChannelInboundHandler {
                             if let ats = acceptedTransferSyntax,
                                let transferSyntax = TransferSyntax(ats) {
                                 s.receiveData(message, transferSyntax: transferSyntax)
+                            }
+                        }
+                    }
+                    
+                case is CStoreSCUService:
+                    if service is CStoreSCUService {
+                        if message.dimseStatus != nil {
+                            dimseStatus = message.dimseStatus.status
+                            
+                            if message.dimseStatus.status == .Success {
+                                _ = try? handle(event: .AR1)
+                                
+                                return channel!.eventLoop.makeSucceededVoidFuture()
+                            }
+                        } else {
+                            if let command = message.commandDataset {
+                                Logger.debug(command.description)
+                                
+                                if let status = command.integer16(forTag: "Status"), status > 0 {
+                                    if let errorComment = command.string(forTag: "ErrorComment") {
+                                        let error = ClientError.errorComment(message: errorComment)
+                                        
+                                        Logger.error(error.localizedDescription, "Association")
+                                        
+                                        promise!.fail(error)
+                                        
+                                        return channel!.eventLoop.makeFailedFuture(error)
+                                    }
+                                }
                             }
                         }
                     }
@@ -478,7 +519,8 @@ public class DicomAssociation: ChannelInboundHandler {
     
     private func AR3(_ message:ReleaseRSP) -> EventLoopFuture<Void> {
         self.state = .Sta1
-        
+                
+        // release the global promise with DIMSE status
         if let s = self.dimseStatus {
             promise?.succeed(s)
         }
