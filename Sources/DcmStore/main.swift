@@ -29,27 +29,19 @@ struct DcmStore: ParsableCommand {
         let callingAE   = DicomEntity(title: callingAET, hostname: "127.0.0.1", port: 11115)
         let calledAE    = DicomEntity(title: calledAET, hostname: calledHostname, port: calledPort)
         
-        let client      = DicomClient(localEntity: callingAE, remoteEntity: calledAE)
-        let files       = [filePath]
+        // create a DICOM client
+        let client = DicomClient(
+            callingAE: callingAE,
+            calledAE: calledAE)
         
-        client.connect {
-            client.store([filePath]) { (progress) in
-                Logger.info("Progress: \(progress)/\(files.count)", "DcmStore")
-                
-            } pduCompletion: { (request, message, assoc) in
-
-            } abortCompletion: { (message, error) in
-
-            } closeCompletion: { (assoc) in
-
-            }
-        } errorCompletion: { (error) in
-            if let e = error?.description {
-                Logger.error("CONNECT Error: \(e)")
-            }
+        // run C-FIND SCU service
+        let files = [filePath]
+        
+        if client.store(filePaths: files) {
+            print("C-STORE \(calledAE) SUCCEEDED.")
+        } else {
+            print("C-STORE \(calledAE) FAILED.")
         }
-        
-        _ = client.disconnect()
     }
 }
 
