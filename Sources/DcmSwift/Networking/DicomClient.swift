@@ -51,15 +51,16 @@ public class DicomClient {
     public func find(queryDataset:DataSet? = nil) -> [DataSet] {
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
+        let service = CFindSCUService(queryDataset)
         
-        assoc.setService(CFindSCUService(queryDataset))
+        assoc.setService(service)
 
         do {
             _ = try assoc.handle(event: .AE1).wait()
             
             if let status = try assoc.promise?.futureResult.wait(),
                status == .Success {
-                return []
+                return service.studiesDataset
             }
             
         } catch let e {

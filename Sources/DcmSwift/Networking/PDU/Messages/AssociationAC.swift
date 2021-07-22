@@ -77,7 +77,7 @@ public class AssociationAC: PDUMessage {
     
     public override func decodeData(data:Data) -> DIMSEStatus.Status {
         var offset = 0
-        
+                
         // PDU type
         let pcPduType = data.first
         if pcPduType != 0x02 {

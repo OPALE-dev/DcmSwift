@@ -69,19 +69,19 @@ public class Logger {
         public var description: String {
             switch self {
             case .FATAL:
-                return "FATAL"
+                return "FATAL  "
             case .NOTICE:
-                return "NOTICE"
+                return "NOTICE "
             case .INFO:
-                return "INFO"
+                return "INFO   "
             case .VERBOSE:
                 return "VERBOSE"
             case .DEBUG:
-                return "DEBUG"
+                return "DEBUG  "
             case .WARNING:
                 return "WARNING"
             case .ERROR:
-                return "ERROR"
+                return "ERROR  "
             }
         }
     }

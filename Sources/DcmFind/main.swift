@@ -23,8 +23,8 @@ struct DcmFind: ParsableCommand {
     var calledPort: Int = 11112
     
     mutating func run() throws {
-        // disable internal logging with .ERROR
-        Logger.setMaxLevel(.VERBOSE)
+        // regulate internal logging
+        // Logger.setMaxLevel(.INFO)
         
         // create a calling AE, aka your local client (port is totally random and unused)
         let callingAE = DicomEntity(
@@ -43,11 +43,14 @@ struct DcmFind: ParsableCommand {
             callingAE: callingAE,
             calledAE: calledAE)
         
-        // run C-ECHO SCU service
-        if client.find().count > 0 {
-            print("FIND \(calledAE) SUCCEEDED")
+        // run C-FIND SCU service
+        let studies:[DataSet] = client.find()
+        
+        if studies.count > 0 {
+            print("C-FIND \(calledAE) SUCCEEDED, \(studies.count) found.")
+            print(studies)
         } else {
-            print("FIND \(callingAE) FAILED")
+            print("C-FIND \(callingAE) FAILED, no studies found.")
         }
     }
 }
