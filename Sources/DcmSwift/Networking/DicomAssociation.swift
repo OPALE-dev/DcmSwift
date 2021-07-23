@@ -8,18 +8,32 @@
 import Foundation
 import NIO
 
-internal extension NSLock {
-    func withLock<T>(_ body: () -> T) -> T {
-        self.lock()
-        defer {
-            self.unlock()
-        }
-        return body()
-    }
-}
 
+/**
+ Association between 2 DICOM peers
 
+ This class implements a finite state machine provided by the DICOM specification. The same
+ class is used by both requestor and acceptor peers to communicate.
+ 
+ The class relies on SCU and SCP services objects (`DicomService` and inherited) to run
+ several DIMSE-C services like C-ECHO, C-STORE, etc.
+ 
+ As we rely on `SwiftNIO` for networking, the `DicomAssociaton` class is also the `ChannelInboundHandler`
+ used by the `SwiftNIO` channel to read and decode received messages.
+ 
+ Example of a C-STORE-SCU ready assocation:
+ 
+        // create a new association on NIO event loop
+        let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
 
+        // set a C-ECHO-SCU service up
+        assoc.setServiceClassUser(CEchoSCUService())
+ 
+ * DICOM P.07 S.D.3: http://dicom.nema.org/dicom/2013/output/chtml/part07/sect_D.3.html
+ * DICOM P.08 S.9.3: http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.2.html
+ 
+ */
 public class DicomAssociation: ChannelInboundHandler {
     public typealias InboundIn = ByteBuffer
     public typealias OutboundOut = ByteBuffer
@@ -91,6 +105,7 @@ public class DicomAssociation: ChannelInboundHandler {
         case Sta5
         case Sta6
         case Sta7
+        case Sta8
         case Sta13
     }
     
@@ -109,7 +124,7 @@ public class DicomAssociation: ChannelInboundHandler {
         case DT2(_ message:DataTF)
         
         case AR1
-        case AR2
+        case AR2(_ message:ReleaseRQ)
         case AR3(_ message:ReleaseRSP)
         case AR4
         case AR5
@@ -129,39 +144,6 @@ public class DicomAssociation: ChannelInboundHandler {
         case AA8
     }
  
-        
-    internal enum ClientError: LocalizedError {
-        case notReady
-        case cantBind
-        case timeout
-        case connectionResetByPeer
-        case transitionNotFound
-        case internalError
-        case errorComment(message:String)
-        case associationRejected(reason:String)
-        
-        public var errorDescription: String? {
-            switch self {
-      
-            case .notReady:
-                return "Association is not ready"
-            case .cantBind:
-                return "Association cant bind"
-            case .timeout:
-                return "Timeout error"
-            case .connectionResetByPeer:
-                return "Connection reset by peer"
-            case .transitionNotFound:
-                return "Transition not found"
-            case .internalError:
-                return "Internal error"
-            case .errorComment(message: let message):
-                return "Error Comment: \(message)"
-            case .associationRejected(reason: let reason):
-                return "Association rejected: \(reason)"
-            }
-        }
-    }
     
     private static var lastContextID:UInt8 = 1
     
@@ -184,16 +166,16 @@ public class DicomAssociation: ChannelInboundHandler {
 
     public var protocolVersion:Int = 1
     public var contextID:UInt8 = 1
-
     
     var calledAE:DicomEntity!
     var callingAE:DicomEntity?
     
     public let group: MultiThreadedEventLoopGroup
     public var promise: EventLoopPromise<DIMSEStatus.Status>?
-    public var serviceClassUserService:DicomService?
-    public var serviceClassProviderServices:[DicomService] = []
     public var dimseStatus:DIMSEStatus.Status?
+    
+    public var serviceClassUsers:ServiceClassUser?
+    public var serviceClassProviders:[CommandField:ServiceClassProvider] = [:]
     
     private var channel: Channel?
     private var connectedAssociations = [ObjectIdentifier: DicomAssociation]()
@@ -220,8 +202,8 @@ public class DicomAssociation: ChannelInboundHandler {
     
     
     /**
-     Constructor for Associations created by clients
-        -> Origin is `Local`
+     Constructor for Associations created by users
+        -> Origin is `Requestor`
      */
     public init(group: MultiThreadedEventLoopGroup, callingAE:DicomEntity, calledAE:DicomEntity) {
         self.group      = group
@@ -230,7 +212,10 @@ public class DicomAssociation: ChannelInboundHandler {
         self.origin     = .Requestor
     }
     
-    
+    /**
+     Constructor for Associations created by providers
+        -> Origin is `Acceptor`
+     */
     public init(group: MultiThreadedEventLoopGroup, calledAE:DicomEntity) {
         self.group      = group
         self.calledAE   = calledAE
@@ -251,7 +236,7 @@ public class DicomAssociation: ChannelInboundHandler {
         let bytes = buffer.readBytes(length: buffer.readableBytes)
         let pduData = Data(bytes!)
         
-        //print("channelRead")
+        // print("channelRead")
         
         switch state {
         case .Sta2:
@@ -292,54 +277,77 @@ public class DicomAssociation: ChannelInboundHandler {
             ) as? AssociationRJ {
                 log(message: message, write: false)
                                 
-                promise?.fail(ClientError.associationRejected(reason: "\(message.reason)"))
+                promise?.fail(NetworkError.associationRejected(reason: "\(message.reason)"))
                 
                 // _ = try? handle(event: .AR3(message))
             }
         case .Sta6:
-            switch self.serviceClassUserService {
-            case is CEchoSCUService:
-                if let message = PDUDecoder.receiveDIMSEMessage(
-                    data: pduData,
-                    pduType: .dataTF,
-                    association: self
-                ) as? CEchoRSP {
-                    log(message: message, write: false)
-                    
-                    _ = try? handle(event: .DT2(message))
+            if origin == .Requestor {
+                switch self.serviceClassUsers {
+                case is CEchoSCUService:
+                    if let message = PDUDecoder.receiveDIMSEMessage(
+                        data: pduData,
+                        pduType: .dataTF,
+                        association: self
+                    ) as? CEchoRSP {
+                        log(message: message, write: false)
+                        
+                        _ = try? handle(event: .DT2(message))
+                    }
+                case is CFindSCUService:
+                    if let message = PDUDecoder.receiveDIMSEMessage(
+                        data: pduData,
+                        pduType: .dataTF,
+                        association: self
+                    ) as? CFindRSP {
+                        log(message: message, write: false)
+                        
+                        _ = try? handle(event: .DT2(message))
+                    }
+                    // message can also be a single DATA-TF fragment
+                    else if let message = PDUDecoder.receiveDIMSEMessage(
+                        data: pduData,
+                        pduType: .dataTF,
+                        association: self
+                    ) as? DataTF {
+                        log(message: message, write: false)
+                                            
+                        _ = try? handle(event: .DT2(message))
+                    }
+                case is CStoreSCUService:
+                    if let message = PDUDecoder.receiveDIMSEMessage(
+                        data: pduData,
+                        pduType: .dataTF,
+                        association: self
+                    ) as? CStoreRSP {
+                        log(message: message, write: false)
+                        
+                        _ = try? handle(event: .DT2(message))
+                    }
+                default:
+                    break
                 }
-            case is CFindSCUService:
+            }
+            else if origin == .Acceptor {
                 if let message = PDUDecoder.receiveDIMSEMessage(
-                    data: pduData,
-                    pduType: .dataTF,
-                    association: self
-                ) as? CFindRSP {
-                    log(message: message, write: false)
-                    
-                    _ = try? handle(event: .DT2(message))
-                }
-                // message can also be a single DATA-TF fragment
-                else if let message = PDUDecoder.receiveDIMSEMessage(
                     data: pduData,
                     pduType: .dataTF,
                     association: self
                 ) as? DataTF {
-                    log(message: message, write: false)
-                                        
-                    _ = try? handle(event: .DT2(message))
-                }
-            case is CStoreSCUService:
-                if let message = PDUDecoder.receiveDIMSEMessage(
-                    data: pduData,
-                    pduType: .dataTF,
-                    association: self
-                ) as? CStoreRSP {
-                    log(message: message, write: false)
+                    if let commandField = message.commandField,
+                       let service = serviceClassProviders[commandField.inverse] {
+                        service.requestMessage = message
                     
-                    _ = try? handle(event: .DT2(message))
+                        _ = try? handle(event: .DT2(message))
+                    }
                 }
-            default:
-                break
+                else if let message = PDUDecoder.receiveAssocMessage(
+                    data: pduData,
+                    pduType: .releaseRQ,
+                    association: self
+                ) as? ReleaseRQ {
+                    _ = try? handle(event: .AR2(message))
+                }
             }
         case .Sta7:
             if let message = PDUDecoder.receiveAssocMessage(
@@ -386,7 +394,7 @@ public class DicomAssociation: ChannelInboundHandler {
     }
     
     public func channelInactive(context: ChannelHandlerContext) {
-        print("channelInactive")
+        self.connectedAssociations[ObjectIdentifier(context.channel)] = self
     }
     
     public func errorCaught(context: ChannelHandlerContext, error: Error) {
@@ -400,8 +408,8 @@ public class DicomAssociation: ChannelInboundHandler {
      Set a service class user to the Association
      The service will be used as a requestor.
      */
-    public func setServiceClassUser(_ service:DicomService) {
-        self.serviceClassUserService = service
+    public func setServiceClassUser(_ service:ServiceClassUser) {
+        self.serviceClassUsers = service
         
         for ast in service.abstractSyntaxes {
             self.addPresentationContext(abstractSyntax: ast)
@@ -413,8 +421,8 @@ public class DicomAssociation: ChannelInboundHandler {
      SCP association can handle multiple service class providers.
      The service will be used as a acceptor.
      */
-    public func addServiceClassProvider(_ service:DicomService) {
-        self.serviceClassProviderServices.append(service)
+    public func addServiceClassProvider(_ service:ServiceClassProvider) {
+        self.serviceClassProviders[service.commandField] = service
     }
     
     
@@ -437,8 +445,9 @@ public class DicomAssociation: ChannelInboundHandler {
         case (.Sta6, .DT1):                 return DT1()
         case (.Sta6, .DT2(let message)):    return DT2(message)
         case (.Sta6, .AR1):                 return AR1()
+        case (.Sta6, .AR2(let message)):    return AR2(message)
         case (.Sta7, .AR3(let message)):    return AR3(message)
-        default: throw ClientError.transitionNotFound
+        default: throw NetworkError.transitionNotFound
         }
     }
     
@@ -484,7 +493,7 @@ public class DicomAssociation: ChannelInboundHandler {
         self.state = .Sta5
         
         guard let associationRQ = PDUEncoder.createAssocMessage(pduType: .associationRQ, association: self) as? AssociationRQ else {
-            return channel!.eventLoop.makeFailedFuture(ClientError.internalError)
+            return channel!.eventLoop.makeFailedFuture(NetworkError.internalError)
         }
         
         associationRQ.remoteCalledAETitle   = self.calledAE.title
@@ -557,7 +566,7 @@ public class DicomAssociation: ChannelInboundHandler {
     
     private func AE7() -> EventLoopFuture<Void> {
         guard let associationAC = PDUEncoder.createAssocMessage(pduType: .associationAC, association: self) as? AssociationAC else {
-            return channel!.eventLoop.makeFailedFuture(ClientError.internalError)
+            return channel!.eventLoop.makeFailedFuture(NetworkError.internalError)
         }
         
         let p:EventLoopPromise<Void> = channel!.eventLoop.makePromise()
@@ -573,13 +582,10 @@ public class DicomAssociation: ChannelInboundHandler {
         self.state = .Sta6
         
         if origin == .Requestor {
-            if let service = self.serviceClassUserService {
+            if let service = self.serviceClassUsers {
                 // rely on service
                 return service.run(association: self, channel: self.channel!)
             }
-        }
-        else if origin == .Acceptor {
-            
         }
 
         return channel!.eventLoop.makeSucceededVoidFuture()
@@ -589,9 +595,8 @@ public class DicomAssociation: ChannelInboundHandler {
     private func DT2(_ message:DataTF) -> EventLoopFuture<Void> {
         self.state = .Sta6
         
-        if let service = self.serviceClassUserService {
-            if origin == .Requestor {
-                // Run services
+        if origin == .Requestor {
+            if let service = self.serviceClassUsers {
                 switch service {
                 case is CEchoSCUService:
                     if message is CEchoRSP {
@@ -646,7 +651,7 @@ public class DicomAssociation: ChannelInboundHandler {
                                 
                                 if let status = command.integer16(forTag: "Status"), status > 0 {
                                     if let errorComment = command.string(forTag: "ErrorComment") {
-                                        let error = ClientError.errorComment(message: errorComment)
+                                        let error = NetworkError.errorComment(message: errorComment)
                                         
                                         Logger.error(error.localizedDescription, "Association")
                                         
@@ -663,8 +668,19 @@ public class DicomAssociation: ChannelInboundHandler {
                 }
             }
         }
+        else if origin == .Acceptor {
+            if let commandField = message.commandField,
+               let service = serviceClassProviders[commandField.inverse] {
+                
+                //let future = service.run(association: self, channel: channel!)
+                
+                //_ = try? handle(event: .AR2)
+                
+                return service.run(association: self, channel: channel!)
+            }
+        }
 
-        return channel!.eventLoop.makeFailedFuture(ClientError.internalError)
+        return channel!.eventLoop.makeFailedFuture(NetworkError.internalError)
     }
     
     
@@ -672,7 +688,7 @@ public class DicomAssociation: ChannelInboundHandler {
         self.state = .Sta7
         
         guard let releaseRQ = PDUEncoder.createAssocMessage(pduType: .releaseRQ, association: self) as? PDUMessage else {
-            return channel!.eventLoop.makeFailedFuture(ClientError.internalError)
+            return channel!.eventLoop.makeFailedFuture(NetworkError.internalError)
         }
                     
         let p:EventLoopPromise<Void> = channel!.eventLoop.makePromise()
@@ -680,6 +696,19 @@ public class DicomAssociation: ChannelInboundHandler {
         return write(message: releaseRQ, promise: p)
     }
     
+    
+    private func AR2(_ message:ReleaseRQ) -> EventLoopFuture<Void> {
+        self.state = .Sta8
+
+        guard let releaseRSP = PDUEncoder.createAssocMessage(pduType: .releaseRP, association: self) as? ReleaseRSP else {
+            return channel!.eventLoop.makeFailedFuture(NetworkError.internalError)
+        }
+
+        let p:EventLoopPromise<Void> = channel!.eventLoop.makePromise()
+
+        return write(message: releaseRSP, promise: p)
+//        return channel!.eventLoop.makeSucceededVoidFuture()
+    }
     
     
     private func AR3(_ message:ReleaseRSP, error:Error? = nil) -> EventLoopFuture<Void> {
@@ -707,11 +736,11 @@ public class DicomAssociation: ChannelInboundHandler {
     // MARK: -
     public func disconnect() -> EventLoopFuture<Void> {
         if .Sta5 != self.state {
-            return self.group.next().makeFailedFuture(ClientError.notReady)
+            return self.group.next().makeFailedFuture(NetworkError.notReady)
         }
         
         guard let channel = self.channel else {
-            return self.group.next().makeFailedFuture(ClientError.notReady)
+            return self.group.next().makeFailedFuture(NetworkError.notReady)
         }
         
         self.state = .Sta13
@@ -767,7 +796,7 @@ public class DicomAssociation: ChannelInboundHandler {
         
         guard var data = message.data() else {
             Logger.error("Cannot encode message of type `\(message.pduType!)`")
-            return channel!.eventLoop.makeFailedFuture(ClientError.internalError)
+            return channel!.eventLoop.makeFailedFuture(NetworkError.internalError)
         }
         
         for d in message.messagesData() {
@@ -852,6 +881,6 @@ public class DicomAssociation: ChannelInboundHandler {
             return self.write(message: message, promise: p)
         }
         
-        return channel!.eventLoop.makeFailedFuture(ClientError.internalError)
+        return channel!.eventLoop.makeFailedFuture(NetworkError.internalError)
     }
 }

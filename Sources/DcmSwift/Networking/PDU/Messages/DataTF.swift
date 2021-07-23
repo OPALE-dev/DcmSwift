@@ -42,7 +42,7 @@ public class DataTF: PDUMessage {
                                 
         // read context
         guard let _ = stream.read(length: 1)?.toInt8(byteOrder: .BigEndian) else {
-            Logger.error("Cannot read context")
+            //Logger.warning("Cannot read context")
             return .Refused
         }
         

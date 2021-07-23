@@ -21,6 +21,48 @@ public enum StreamError: Error {
 }
 
 
+
+/**
+ Networking related errors
+*/
+public enum NetworkError: LocalizedError {
+    case notReady
+    case cantBind
+    case timeout
+    case connectionResetByPeer
+    case transitionNotFound
+    case internalError
+    case errorComment(message:String)
+    case associationRejected(reason:String)
+    case callingAETitleNotRecognized
+    
+    public var errorDescription: String? {
+        switch self {
+  
+        case .notReady:
+            return "Association is not ready"
+        case .cantBind:
+            return "Association cant bind"
+        case .timeout:
+            return "Timeout error"
+        case .connectionResetByPeer:
+            return "Connection reset by peer"
+        case .transitionNotFound:
+            return "Transition not found"
+        case .internalError:
+            return "Internal error"
+        case .errorComment(message: let message):
+            return "Error Comment: \(message)"
+        case .associationRejected(reason: let reason):
+            return "Association rejected: \(reason)"
+        case .callingAETitleNotRecognized:
+            return "Calling AE Title not recognized"
+        }
+    }
+}
+
+
+
 /**
 DicomError represents common errors defined by the DICOM specification
 */

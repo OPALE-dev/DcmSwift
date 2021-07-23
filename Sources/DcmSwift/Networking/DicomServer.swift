@@ -10,7 +10,7 @@ import Foundation
 import NIO
 import Dispatch
 
-public class DicomServer: CStoreRQDelegate {
+public class DicomServer: CEchoSCPDelegate {
     var calledAE:DicomEntity!
     var port: Int = 11112
     
@@ -26,15 +26,15 @@ public class DicomServer: CStoreRQDelegate {
         
         self.group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         self.bootstrap = ServerBootstrap(group: group)
-            // Specify backlog and enable SO_REUSEADDR for the server itself
             .serverChannelOption(ChannelOptions.backlog, value: 256)
             .serverChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
             .childChannelInitializer { channel in
                 // we create a new DicomAssociation for each new activating channel
                 let assoc = DicomAssociation(group: self.group, calledAE: self.calledAE)
                 
-                // assoc.cStoreRQDelegate = self
-                
+                // this assoc implements to the following SCPs
+                assoc.addServiceClassProvider(CEchoSCPService(self))
+
                 return channel.pipeline.addHandlers([ByteToMessageHandler(PDUBytesDecoder(withAssociation: assoc)), assoc])
             }
             .childChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
@@ -66,34 +66,38 @@ public class DicomServer: CStoreRQDelegate {
     
     
     
-    // MARK: -
-    
-    public func receive(message: CStoreRQ) {
-        if message.receivedData.count > 0 {
-            let dis = DicomInputStream(data: message.receivedData)
-            
-            dis.vrMethod = .Explicit
-            
-            if let d = try? dis.readDataset(enforceVR: false) {
-                if let sopClassUID      = d.string(forTag: "SOPClassUID"),
-                   let sopInstanceUID   = d.string(forTag: "SOPInstanceUID") {
-
-                    _ = d.set(value: 0x0000, forTagName: "FileMetaInformationVersion")
-                    _ = d.set(value: sopClassUID, forTagName: "MediaStorageSOPClassUID")
-                    _ = d.set(value: sopInstanceUID, forTagName: "MediaStorageSOPInstanceUID")
-                    _ = d.set(value: TransferSyntax.explicitVRLittleEndian, forTagName: "TransferSyntaxUID")
-                    _ = d.set(value: orgRoot, forTagName: "ImplementationClassUID")
-                    _ = d.set(value: "DcmSwift", forTagName: "ImplementationVersionName")
-                    
-                    if let t = message.association.callingAE?.title {
-                        _ = d.set(value: t, forTagName: "SourceApplicationEntityTitle")
-                    }
-                    
-                    d.hasPreamble = true
-                    
-                    try? d.toData().write(to: URL(fileURLWithPath: "/Users/nark/test_sore.dcm"))
-                }
-            }
-        }
+    // MARK: - CEchoSCPDelegate
+    public func validateEcho(callingAE: DicomEntity) -> DIMSEStatus.Status {
+        return .Success
     }
+    
+    
+//    public func receive(message: CStoreRQ) {
+//        if message.receivedData.count > 0 {
+//            let dis = DicomInputStream(data: message.receivedData)
+//
+//            dis.vrMethod = .Explicit
+//
+//            if let d = try? dis.readDataset(enforceVR: false) {
+//                if let sopClassUID      = d.string(forTag: "SOPClassUID"),
+//                   let sopInstanceUID   = d.string(forTag: "SOPInstanceUID") {
+//
+//                    _ = d.set(value: 0x0000, forTagName: "FileMetaInformationVersion")
+//                    _ = d.set(value: sopClassUID, forTagName: "MediaStorageSOPClassUID")
+//                    _ = d.set(value: sopInstanceUID, forTagName: "MediaStorageSOPInstanceUID")
+//                    _ = d.set(value: TransferSyntax.explicitVRLittleEndian, forTagName: "TransferSyntaxUID")
+//                    _ = d.set(value: orgRoot, forTagName: "ImplementationClassUID")
+//                    _ = d.set(value: "DcmSwift", forTagName: "ImplementationVersionName")
+//
+//                    if let t = message.association.callingAE?.title {
+//                        _ = d.set(value: t, forTagName: "SourceApplicationEntityTitle")
+//                    }
+//
+//                    d.hasPreamble = true
+//
+//                    try? d.toData().write(to: URL(fileURLWithPath: "/Users/nark/test_sore.dcm"))
+//                }
+//            }
+//        }
+//    }
 }
