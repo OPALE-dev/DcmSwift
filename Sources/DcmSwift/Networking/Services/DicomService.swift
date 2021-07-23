@@ -9,14 +9,42 @@ import Foundation
 import NIO
 
 
-public class DicomService {
-    public init() {
+public class ServiceClassUser: DicomService {
+    public override init() {
+        super.init()
         
+        type = .ServiceClassUser
     }
     
     
     public var abstractSyntaxes:[String] {
         []
+    }
+}
+
+
+public class ServiceClassProvider: DicomService {
+    public var requestMessage:PDUMessage?
+    
+    public override init() {
+        super.init()
+        
+        type = .ServiceClassProvider
+    }
+}
+
+
+public class DicomService {
+    var type:ServiceType
+    
+    enum ServiceType {
+        case ServiceClassUser
+        case ServiceClassProvider
+    }
+    
+    
+    public init() {
+        type = .ServiceClassUser
     }
     
     

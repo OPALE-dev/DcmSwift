@@ -8,7 +8,7 @@
 import Foundation
 import NIO
 
-public class CFindSCUService: DicomService {
+public class CFindSCUService: ServiceClassUser {
     var queryDataset:DataSet
     var studiesDataset:[DataSet] = []
     var lastFindRSP:CFindRSP?

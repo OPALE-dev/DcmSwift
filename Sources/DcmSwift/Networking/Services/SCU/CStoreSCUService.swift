@@ -8,7 +8,7 @@
 import Foundation
 import NIO
 
-public class CStoreSCUService: DicomService {
+public class CStoreSCUService: ServiceClassUser {
     var filePaths:[String] = []
     
     

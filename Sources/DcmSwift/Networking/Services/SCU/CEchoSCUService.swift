@@ -8,7 +8,7 @@
 import Foundation
 
 
-public class CEchoSCUService: DicomService {
+public class CEchoSCUService: ServiceClassUser {
     public override var commandField:CommandField {
         .C_ECHO_RQ
     }
