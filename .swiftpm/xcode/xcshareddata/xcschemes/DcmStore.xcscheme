@@ -80,7 +80,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "STORESCP"
+            argument = "DCM4CHEE"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

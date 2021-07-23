@@ -65,12 +65,14 @@ public class CStoreRQ: DataTF {
     public override func messagesData() -> [Data] {
         var datas:[Data] = []
         
-        if let sopClassUID = dicomFile?.dataset.string(forTag: "SOPClassUID") {
+        if let sopClassUID = dicomFile?.dataset.string(forTag: "SOPClassUID"),
+           let ats = association.acceptedTransferSyntax,
+           let transferSyntax = TransferSyntax(ats) {
             let pcs:[PresentationContext] = self.association.acceptedPresentationContexts(forSOPClassUID: sopClassUID)
             
             if !pcs.isEmpty {
                 if let dataset = dicomFile?.dataset {
-                    let fileData = dataset.DIMSEData()
+                    let fileData = dataset.DIMSEData(transferSyntax: transferSyntax)
                     
                     let chunks = fileData.chunck(into: 16372)
                     var index = 0
