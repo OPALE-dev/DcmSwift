@@ -27,8 +27,8 @@ public class DicomAssociation: ChannelInboundHandler {
     
     
     public enum Origin {
-        case Local
-        case Remote
+        case Requestor
+        case Acceptor
     }
     
     
@@ -85,6 +85,8 @@ public class DicomAssociation: ChannelInboundHandler {
     
     private enum PDUState: Equatable {
         case Sta1
+        case Sta2
+        case Sta3
         case Sta4
         case Sta5
         case Sta6
@@ -99,7 +101,7 @@ public class DicomAssociation: ChannelInboundHandler {
         case AE3(_ message:AssociationAC)
         case AE4
         case AE5
-        case AE6
+        case AE6(_ message:AssociationRQ)
         case AE7
         case AE8
         
@@ -185,13 +187,16 @@ public class DicomAssociation: ChannelInboundHandler {
 
     
     var calledAE:DicomEntity!
-    var callingAE:DicomEntity!
+    var callingAE:DicomEntity?
     
     public let group: MultiThreadedEventLoopGroup
-    private var channel: Channel?
     public var promise: EventLoopPromise<DIMSEStatus.Status>?
-    public var service:DicomService?
+    public var serviceClassUserService:DicomService?
+    public var serviceClassProviderServices:[DicomService] = []
     public var dimseStatus:DIMSEStatus.Status?
+    
+    private var channel: Channel?
+    private var connectedAssociations = [ObjectIdentifier: DicomAssociation]()
     
     private var artimTimer:Timer?
     internal var origin:Origin
@@ -222,7 +227,19 @@ public class DicomAssociation: ChannelInboundHandler {
         self.group      = group
         self.calledAE   = calledAE
         self.callingAE  = callingAE
-        self.origin     = .Local
+        self.origin     = .Requestor
+    }
+    
+    
+    public init(group: MultiThreadedEventLoopGroup, calledAE:DicomEntity) {
+        self.group      = group
+        self.calledAE   = calledAE
+        self.origin     = .Acceptor
+    }
+    
+    
+    deinit {
+        stopARTIM()
     }
     
     
@@ -237,6 +254,21 @@ public class DicomAssociation: ChannelInboundHandler {
         //print("channelRead")
         
         switch state {
+        case .Sta2:
+            if let message = PDUDecoder.receiveAssocMessage(
+                data: pduData,
+                pduType: .associationRQ,
+                association: self
+            ) as? AssociationRQ {
+                // get the first accepted TS in accepted presentation contexts
+                if let transferSyntax = self.acceptedPresentationContexts.values.first?.transferSyntaxes.first {
+                    self.acceptedTransferSyntax = transferSyntax
+                }
+                
+                log(message: message, write: false)
+                
+                _ = try? handle(event: .AE6(message))
+            }
         case .Sta5:
             if let message = PDUDecoder.receiveAssocMessage(
                 data: pduData,
@@ -265,7 +297,7 @@ public class DicomAssociation: ChannelInboundHandler {
                 // _ = try? handle(event: .AR3(message))
             }
         case .Sta6:
-            switch self.service {
+            switch self.serviceClassUserService {
             case is CEchoSCUService:
                 if let message = PDUDecoder.receiveDIMSEMessage(
                     data: pduData,
@@ -326,8 +358,30 @@ public class DicomAssociation: ChannelInboundHandler {
     }
     
     public func channelActive(context: ChannelHandlerContext) {
-        if origin == .Local {
+        if origin == .Requestor {
             _ = try? handle(event: .AE2)
+        }
+        else if origin == .Acceptor {
+            self.addPresentationContext(abstractSyntax: DicomConstants.verificationSOP, result: 0x00)
+            self.addPresentationContext(abstractSyntax: DicomConstants.StudyRootQueryRetrieveInformationModelFIND, result: 0x00)
+
+            for sop in DicomConstants.storageSOPClasses {
+                self.addPresentationContext(abstractSyntax: sop, result: 0x00)
+            }
+            
+            // Logger.verbose("Server Presentation Contexts: \(self.presentationContexts)");
+            
+            // set the remote channel
+            self.channel = context.channel
+            
+            // add channel handlers to decode messages for this child association
+            _ = self.channel?.pipeline.addHandlers([ByteToMessageHandler(PDUBytesDecoder(withAssociation: self)), self])
+            
+            // store a reference of the connected association
+            self.connectedAssociations[ObjectIdentifier(context.channel)] = self
+
+    
+            _ = try? handle(event: .AE5)
         }
     }
     
@@ -340,13 +394,31 @@ public class DicomAssociation: ChannelInboundHandler {
     }
     
     
-    public func setService(_ service:DicomService) {
-        self.service = service
+    
+    // MARK: -
+    /**
+     Set a service class user to the Association
+     The service will be used as a requestor.
+     */
+    public func setServiceClassUser(_ service:DicomService) {
+        self.serviceClassUserService = service
         
         for ast in service.abstractSyntaxes {
             self.addPresentationContext(abstractSyntax: ast)
         }
     }
+    
+    /**
+     Add a service class provider to the Association.
+     SCP association can handle multiple service class providers.
+     The service will be used as a acceptor.
+     */
+    public func addServiceClassProvider(_ service:DicomService) {
+        self.serviceClassProviderServices.append(service)
+    }
+    
+    
+    
     
     // MARK: -
     /**
@@ -356,14 +428,17 @@ public class DicomAssociation: ChannelInboundHandler {
         Logger.verbose("FSM  [STATE] (\(state)) \(event)", "Association")
         
         switch (state, event) {
-        case (.Sta1, .AE1):                     return AE1()
-            case (.Sta4, .AE2):                 return AE2()
-            case (.Sta5, .AE3):                 return AE3()
-            case (.Sta6, .DT1):                 return DT1()
-            case (.Sta6, .DT2(let message)):    return DT2(message)
-            case (.Sta6, .AR1):                 return AR1()
-            case (.Sta7, .AR3(let message)):    return AR3(message)
-            default: throw ClientError.transitionNotFound
+        case (.Sta1, .AE1):                 return AE1()
+        case (.Sta1, .AE5):                 return AE5()
+        case (.Sta2, .AE6(let message)):    return AE6(message)
+        case (.Sta3, .AE7):                 return AE7()
+        case (.Sta4, .AE2):                 return AE2()
+        case (.Sta5, .AE3):                 return AE3()
+        case (.Sta6, .DT1):                 return DT1()
+        case (.Sta6, .DT2(let message)):    return DT2(message)
+        case (.Sta6, .AR1):                 return AR1()
+        case (.Sta7, .AR3(let message)):    return AR3(message)
+        default: throw ClientError.transitionNotFound
         }
     }
     
@@ -413,7 +488,10 @@ public class DicomAssociation: ChannelInboundHandler {
         }
         
         associationRQ.remoteCalledAETitle   = self.calledAE.title
-        associationRQ.remoteCallingAETitle  = self.callingAE.title
+        
+        if let callingAE = self.callingAE {
+            associationRQ.remoteCallingAETitle  = callingAE.title
+        }
         
         let p:EventLoopPromise<Void> = channel!.eventLoop.makePromise()
         
@@ -424,7 +502,7 @@ public class DicomAssociation: ChannelInboundHandler {
     private func AE3() -> EventLoopFuture<Void> {
         self.state = .Sta6
         
-        if origin == .Local {
+        if origin == .Requestor {
             _ = try? handle(event: .DT1)
         }
 
@@ -433,14 +511,75 @@ public class DicomAssociation: ChannelInboundHandler {
     
     
     
+    private func AE5() -> EventLoopFuture<Void> {
+        self.state = .Sta2
+        
+        startARTIM()
+        
+        return channel!.eventLoop.makeSucceededVoidFuture()
+    }
+    
+    
+    
+    private func AE6(_ message:AssociationRQ) -> EventLoopFuture<Void> {
+        stopARTIM()
+        
+        // check for called AE title
+        if message.remoteCallingAETitle == nil || self.calledAE.title != message.remoteCalledAETitle {
+            Logger.error("Called AE title not recognized")
+
+            let reason = DicomAssociation.UserReason.CalledAETitleNotRecognized
+            
+            // WRIT ASSOCIATION-RJ
+            let f = reject(withResult: .RejectedPermanent,
+                   source: .DICOMULServiceUser,
+                   reason: reason)
+            
+            startARTIM()
+            
+            self.state = .Sta13
+            
+            return f
+        }
+
+        self.state = .Sta3
+        
+        self.callingAE = DicomEntity(
+            title: message.remoteCallingAETitle ?? "UNKNOW-AE",
+            hostname: channel!.remoteAddress?.ipAddress ?? "0.0.0.0",
+            port: channel!.remoteAddress?.port ?? 11112)
+        
+        _ = try? handle(event: .AE7)
+        
+        return channel!.eventLoop.makeSucceededVoidFuture()
+    }
+    
+    
+    private func AE7() -> EventLoopFuture<Void> {
+        guard let associationAC = PDUEncoder.createAssocMessage(pduType: .associationAC, association: self) as? AssociationAC else {
+            return channel!.eventLoop.makeFailedFuture(ClientError.internalError)
+        }
+        
+        let p:EventLoopPromise<Void> = channel!.eventLoop.makePromise()
+    
+        self.state = .Sta6
+        
+        return self.write(message: associationAC, promise: p)
+    }
+    
+    
+    
     private func DT1() -> EventLoopFuture<Void> {
         self.state = .Sta6
         
-        if origin == .Local {
-            if let service = self.service {
+        if origin == .Requestor {
+            if let service = self.serviceClassUserService {
                 // rely on service
                 return service.run(association: self, channel: self.channel!)
             }
+        }
+        else if origin == .Acceptor {
+            
         }
 
         return channel!.eventLoop.makeSucceededVoidFuture()
@@ -450,8 +589,8 @@ public class DicomAssociation: ChannelInboundHandler {
     private func DT2(_ message:DataTF) -> EventLoopFuture<Void> {
         self.state = .Sta6
         
-        if let service = self.service {
-            if origin == .Local {
+        if let service = self.serviceClassUserService {
+            if origin == .Requestor {
                 // Run services
                 switch service {
                 case is CEchoSCUService:
@@ -660,19 +799,59 @@ public class DicomAssociation: ChannelInboundHandler {
     
     
     private func log(message:PDUMessage, write:Bool) {
-            let infos   = message.messageInfos()
-            var prefix  = ""
-            
-            if write {
-                prefix = "WRIT"
-            } else {
-                prefix = "READ"
-            }
-            
-            let from = message.pduType == .dataTF ? "DIMSE" : "ASSOC"
-            let info = infos.count > 0 ? "[\(infos)]" : ""
-            
-            Logger.info("\(prefix) [\(from)] (\(state)) \(message.messageName()) \(info)", "Association")
+        let infos   = message.messageInfos()
+        var prefix  = ""
+        
+        if write {
+            prefix = "WRIT"
+        } else {
+            prefix = "READ"
         }
-
+        
+        let from = message.pduType == .dataTF ? "DIMSE" : "ASSOC"
+        let info = infos.count > 0 ? "[\(infos)]" : ""
+        
+        Logger.info("\(prefix) [\(from)] (\(state)) \(message.messageName()) \(info)", "Association")
+    }
+    
+    
+    
+    private func restartARTIM() {
+        stopARTIM()
+        startARTIM()
+    }
+    
+    
+    private func startARTIM() {
+        if #available(OSX 10.12, *) {
+            artimTimer = Timer.scheduledTimer(
+                withTimeInterval: TimeInterval(dicomTimeout),
+                repeats: false
+            ) { timer in
+                Logger.error("ARTIM [Timed Out] \(self.dicomTimeout) sec.", "Association")
+            }
+        }
+    }
+    
+    
+    private func stopARTIM() {
+        artimTimer?.invalidate()
+        artimTimer = nil
+    }
+    
+    
+    private func reject(withResult result: RejectResult, source: RejectSource, reason: UserReason) -> EventLoopFuture<Void> {
+        // WRIT A-Association-RJ message
+        if let message = PDUEncoder.createAssocMessage(pduType: .associationRJ, association: self) as? AssociationRJ {
+            message.result = result
+            message.source = source
+            message.reason = reason
+            
+            let p:EventLoopPromise<Void> = channel!.eventLoop.makePromise()
+            
+            return self.write(message: message, promise: p)
+        }
+        
+        return channel!.eventLoop.makeFailedFuture(ClientError.internalError)
+    }
 }

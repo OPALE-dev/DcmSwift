@@ -2,53 +2,11 @@
 //  File.swift
 //  
 //
-//  Created by Rafael Warnault on 20/07/2021.
+//  Created by Rafael Warnault on 23/07/2021.
 //
 
 import Foundation
 import NIO
-
-
-public class DicomService {
-    public init() {
-        
-    }
-    
-    
-    public var abstractSyntaxes:[String] {
-        []
-    }
-    
-    
-    public var commandField:CommandField {
-        .NONE
-    }
-    
-    
-    public func run(association:DicomAssociation, channel:Channel) -> EventLoopFuture<Void> {
-        if let message = PDUEncoder.createDIMSEMessage(pduType: .dataTF, commandField: self.commandField, association: association) as? PDUMessage {
-            let p:EventLoopPromise<Void> = channel.eventLoop.makePromise()
-            return association.write(message: message, promise: p)
-        }
-        return channel.eventLoop.makeSucceededVoidFuture()
-    }
-}
-
-
-
-
-public class CEchoSCUService: DicomService {
-    public override var commandField:CommandField {
-        .C_ECHO_RQ
-    }
-    
-    
-    public override var abstractSyntaxes:[String] {
-        [DicomConstants.verificationSOP]
-    }
-}
-
-
 
 public class CFindSCUService: DicomService {
     var queryDataset:DataSet
@@ -119,44 +77,5 @@ public class CFindSCUService: DicomService {
                 studiesDataset.append(resultDataset)
             }
         }
-    }
-}
-
-
-
-public class CStoreSCUService: DicomService {
-    var filePaths:[String] = []
-    
-    
-    public init(_ filePaths:[String]) {
-        self.filePaths = filePaths
-    }
-    
-    
-    public override var commandField:CommandField {
-        .C_STORE_RQ
-    }
-    
-    
-    public override var abstractSyntaxes:[String] {
-        DicomConstants.storageSOPClasses
-    }
-    
-    
-    public override func run(association:DicomAssociation, channel:Channel) -> EventLoopFuture<Void> {
-        for fp in filePaths {
-            if let message = PDUEncoder.createDIMSEMessage(pduType: .dataTF, commandField: self.commandField, association: association) as? CStoreRQ {
-                let p:EventLoopPromise<Void> = channel.eventLoop.makePromise()
-                                
-                message.dicomFile = DicomFile(forPath: fp)
-                
-                if fp != filePaths.last {
-                    _ = association.write(message: message, promise: p)
-                } else {
-                    return association.write(message: message, promise: p)
-                }
-            }
-        }
-        return channel.eventLoop.makeSucceededVoidFuture()
     }
 }

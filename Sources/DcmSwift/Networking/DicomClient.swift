@@ -30,7 +30,7 @@ public class DicomClient {
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
         
-        assoc.setService(CEchoSCUService())
+        assoc.setServiceClassUser(CEchoSCUService())
 
         do {
             _ = try assoc.handle(event: .AE1).wait()
@@ -53,7 +53,7 @@ public class DicomClient {
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
         let service = CFindSCUService(queryDataset)
         
-        assoc.setService(service)
+        assoc.setServiceClassUser(service)
 
         do {
             _ = try assoc.handle(event: .AE1).wait()
@@ -75,7 +75,7 @@ public class DicomClient {
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
         
-        assoc.setService(CStoreSCUService(filePaths))
+        assoc.setServiceClassUser(CStoreSCUService(filePaths))
 
         do {
             _ = try assoc.handle(event: .AE1).wait()

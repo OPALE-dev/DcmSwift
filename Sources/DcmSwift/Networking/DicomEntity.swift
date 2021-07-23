@@ -8,7 +8,10 @@
 
 import Foundation
 
-
+/**
+ A DicomEntity represents a Dicom Applicatin Entity (AE).
+ It is composed of a title, a hostname and a port and
+ */
 public class DicomEntity : Codable, CustomStringConvertible {
     /**
      A string description of the DICOM object
