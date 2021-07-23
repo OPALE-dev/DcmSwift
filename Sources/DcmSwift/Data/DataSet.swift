@@ -122,18 +122,12 @@ public class DataSet: DicomObject {
     
     
     
-    public func DIMSEData(vrMethod inVrMethod:VRMethod = .Explicit, byteOrder inByteOrder:ByteOrder = .LittleEndian) -> Data {
+    
+    public func DIMSEData(transferSyntax: TransferSyntax) -> Data {
         var data = Data()
         
-        var finalVR     = vrMethod
-        var finalOrder  = byteOrder
-        
-        if vrMethod != inVrMethod {
-            finalVR = inVrMethod
-        }
-        if byteOrder != inByteOrder {
-            finalOrder = inByteOrder
-        }
+        let finalVR     = transferSyntax.vrMethod
+        let finalOrder  = transferSyntax.byteOrder
         
         sortElements()
         
