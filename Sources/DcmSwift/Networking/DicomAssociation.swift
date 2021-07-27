@@ -334,6 +334,8 @@ public class DicomAssociation: ChannelInboundHandler {
                     pduType: .dataTF,
                     association: self
                 ) as? DataTF {
+                    log(message: message, write: false)
+                    
                     if let commandField = message.commandField,
                        let service = serviceClassProviders[commandField.inverse] {
                         service.requestMessage = message
@@ -346,6 +348,8 @@ public class DicomAssociation: ChannelInboundHandler {
                     pduType: .releaseRQ,
                     association: self
                 ) as? ReleaseRQ {
+                    log(message: message, write: false)
+                    
                     _ = try? handle(event: .AR2(message))
                 }
             }
