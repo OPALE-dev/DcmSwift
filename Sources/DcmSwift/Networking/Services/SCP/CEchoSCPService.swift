@@ -8,7 +8,9 @@
 import Foundation
 import NIO
 
-
+/**
+ This service delegate provides a way to implement specific behaviors in the end-program
+ */
 public protocol CEchoSCPDelegate {
     /**
      This method is called by C-ECHO-SCP service for a delegate to validatethe request
@@ -24,6 +26,7 @@ public protocol CEchoSCPDelegate {
 public class CEchoSCPService: ServiceClassProvider {
     private var delegate:CEchoSCPDelegate?
     
+    
     public override var commandField:CommandField {
         .C_ECHO_RSP
     }
@@ -34,6 +37,7 @@ public class CEchoSCPService: ServiceClassProvider {
         
         self.delegate = delegate
     }
+    
     
     public override func run(association:DicomAssociation, channel:Channel) -> EventLoopFuture<Void> {
         if let message = PDUEncoder.createDIMSEMessage(pduType: .dataTF, commandField: self.commandField, association: association) as? PDUMessage {
