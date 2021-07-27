@@ -40,10 +40,14 @@ struct DcmStore: ParsableCommand {
             calledAE:  calledAE)
         
         // run C-STORE SCU service to send files given as arguements
-        if client.store(filePaths: flattenPaths(filePaths)) {
-            print("\nC-STORE \(calledAE) SUCCEEDED.\n")
-        } else {
-            print("\nC-STORE \(calledAE) FAILED.\n")
+        do {
+            if try client.store(filePaths: flattenPaths(filePaths)) {
+                print("\nC-STORE \(calledAE) SUCCEEDED.\n")
+            } else {
+                print("\nC-STORE \(calledAE) FAILED.\n")
+            }
+        } catch let e {
+            Logger.error(e.localizedDescription)
         }
     }
     

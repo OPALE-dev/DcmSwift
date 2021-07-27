@@ -26,68 +26,53 @@ public class DicomClient {
     }
     
     
-    public func echo() -> Bool {
+    public func echo() throws -> Bool {
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
         
         assoc.setServiceClassUser(CEchoSCUService())
 
-        do {
-            _ = try assoc.handle(event: .AE1).wait()
-            
-            if let status = try assoc.promise?.futureResult.wait(),
-               status == .Success {
-                return true
-            }
-            
-        } catch let e {
-            Logger.error(e.localizedDescription)
+        _ = try assoc.handle(event: .AE1).wait()
+        
+        if let status = try assoc.promise?.futureResult.wait(),
+           status == .Success {
+            return true
         }
         
         return false
     }
     
     
-    public func find(queryDataset:DataSet? = nil) -> [DataSet] {
+    public func find(queryDataset:DataSet? = nil) throws -> [DataSet] {
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
         let service = CFindSCUService(queryDataset)
         
         assoc.setServiceClassUser(service)
 
-        do {
-            _ = try assoc.handle(event: .AE1).wait()
-            
-            if let status = try assoc.promise?.futureResult.wait(),
-               status == .Success {
-                return service.studiesDataset
-            }
-            
-        } catch let e {
-            Logger.error(e.localizedDescription)
+        _ = try assoc.handle(event: .AE1).wait()
+        
+        if let status = try assoc.promise?.futureResult.wait(),
+           status == .Success {
+            return service.studiesDataset
         }
         
         return []
     }
     
     
-    public func store(filePaths:[String]) -> Bool {
+    public func store(filePaths:[String]) throws -> Bool {
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
         
         assoc.setServiceClassUser(CStoreSCUService(filePaths))
 
-        do {
-            _ = try assoc.handle(event: .AE1).wait()
-            
-            let status = try assoc.promise?.futureResult.wait()
-                        
-            if status == .Success {
-                return true
-            }
-            
-        } catch let e {
-            Logger.error(e.localizedDescription)
+        _ = try assoc.handle(event: .AE1).wait()
+        
+        let status = try assoc.promise?.futureResult.wait()
+                    
+        if status == .Success {
+            return true
         }
         
         return false

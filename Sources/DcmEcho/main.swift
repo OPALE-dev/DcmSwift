@@ -45,10 +45,14 @@ struct DcmEcho: ParsableCommand {
             calledAE: calledAE)
         
         // run C-ECHO SCU service
-        if client.echo() {
-            print("C-ECHO \(calledAE) SUCCEEDED")
-        } else {
-            print("C-ECHO \(callingAE) FAILED")
+        do {
+            if try client.echo() {
+                print("C-ECHO \(calledAE) SUCCEEDED")
+            } else {
+                print("C-ECHO \(callingAE) FAILED")
+            }
+        } catch let e {
+            Logger.error(e.localizedDescription)
         }
     }
 }

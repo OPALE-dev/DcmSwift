@@ -44,13 +44,17 @@ struct DcmFind: ParsableCommand {
             calledAE: calledAE)
         
         // run C-FIND SCU service
-        let studies:[DataSet] = client.find()
-        
-        if studies.count > 0 {
-            print("C-FIND \(calledAE) SUCCEEDED, \(studies.count) found.")
-            print(studies)
-        } else {
-            print("C-FIND \(callingAE) FAILED, no studies found.")
+        do {
+            let studies:[DataSet] = try client.find()
+            
+            if studies.count > 0 {
+                print("C-FIND \(calledAE) SUCCEEDED, \(studies.count) found.")
+                print(studies)
+            } else {
+                print("C-FIND \(callingAE) FAILED, no studies found.")
+            }
+        } catch let e {
+            Logger.error(e.localizedDescription)
         }
     }
 }
