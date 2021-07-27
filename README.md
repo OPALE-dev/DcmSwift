@@ -11,7 +11,7 @@ DcmSwift is a (partial, work in progress) DICOM implementation written in Swift.
 ## Dependencies
 
 * `IBM-Swift/BlueSocket` (networking)
-* `pointfreeco/swift-html` (HTML rendering)
+* `pointfreeco/swift-html` (HTML rendering of DICOM SR)
 
 *Dependencies are managed by SPM.*
 
@@ -232,11 +232,17 @@ DCMTK proposes also a server, for testing `cfind` program:
 
 All the executables from both `DCMTK` and `dcm4chee` are very good reference for testing DICOM features.
 
+## Contributors
+
+* Rafaël Warnault <rw@opale.pro>
+* Paul Repain <pr@opale.pro>
+* Colombe Blachère
+
 ## License
 
 MIT License
 
-Copyright (c) 2019 - OPALE, Rafaël Warnault <rw@opale.pro>
+Copyright (c) 2019 - OPALE <contact@opale.pro>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
