@@ -739,7 +739,7 @@ public class DicomAssociation: ChannelInboundHandler {
     
     // MARK: -
     public func disconnect() -> EventLoopFuture<Void> {
-        if .Sta5 != self.state {
+        if .Sta1 != self.state {
             return self.group.next().makeFailedFuture(NetworkError.notReady)
         }
         
