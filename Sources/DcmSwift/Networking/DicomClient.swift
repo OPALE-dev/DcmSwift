@@ -29,6 +29,7 @@ public class DicomClient {
     public func echo() throws -> Bool {
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
+        var result = false
         
         assoc.setServiceClassUser(CEchoSCUService())
 
@@ -36,10 +37,12 @@ public class DicomClient {
         
         if let status = try assoc.promise?.futureResult.wait(),
            status == .Success {
-            return true
+            result = true
         }
         
-        return false
+        _ = try assoc.disconnect().wait()
+        
+        return result
     }
     
     
@@ -47,6 +50,7 @@ public class DicomClient {
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
         let service = CFindSCUService(queryDataset)
+        var result:[DataSet] = []
         
         assoc.setServiceClassUser(service)
 
@@ -54,16 +58,19 @@ public class DicomClient {
         
         if let status = try assoc.promise?.futureResult.wait(),
            status == .Success {
-            return service.studiesDataset
+            result.append(contentsOf: service.studiesDataset)
         }
         
-        return []
+        _ = try assoc.disconnect().wait()
+        
+        return result
     }
     
     
     public func store(filePaths:[String]) throws -> Bool {
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
+        var result = false
         
         assoc.setServiceClassUser(CStoreSCUService(filePaths))
 
@@ -72,10 +79,12 @@ public class DicomClient {
         let status = try assoc.promise?.futureResult.wait()
                     
         if status == .Success {
-            return true
+            result = true
         }
         
-        return false
+        _ = try assoc.disconnect().wait()
+        
+        return result
     }
     
     
