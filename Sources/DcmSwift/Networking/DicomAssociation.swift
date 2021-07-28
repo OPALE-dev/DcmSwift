@@ -29,6 +29,8 @@ import NIO
 
         // set a C-ECHO-SCU service up
         assoc.setServiceClassUser(CEchoSCUService())
+        // start the association
+        try? assoc.start()
  
  * DICOM P.07 S.D.3: http://dicom.nema.org/dicom/2013/output/chtml/part07/sect_D.3.html
  * DICOM P.08 S.9.3: http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.2.html
@@ -176,6 +178,7 @@ public class DicomAssociation: ChannelInboundHandler {
     
     public var serviceClassUsers:ServiceClassUser?
     public var serviceClassProviders:[CommandField:ServiceClassProvider] = [:]
+    public var currentSCP:ServiceClassProvider?
     
     private var channel: Channel?
     private var connectedAssociations = [ObjectIdentifier: DicomAssociation]()
@@ -230,7 +233,7 @@ public class DicomAssociation: ChannelInboundHandler {
     
     
     
-    // MARK: -
+    // MARK: - ChannelInboundHandler
     public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         var buffer = self.unwrapInboundIn(data)
         let bytes = buffer.readBytes(length: buffer.readableBytes)
@@ -336,12 +339,7 @@ public class DicomAssociation: ChannelInboundHandler {
                 ) as? DataTF {
                     log(message: message, write: false)
                     
-                    if let commandField = message.commandField,
-                       let service = serviceClassProviders[commandField.inverse] {
-                        service.requestMessage = message
-                    
-                        _ = try? handle(event: .DT2(message))
-                    }
+                    _ = try? handle(event: .DT2(message))
                 }
                 else if let message = PDUDecoder.receiveAssocMessage(
                     data: pduData,
@@ -407,7 +405,28 @@ public class DicomAssociation: ChannelInboundHandler {
     
     
     
-    // MARK: -
+    // MARK: - Public methods
+    /**
+     Run the association for the given configured services (SCU only)
+     */
+    public func start() throws -> Bool {
+        var result = false
+        
+        _ = try handle(event: .AE1).wait()
+        
+        if let status = try promise?.futureResult.wait(),
+           status == .Success {
+            result = true
+        }
+        
+        _ = try disconnect().wait()
+        
+        return result
+    }
+    
+    
+    
+    
     /**
      Set a service class user to the Association
      The service will be used as a requestor.
@@ -431,8 +450,63 @@ public class DicomAssociation: ChannelInboundHandler {
     
     
     
+    // MARK: -
+    public func disconnect() -> EventLoopFuture<Void> {
+        if .Sta1 != self.state {
+            return self.group.next().makeFailedFuture(NetworkError.notReady)
+        }
+        
+        guard let channel = self.channel else {
+            return self.group.next().makeFailedFuture(NetworkError.notReady)
+        }
+        
+        self.state = .Sta13
+        
+        channel.closeFuture.whenComplete { _ in
+            self.state = .Sta1
+        }
+        
+        channel.close(promise: nil)
+        
+        return channel.closeFuture
+    }
+    
+    
     
     // MARK: -
+    public func addPresentationContext(abstractSyntax: String, result:UInt8? = nil) {
+        let ctID = self.getNextContextID()
+        
+        let pc = PresentationContext(
+            abstractSyntax: abstractSyntax,
+            transferSyntaxes: [TransferSyntax.explicitVRLittleEndian],
+            contextID: ctID,
+            result: result)
+        
+        self.presentationContexts[ctID] = pc
+    }
+
+    
+    public func acceptedPresentationContexts(forSOPClassUID sopClassUID:String) -> [PresentationContext] {
+        var pcs:[PresentationContext] = []
+        
+        for (_,pc) in self.presentationContexts {
+            if pc.result != 0x3 { // Unsupported abtract syntax
+                if pc.abstractSyntax == sopClassUID {
+                    if let _ = self.acceptedPresentationContexts[pc.contextID] {
+                        pcs.append(pc)
+                    }
+                }
+            }
+        }
+        
+        return pcs
+    }
+    
+    
+    
+    
+    // MARK: - State Machine
     /**
     State Machine transitions
      */
@@ -459,13 +533,13 @@ public class DicomAssociation: ChannelInboundHandler {
     /**
     State Machine handler
      */
-    public func handle(event: PDUAction) throws -> EventLoopFuture<Void> {
+    private func handle(event: PDUAction) throws -> EventLoopFuture<Void> {
         return try transition(forEvent: event)
     }
     
     
     
-    // MARK: -
+    // MARK: - State Machine Actions
     /**
     State Machine actions
      */
@@ -588,7 +662,7 @@ public class DicomAssociation: ChannelInboundHandler {
         if origin == .Requestor {
             if let service = self.serviceClassUsers {
                 // rely on service
-                return service.run(association: self, channel: self.channel!)
+                return service.request(association: self, channel: self.channel!)
             }
         }
 
@@ -601,86 +675,29 @@ public class DicomAssociation: ChannelInboundHandler {
         
         if origin == .Requestor {
             if let service = self.serviceClassUsers {
-                switch service {
-                case is CEchoSCUService:
-                    if message is CEchoRSP {
-                        dimseStatus = message.dimseStatus.status
-                        
-                        if message.dimseStatus.status == .Success {
-                            _ = try? handle(event: .AR1)
-                            
-                            return channel!.eventLoop.makeSucceededVoidFuture()
-                        }
-                        else {
-                            
-                        }
-                    }
+                dimseStatus = service.receive(association: self, dataTF: message)
+                                        
+                if dimseStatus == .Success {
+                    _ = try? handle(event: .AR1)
                     
-                case is CFindSCUService:
-                    if let s = service as? CFindSCUService {
-                        if let m = message as? CFindRSP {
-                            // C-FIND-RSP message (with or without DATA fragment)
-                            dimseStatus = message.dimseStatus.status
-                            
-                            s.receiveRSP(m)
-                            
-                            if message.dimseStatus.status == .Success {
-                                _ = try? handle(event: .AR1)
-                                
-                                return channel!.eventLoop.makeSucceededVoidFuture()
-                            }
-                        }
-                        else {
-                            // single DATA-TF fragment
-                            if let ats = acceptedTransferSyntax,
-                               let transferSyntax = TransferSyntax(ats) {
-                                s.receiveData(message, transferSyntax: transferSyntax)
-                            }
-                        }
-                    }
-                    
-                case is CStoreSCUService:
-                    if service is CStoreSCUService {
-                        if message.dimseStatus != nil {
-                            dimseStatus = message.dimseStatus.status
-                            
-                            if message.dimseStatus.status == .Success {
-                                _ = try? handle(event: .AR1)
-                                
-                                return channel!.eventLoop.makeSucceededVoidFuture()
-                            }
-                        } else {
-                            if let command = message.commandDataset {
-                                Logger.debug(command.description)
-                                
-                                if let status = command.integer16(forTag: "Status"), status > 0 {
-                                    if let errorComment = command.string(forTag: "ErrorComment") {
-                                        let error = NetworkError.errorComment(message: errorComment)
-                                        
-                                        Logger.error(error.localizedDescription, "Association")
-                                        
-                                        //promise!.fail(error)
-                                        
-                                        return channel!.eventLoop.makeFailedFuture(error)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                default:
-                    break
+                    return channel!.eventLoop.makeSucceededVoidFuture()
                 }
+                else if dimseStatus == .Pending {
+                    return channel!.eventLoop.makeSucceededVoidFuture()
+                }
+                
+                return channel!.eventLoop.makeFailedFuture(NetworkError.internalError)
             }
         }
         else if origin == .Acceptor {
             if let commandField = message.commandField,
                let service = serviceClassProviders[commandField.inverse] {
+                currentSCP = service
                 
-                //let future = service.run(association: self, channel: channel!)
-                
-                //_ = try? handle(event: .AR2)
-                
-                return service.run(association: self, channel: channel!)
+                return service.reply(request: message, association: self, channel: channel!)
+            }
+            else if let currentSCP = currentSCP {
+                return currentSCP.reply(request: message, association: self, channel: channel!)
             }
         }
 
@@ -711,12 +728,13 @@ public class DicomAssociation: ChannelInboundHandler {
         let p:EventLoopPromise<Void> = channel!.eventLoop.makePromise()
 
         return write(message: releaseRSP, promise: p)
-//        return channel!.eventLoop.makeSucceededVoidFuture()
     }
     
     
     private func AR3(_ message:ReleaseRSP, error:Error? = nil) -> EventLoopFuture<Void> {
         self.state = .Sta1
+        
+        currentSCP = nil
                 
         // release the global promise with DIMSE status
         if let s = self.dimseStatus {
@@ -734,67 +752,12 @@ public class DicomAssociation: ChannelInboundHandler {
         return channel!.eventLoop.makeSucceededVoidFuture()
     }
 
+
     
 
     
-    // MARK: -
-    public func disconnect() -> EventLoopFuture<Void> {
-        if .Sta1 != self.state {
-            return self.group.next().makeFailedFuture(NetworkError.notReady)
-        }
-        
-        guard let channel = self.channel else {
-            return self.group.next().makeFailedFuture(NetworkError.notReady)
-        }
-        
-        self.state = .Sta13
-        
-        channel.closeFuture.whenComplete { _ in
-            self.state = .Sta1
-        }
-        
-        channel.close(promise: nil)
-        
-        return channel.closeFuture
-    }
     
-    
-    
-    // MARK: -
-    public func addPresentationContext(abstractSyntax: String, result:UInt8? = nil) {
-        let ctID = self.getNextContextID()
-        
-        let pc = PresentationContext(
-            abstractSyntax: abstractSyntax,
-            transferSyntaxes: [TransferSyntax.explicitVRLittleEndian],
-            contextID: ctID,
-            result: result)
-        
-        self.presentationContexts[ctID] = pc
-    }
-
-    
-    public func acceptedPresentationContexts(forSOPClassUID sopClassUID:String) -> [PresentationContext] {
-        var pcs:[PresentationContext] = []
-        
-        for (_,pc) in self.presentationContexts {
-            if pc.result != 0x3 { // Unsupported abtract syntax
-                if pc.abstractSyntax == sopClassUID {
-                    if let _ = self.acceptedPresentationContexts[pc.contextID] {
-                        pcs.append(pc)
-                    }
-                }
-            }
-        }
-        
-        return pcs
-    }
-    
-
-
-    
-    
-    // MARK: -
+    // MARK: - Privates
     internal func write(message:PDUMessage, promise: EventLoopPromise<Void>) -> EventLoopFuture<Void> {
         log(message: message, write: true)
         

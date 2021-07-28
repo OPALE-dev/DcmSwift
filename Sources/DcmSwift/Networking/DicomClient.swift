@@ -127,20 +127,10 @@ public class DicomClient {
      */
     public func echo() throws -> Bool {
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
-        var result = false
         
         assoc.setServiceClassUser(CEchoSCUService())
-
-        _ = try assoc.handle(event: .AE1).wait()
         
-        if let status = try assoc.promise?.futureResult.wait(),
-           status == .Success {
-            result = true
-        }
-        
-        _ = try assoc.disconnect().wait()
-        
-        return result
+        return try assoc.start()
     }
     
     
@@ -176,30 +166,23 @@ public class DicomClient {
                  calledAE: calledAE)
              
              // run C-FIND SCU service
-             do {
-                print(try client.find())
-             } catch let e {
-                print(e)
-             }
+             print(try? client.find())
      
      */
     public func find(queryDataset:DataSet? = nil) throws -> [DataSet] {
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
         let service = CFindSCUService(queryDataset)
-        var result:[DataSet] = []
+        var result = false
         
         assoc.setServiceClassUser(service)
-
-        _ = try assoc.handle(event: .AE1).wait()
         
-        if let status = try assoc.promise?.futureResult.wait(),
-           status == .Success {
-            result.append(contentsOf: service.studiesDataset)
+        result = try assoc.start()
+
+        if !result {
+            return []
         }
         
-        _ = try assoc.disconnect().wait()
-        
-        return result
+        return service.studiesDataset
     }
     
     /**
@@ -217,33 +200,16 @@ public class DicomClient {
              callingAE: callingAE,
              calledAE:  calledAE)
          
-         // run C-STORE SCU service to send files given as arguements
-         do {
-             if try client.store(filePaths: flattenPaths(filePaths)) {
-                 print("\nC-STORE \(calledAE) SUCCEEDED.\n")
-             }
-         } catch let e {
-             Logger.error(e.localizedDescription)
-         }
+         // run C-STORE SCU service to send files
+         try? client.store(filePaths: flattenPaths(filePaths))
      
      */
     public func store(filePaths:[String]) throws -> Bool {
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
-        var result = false
         
         assoc.setServiceClassUser(CStoreSCUService(filePaths))
 
-        _ = try assoc.handle(event: .AE1).wait()
-        
-        let status = try assoc.promise?.futureResult.wait()
-                    
-        if status == .Success {
-            result = true
-        }
-        
-        _ = try assoc.disconnect().wait()
-        
-        return result
+        return try assoc.start()
     }
     
     

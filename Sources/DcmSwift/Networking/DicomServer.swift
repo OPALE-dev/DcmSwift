@@ -10,7 +10,7 @@ import Foundation
 import NIO
 import Dispatch
 
-public class DicomServer: CEchoSCPDelegate {
+public class DicomServer: CEchoSCPDelegate, CFindSCPDelegate, CStoreSCPDelegate {
     var calledAE:DicomEntity!
     var port: Int = 11112
     
@@ -32,15 +32,21 @@ public class DicomServer: CEchoSCPDelegate {
                 // we create a new DicomAssociation for each new activating channel
                 let assoc = DicomAssociation(group: self.group, calledAE: self.calledAE)
                 
-                // this assoc implements to the following SCPs
+                // this assoc implements to the following SCPs:
+                // C-ECHO-SCP
                 assoc.addServiceClassProvider(CEchoSCPService(self))
-
+                // C-FIND-SCP
+                assoc.addServiceClassProvider(CFindSCPService(self))
+                // C-STORE-SCP
+                assoc.addServiceClassProvider(CStoreSCPService(self))
+                
                 return channel.pipeline.addHandlers([ByteToMessageHandler(PDUBytesDecoder(withAssociation: assoc)), assoc])
             }
             .childChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
             .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
     }
+    
     
     deinit {
         channel.close(mode: .all, promise: nil)
@@ -72,7 +78,15 @@ public class DicomServer: CEchoSCPDelegate {
     }
     
     
-//    public func receive(message: CStoreRQ) {
+    
+    // MARK: - CFindSCPDelegate
+    public func query(level: QueryRetrieveLevel, dataset: DataSet) -> [DataSet] {        
+        return []
+    }
+    
+    
+    // MARK: - CStoreSCPDelegate
+    public func store(fileMetaInfo:DataSet, dataset: DataSet) -> Bool {
 //        if message.receivedData.count > 0 {
 //            let dis = DicomInputStream(data: message.receivedData)
 //
@@ -99,5 +113,6 @@ public class DicomServer: CEchoSCPDelegate {
 //                }
 //            }
 //        }
-//    }
+        return false
+    }
 }

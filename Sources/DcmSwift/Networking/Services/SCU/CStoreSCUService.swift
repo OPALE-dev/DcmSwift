@@ -27,7 +27,7 @@ public class CStoreSCUService: ServiceClassUser {
     }
     
     
-    public override func run(association:DicomAssociation, channel:Channel) -> EventLoopFuture<Void> {
+    public override func request(association:DicomAssociation, channel:Channel) -> EventLoopFuture<Void> {
         for fp in filePaths {
             if let message = PDUEncoder.createDIMSEMessage(pduType: .dataTF, commandField: self.commandField, association: association) as? CStoreRQ {
                 let p:EventLoopPromise<Void> = channel.eventLoop.makePromise()

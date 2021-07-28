@@ -43,7 +43,7 @@ public class CFindSCUService: ServiceClassUser {
     }
     
     
-    public override func run(association:DicomAssociation, channel:Channel) -> EventLoopFuture<Void> {
+    public override func request(association:DicomAssociation, channel:Channel) -> EventLoopFuture<Void> {
         if let message = PDUEncoder.createDIMSEMessage(pduType: .dataTF, commandField: self.commandField, association: association) as? CFindRQ {
             let p:EventLoopPromise<Void> = channel.eventLoop.makePromise()
 
@@ -54,6 +54,29 @@ public class CFindSCUService: ServiceClassUser {
             return association.write(message: message, promise: p)
         }
         return channel.eventLoop.makeSucceededVoidFuture()
+    }
+    
+    
+    public override func receive(association:DicomAssociation, dataTF message:DataTF) -> DIMSEStatus.Status {
+        var result:DIMSEStatus.Status = .Pending
+        
+        if let m = message as? CFindRSP {
+            // C-FIND-RSP message (with or without DATA fragment)
+            result = message.dimseStatus.status
+            
+            receiveRSP(m)
+            
+            return result
+        }
+        else {
+            // single DATA-TF fragment
+            if let ats = association.acceptedTransferSyntax,
+               let transferSyntax = TransferSyntax(ats) {
+                receiveData(message, transferSyntax: transferSyntax)
+            }
+        }
+        
+        return result
     }
     
     
