@@ -34,7 +34,7 @@ public class PDUMessage:
     public var association:DicomAssociation!
     public var dimseStatus:DIMSEStatus!
     public var flags:UInt8!
-    public var errors:[DicomError] = []
+    //public var errors:[DicomError] = []
     public var debugDescription:String = "No message description"
     public var commandDataset:DataSet!
     public var requestMessage:PDUMessage?
