@@ -149,12 +149,12 @@ public class DicomClient {
           
      - Parameter queryDataset: Your query dataset, primarilly used by the C-FIND SCP to determine
      what attributes you want to get as result, and also to set filters to precise your search. If no query dataset
-     is given, the `CFindSCUService` will provides you some default fields (see `CFindSCUService.init()`)
+     is given, the `CFindSCUService` will provide you some default attributes (see `CFindSCUService.init()`)
      
      - Throws: `NetworkError.*`, `StreamError.*` or any other NIO realm errors
      
      - Returns: a dataset array if the C-FIND-RSP DIMSE Status is `Success`. If the returned array is empty,
-     the C-FIND SCP probably has no results for your query.
+     the C-FIND SCP probably has no result for the given query.
      
      Example of use:
      
