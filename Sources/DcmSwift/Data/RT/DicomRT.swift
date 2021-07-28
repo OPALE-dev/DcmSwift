@@ -12,25 +12,15 @@ import Foundation
  */
 public class DicomRT : DicomFile {
     
-    public var frames: Int16
-    public var rows: Int16
-    public var columns: Int16
-    public var bitsAllocated: Int16
-    public var bitsStored:Int16
-    public var highBit: Int16
-    public var pixelRepresentation: DicomImage.PixelRepresentation
+    public var frames:Int16         = 0
+    public var rows:Int16           = 0
+    public var columns:Int16        = 0
+    public var bitsAllocated:Int16  = 0
+    public var bitsStored:Int16     = 0
+    public var highBit:Int16        = 0
+    public var pixelRepresentation: DicomImage.PixelRepresentation = DicomImage.PixelRepresentation.Signed
     
     public override init?(forPath filepath: String) {
-        // can't call super init without initiating the properties first
-        // TODO refactor?
-        frames = 0
-        rows = 0
-        columns = 0
-        bitsAllocated = 0
-        bitsStored = 0
-        highBit = 0
-        pixelRepresentation = DicomImage.PixelRepresentation.Signed
-        
         super.init(forPath: filepath)
         
         guard let numberOfFrames = self.dataset.string(forTag: "NumberOfFrames"),// String, cast to Int16 later
