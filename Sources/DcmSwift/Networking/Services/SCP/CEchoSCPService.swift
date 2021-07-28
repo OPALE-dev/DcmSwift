@@ -39,14 +39,12 @@ public class CEchoSCPService: ServiceClassProvider {
     }
     
     
-    public override func run(association:DicomAssociation, channel:Channel) -> EventLoopFuture<Void> {
+    public override func reply(request: PDUMessage?, association:DicomAssociation, channel:Channel) -> EventLoopFuture<Void> {
         if let message = PDUEncoder.createDIMSEMessage(pduType: .dataTF, commandField: self.commandField, association: association) as? PDUMessage {
             
-            message.requestMessage = self.requestMessage
-            message.dimseStatus = DIMSEStatus(status: .Success, command: self.commandField)
-            
-            self.requestMessage = nil
-            
+            message.requestMessage  = request
+            message.dimseStatus     = DIMSEStatus(status: .Success, command: self.commandField)
+                        
             if delegate != nil && association.callingAE != nil {
                 let status = delegate!.validateEcho(callingAE: association.callingAE!)
                 
