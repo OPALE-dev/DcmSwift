@@ -8,18 +8,6 @@
 import Foundation
 import NIO
 
-/**
- Enum that define
- 
- http://dicom.nema.org/Dicom/2013/output/chtml/part04/sect_C.6.html
- */
-public enum QueryRetrieveLevel {
-    case PATIENT
-    case STUDY
-    case SERIES
-    case IMAGE
-}
-
 
 /**
  This service delegate provides a way to implement specific behaviors in the end-program

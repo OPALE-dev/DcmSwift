@@ -171,7 +171,7 @@ public class DicomClient {
      */
     public func find(queryDataset:DataSet? = nil) throws -> [DataSet] {
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
-        let service = CFindSCUService(queryDataset)
+        let service = CFindSCUService(queryDataset, queryLevel: .PATIENT)
         var result = false
         
         assoc.setServiceClassUser(service)

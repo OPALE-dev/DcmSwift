@@ -61,10 +61,14 @@ public struct DicomConstants {
     
     
     /**
-     C-FIND Root Level
+     C-FIND/GET/MOVE Root Level
      */
-    public static let StudyRootQueryRetrieveInformationModelFIND = "1.2.840.10008.5.1.4.1.2.2.1"
-    
+    public static let PatientRootQueryRetrieveInformationModelFIND  = "1.2.840.10008.5.1.4.1.2.1.1"
+    public static let PatientRootQueryRetrieveInformationModelMOVE  = "1.2.840.10008.5.1.4.1.2.1.2"
+    public static let PatientRootQueryRetrieveInformationModelGET   = "1.2.840.10008.5.1.4.1.2.1.3"
+    public static let StudyRootQueryRetrieveInformationModelFIND    = "1.2.840.10008.5.1.4.1.2.2.1"
+    public static let StudyRootQueryRetrieveInformationModelMOVE    = "1.2.840.10008.5.1.4.1.2.2.2"
+    public static let StudyRootQueryRetrieveInformationModelGET     = "1.2.840.10008.5.1.4.1.2.2.3"
     
     /**
      Storage SOP Classes
