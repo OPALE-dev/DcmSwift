@@ -332,8 +332,8 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Returns: en VR enum
      */
     public func vrForTag(withCode code: String) -> VR.VR? {
-        if tags.keys.contains(code) {
-            if let t = tags[code] {
+        if tags.keys.contains(code.lowercased()) {
+            if let t = tags[code.lowercased()] {
                 if let v = t["vr"] {
                    return DicomSpec.vr(for:v)
                 }

@@ -10,6 +10,7 @@ import NIO
 
 public class CFindSCUService: ServiceClassUser {
     var queryDataset:DataSet
+    var queryLevel:QueryRetrieveLevel = .STUDY
     var studiesDataset:[DataSet] = []
     var lastFindRSP:CFindRSP?
     
@@ -19,24 +20,31 @@ public class CFindSCUService: ServiceClassUser {
     
     
     public override var abstractSyntaxes:[String] {
-        [DicomConstants.StudyRootQueryRetrieveInformationModelFIND]
+        switch queryLevel {
+        case .PATIENT:
+            return [DicomConstants.PatientRootQueryRetrieveInformationModelFIND]
+            
+        case .STUDY:
+            return [DicomConstants.StudyRootQueryRetrieveInformationModelFIND]
+            
+        case .SERIES:
+            return [DicomConstants.StudyRootQueryRetrieveInformationModelFIND]
+            
+        case .IMAGE:
+            return [DicomConstants.StudyRootQueryRetrieveInformationModelFIND]
+        }
     }
     
     
-    public init(_ queryDataset:DataSet? = nil) {
-        if let d = queryDataset {
-            self.queryDataset = d
-            
+    public init(_ queryDataset:DataSet? = nil, queryLevel:QueryRetrieveLevel? = nil) {
+        if let queryLevel = queryLevel {
+            self.queryLevel = queryLevel
+        }
+
+        if let queryDataset = queryDataset {
+            self.queryDataset = queryDataset
         } else {
-            self.queryDataset = DataSet()
-            
-            _ = self.queryDataset.set(value:"", forTagName: "PatientID")
-            _ = self.queryDataset.set(value:"", forTagName: "PatientName")
-            _ = self.queryDataset.set(value:"", forTagName: "PatientBirthDate")
-            _ = self.queryDataset.set(value:"", forTagName: "StudyDescription")
-            _ = self.queryDataset.set(value:"", forTagName: "StudyDate")
-            _ = self.queryDataset.set(value:"", forTagName: "StudyTime")
-            _ = self.queryDataset.set(value:"", forTagName: "AccessionNumber")
+            self.queryDataset = QueryRetrieveLevel.defaultQueryDataset(level: self.queryLevel)
         }
         
         super.init()
@@ -47,7 +55,7 @@ public class CFindSCUService: ServiceClassUser {
         if let message = PDUEncoder.createDIMSEMessage(pduType: .dataTF, commandField: self.commandField, association: association) as? CFindRQ {
             let p:EventLoopPromise<Void> = channel.eventLoop.makePromise()
 
-            _ = queryDataset.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
+            _ = queryDataset.set(value: "\(self.queryLevel)", forTagName: "QueryRetrieveLevel")
 
             message.queryDataset = queryDataset
             
@@ -80,7 +88,9 @@ public class CFindSCUService: ServiceClassUser {
     }
     
     
-    public func receiveRSP(_ message:CFindRSP) {
+    
+    // MARK: - Privates
+    private func receiveRSP(_ message:CFindRSP) {
         if let dataset = message.studiesDataset {
             studiesDataset.append(dataset)
         } else {
@@ -89,7 +99,7 @@ public class CFindSCUService: ServiceClassUser {
     }
     
     
-    public func receiveData(_ message:DataTF, transferSyntax:TransferSyntax) {
+    private func receiveData(_ message:DataTF, transferSyntax:TransferSyntax) {
         if message.receivedData.count > 0 {
             let dis = DicomInputStream(data: message.receivedData)
             
