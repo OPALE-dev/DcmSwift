@@ -17,7 +17,7 @@ public protocol CFindSCPDelegate {
 }
 
 
-public class CFindSCPService: ServiceClassProvider {
+public class CFindSCP: ServiceClassProvider {
     private var delegate:CFindSCPDelegate?
     private var lastFindRQ:CFindRQ?
     

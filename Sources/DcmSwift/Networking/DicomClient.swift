@@ -128,7 +128,7 @@ public class DicomClient {
     public func echo() throws -> Bool {
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
         
-        assoc.setServiceClassUser(CEchoSCUService())
+        assoc.setServiceClassUser(CEchoSCU())
         
         return try assoc.start()
     }
@@ -171,7 +171,7 @@ public class DicomClient {
      */
     public func find(queryDataset:DataSet? = nil, queryLevel:QueryRetrieveLevel = .STUDY, instanceUID:String? = nil) throws -> [DataSet] {
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
-        let service = CFindSCUService(queryDataset, queryLevel: queryLevel)
+        let service = CFindSCU(queryDataset, queryLevel: queryLevel)
         var result = false
         
         assoc.setServiceClassUser(service)
@@ -207,7 +207,7 @@ public class DicomClient {
     public func store(filePaths:[String]) throws -> Bool {
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
         
-        assoc.setServiceClassUser(CStoreSCUService(filePaths))
+        assoc.setServiceClassUser(CStoreSCU(filePaths))
 
         return try assoc.start()
     }

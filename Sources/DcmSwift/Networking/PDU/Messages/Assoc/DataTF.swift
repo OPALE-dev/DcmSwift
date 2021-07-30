@@ -53,9 +53,7 @@ public class DataTF: PDUMessage {
         }
         
         self.flags = UInt8(flags)
-        
-        print("self.flags \(self.flags)")
-                        
+                                
         // command fragment
         if self.flags == 0x3 {
             // read dataset data
