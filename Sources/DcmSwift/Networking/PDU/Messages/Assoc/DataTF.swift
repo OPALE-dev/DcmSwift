@@ -53,13 +53,15 @@ public class DataTF: PDUMessage {
         }
         
         self.flags = UInt8(flags)
+        
+        print("self.flags \(self.flags)")
                         
         // command fragment
         if self.flags == 0x3 {
             // read dataset data
             guard let commandData = stream.read(length: Int(pdvLength) - 2) else {
                 Logger.error("Cannot read dataset data")
-                return .Refused
+                return .Pending
             }
             
             let dis = DicomInputStream(data: commandData)

@@ -11,9 +11,23 @@ import ArgumentParser
 
 struct DcmServer: ParsableCommand {
     mutating func run() throws {
-        let server = DicomServer(port: 11112, localAET: "DCMSERVER")
+        let server = DicomServer(
+            port: 11112,
+            localAET: "DCMSERVER",
+            config: ServerConfig(
+                enableCEchoSCP : true,
+                enableCFindSCP : true,
+                enableCStoreSCP: true
+            )
+        )
 
-        server.start()
+        if #available(OSX 10.12, *) {
+            //Thread.detachNewThread {
+                server.start()
+            //}
+        } else {
+            Logger.error("MacOS 10.12 or newer is required")
+        }
     }
 }
 

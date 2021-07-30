@@ -99,7 +99,12 @@ public class PresentationContext {
     }
     
     
-    public func data() -> Data {
+    /**
+     - Parameter onlyAcceptedTS: setup Presentation Context with the given Transfer Syntax. Used
+     by AssociationAC message to reply only with the Association accepted Transfer Syntax, where in AssociationRQ,
+     the Presentation Context presents all the supported TS.
+     */
+    public func data(onlyAcceptedTS:String? = nil) -> Data {
         // ABSTRACT SYNTAX Data
         var asData = Data()
         
@@ -112,21 +117,21 @@ public class PresentationContext {
         }
         
         // TRANSFER SYNTAXES Data
-        var tsData = Data()
-        var tsArray: [String] = []
-        
-        if self.result != nil {
-            tsArray = [TransferSyntax.explicitVRLittleEndian]
-        } else {
-            tsArray = [TransferSyntax.implicitVRLittleEndian, TransferSyntax.explicitVRLittleEndian]
-        }
-        
-        for ts in tsArray {
-            let tsLength = UInt16(ts.data(using: .utf8)!.count)
+        var tsData = Data()        
+        if onlyAcceptedTS != nil {
+            let tsLength = UInt16(onlyAcceptedTS!.data(using: .utf8)!.count)
             tsData.append(uint8: ItemType.transferSyntax.rawValue, bigEndian: true)
             tsData.append(byte: 0x00) // RESERVED
             tsData.append(uint16: tsLength, bigEndian: true)
-            tsData.append(ts.data(using: .utf8)!)
+            tsData.append(onlyAcceptedTS!.data(using: .utf8)!)
+        } else {
+            for ts in self.transferSyntaxes {
+                let tsLength = UInt16(ts.data(using: .utf8)!.count)
+                tsData.append(uint8: ItemType.transferSyntax.rawValue, bigEndian: true)
+                tsData.append(byte: 0x00) // RESERVED
+                tsData.append(uint16: tsLength, bigEndian: true)
+                tsData.append(ts.data(using: .utf8)!)
+            }
         }
         
         // Presentation Context

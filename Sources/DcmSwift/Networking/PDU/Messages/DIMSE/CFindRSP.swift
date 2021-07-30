@@ -17,7 +17,7 @@ import Foundation
  http://dicom.nema.org/medical/dicom/current/output/chtml/part07/sect_9.3.2.2.html
  */
 public class CFindRSP: DataTF {
-    public var studiesDataset:DataSet?
+    public var resultsDataset:DataSet?
     
     
     public override func messageName() -> String {
@@ -27,6 +27,32 @@ public class CFindRSP: DataTF {
     
     public override func messageInfos() -> String {
         return "\(dimseStatus.status)"
+    }
+    
+    public override func data() -> Data? {
+        if let pc = self.association.acceptedPresentationContexts.values.first,
+           let transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian) {
+            let commandDataset = DataSet()
+            _ = commandDataset.set(value: CommandField.C_FIND_RSP.rawValue.bigEndian, forTagName: "CommandField")
+            _ = commandDataset.set(value: pc.abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
+            
+            if let request = self.requestMessage {
+                _ = commandDataset.set(value: request.messageID, forTagName: "MessageIDBeingRespondedTo")
+            }
+            _ = commandDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
+            _ = commandDataset.set(value: UInt16(0).bigEndian, forTagName: "Status")
+            
+            let pduData = PDUData(
+                pduType: self.pduType,
+                commandDataset: commandDataset,
+                abstractSyntax: pc.abstractSyntax,
+                transferSyntax: transferSyntax,
+                pcID: pc.contextID, flags: 0x03)
+            
+            return pduData.data()
+        }
+        
+        return nil
     }
     
     
@@ -58,7 +84,7 @@ public class CFindRSP: DataTF {
             
             if commandField == .C_FIND_RSP {
                 if let resultDataset = try? dis.readDataset(enforceVR: false) {
-                    studiesDataset = resultDataset
+                    resultsDataset = resultDataset
                 }
             }
             
@@ -86,7 +112,7 @@ public class CFindRSP: DataTF {
             
             if commandField == .C_FIND_RSP {
                 if let resultDataset = try? dis.readDataset() {
-                    studiesDataset = resultDataset
+                    resultsDataset = resultDataset
                 }
             }
         }

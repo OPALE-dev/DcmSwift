@@ -28,40 +28,37 @@ public class UserInfo {
     
     
     public init?(data:Data) {
-        let uiType = data.first //.subdata(in: offset..<offset+1).toInt18(byteOrder: .BigEndian)
+        let uiItemData = data
         
-        if uiType == ItemType.userInfo.rawValue {
-            //Logger.info("  -> User Informations:")
-            let uiItemData = data.subdata(in: 4..<data.count)
+        var offset = 0
+        while offset < uiItemData.count-1 {
+            // read type
+            let uiItemType = uiItemData.subdata(in: offset..<offset+1).toInt8(byteOrder: .BigEndian)
+            let uiItemLength = uiItemData.subdata(in: offset+2..<offset+4).toInt16(byteOrder: .BigEndian)
+            offset += 4
             
-            var offset = 0
-            while offset < uiItemData.count-1 {
-                // read type
-                let uiItemType = uiItemData.subdata(in: offset..<offset+1).toInt8(byteOrder: .BigEndian)
-                let uiItemLength = uiItemData.subdata(in: offset+2..<offset+4).toInt16(byteOrder: .BigEndian)
-                offset += 4
-                
-                if uiItemType == ItemType.maxPduLength.rawValue {
-                    let maxPDU = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toInt32(byteOrder: .BigEndian)
-                    self.maxPDULength = Int(maxPDU)
-                    //Logger.info("    -> Remote Max PDU: \(self.association!.maxPDULength)")
-                }
-                else if uiItemType == ItemType.implClassUID.rawValue {
-                    let impClasslUID = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toString()
-                    self.implementationUID = impClasslUID
-                    //Logger.info("    -> Implementation class UID: \(self.association!.remoteImplementationUID ?? "")")
-                }
-                else if uiItemType == ItemType.implVersionName.rawValue {
-                    let impVersion = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toString()
-                    self.implementationVersion = impVersion
-                    //Logger.info("    -> Implementation version: \(self.association!.remoteImplementationVersion ?? "")")
-                    
-                }
-                
-                offset += Int(uiItemLength)
+            if uiItemType == ItemType.maxPduLength.rawValue {
+                let maxPDU = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toInt32(byteOrder: .BigEndian)
+                self.maxPDULength = Int(maxPDU)
+                Logger.verbose("    -> Local  Max PDU: \(DicomConstants.maxPDULength)", "UserInfo")
+                Logger.verbose("    -> Remote Max PDU: \(self.maxPDULength)", "UserInfo")
             }
+            else if uiItemType == ItemType.implClassUID.rawValue {
+                let impClasslUID = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toString()
+                self.implementationUID = impClasslUID
+                //Logger.info("    -> Implementation class UID: \(self.association!.remoteImplementationUID ?? "")")
+            }
+            else if uiItemType == ItemType.implVersionName.rawValue {
+                let impVersion = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toString()
+                self.implementationVersion = impVersion
+                //Logger.info("    -> Implementation version: \(self.association!.remoteImplementationVersion ?? "")")
+                
+            }
+            
+            offset += Int(uiItemLength)
         }
     }
+    
     
     public func data() -> Data {
         var data = Data()
@@ -69,18 +66,18 @@ public class UserInfo {
         // Max PDU length item
         var pduData = Data()
         var itemLength = UInt16(4).bigEndian
-        let pduLength = UInt32(self.maxPDULength).bigEndian
+        var pduLength = UInt32(self.maxPDULength).bigEndian
         pduData.append(Data(repeating: ItemType.maxPduLength.rawValue, count: 1)) // 51H (Max PDU Length)
         pduData.append(Data(repeating: 0x00, count: 1)) // 00H
         pduData.append(UnsafeBufferPointer(start: &itemLength, count: 1)) // Length
-        pduData.append(uint32: pduLength) // PDU Length
+        pduData.append(UnsafeBufferPointer(start: &pduLength, count: 1)) // PDU Length
         
         // TODO: Application UID and version
-        
         // Items
+        var length = UInt16(pduData.count).bigEndian
         data.append(Data(repeating: ItemType.userInfo.rawValue, count: 1)) // 50H
         data.append(Data(repeating: 0x00, count: 1)) // 00H
-        data.append(uint16: UInt16(pduData.count)) // Length
+        data.append(UnsafeBufferPointer(start: &length, count: 1)) // Length
         data.append(pduData) // Items
         
         return data

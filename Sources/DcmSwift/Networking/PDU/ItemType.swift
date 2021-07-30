@@ -15,8 +15,8 @@ public enum ItemType: UInt8 {
     case acPresentationContext  = 0x21;
     case abstractSyntax         = 0x30;
     case transferSyntax         = 0x40;
-    case userInfo               = 0x50;
-    case maxPduLength           = 0x51;
+    case userInfo               = 0x50; // 80
+    case maxPduLength           = 0x51; // 81
     case implClassUID           = 0x52;
     case asyncOpsWindow         = 0x53;
     case roleSelection          = 0x54;

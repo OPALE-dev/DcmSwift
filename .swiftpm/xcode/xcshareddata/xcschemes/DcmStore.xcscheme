@@ -80,7 +80,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "HOROSRW"
+            argument = "STORESCP"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -88,19 +88,19 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "4097"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "&apos;/Users/nark/Pictures/DICOM/ST1/SE1-9-scout-views/IM1&apos;"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "&apos;/Users/nark/Pictures/DICOM/ST1/SE2-17-sagital&apos;"
+            argument = "11112"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "&apos;/Users/nark/Pictures/DICOM/images/1.3.46.670589.5.2.14.2198403904.1100092395.803730.dcm&apos;"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "&apos;/Users/nark/Pictures/DICOM/ST1/SE3-42-axial&apos;"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "&apos;/Users/nark/Pictures/DICOM/ST1/SE3-42-axial/IM30&apos;"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

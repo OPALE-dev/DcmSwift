@@ -9,6 +9,9 @@ import Foundation
 import DcmSwift
 import ArgumentParser
 
+/**
+ TODO: Add parameters for C-FIND Query Retrieve Levels (PATIENT, STUDY, SERIES, IMAGE)
+ */
 struct DcmFind: ParsableCommand {
     @Option(name: .shortAndLong, help: "DcmStore local AET")
     var callingAET: String = "DCMCLIENT"
@@ -45,13 +48,17 @@ struct DcmFind: ParsableCommand {
         
         // run C-FIND SCU service
         do {
-            let studies:[DataSet] = try client.find()
+            // FIND at STUDY-level (by default)
+            let results:[DataSet] = try client.find()
             
-            if studies.count > 0 {
-                print("C-FIND \(calledAE) SUCCEEDED, \(studies.count) found.")
-                print(studies)
+            // To FIND at SERIES-level, use the following example:
+            // let results:[DataSet] = try client.find(queryLevel: .SERIES, instanceUID: "2.16.840.1.113662.5.8796818449476.121423489.1")
+            
+            if results.count > 0 {
+                print("\nC-FIND \(calledAE) SUCCEEDED, \(results.count) found.\n")
+                print(results)
             } else {
-                print("C-FIND \(callingAE) FAILED, no studies found.")
+                print("\nC-FIND \(callingAE) FAILED, no studies found.\n")
             }
         } catch let e {
             Logger.error(e.localizedDescription)

@@ -45,12 +45,12 @@ public class AssociationAC: PDUMessage {
             pc.result = 0x00
             
             // Weird but works:
-            // - we don't need AS in assoc-as
+            // - we don't need AS in assoc-ac
             // - but we need it later for message response
             // NOTE : sometimes you understand DICOM years later. It is a fact.
             let asx = pc.abstractSyntax
             pc.abstractSyntax = nil
-            pcData.append(pc.data())
+            pcData.append(pc.data(onlyAcceptedTS: association.acceptedTransferSyntax))
             pc.abstractSyntax = asx
         }
         

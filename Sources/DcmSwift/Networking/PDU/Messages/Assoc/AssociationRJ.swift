@@ -28,6 +28,9 @@ public class AssociationRJ: PDUMessage {
         return "A-ASSOCIATE-RJ"
     }
     
+    public override func messageInfos() -> String {
+        return "\(self.reason)"
+    }
     
     public override func data() -> Data {
         var data = Data()
