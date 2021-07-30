@@ -22,6 +22,10 @@ public class CStoreRSP: DataTF {
     }
     
     
+    public override func messageInfos() -> String {
+        return "\(dimseStatus.status)"
+    }
+    
     public override func data() -> Data? {
         if let pc = self.association.acceptedPresentationContexts.values.first,
            let transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian) {

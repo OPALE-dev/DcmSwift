@@ -122,12 +122,12 @@ public class DicomAssociation: ChannelInboundHandler {
         case AE7
         case AE8
         
-        case DT1
+        case DT1(_ message:PDUMessage)
         case DT2(_ message:DataTF)
         
         case AR1
         case AR2(_ message:ReleaseRQ)
-        case AR3(_ message:ReleaseRSP)
+        case AR3(_ message:PDUMessage)
         case AR4
         case AR5
         case AR6
@@ -161,6 +161,7 @@ public class DicomAssociation: ChannelInboundHandler {
     public var acceptedPresentationContexts:[UInt8 : PresentationContext] = [:]
     public var userInfo:UserInfo = UserInfo()
     
+    public var preferredTransferSyntax:TransferSyntax? = TransferSyntax(TransferSyntax.explicitVRLittleEndian)
     public var acceptedTransferSyntax:String?
     public var remoteMaxPDULength:Int = 0
     public var remoteImplementationUID:String?
@@ -239,7 +240,7 @@ public class DicomAssociation: ChannelInboundHandler {
         let bytes = buffer.readBytes(length: buffer.readableBytes)
         let pduData = Data(bytes!)
         
-        // print("channelRead")
+        print("channelRead")
         
         switch state {
         case .Sta2:
@@ -280,9 +281,9 @@ public class DicomAssociation: ChannelInboundHandler {
             ) as? AssociationRJ {
                 log(message: message, write: false)
                                 
-                promise?.fail(NetworkError.associationRejected(reason: "\(message.reason)"))
+                //promise?.fail(NetworkError.associationRejected(reason: "\(message.reason)"))
                 
-                // _ = try? handle(event: .AR3(message))
+                _ = try? handle(event: .AR3(message))
             }
         case .Sta6:
             if origin == .Requestor {
@@ -424,33 +425,7 @@ public class DicomAssociation: ChannelInboundHandler {
         return result
     }
     
-    
-    
-    
-    /**
-     Set a service class user to the Association
-     The service will be used as a requestor.
-     */
-    public func setServiceClassUser(_ service:ServiceClassUser) {
-        self.serviceClassUsers = service
-        
-        for ast in service.abstractSyntaxes {
-            self.addPresentationContext(abstractSyntax: ast)
-        }
-    }
-    
-    /**
-     Add a service class provider to the Association.
-     SCP association can handle multiple service class providers.
-     The service will be used as a acceptor.
-     */
-    public func addServiceClassProvider(_ service:ServiceClassProvider) {
-        self.serviceClassProviders[service.commandField] = service
-    }
-    
-    
-    
-    // MARK: -
+
     public func disconnect() -> EventLoopFuture<Void> {
         if .Sta1 != self.state {
             return self.group.next().makeFailedFuture(NetworkError.notReady)
@@ -472,14 +447,50 @@ public class DicomAssociation: ChannelInboundHandler {
     }
     
     
+    // MARK: - Services
+    /**
+     Set a service class user to the Association
+     The service will be used as a requestor.
+     */
+    public func setServiceClassUser(_ service:ServiceClassUser) {
+        self.serviceClassUsers = service
+        
+        for ast in service.abstractSyntaxes {
+            self.addPresentationContext(abstractSyntax: ast)
+        }
+    }
     
-    // MARK: -
+    /**
+     Add a service class provider to the Association.
+     SCP association can handle multiple service class providers.
+     The service will be used as a acceptor.
+     */
+    public func addServiceClassProvider(_ service:ServiceClassProvider) {
+        Logger.notice("Register service: \(service)", "Association")
+        
+        self.serviceClassProviders[service.commandField] = service
+    }
+    
+    
+    
+    
+    // MARK: - Presentation Context
     public func addPresentationContext(abstractSyntax: String, result:UInt8? = nil) {
+        guard let ts = preferredTransferSyntax else {
+            Logger.fatal("No Preferred Transfer Syntax defined, abort.", "Association")
+            return
+        }
+        
+        addPresentationContext(abstractSyntax: abstractSyntax, transferSyntaxes: [ts.tsUID], result: result)
+    }
+    
+    
+    public func addPresentationContext(abstractSyntax: String, transferSyntaxes:[String], result:UInt8? = nil) {
         let ctID = self.getNextContextID()
         
         let pc = PresentationContext(
             abstractSyntax: abstractSyntax,
-            transferSyntaxes: [TransferSyntax.explicitVRLittleEndian],
+            transferSyntaxes: transferSyntaxes,
             contextID: ctID,
             result: result)
         
@@ -519,8 +530,9 @@ public class DicomAssociation: ChannelInboundHandler {
         case (.Sta2, .AE6(let message)):    return AE6(message)
         case (.Sta3, .AE7):                 return AE7()
         case (.Sta4, .AE2):                 return AE2()
-        case (.Sta5, .AE3):                 return AE3()
-        case (.Sta6, .DT1):                 return DT1()
+        case (.Sta5, .AE3(let message)):    return AE3(message)
+        case (.Sta5, .AR3(let message)):    return AR3(message)
+        case (.Sta6, .DT1(let message)):    return DT1(message)
         case (.Sta6, .DT2(let message)):    return DT2(message)
         case (.Sta6, .AR1):                 return AR1()
         case (.Sta6, .AR2(let message)):    return AR2(message)
@@ -586,11 +598,11 @@ public class DicomAssociation: ChannelInboundHandler {
     }
     
     
-    private func AE3() -> EventLoopFuture<Void> {
+    private func AE3(_ message:AssociationAC) -> EventLoopFuture<Void> {
         self.state = .Sta6
         
         if origin == .Requestor {
-            _ = try? handle(event: .DT1)
+            _ = try? handle(event: .DT1(message))
         }
 
         return channel!.eventLoop.makeSucceededVoidFuture()
@@ -656,7 +668,7 @@ public class DicomAssociation: ChannelInboundHandler {
     
     
     
-    private func DT1() -> EventLoopFuture<Void> {
+    private func DT1(_ message:PDUMessage) -> EventLoopFuture<Void> {
         self.state = .Sta6
         
         if origin == .Requestor {
@@ -675,6 +687,7 @@ public class DicomAssociation: ChannelInboundHandler {
         
         if origin == .Requestor {
             if let service = self.serviceClassUsers {
+                // receive dataTF
                 dimseStatus = service.receive(association: self, dataTF: message)
                                         
                 if dimseStatus == .Success {
@@ -731,22 +744,31 @@ public class DicomAssociation: ChannelInboundHandler {
     }
     
     
-    private func AR3(_ message:ReleaseRSP, error:Error? = nil) -> EventLoopFuture<Void> {
+    private func AR3(_ message:PDUMessage, error:Error? = nil) -> EventLoopFuture<Void> {
         self.state = .Sta1
         
         currentSCP = nil
-                
-        // release the global promise with DIMSE status
-        if let s = self.dimseStatus {
-            if s == .Success {
-                promise?.succeed(s)
-            } else {
-                if let e = error {
-                    promise?.fail(e)
-                    
-                    return channel!.eventLoop.makeFailedFuture(e)
+        
+        if message is ReleaseRSP {
+            // release the global promise with DIMSE status
+            if let s = self.dimseStatus {
+                if s == .Success {
+                    promise?.succeed(s)
+                } else {
+                    if let e = error {
+                        promise?.fail(e)
+                        
+                        return channel!.eventLoop.makeFailedFuture(e)
+                    }
                 }
             }
+        }
+        else if let associationRJ = message as? AssociationRJ {
+            let error = NetworkError.associationRejected(reason: "\(associationRJ.reason)")
+            
+            promise?.fail(error)
+            
+            return channel!.eventLoop.makeFailedFuture(error)
         }
         
         return channel!.eventLoop.makeSucceededVoidFuture()

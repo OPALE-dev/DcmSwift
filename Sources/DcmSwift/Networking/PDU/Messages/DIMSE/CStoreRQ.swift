@@ -72,9 +72,12 @@ public class CStoreRQ: DataTF {
             
             if !pcs.isEmpty {
                 if let dataset = dicomFile?.dataset {
+                    print("ts \(transferSyntax)")
                     let fileData = dataset.DIMSEData(transferSyntax: transferSyntax)
                     
-                    let chunks = fileData.chunck(into: 16372)
+                    Logger.verbose("    -> Used PDU : \(association.maxPDULength)", "CStoreRQ")
+                    
+                    let chunks = fileData.chunck(into: association.maxPDULength - 12)
                     var index = 0
                     
                     // TODO: switch to PDUData class?
@@ -91,6 +94,7 @@ public class CStoreRQ: DataTF {
                         } else {
                             pdvData2.append(byte: 0x00) // Flags : more fragment coming
                         }
+                        
                         pdvData2.append(chunkData)
                         
                         let pduLength2 = UInt32(pdvLength2 + 4)

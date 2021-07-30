@@ -10,9 +10,24 @@ import Foundation
 import NIO
 import Dispatch
 
+
+public struct ServerConfig {
+    public var enableCEchoSCP:Bool?     = true
+    public var enableCFindSCP:Bool?     = true
+    public var enableCStoreSCP:Bool?    = true
+    
+    public init(enableCEchoSCP:Bool, enableCFindSCP:Bool, enableCStoreSCP:Bool) {
+        self.enableCEchoSCP     = enableCEchoSCP
+        self.enableCFindSCP     = enableCFindSCP
+        self.enableCStoreSCP    = enableCStoreSCP
+    }
+}
+
 public class DicomServer: CEchoSCPDelegate, CFindSCPDelegate, CStoreSCPDelegate {
     var calledAE:DicomEntity!
     var port: Int = 11112
+    
+    var config:ServerConfig
     
     var channel: Channel!
     var group:MultiThreadedEventLoopGroup!
@@ -20,9 +35,10 @@ public class DicomServer: CEchoSCPDelegate, CFindSCPDelegate, CStoreSCPDelegate 
 
     
     
-    public init(port: Int, localAET:String) {
+    public init(port: Int, localAET:String, config:ServerConfig) {
         self.calledAE   = DicomEntity(title: localAET, hostname: "localhost", port: port)
         self.port       = port
+        self.config     = config
         
         self.group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         self.bootstrap = ServerBootstrap(group: group)
@@ -34,11 +50,17 @@ public class DicomServer: CEchoSCPDelegate, CFindSCPDelegate, CStoreSCPDelegate 
                 
                 // this assoc implements to the following SCPs:
                 // C-ECHO-SCP
-                assoc.addServiceClassProvider(CEchoSCPService(self))
+                if config.enableCEchoSCP ?? false {
+                    assoc.addServiceClassProvider(CEchoSCPService(self))
+                }
                 // C-FIND-SCP
-                assoc.addServiceClassProvider(CFindSCPService(self))
+                if config.enableCEchoSCP ?? false {
+                    assoc.addServiceClassProvider(CFindSCPService(self))
+                }
                 // C-STORE-SCP
-                assoc.addServiceClassProvider(CStoreSCPService(self))
+                if config.enableCEchoSCP ?? false {
+                    assoc.addServiceClassProvider(CStoreSCPService(self))
+                }
                 
                 return channel.pipeline.addHandlers([ByteToMessageHandler(PDUBytesDecoder(withAssociation: assoc)), assoc])
             }
@@ -49,12 +71,18 @@ public class DicomServer: CEchoSCPDelegate, CFindSCPDelegate, CStoreSCPDelegate 
     
     
     deinit {
-        channel.close(mode: .all, promise: nil)
+//        channel.close(mode: .all, promise: nil)
+//
+//        try? group.syncShutdownGracefully()
     }
     
     
     public func start() {
         do {
+            defer {
+                try? group.syncShutdownGracefully()
+            }
+            
             channel = try bootstrap.bind(host: "0.0.0.0", port: port).wait()
             
             Logger.info("Server listening on port \(port)...")
@@ -63,10 +91,6 @@ public class DicomServer: CEchoSCPDelegate, CFindSCPDelegate, CStoreSCPDelegate 
             
         } catch let e {
             Logger.error(e.localizedDescription)
-        }
-        
-        do {
-            try! group.syncShutdownGracefully()
         }
     }
     
@@ -80,13 +104,14 @@ public class DicomServer: CEchoSCPDelegate, CFindSCPDelegate, CStoreSCPDelegate 
     
     
     // MARK: - CFindSCPDelegate
-    public func query(level: QueryRetrieveLevel, dataset: DataSet) -> [DataSet] {        
+    public func query(level: QueryRetrieveLevel, dataset: DataSet) -> [DataSet] {
+        print("query \(level) \(dataset)")
         return []
     }
     
     
     // MARK: - CStoreSCPDelegate
-    public func store(fileMetaInfo:DataSet, dataset: DataSet) -> Bool {
+    public func store(fileMetaInfo:DataSet, dataset: DataSet, tempFile:String) -> Bool {
 //        if message.receivedData.count > 0 {
 //            let dis = DicomInputStream(data: message.receivedData)
 //

@@ -169,9 +169,9 @@ public class DicomClient {
              print(try? client.find())
      
      */
-    public func find(queryDataset:DataSet? = nil) throws -> [DataSet] {
+    public func find(queryDataset:DataSet? = nil, queryLevel:QueryRetrieveLevel = .STUDY, instanceUID:String? = nil) throws -> [DataSet] {
         let assoc = DicomAssociation(group: eventLoopGroup, callingAE: callingAE, calledAE: calledAE)
-        let service = CFindSCUService(queryDataset, queryLevel: .PATIENT)
+        let service = CFindSCUService(queryDataset, queryLevel: queryLevel)
         var result = false
         
         assoc.setServiceClassUser(service)
@@ -182,7 +182,7 @@ public class DicomClient {
             return []
         }
         
-        return service.studiesDataset
+        return service.resultsDataset
     }
     
     /**

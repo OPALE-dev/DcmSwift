@@ -14,7 +14,7 @@ import NIO
  This service delegate provides a way to implement specific behaviors in the end-program
  */
 public protocol CStoreSCPDelegate {
-    func store(fileMetaInfo:DataSet, dataset: DataSet) -> Bool
+    func store(fileMetaInfo:DataSet, dataset: DataSet, tempFile:String) -> Bool
 }
 
 

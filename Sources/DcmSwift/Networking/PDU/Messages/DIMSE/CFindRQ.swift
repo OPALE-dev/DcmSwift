@@ -22,7 +22,7 @@ public class CFindRQ: DataTF {
     public var queryDataset:DataSet?
     /// the query results of the C-FIND
     public var queryResults:[Any] = []
-    
+    public var resultsDataset:DataSet?
     
     public override func messageName() -> String {
         return "C-FIND-RQ"
@@ -95,7 +95,48 @@ public class CFindRQ: DataTF {
      TODO: we actually don't read C-FIND-RQ message, yet! (server side)
      */
     public override func decodeData(data: Data) -> DIMSEStatus.Status {
-        return .Success
+        let status = super.decodeData(data: data)
+                
+        if stream.readableBytes > 0 {
+            let pc = association.acceptedPresentationContexts[association.acceptedPresentationContexts.keys.first!]
+            let ts = pc?.transferSyntaxes.first
+            
+            if ts == nil {
+                Logger.error("No transfer syntax found, refused")
+                return .Refused
+            }
+            
+            let transferSyntax = TransferSyntax(ts!)
+            
+            guard let pdvLength = stream.read(length: 4)?.toInt32(byteOrder: .BigEndian) else {
+                Logger.error("Cannot read dataset data")
+                return .Refused
+            }
+            
+            self.pdvLength = Int(pdvLength)
+            
+            // jump context + flags
+            stream.forward(by: 2)
+            
+            // read dataset data
+            guard let datasetData = stream.read(length: Int(pdvLength - 2)) else {
+                Logger.error("Cannot read dataset data")
+                return .Refused
+            }
+            
+            let dis = DicomInputStream(data: datasetData)
+            
+            dis.vrMethod    = transferSyntax!.vrMethod
+            dis.byteOrder   = transferSyntax!.byteOrder
+            
+            if commandField == .C_FIND_RQ {
+                if let resultDataset = try? dis.readDataset() {
+                    resultsDataset = resultDataset
+                }
+            }
+        }
+        
+        return status
     }
     
     
@@ -118,7 +159,7 @@ public class CFindRQ: DataTF {
                     association: self.association
                 ) as? CFindRSP {
                     // fill result with dataset from each DATA-TF message
-                    if let studiesDataset = message.studiesDataset {
+                    if let studiesDataset = message.resultsDataset {
                         self.queryResults.append(studiesDataset.toJSONArray())
                     }
                     
