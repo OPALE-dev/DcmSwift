@@ -18,7 +18,7 @@ public protocol CStoreSCPDelegate {
 }
 
 
-public class CStoreSCPService: ServiceClassProvider {
+public class CStoreSCP: ServiceClassProvider {
     private var delegate:CStoreSCPDelegate?
     
     

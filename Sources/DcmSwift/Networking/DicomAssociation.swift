@@ -288,7 +288,7 @@ public class DicomAssociation: ChannelInboundHandler {
         case .Sta6:
             if origin == .Requestor {
                 switch self.serviceClassUsers {
-                case is CEchoSCUService:
+                case is CEchoSCU:
                     if let message = PDUDecoder.receiveDIMSEMessage(
                         data: pduData,
                         pduType: .dataTF,
@@ -298,7 +298,7 @@ public class DicomAssociation: ChannelInboundHandler {
                         
                         _ = try? handle(event: .DT2(message))
                     }
-                case is CFindSCUService:
+                case is CFindSCU:
                     if let message = PDUDecoder.receiveDIMSEMessage(
                         data: pduData,
                         pduType: .dataTF,
@@ -318,7 +318,7 @@ public class DicomAssociation: ChannelInboundHandler {
                                             
                         _ = try? handle(event: .DT2(message))
                     }
-                case is CStoreSCUService:
+                case is CStoreSCU:
                     if let message = PDUDecoder.receiveDIMSEMessage(
                         data: pduData,
                         pduType: .dataTF,

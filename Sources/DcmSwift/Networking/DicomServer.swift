@@ -51,15 +51,15 @@ public class DicomServer: CEchoSCPDelegate, CFindSCPDelegate, CStoreSCPDelegate 
                 // this assoc implements to the following SCPs:
                 // C-ECHO-SCP
                 if config.enableCEchoSCP ?? false {
-                    assoc.addServiceClassProvider(CEchoSCPService(self))
+                    assoc.addServiceClassProvider(CEchoSCP(self))
                 }
                 // C-FIND-SCP
                 if config.enableCEchoSCP ?? false {
-                    assoc.addServiceClassProvider(CFindSCPService(self))
+                    assoc.addServiceClassProvider(CFindSCP(self))
                 }
                 // C-STORE-SCP
                 if config.enableCEchoSCP ?? false {
-                    assoc.addServiceClassProvider(CStoreSCPService(self))
+                    assoc.addServiceClassProvider(CStoreSCP(self))
                 }
                 
                 return channel.pipeline.addHandlers([ByteToMessageHandler(PDUBytesDecoder(withAssociation: assoc)), assoc])

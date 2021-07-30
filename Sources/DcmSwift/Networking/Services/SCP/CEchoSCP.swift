@@ -23,7 +23,7 @@ public protocol CEchoSCPDelegate {
 }
 
 
-public class CEchoSCPService: ServiceClassProvider {
+public class CEchoSCP: ServiceClassProvider {
     private var delegate:CEchoSCPDelegate?
     
     

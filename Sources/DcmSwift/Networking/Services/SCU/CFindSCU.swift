@@ -8,7 +8,7 @@
 import Foundation
 import NIO
 
-public class CFindSCUService: ServiceClassUser {
+public class CFindSCU: ServiceClassUser {
     var queryDataset:DataSet
     var queryLevel:QueryRetrieveLevel = .STUDY
     var instanceUID:String?
