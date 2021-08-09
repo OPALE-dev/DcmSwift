@@ -86,12 +86,23 @@ public class Dose {
     }
     
     /**
-     Returns an unscaled dose, meaning we take the pixel out of the pixel data, but we don't multiply it by the scale (the dose grid scaling)
+     Returns an unscaled dose
+     
+     An unscaled dose is a pixel of the pixel data, but we don't multiply it by the scale (the dose grid scaling)
+     
      ```
      if let unscaledDose = Dose.unscaledDose(dicomRT: dicomRT, row: 1, column: 1, frame: 1) {
         // ...
      }
      ```
+     
+     - Parameters:
+        - dicomRT: the DICOM RT file to parse
+        - row: row where to get the dose to
+        - column: column where to get the dose to
+        - frame: the frame/image where to get the dose to
+     
+     - Returns: the unscaled dose or nil. The result might be either `UInt16`, `Int16`, `UInt32`, `Int32`
      */
     public static func unscaledDose(dicomRT: DicomRT, row: Int16, column: Int16, frame: Int16) -> Any? {
         var pixelNumber = (frame - 1) * dicomRT.columns * dicomRT.rows
