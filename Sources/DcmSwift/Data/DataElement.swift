@@ -150,9 +150,10 @@ public class DataElement : DicomObject {
     }
     
 
-    
-    
-    
+    /**
+     Contains the value fo the `DataElement`.
+     - Important: If it's Pixel Data or a Sequence, returns an empty string
+     */
     public var value:Any {
         if self.data == nil || self.data.count == 0 {
             return ""
@@ -253,7 +254,11 @@ public class DataElement : DicomObject {
         return false
     }
     
-    
+    /**
+     Contains an array of values
+     
+     - Remark: useful when the value field of the `DataElement` has a VM > 1
+     */
     public var values:[DataValue] {
         if self.isMultiple {
             if self.dataValues.count == 0 {
@@ -270,7 +275,11 @@ public class DataElement : DicomObject {
         return self.dataValues
     }
     
-    
+    /**
+     Converts a `DataElement` to `XML`
+     
+     - Returns: an XML `String` representing the `DataElement`
+     */
     public override func toXML() -> String {
         var xml = "<DicomAttribute Tag=\"\(self.tagCode())\" VR=\"\(self.vr)\" Keyword=\"\(self.name)\">"
         if self.isMultiple {
@@ -285,12 +294,12 @@ public class DataElement : DicomObject {
     }
     
     
-    
+    /**
+     - Returns: the `DataElement` tag all attached
+     */
     public func tagCode() -> String {
         return "\(self.group)\(self.element)"
     }
-    
-    
     
     override public var description: String {
         return "\(self.startOffset) \(self.tag) \(self.vr)[\(self.value)] \t \(self.name) \(self.dataOffset) [\(self.length)] \(self.endOffset)"
@@ -449,7 +458,12 @@ public class DataElement : DicomObject {
     
     
     
-    
+    /**
+     Converts the `DataElement` values to a JSON array
+     
+     - Note: why does it return `Any` instead of String ? is it because of the encoding ?
+     - Returns: a json string array containing the values
+     */
     override public func toJSONArray() -> Any {
         var val:Any = ""
         
