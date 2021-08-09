@@ -7,6 +7,10 @@
 
 import Foundation
 
+/**
+ Class for anonymizing a DICOM file
+ TODO why not a static class ?
+ */
 public class Anonymizer {
     public enum AnonymizationType {
         case uid(root: String? = nil)
@@ -21,6 +25,9 @@ public class Anonymizer {
         case delete
     }
     
+    /**
+     Name of data elements to anonymize
+     */
     let defaultUIDsToAnonymize:[String: AnonymizationType] = [
         "StudyInstanceUID":                 .uid(),
         "SeriesInstanceUID":                .uid(),
@@ -65,7 +72,9 @@ public class Anonymizer {
         return anonymize(to: destPath, tags: defaultUIDsToAnonymize)
     }
     
-    
+    /**
+     Anonymize a DICOM file and writes the result in `destPath`. Returns `true` on success, `false` otherwise.
+     */
     public func anonymize(to destPath:String, tags:[String: AnonymizationType]) -> Bool {
         if var dataset = dicomFile.dataset {
             dataset = anonymize(dataset: dataset, tags: tags)
@@ -75,7 +84,12 @@ public class Anonymizer {
         return false
     }
     
-    
+    /**
+     Anonymize a `DataSet`, with a hash, with keys being the data elements to anonymize, and the values
+     the type of the data element. Returns the anonymized `DataSet`
+     
+     TODO why not get the data element type, and then anonymize according to it ? instead of providing the types
+     */
     public func anonymize(dataset:DataSet, tags:[String: AnonymizationType]) -> DataSet {
         let today       = Date()
         var birthdate   = Date()

@@ -9,9 +9,19 @@ import Foundation
 
 /**
  Class for manipulating Dicom RT (Radiation Therapy) files
+ 
  ```
  if let dicomRT = DicomRT.init(forPath: "/path/to/rt_file.dicom") {
-     // ...
+    if Dose.isValid(dicomRT: dicomRT) {
+    let height = Dose.getDoseImageHeight(dicomRT: dicomRT)
+        print("\(height)")
+    }
+ 
+    let unscaledDose = Dose.unscaledDose(dicomRT: dicomRT, row: 5, column: 4, frame: 2)
+     
+    if let udose = unscaledDose {
+        // udose as! UInt32
+    }
  }
  ```
  */
@@ -26,14 +36,23 @@ public class DicomRT : DicomFile {
     public var pixelRepresentation: DicomImage.PixelRepresentation = DicomImage.PixelRepresentation.Signed
     
     /**
-     Creates a DICOM RT instance if :
-     - frames is positive ( > 0)
-     - bits stored and bits allocated are either equal to 16 or 32
-     - bits stored must be equal to bits allocated (??? check that)
-     - highBit must be equal to bitsStored - 1
-     - pixel representation must be either 0 or 1
+     Creates a DICOM RT object
+     
+     - Todo:
+        - give an URL/Path object instead of a string ? more robust
      
      Please refer to dicomiseasy website : https://dicomiseasy.blogspot.com/2012/08/chapter-12-pixel-data.html
+     
+     Creates a DICOM RT instance if :
+      - frames is positive ( > 0)
+      - bits stored and bits allocated are either equal to 16 or 32
+      - bits stored must be equal to bits allocated (??? check that)
+      - highBit must be equal to bitsStored - 1
+      - pixel representation must be either 0 or 1
+     
+     - Parameters:
+        - filepath: the path of the DICOM RT file
+     - Returns: a DICOM RT object or nil
      */
     public override init?(forPath filepath: String) {
         super.init(forPath: filepath)
@@ -49,9 +68,6 @@ public class DicomRT : DicomFile {
             return nil
         }
 
-        /**
-         Number of images in a DICOM RT file
-         */
         guard let frames = Int16(numberOfFrames) else {
             return nil
         }

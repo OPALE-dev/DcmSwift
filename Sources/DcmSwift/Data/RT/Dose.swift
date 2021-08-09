@@ -18,6 +18,14 @@ public class Dose {
      We multiply the pixel by DoseGridScaling (called the scale), and we get the dose
      Be careful ! row, column and frame starts at 1, not 0
      
+     - Parameters:
+        - dicomRT: the DICOM RT file to parse
+        - row: row where to get the dose to
+        - column: column where to get the dose to
+        - frame: the frame/image where to get the dose to
+     
+     - Returns: the dose or nil
+     
      ```
      if let dose = Dose.getDose(dicomRT: dicomRT, row: 1, column: 1, frame: 1) {
         // ...
@@ -111,9 +119,12 @@ public class Dose {
     
     /**
      Width of image
+     
      ```
      let width = Dose.getDoseImageWidth(dicomRT: dicomRT)
      ```
+     
+     - Returns: the width of the image
      */
     public static func getDoseImageWidth(dicomRT: DicomRT) -> Int16 {
         return dicomRT.columns
@@ -121,19 +132,25 @@ public class Dose {
     
     /**
      Height of image
+     
      ```
      let height = Dose.getDoseImageHeight(dicomRT: dicomRT)
      ```
+     
+     - Returns: the height of the image
      */
     public static func getDoseImageHeight(dicomRT: DicomRT) -> Int16 {
         return dicomRT.rows
     }
     
     /**
-     Returns an array of doses for a frame
+     Gets an array of doses for a frame
+     
      ```
      let doseImage = Dose.getDoseImage(dicomRT: dicomRT, atFrame: 1)
      ```
+     
+     - Returns: an array of doubles
      */
     public static func getDoseImage(dicomRT: DicomRT, atFrame: UInt) -> [Float64] {
         let theFrame = Int16(atFrame)
@@ -188,6 +205,8 @@ public class Dose {
      ```
      let doseImages = Dose.getDoseImages(dicomRT: dicomRT)
      ```
+     
+     - Returns: a 2D array of doses (doubles)
      */
     public static func getDoseImages(dicomRT: DicomRT) -> [[Float64]] {
         var images: [[Float64]] = []
@@ -204,6 +223,8 @@ public class Dose {
      ```
      Dose.isValid(dicomRT: dicomRT)
      ```
+     
+     - Returns: a boolean indicating success
      */
     public static func isValid(dicomRT: DicomRT) -> Bool {
         return dicomRT.bitsAllocated == 16 || dicomRT.bitsAllocated == 32
