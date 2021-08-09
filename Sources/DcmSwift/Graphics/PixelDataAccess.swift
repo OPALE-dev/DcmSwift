@@ -9,37 +9,20 @@ import Foundation
 
 /**
  Inspired by dcmtk rt files : https://github.com/DCMTK/dcmtk/blob/master/dcmrt/libsrc/drmdose.cc
- TODO refactor? uint16, int16, uint32, int32
- TODO take into account byte order
+ 
+ - TODO:
+    - refactor? uint16, int16, uint32, int32
  
  
   ```
- let pixel: Int16 = PixelDataAccess.getPixelSigned16(pixelDataElement: pixelData, pixelNumber: pixelNumber, byteOrder: byteOrder)
+    let pixel: Int16 = PixelDataAccess.getPixelSigned16(pixelDataElement: pixelData, pixelNumber: pixelNumber, byteOrder: byteOrder)
   ```
  */
 public class PixelDataAccess {
-    
-    // TODO remove
-    public static func getPixel(pixelDataElement: DataElement, pixelNumber: Int, length: UInt,
-                                pixelRepresentation: DicomImage.PixelRepresentation, byteOrder: ByteOrder) -> Any? {
-        
-        if pixelRepresentation == .Signed && length == 16 {
-            return getPixelSigned16(pixelDataElement: pixelDataElement, pixelNumber: pixelNumber, byteOrder: byteOrder)
-            
-        } else if pixelRepresentation == .Signed && length == 32 {
-            return getPixelSigned32(pixelDataElement: pixelDataElement, pixelNumber: pixelNumber, byteOrder: byteOrder)
-            
-        } else if pixelRepresentation == .Unsigned && length == 16 {
-            return getPixelUnsigned16(pixelDataElement: pixelDataElement, pixelNumber: pixelNumber, byteOrder: byteOrder)
-            
-        } else if pixelRepresentation == .Unsigned && length == 32 {
-            return getPixelUnsigned32(pixelDataElement: pixelDataElement, pixelNumber: pixelNumber, byteOrder: byteOrder)
-        }
-        
-        return nil
-    }
-    
-    
+
+    /**
+     Returns the pixel as Signed 32 bits integer
+     */
     public static func getPixelSigned32(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> Int32? {
         let lowerBound = pixelNumber * 4
         let upperBound = pixelNumber * 4 + 32
@@ -48,6 +31,9 @@ public class PixelDataAccess {
         return d.toInt32(byteOrder: byteOrder)
     }
     
+    /**
+     Returns the pixel as Unsigned 32 bits integer
+     */
     public static func getPixelUnsigned32(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> UInt32? {
         let lowerBound = pixelNumber * 4
         let upperBound = pixelNumber * 4 + 32
@@ -56,6 +42,9 @@ public class PixelDataAccess {
         return d.toUInt32(byteOrder: byteOrder)
     }
     
+    /**
+     Returns the pixel as Signed 16 bits integer
+     */
     public static func getPixelSigned16(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> Int16? {
         let lowerBound = pixelNumber * 4
         let upperBound = pixelNumber * 4 + 16
@@ -64,6 +53,9 @@ public class PixelDataAccess {
         return d.toInt16(byteOrder: byteOrder)
     }
     
+    /**
+     Returns the pixel as Unsigned 16 integer
+     */
     public static func getPixelUnsigned16(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> UInt16? {
         let lowerBound = pixelNumber * 4
         let upperBound = pixelNumber * 4 + 16
@@ -74,7 +66,9 @@ public class PixelDataAccess {
     
     
     
-    
+    /**
+     Get all pixels in a range, as unsigned 16 bits integer
+     */
     public static func getUnsigned16Pixels(pixelDataElement: DataElement, from: Int, at: Int, byteOrder: ByteOrder) -> [UInt16] {
         var upixels: [UInt16] = []
         var i = 0
@@ -88,7 +82,10 @@ public class PixelDataAccess {
         
         return upixels
     }
-
+    
+    /**
+     Get all pixels in a range, as unsigned 32 bits integer
+     */
     public static func getUnsigned32Pixels(pixelDataElement: DataElement, from: Int, at: Int, byteOrder: ByteOrder) -> [UInt32] {
         var upixels: [UInt32] = []
         var i = 0
@@ -102,7 +99,10 @@ public class PixelDataAccess {
         
         return upixels
     }
-
+    
+    /**
+     Get all pixels in a range, as signed 16 bits integer
+     */
     public static func getSigned16Pixels(pixelDataElement: DataElement, from: Int, at: Int, byteOrder: ByteOrder) -> [Int16] {
         var upixels: [Int16] = []
         var i = 0
@@ -116,7 +116,10 @@ public class PixelDataAccess {
         
         return upixels
     }
-
+    
+    /**
+     Get all pixels in a range, as signed 32 bits integer
+     */
     public static func getSigned32Pixels(pixelDataElement: DataElement, from: Int, at: Int, byteOrder: ByteOrder) -> [Int32] {
         var upixels: [Int32] = []
         var i = 0
