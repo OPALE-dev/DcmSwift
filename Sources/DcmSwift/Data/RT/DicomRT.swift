@@ -27,12 +27,24 @@ import Foundation
  */
 public class DicomRT : DicomFile {
     
+    /// Number of images
     public var frames:Int16         = 0
+    
+    /// Height of each image
     public var rows:Int16           = 0
+    
+    /// Width of each image
     public var columns:Int16        = 0
+    
+    /// Number of bits allocated for each pixel
     public var bitsAllocated:Int16  = 0
+    
+    /// Number of bits used for each pixel
     public var bitsStored:Int16     = 0
+    
     public var highBit:Int16        = 0
+    
+    /// Indicates if pixels are signed or unsigned
     public var pixelRepresentation: DicomImage.PixelRepresentation = DicomImage.PixelRepresentation.Signed
     
     /**
