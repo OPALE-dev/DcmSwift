@@ -7,13 +7,15 @@
 
 import Foundation
 
-
+/**
+ For a sequence, gives the id by which an item is identified
+ */
 let PSEQUENCE_WITH_NUMBER: [String: String] = ["PatientSetupSequence": "PatientSetupNumber",
-                                           "ToleranceTableSequence": "ToleranceTableNumber",
-                                           "BeamSequence": "BeamNumber",
-                                           "FractionGroupSequence": "FractionGroupNumber",
-                                           "DoseReferenceSequence": "DoseReferenceNumber",
-                                           "ApplicationSetupSequence": "ApplicationSetupNumber"]
+                                               "ToleranceTableSequence": "ToleranceTableNumber",
+                                               "BeamSequence": "BeamNumber",
+                                               "FractionGroupSequence": "FractionGroupNumber",
+                                               "DoseReferenceSequence": "DoseReferenceNumber",
+                                               "ApplicationSetupSequence": "ApplicationSetupNumber"]
 
 
 /**
@@ -23,6 +25,13 @@ let PSEQUENCE_WITH_NUMBER: [String: String] = ["PatientSetupSequence": "PatientS
  */
 public class Plan {
     
+    /**
+     Gets a Data Item in a specific sequence, with the item having a specific number/ID
+     ```
+     Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "1")
+     Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "FractionGroupSequence", withNumber: "2")
+     ```
+     */
     public static func getItemInSequenceForNumber(dicomRT: DicomRT, forSequence: String, withNumber: String) -> DataItem? {
         if !PSEQUENCE_WITH_NUMBER.keys.contains(forSequence) {
             return nil
@@ -41,7 +50,7 @@ public class Plan {
         return nil
     }
     
-    /// Raw example of code, check `getItemInSequenceForNumber()`
+    /// Raw example of code for PatientSetupSequence, check `getItemInSequenceForNumber()` for more abstract implementation
     public static func getPatientSetup(dicomRT: DicomRT, withNumber: String) -> DataItem? {
         guard let patientSetupSequence = dicomRT.dataset.sequence(forTagName: "PatientSetupSequence") else {
             return nil

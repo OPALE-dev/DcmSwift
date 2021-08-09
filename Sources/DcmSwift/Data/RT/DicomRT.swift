@@ -8,7 +8,12 @@
 import Foundation
 
 /**
- For Dicom RT (Radiation Therapy) files
+ Class for manipulating Dicom RT (Radiation Therapy) files
+ ```
+ if let dicomRT = DicomRT.init(forPath: "/path/to/rt_file.dicom") {
+     // ...
+ }
+ ```
  */
 public class DicomRT : DicomFile {
     
@@ -20,6 +25,16 @@ public class DicomRT : DicomFile {
     public var highBit:Int16        = 0
     public var pixelRepresentation: DicomImage.PixelRepresentation = DicomImage.PixelRepresentation.Signed
     
+    /**
+     Creates a DICOM RT instance if :
+     - frames is positive ( > 0)
+     - bits stored and bits allocated are either equal to 16 or 32
+     - bits stored must be equal to bits allocated (??? check that)
+     - highBit must be equal to bitsStored - 1
+     - pixel representation must be either 0 or 1
+     
+     Please refer to dicomiseasy website : https://dicomiseasy.blogspot.com/2012/08/chapter-12-pixel-data.html
+     */
     public override init?(forPath filepath: String) {
         super.init(forPath: filepath)
         
@@ -34,6 +49,9 @@ public class DicomRT : DicomFile {
             return nil
         }
 
+        /**
+         Number of images in a DICOM RT file
+         */
         guard let frames = Int16(numberOfFrames) else {
             return nil
         }
@@ -49,7 +67,9 @@ public class DicomRT : DicomFile {
             return nil
         }
         
-        if bitsStored != bitsAllocated && (bitsStored != 16 && bitsStored != 32) && (bitsAllocated != 16 && bitsAllocated != 32) {
+        // bits stored must be equal to bits allocated; that was like that in dcmtk implementation
+        // what's the point then of having 2 values which are the same ?
+        if bitsStored != bitsAllocated || (bitsStored != 16 && bitsStored != 32) || (bitsAllocated != 16 && bitsAllocated != 32) {
             return nil
         }
         
