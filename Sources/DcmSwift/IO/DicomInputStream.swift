@@ -41,6 +41,15 @@ public class DicomInputStream: OffsetInputStream {
     
     
     // MARK: -
+    /**
+     Reads a data set from the stream.
+     
+     - Parameters:
+        - headerOnly: only read the header. Default is set to false
+        - withoutPixelData: avoid reading the pixel data
+     - Throws: StreamError.notDicomFile, StreamError.cannotReadStream
+     - Returns: the `DataSet` read from the stream
+     */
     public func readDataset(headerOnly:Bool = false, withoutPixelData:Bool = false, enforceVR:Bool = true) throws -> DataSet? {
         if stream == nil {
             throw StreamError.cannotOpenStream(message: "Cannot open stream, init failed")
@@ -166,11 +175,25 @@ public class DicomInputStream: OffsetInputStream {
 
     
     // MARK: -
+    /**
+     Tries to reads a `DataTag` with a given byte order
+     */
     private func readDataTag(order:ByteOrder = .LittleEndian) -> DataTag? {
         return DataTag(withStream: self, byteOrder:order)
     }
     
-    
+    /**
+     Tries to reads a Value Representation
+     
+     If the data element has an explicit VR, the stream can read the VR. If the VR is implicit, it
+     means the stream does not contains the VR, but we can catch the VR with the data element tag, that's
+     why the data element is provided in the parameters
+     
+     - Parameters:
+        - element: the data element to get the tag (and thus the vr)
+        - vrMethod: is the VR explicit (written in the data) or implicit (not written in the data) ?
+     - Returns: the value representation of the element, or nil
+     */
     private func readVR(element:DataElement, vrMethod:VRMethod = .Explicit) -> VR.VR? {
         var vr:VR.VR? = nil
         
@@ -209,7 +232,15 @@ public class DicomInputStream: OffsetInputStream {
         return vr!
     }
     
-    
+    /**
+     Reads the length of a data element
+     
+     - Parameters:
+        - vrMethod: is the VR explicit (written in the data) or implicit (not written in the data) ?
+        - vr: the VR of the data element the length belongs to
+        - order: the byte order of the length bytes
+     - Returns: the length of a data element
+     */
     private func readLength(
         vrMethod:VRMethod = .Explicit,
         vr:VR.VR,
@@ -247,8 +278,13 @@ public class DicomInputStream: OffsetInputStream {
     }
     
 
-    
-    private func readValue(length:Int ) -> Data? {
+    /**
+     Tries to read a value of a `DataElement`.
+     
+     - Parameter length: the length of the value
+     - Returns: The value as `Data`
+     */
+    private func readValue(length:Int) -> Data? {
         if length > 0 && (offset + length <= total) {
             return read(length: length)
         }
@@ -270,7 +306,17 @@ public class DicomInputStream: OffsetInputStream {
     }
     
     
-    
+    /**
+     Tries to read a data element from the stream
+     
+     - Parameters:
+        - dataset:
+        - parent:
+        - vrMethod:
+        - order:
+        - inTag:
+     - Returns: the data element read on success, or nil on failure
+     */
     private func readDataElement(
         dataset:DataSet?                    = nil,
         parent:DataElement?                 = nil,
@@ -375,7 +421,18 @@ public class DicomInputStream: OffsetInputStream {
     
     
     
-    
+    /**
+     Tries to read a sequence (SQ) from the stream
+     
+     - Remark: why provide the length when the parent data element has it ? same for the tag, same for the byte order
+     
+     - Parameters:
+        - tag: the tag of the sequence
+        - length: length of the sequence
+        - byteOrder: byte order of the sequence
+        - parent: the data element containing the sequence
+     - Returns: the data sequence read
+     */
     private func readDataSequence(
         tag:DataTag,
         length:Int,
@@ -526,6 +583,7 @@ public class DicomInputStream: OffsetInputStream {
     
     
     // Unused by now..
+    /// Returns nil
     private func readItem(
         length:Int,
         byteOrder:ByteOrder,
@@ -535,7 +593,16 @@ public class DicomInputStream: OffsetInputStream {
     }
     
     
-    
+    /**
+     Tries to read a pixel sequence from a stream.
+     
+     - Remark: why provide the tag, knowing the pixel data always have the same tag, which is (fffee,0dd)
+     
+     - Parameters:
+        - tag: the tag of the pixel sequence
+        - byteOrder: how to read the pixel data
+     - Returns: the pixel sequence read
+     */
     private func readPixelSequence(tag:DataTag, byteOrder:ByteOrder) -> PixelSequence? {
         let pixelSequence = PixelSequence(withTag: tag)
         
