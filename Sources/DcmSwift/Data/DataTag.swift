@@ -27,7 +27,9 @@ public class DataTag : DicomObject {
     public var code:String { return "\(self.group)\(self.element)" }
     public var name:String { return DicomSpec.shared.nameForTag(withCode: code) ?? "Unknow" }
     
-    
+    /**
+     Inits a Tag with some Data and a byte order
+     */
     public init(withData data:Data, byteOrder:ByteOrder = .LittleEndian) {
         super.init()
         
@@ -37,7 +39,16 @@ public class DataTag : DicomObject {
         self.readData(withByteOrder: self.bytreOrder)
     }
     
-    
+    /**
+     Reads a `Tag` from a stream, with a given byte order
+     
+     Attempts to read a stream a return a `Tag` if successful
+     
+     - Parameters:
+        - stream: to stream where the tag is read
+        - byteOrder: how to read the stream
+     - Returns: a tag on successful read, else nil
+     */
     public init?(withStream stream:DicomInputStream, byteOrder:ByteOrder = .LittleEndian) {
         super.init()
         
@@ -56,7 +67,16 @@ public class DataTag : DicomObject {
     }
     
     
-    
+    /**
+    Creates a `Tag`
+     
+     - Parameters:
+        - group: the group number
+        - element: the element number
+        - byteOrder: the byte order the tag should be written to
+     
+     - Returns: a `Tag`
+     */
     public init(withGroup group:String, element:String, byteOrder:ByteOrder = .LittleEndian) {
         super.init()
         
@@ -68,7 +88,13 @@ public class DataTag : DicomObject {
     }
     
     
-    
+    /**
+     Returns the tag as `Data`, given a byte order
+     
+     - Parameters:
+        - withByteOrder: the byte order to write the data
+     - Returns: the tag as `Data`
+     */
     public func data(withByteOrder:ByteOrder) -> Data {
         var data = Data()
         
@@ -121,7 +147,13 @@ public class DataTag : DicomObject {
         
         return data
     }
-        
+    
+    /**
+     Writes the tag in the property `data`, given a byte order
+     
+     - Parameters:
+        - withByteOrder: the byte order to write the data
+     */
     private func writeData(withByteOrder:ByteOrder) {
         self.data = Data()
         
@@ -176,7 +208,9 @@ public class DataTag : DicomObject {
 
     
     
-    
+    /**
+     Reads the tag data from the property `data`, and fill the properties `group` and `element`
+     */
     private func readData(withByteOrder:ByteOrder) {
         if withByteOrder == .BigEndian {
             let group1      = self.data.subdata(in: 0..<1).toHex()
@@ -197,7 +231,9 @@ public class DataTag : DicomObject {
         }
     }
     
-    
+    /**
+     Contains the tag with its group number and element number, like this: `(1234,4321)`
+     */
     override public var description: String {
         return "(\(self.group),\(self.element))"
     }
