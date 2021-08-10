@@ -17,10 +17,13 @@ import Foundation
  http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#sect_9.3.7
  */
 public class ReleaseRSP: PDUMessage {
+    
+    /// Full name of PDU A-RELEASE-RP
     public override func messageName() -> String {
         return "A-RELEASE-RSP"
     }
     
+    /// Returns the A-RELEASE-RSP PDU data : type, 1 reserved byte, length, 4 reserved bytes
     public override func data() -> Data {
         var data = Data()
         let length = UInt32(4)

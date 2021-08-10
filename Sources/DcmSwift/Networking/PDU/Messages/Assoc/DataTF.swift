@@ -22,13 +22,16 @@ import Foundation
  
  http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#table_9-22
  */
-public class DataTF: PDUMessage {    
+public class DataTF: PDUMessage {
+    
+    /// Full name of DataTF PDU
     public override func messageName() -> String {
         return "DATA-TF"
     }
     
     
-    
+    /// Decodes the DataTF PDU data : type, 1 reserved byte, length, presentation-data-value items
+    /// presentation-data-value contains : item length, presentation context id, presentation-data-value
     override public func decodeData(data: Data) -> DIMSEStatus.Status {
         _ = super.decodeData(data: data)
                                         

@@ -20,6 +20,8 @@ public class AssociationRQ: PDUMessage {
     public var remoteCalledAETitle:String?
     public var remoteCallingAETitle:String?
     
+    
+    /// Full name of PDU AssociationRQ
     public override func messageName() -> String {
         return "A-ASSOCIATE-RQ"
     }
@@ -33,7 +35,23 @@ public class AssociationRQ: PDUMessage {
         return super.messageInfos()
     }
     
-    
+    /**
+     Builds the ASSOCIATE-RQ message
+     
+     ASSOCIATE_RQ consists of:
+     - pdu type
+     - 1 reserved byte
+     - pdu length
+     - protocol version
+     - 2 reserved bytes
+     - called AE title
+     - 32 reserved bytes
+     - variable items : one application item, 1 or more presentation context items and 1 user info item
+     
+     - Note: The variable items are builded first because we need the length in the 3rd field (the other fields have a fixed length), PDU length
+     
+     - Returns: the ASSOCIATE-RQ bytes
+     */
     public override func data() -> Data {
         var data = Data()
         
