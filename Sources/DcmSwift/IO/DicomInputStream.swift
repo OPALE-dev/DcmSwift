@@ -177,6 +177,9 @@ public class DicomInputStream: OffsetInputStream {
     // MARK: -
     /**
      Tries to reads a `DataTag` with a given byte order
+     
+     - Parameter order: the byte order to read the stream to
+     - Returns: the `DataTag` read from the stream, or `nil` on failure
      */
     private func readDataTag(order:ByteOrder = .LittleEndian) -> DataTag? {
         return DataTag(withStream: self, byteOrder:order)
