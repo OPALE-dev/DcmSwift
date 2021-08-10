@@ -18,7 +18,15 @@ public enum QueryRetrieveLevel {
     case SERIES
     case IMAGE
     
-    
+    /**
+     Returns a dataset for querying
+     
+     `DataSet` filled of DataElements (PatientID, PatientName etc.) with empry values.
+     There are different levels of query : PATIENT, STUDY, SERIES, IMAGE. For each query level there's
+     a different set of data elements
+     
+     - Returns: a `DataSet` of empty DataElements
+     */
     static func defaultQueryDataset(level:QueryRetrieveLevel) -> DataSet {
         let dataset = DataSet()
         
