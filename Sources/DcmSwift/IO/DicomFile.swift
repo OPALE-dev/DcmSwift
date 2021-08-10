@@ -189,7 +189,13 @@ public class DicomFile {
     }
     
     
-    
+    /**
+     Tries to take out a PDF encapsulated in a DICOM file
+     
+     Takes out the PDF data from the `DataElement`, which tag is (0042,0011) EncapsulatedDocument.
+     
+     - Returns: the data of the PDF, or nil if not found
+     */
     public func pdfData() -> Data? {
         if self.isEncapsulatedPDF {
             if let e = self.dataset.element(forTagName: "EncapsulatedDocument") {
