@@ -35,7 +35,9 @@ public class DataSet: DicomObject {
         transferSyntax = TransferSyntax(TransferSyntax.explicitVRLittleEndian)
     }
             
-    
+    /**
+     Dumps a description of the `DataSet` in a String
+     */
     public override var description: String {
         var string = ""
         
@@ -139,7 +141,11 @@ public class DataSet: DicomObject {
     }
 
     
-    
+    /**
+     Converts the `DataSet` into `XML`
+     
+     - Returns: an `XML` string of the dataset
+     */
     public override func toXML() -> String {
         var xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         
@@ -154,7 +160,13 @@ public class DataSet: DicomObject {
         return xml
     }
     
-    
+    /**
+     Converts the `DataSet` to a hash representing a `JSON` array
+     
+     - Note: why return Any ? why not Hash ?
+     
+     - Returns: a hash containing the dataset
+     */
     override public func toJSONArray() -> Any {
         var json:[String:[String:Any]] = [:]
         
@@ -195,7 +207,12 @@ public class DataSet: DicomObject {
     }
     
     
-    
+    /**
+     Gets a value of DataElement identified by its tag `tag`
+     
+     - Parameter tag: the tag name of the data element to find
+     - Returns: the value of the data element found
+     */
     public func value(forTag tag:String ) -> Any? {
         for el in allElements {
             if el.name == tag {
@@ -205,7 +222,14 @@ public class DataSet: DicomObject {
         return nil
     }
     
-    
+    /**
+     Gets a string value of a DataElement identified by its tag `tag`
+     
+     - Parameters:
+        - tag: the name of the `DataElement` to find
+        - trim: is the string value removed of blank characters (newlines and whitespaces) ?
+     - Returns: the string value of the data element found, `nil` if not found
+     */
     public func string(forTag tag:String, trim: Bool = true) -> String? {
         for el in allElements {
             if el.name == tag {
@@ -330,13 +354,23 @@ public class DataSet: DicomObject {
     }
     
     
-    
+    /**
+     Check if the `DataSet` has a `DataElement`
+     
+     - Parameter name: name of the data element to find
+     - Returns: a `Bool` indicating if the date element was found
+     */
     public func hasElement(forTagName name:String) -> Bool {
         return element(forTagName: name) != nil
     }
     
     
-    
+    /**
+     Gets a `DataElement` by its tag name, from the `DataSet`
+     
+     - Parameter name: name of the tag of the data element to be removed
+     - Returns: the `DataElement` found, `nil` if not found
+     */
     public func element(forTagName name:String) -> DataElement? {
         for el in allElements {
             if el.name == name {
@@ -346,6 +380,12 @@ public class DataSet: DicomObject {
         return nil
     }
     
+    /**
+     Get a sequence by its tag name
+     
+     - Parameter name: the tag name of the sequence to get
+     - Returns: the sequence found, `nil` if not found
+     */
     public func sequence(forTagName name:String) -> DataSequence? {
         for el in allElements {
             if el.name == name && el.vr == .SQ {
@@ -355,7 +395,12 @@ public class DataSet: DicomObject {
         return nil
     }
     
-    
+    /**
+     Removes a `DataElement` by its tag name, from the `DataSet`
+     
+     - Parameter name: name of the tag of the data element to be removed
+     - Returns: the `DataElement` removed, nil if not found
+     */
     public func remove(elementForTagName name:String) -> DataElement? {
         guard let el = self.element(forTagName: name) else {
             return nil
@@ -364,6 +409,14 @@ public class DataSet: DicomObject {
         return remove(dataElement: el)
     }
     
+    /**
+     Remove a `DataElement` from the `DataSet`
+     
+     - Remark: why return the element we pass in the params ?
+     
+     - Parameter element: the data element to remove
+     - Returns: the `DataElement` removed from the `DataSet`
+     */
     public func remove(dataElement element:DataElement) -> DataElement {
         if let index = allElements.firstIndex(where: {$0 === element}) {
             allElements.remove(at: index)
@@ -378,7 +431,11 @@ public class DataSet: DicomObject {
     }
     
 
-    
+    /**
+     Append a `DataElement` to the `DataSet`
+     
+     - Parameter element: the data element to add
+     */
     public func add(element:DataElement) {
         if element.group != DicomConstants.metaInformationGroup {
             datasetElements.append(element)
@@ -447,7 +504,9 @@ extension DataSet {
     
     
     
-    
+    /**
+     Sort all DataElements inside the `DataSet` by tag
+     */
     public func sortElements() {
         allElements = allElements.sorted(by: { (a, b) -> Bool in
             if a.group != b.group {
