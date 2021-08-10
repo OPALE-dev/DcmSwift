@@ -213,13 +213,13 @@ public class DicomClient {
     }
     
     
-    
+    /// - Returns: false
     public func move(uids:[String], aet:String) -> Bool {
         return false
     }
     
     
-    
+    /// - Returns: false
     public func get() -> Bool {
         return false
     }
