@@ -9,9 +9,12 @@ import Foundation
 
 /**
  Class for anonymizing a DICOM file
- TODO why not a static class ?
+ 
+ - TODO: why not a static class ?
  */
 public class Anonymizer {
+    
+    /// Related to `DataElement`'s `VR`
     public enum AnonymizationType {
         case uid(root: String? = nil)
         case string(_ string:String)
@@ -57,8 +60,14 @@ public class Anonymizer {
         "NameOfPhysiciansReadingStudy":     .blank
     ]
     
+    /// the DICOM file to anonimyze
     var dicomFile:DicomFile
     
+    /**
+     Inits the anonimyzer for a DICOM file
+     
+     - Parameter path: the file path of the DICOM file to anonymize
+     */
     public init?(path:String) {
         guard let dicomFile = DicomFile(forPath: path) else {
             return nil
@@ -67,13 +76,30 @@ public class Anonymizer {
         self.dicomFile = dicomFile
     }
     
-    
+    /**
+     Anonymize a DICOM file and writes the result in `destPath`
+  
+     The anonimyzation is based on a default set of data elements, see `defaultUIDsToAnonymize`.
+  
+     - SeeAlso: `defaultUIDsToAnonymize`
+     
+     - Parameters:
+        - destPath: the path to write the anonymized DICOM file
+     
+     - Returns: a `Bool` indicating success
+     */
     public func anonymize(to destPath:String) -> Bool {
         return anonymize(to: destPath, tags: defaultUIDsToAnonymize)
     }
     
     /**
-     Anonymize a DICOM file and writes the result in `destPath`. Returns `true` on success, `false` otherwise.
+     Anonymize a DICOM file and writes the result in `destPath`
+  
+     - Parameters:
+        - destPath: the path to write the anonymized DICOM file
+        - tags: a hash, with the keys being the names of the data elements to anonymize, and the values the types
+     
+     - Returns: a `Bool` indicating success
      */
     public func anonymize(to destPath:String, tags:[String: AnonymizationType]) -> Bool {
         if var dataset = dicomFile.dataset {
@@ -85,10 +111,16 @@ public class Anonymizer {
     }
     
     /**
-     Anonymize a `DataSet`, with a hash, with keys being the data elements to anonymize, and the values
-     the type of the data element. Returns the anonymized `DataSet`
+     Anonymize a `DataSet` given some tags of data elements to anonymize
      
-     TODO why not get the data element type, and then anonymize according to it ? instead of providing the types
+     The data elements to anonymize are in a hash, with keys being the data elements' names to anonymize, and the values
+     the type of the data element. We need the types because we can't anonymize randomly, like putting a random integer
+     
+     - Remark: why not get the data element type, and then anonymize according to it ? instead of providing the types
+     - Parameters:
+        - dataset: the dataset to anonymize
+        - tags: a hash, with the keys being the names of the data elements to anonymize, and the values the types
+     - Returns: the anonymized `DataSet`
      */
     public func anonymize(dataset:DataSet, tags:[String: AnonymizationType]) -> DataSet {
         let today       = Date()
