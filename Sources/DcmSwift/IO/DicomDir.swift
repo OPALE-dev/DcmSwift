@@ -96,7 +96,10 @@ public class DicomDir:DicomFile {
     }
     
     /**
-        Return an array of String wich represents all the DICOM files corresponding to a given patient
+    Return an array of String wich represents all the DICOM files corresponding to a given patient
+     
+     - Parameter givenID: the patient ID of the DICOM files we want
+     - Returns: an array of paths of DICOM files which corresponds to the patient ID
     */
     public func index(forPatientID givenID:String) -> [String] {
         var resultat : [String] = []
@@ -133,7 +136,10 @@ public class DicomDir:DicomFile {
     }
     
     /**
-        Return an array of String wich represents all the DICOM files corresponding to a given study
+    Return an array of String wich represents all the DICOM files corresponding to a given study
+     
+     - Parameter givenStudyUID: the serie UID of the DICOM files we want
+     - Returns: an array of paths of DICOM files which corresponds to the given Study UID
      */
     public func index(forStudyInstanceUID givenStudyUID:String) -> [String] {
         var resultat : [String] = []
@@ -165,7 +171,10 @@ public class DicomDir:DicomFile {
     }
     
     /**
-        Return an array of String wich represents all the DICOM files corresponding to a given serie
+    Return an array of String wich represents all the DICOM files corresponding to a given serie
+     
+     - Parameter givenSeriesUID: the serie UID of the DICOM files we want
+     - Returns: an array of paths of DICOM files which corresponds to the given Serie UID
      */
     public func index(forSeriesInstanceUID givenSeriesUID:String) -> [String] {
         var resultat : [String] = []
@@ -366,7 +375,12 @@ public class DicomDir:DicomFile {
     }
     
     /**
-        Recursive method to browse a directory, return a string array containing all the filepaths
+    Recursive method to browse a directory, return a string array containing all the filepaths
+     
+     - Todo: put it in a static utilitary class
+    
+     - Parameter folderPath: the path to parse
+     - Returns: an array containing all paths under `folderPath`
      */
     private static func browse(atPath folderPath:String) -> [String] {
         var paths:[String] = []
@@ -412,7 +426,10 @@ public class DicomDir:DicomFile {
     }
     
     /**
-        Create a DicomDir instance wich contains the interesting data of the given folder
+    Create a DicomDir instance wich contains the interesting data of the given folder
+     
+     - Parameter folderPath: the path of the folder where the DICOM files are
+     - Returns: the `DicomDir` generated from the informations parsed in the DICOM files
      */
     public static func parse(atPath folderPath:String) -> DicomDir? {
         
@@ -557,7 +574,10 @@ public class DicomDir:DicomFile {
     }
     
     /**
-        Input : a path delimited by "/". Output : a path delimited by "\".
+    Replace slashes in path by backslashes
+     
+     - Remark: just replace / with \ and be done with it, with replacingOccurrences
+     - Returns: the path with backslashes instead of slashes
      */
     public static func formatPath(forPath path:String) -> String {
         let components = path.components(separatedBy: "/")
@@ -578,7 +598,11 @@ public class DicomDir:DicomFile {
     //MARK: Write a DicomDir
     
     /**
-        Create the DirectoryRecordSequence using the given properties : patients, studies, series, images.
+     Create the DirectoryRecordSequence using the given properties : patients, studies, series, images.
+     
+     - Note: how come this method returns an optional ? the method doesn't return nil and the variable returned isn't an optional
+     
+     - Returns: the DirectoryRecordSequence
      */
     public func createDirectoryRecordSequence() -> DataSequence? {
         // All the useful tags
@@ -869,8 +893,10 @@ public class DicomDir:DicomFile {
     }
     
     /**
-        Input : the directory record sequence fully written but with wrong offsets for each item
-        Output : the directory record sequence but with the rights offsets !
+     Rewrites a directory record sequence with the right offsets
+     
+     - Parameter sequence: the directory record sequence fully written but with wrong offsets for each item
+     - Returns: the directory record sequence but with the rights offsets !
      */
     public func addOffsets(ForSequence sequence: DataSequence?) -> DataSequence? {
         print(offsetsNextPatients)
@@ -916,7 +942,12 @@ public class DicomDir:DicomFile {
     }
 
     /**
-        Add a String value to the Directory Record Sequence
+    Add a String value to the Directory Record Sequence
+     
+     - Parameters:
+        - value: the value of the `DataElement` to insert
+        - tag: the tag of the `DataElement` to insert
+     - Returns: the `DataElement` created
      */
     private func addValue(addString value:String, forTag tag:DataTag, withParent parent:DataElement?) -> DataElement {
         let element = DataElement(withTag: tag, parent: parent)
@@ -926,7 +957,12 @@ public class DicomDir:DicomFile {
     }
     
     /**
-        Add an integer value  to the Directory Record Sequence
+    Add an integer value  to the Directory Record Sequence
+     
+     - Parameters:
+        - value: the value of the `DataElement` to insert
+        - tag: the tag of the `DataElement` to insert
+     - Returns: the `DataElement` created
      */
     private func addValue(addInteger value:UInt32, forTag tag:DataTag, withParent parent:DataElement?) -> DataElement {
         let element = DataElement(withTag: tag, parent: parent)
@@ -936,7 +972,10 @@ public class DicomDir:DicomFile {
     }
     
     /**
-        Write a new DICOMDIR using a folder
+     Write a new DICOMDIR using a folder
+     
+     - Parameter folderPath: the path to write the DICOM DIR
+     - Returns: a `Bool` indicating success
      */
     public func writeDicomDir(atPath folderPath:String) -> Bool {
         hasPreamble = true
