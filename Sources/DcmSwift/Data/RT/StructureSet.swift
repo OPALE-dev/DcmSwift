@@ -36,6 +36,12 @@ public class StructureSet {
                                              forSequence: "ReferencedFrameofReferenceSequence",
                                              withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.11")
      ```
+     
+     - Parameters:
+        - dicomRT: the DICOM RT file to parse
+        - forSequence: the name of the sequence to parse
+        - withNumber: the ID of the `DataItem` to get
+     - Returns: the `DataItem` found, or nil if not found
      */
     public static func getItemInSequenceForNumber(dicomRT: DicomRT, forSequence: String, withNumber: String) -> DataItem? {
         if !SSEQUENCE_WITH_NUMBER.keys.contains(forSequence) {
@@ -61,6 +67,10 @@ public class StructureSet {
      ```
      StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "1")
      ```
+     
+     - Parameters:
+        - observationNumber: the ID of the `DataItem` to get
+     - Returns: the `DataItem` found, or `nil` if not found
      */
     public static func getObservation(dicomRT: DicomRT, observationNumber: String) -> DataItem? {
         guard let sequence = dicomRT.dataset.sequence(forTagName: "RTROIObservationsSequence") else { return nil }
@@ -82,6 +92,10 @@ public class StructureSet {
      ```
      StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "1")
      ```
+     
+     - Parameters:
+        - roiNumber: the ID of the `DataItem` to get
+     - Returns: the `DataItem` found, or `nil` if not found
      */
     public static func getObservationByROINumber(dicomRT: DicomRT, roiNumber: String) -> DataItem? {
         guard let sequence = dicomRT.dataset.sequence(forTagName: "RTROIObservationsSequence") else { return nil }
