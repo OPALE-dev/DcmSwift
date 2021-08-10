@@ -29,8 +29,11 @@ extension Data {
 }
 /**
  DicomImage is a wrapper that provides images related features for the DICOM standard.
+ Please refer to dicomiseasy : http://dicomiseasy.blogspot.com/2012/08/chapter-12-pixel-data.html
  */
 public class DicomImage {
+    
+    /// Color space of the image
     public enum PhotometricInterpretation {
         case MONOCHROME1
         case MONOCHROME2
@@ -48,7 +51,7 @@ public class DicomImage {
     }
     
     
-    
+    /// Indicates if a pixel is signed or unsigned
     public enum PixelRepresentation:Int {
         case Unsigned  = 0
         case Signed    = 1
@@ -176,6 +179,10 @@ public class DicomImage {
     
     
 #if os(macOS)
+    /**
+     Creates an `NSImage` for a given frame
+     - Important: only for `macOS`
+     */
     public func image(forFrame frame: Int = 0) -> NSImage? {
         if !frames.indices.contains(frame) {
             Logger.error("  -> No such frame (\(frame))")
@@ -198,6 +205,10 @@ public class DicomImage {
     }
     
 #elseif os(iOS)
+    /**
+     Creates an `UIImage` for a given frame
+     - Important: only for `iOS`
+     */
     public func image(forFrame frame: Int) -> UIImage? {
         if !frames.indices.contains(frame) { return nil }
 
@@ -316,12 +327,16 @@ public class DicomImage {
         return output
     }
     
-    /*
+    /**
      Writes a dicom image to a png file, given a path, and a basename for the file
      There might be multiple frames, hence the base in basename
-     files will be named like this: <baseName>_0.png, <baseName>_1.png, etc
+     files will be named like this: `<baseName>_0.png`, `<baseName>_1.png`, etc
      
      If the basename is nil, an uid is generated
+     
+     - Parameters:
+        - path: where to save the PNG
+        - baseName: the (root) name of the PNG file
      */
     public func toPNG(path: String, baseName: String?) {
         
