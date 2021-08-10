@@ -10,18 +10,26 @@ import Foundation
 /**
  Inspired by dcmtk rt files : https://github.com/DCMTK/dcmtk/blob/master/dcmrt/libsrc/drmdose.cc
  
- - TODO:
-    - refactor? uint16, int16, uint32, int32
+ - TODO: refactor? uint16, int16, uint32, int32
  
  
   ```
-    let pixel: Int16 = PixelDataAccess.getPixelSigned16(pixelDataElement: pixelData, pixelNumber: pixelNumber, byteOrder: byteOrder)
+    if let dicomRT = DicomRT.init(forPath: "path/to/file.dicom") {
+        if let pixelData = dicomRT.dataset.element(forTagName: "PixelData") {
+            let pixel: Int16 = PixelDataAccess.getPixelSigned16(pixelDataElement: pixelData,
+                                                                pixelNumber: 12,
+                                                                byteOrder: pixelData.byteOrder)
+        }
+    }
   ```
  */
 public class PixelDataAccess {
 
     /**
      Returns the pixel as Signed 32 bits integer
+     
+     - Parameters:
+        - pixelNumber: the pixel to get
      */
     public static func getPixelSigned32(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> Int32? {
         let lowerBound = pixelNumber * 4
@@ -33,6 +41,8 @@ public class PixelDataAccess {
     
     /**
      Returns the pixel as Unsigned 32 bits integer
+     
+     - Returns: the pixel in unsigned 32
      */
     public static func getPixelUnsigned32(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> UInt32? {
         let lowerBound = pixelNumber * 4
