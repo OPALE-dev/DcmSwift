@@ -24,6 +24,7 @@ public class AssociationRJ: PDUMessage {
     public var source:DicomAssociation.RejectSource = DicomAssociation.RejectSource.DICOMULServiceUser
     public var reason:DicomAssociation.UserReason = DicomAssociation.UserReason.NoReasonGiven
     
+    /// Full name of AssociateRJ PDU
     public override func messageName() -> String {
         return "A-ASSOCIATE-RJ"
     }
@@ -32,6 +33,28 @@ public class AssociationRJ: PDUMessage {
         return "\(self.reason)"
     }
     
+    /**
+     Builds the A-ASSOCIATE-RJ bytes
+     
+     A-ASSOCIATE-RJ message consists of:
+     - pdu type
+     - 1 reserved byte
+     - 4 pdu length
+     - 1 reserved byte
+     - result integer (1: permanent, 2: transient)
+     - source integer (1: user, 2: provider asce, 3: provider presentation)
+     - reason/diag. integer
+     
+     Reason integer value can mean the following:
+     - 1 no-reason-given
+     - 2 application-context-name-not-supported
+     - 3 calling-AE-title-not-recognized
+     - 4-6 reserved
+     - 7 called-AE-title-not-recognized
+     - 8-10 reserved
+     
+     - Returns: A-ASSOCIATE-RJ bytes as `Data`
+     */
     public override func data() -> Data {
         var data = Data()
         let length = UInt32(4)

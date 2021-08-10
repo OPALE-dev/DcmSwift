@@ -20,7 +20,7 @@ public class AssociationAC: PDUMessage {
     public var remoteCalledAETitle:String?
     public var remoteCallingAETitle:String?
     
-    
+    /// Full name of ASSOCIATE-AC
     public override func messageName() -> String {
         return "A-ASSOCIATE-AC"
     }
@@ -34,7 +34,20 @@ public class AssociationAC: PDUMessage {
         return super.messageInfos()
     }
     
-    
+    /**
+     Builds the A-ASSOCIATE-AC bytes
+     
+     A-ASSOCIATE-AC message consists of:
+     - pdu type
+     - 1 reserved byte
+     - 4 pdu length
+     - 2 protocol version
+     - 1 reserved byte
+     - 16 same bytes as A-ASS-RQ
+     - 16 same bytes as A-ASS-RQ
+     - 32 same bytes as A-ASS-RQ
+     - variable items: variable items : one application item, 1 or more presentation context items and 1 user info item
+     */
     public override func data() -> Data {
         var data = Data()
         
