@@ -99,6 +99,7 @@ public class DicomServer: CEchoSCPDelegate, CFindSCPDelegate, CStoreSCPDelegate 
     
     
     // MARK: - CEchoSCPDelegate
+    /// - Returns: returns success
     public func validateEcho(callingAE: DicomEntity) -> DIMSEStatus.Status {
         return .Success
     }
@@ -106,6 +107,7 @@ public class DicomServer: CEchoSCPDelegate, CFindSCPDelegate, CStoreSCPDelegate 
     
     
     // MARK: - CFindSCPDelegate
+    /// - Returns: returns an empty array
     public func query(level: QueryRetrieveLevel, dataset: DataSet) -> [DataSet] {
         print("query \(level) \(dataset)")
         return []
@@ -113,6 +115,7 @@ public class DicomServer: CEchoSCPDelegate, CFindSCPDelegate, CStoreSCPDelegate 
     
     
     // MARK: - CStoreSCPDelegate
+    /// - Returns: `false`
     public func store(fileMetaInfo:DataSet, dataset: DataSet, tempFile:String) -> Bool {
 //        if message.receivedData.count > 0 {
 //            let dis = DicomInputStream(data: message.receivedData)
