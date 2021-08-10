@@ -76,7 +76,9 @@ public class DicomServer: CEchoSCPDelegate, CFindSCPDelegate, CStoreSCPDelegate 
 //        try? group.syncShutdownGracefully()
     }
     
-    
+    /**
+     Starts the server
+     */
     public func start() {
         do {
             defer {
