@@ -8,7 +8,7 @@
 
 import Foundation
 
-
+/// Type of PDU message
 public enum ItemType: UInt8 {
     case applicationContext     = 0x10;
     case rqPresentationContext  = 0x20;

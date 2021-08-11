@@ -13,6 +13,12 @@ import Foundation
  
  TODO: rewrite with OffsetInputStream
  
+ ApplicationContext consists of:
+ - item type (10)
+ - 1 reserved byte
+ - 2 item length
+ - application context name
+ 
  http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#sect_9.3.2.1
  */
 public class ApplicationContext {
@@ -23,8 +29,9 @@ public class ApplicationContext {
         self.applicationContextName = applicationContextName
     }
     
-    
+    /// Parse bytes to get Application Context fields
     public init?(data:Data) {
+        
         var offset = 0
         let acType = data.first
         offset += 1
@@ -44,12 +51,12 @@ public class ApplicationContext {
         }
     }
     
-    
+    /// Length of application context name
     public var length:Int {
         return self.applicationContextName.count
     }
     
-    
+    /// Builds Application Context bytes as `Data`
     public func data() -> Data {
         var data = Data()
         let appContext = self.applicationContextName.data(using: .utf8)
