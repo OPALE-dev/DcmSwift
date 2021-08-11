@@ -13,6 +13,16 @@ import Foundation
  
  TODO: rewrite with OffsetInputStream
  
+ Presentation Context consists of:
+ - item type
+ - 1 reserved byte
+ - 2 item length
+ - presentation context id
+ - 1 reserved byte
+ - result/reason OR 1 reserved byte
+ - 1 reserved byte
+ - only 1 transfer syntax OR 1 abstract syntax and 1 or more transfer syntax
+ 
  http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#sect_9.3.2.2
  */
 public class PresentationContext {

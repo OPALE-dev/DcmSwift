@@ -13,6 +13,12 @@ import Foundation
  
  TODO: rewrite with OffsetInputStream
  
+ User Information consists of:
+ - item type
+ - 1 reserved byte
+ - 2 item length
+ - user data
+ 
  http://dicom.nema.org/dicom/2013/output/chtml/part08/sect_9.3.html#sect_9.3.3.3
  */
 public class UserInfo {
@@ -26,7 +32,9 @@ public class UserInfo {
         self.maxPDULength = maxPDULength
     }
     
-    
+    /**
+     - Remark: Why read max pdu length ? it's only a sub field in user info
+     */
     public init?(data:Data) {
         let uiItemData = data
         
