@@ -10,9 +10,7 @@ import Foundation
 
 /**
  Application Context Item Structure
- 
- TODO: rewrite with OffsetInputStream
- 
+  
  ApplicationContext consists of:
  - item type (10)
  - 1 reserved byte
@@ -31,21 +29,26 @@ public class ApplicationContext {
     
     /// Parse bytes to get Application Context fields
     public init?(data:Data) {
+        let stream = OffsetInputStream(data: data)
+                
+        stream.open()
         
-        var offset = 0
-        let acType = data.first
-        offset += 1
+        let applicationContextType = stream.read(length: 1)?.toUInt8()
         
-        if acType != ItemType.applicationContext.rawValue {
+        if applicationContextType != ItemType.applicationContext.rawValue {
             return nil
         }
-                    
-        offset += 1 // reserved byte
         
-        let acLength = data.subdata(in: offset..<offset+2).toInt16(byteOrder: .BigEndian)
-        offset += 2
+        stream.forward(by: 1)// reserved byte
         
-        let applicationContextData = data.subdata(in: offset..<Int(acLength))
+        guard let length = stream.read(length: 2) else {
+            return nil
+        }
+        
+        let applicationContextLength = length.toInt16(byteOrder: .BigEndian)
+        
+        guard let applicationContextData = stream.read(length: Int(applicationContextLength)) else { return nil }
+        
         if let applicationContextName = String(bytes: applicationContextData, encoding: .utf8) {
             self.applicationContextName = applicationContextName
         }
