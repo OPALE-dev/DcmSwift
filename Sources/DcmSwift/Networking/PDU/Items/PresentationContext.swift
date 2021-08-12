@@ -43,68 +43,116 @@ public class PresentationContext {
         self.result = result
     }
     
+    public var description: String {
+        return String(format:"%@ %@ %@ %d %d", transferSyntaxes.debugDescription, acceptedTransferSyntax ?? "x", abstractSyntax ?? "x", contextID, result)
+    }
     
     public func length() -> Int16 {
         return pcLength
     }
     
     public init?(data:Data) {
-        let pcType = data.first
+       
+        let stream = OffsetInputStream(data: data)
         
-        if pcType != ItemType.acPresentationContext.rawValue && pcType != ItemType.rqPresentationContext.rawValue {
+        stream.open()
+        
+        guard let presentationContextType = stream.read(length: 1) else { return nil }
+        if presentationContextType.toUInt8() != ItemType.acPresentationContext.rawValue
+           && presentationContextType.toUInt8() != ItemType.rqPresentationContext.rawValue {
+            
             return nil
         }
         
-        // let length = data.subdata(in: 2..<4).toInt16(byteOrder: .BigEndian)
-        let pcContextID = data.subdata(in: 4..<5).toUInt8(byteOrder: .BigEndian)
+        stream.forward(by: 1)// reserved byte
         
-        // if we send the RQ ? :-\
-        if pcType == ItemType.acPresentationContext.rawValue {
-            self.result = UInt8(data.subdata(in: 6..<7).toInt8(byteOrder: .BigEndian))
-        }
+        // we don't need the length, except maybe to check all bounds are right
+        // guard let itemLength = stream.read(length: 2) else { return nil }
+        // let presentationContextItemLength = itemLength.toInt16(byteOrder: .BigEndian)
+        stream.forward(by: 2)
         
-        var offset = 8
+        guard let contextID = stream.read(length: 1) else { return nil }
+        self.contextID = contextID.toUInt8(byteOrder: .BigEndian)
         
-        self.contextID = pcContextID// pcContextID == -127 ?  UInt8(128) : UInt8(pcContextID)
+        stream.forward(by: 1)// reserved byte
         
-        // if we receive the RQ
-        if pcType == ItemType.rqPresentationContext.rawValue {
-            // parse abstract syntax
-            let d = data.subdata(in: offset..<offset+1).toInt8()
-            if d == 0x30 {
-                offset += 2
-                
-                let length = Int(data.subdata(in: offset..<offset+2).toInt16(byteOrder: .BigEndian))
-                offset += 2
-                
-                let asData = data.subdata(in: offset..<offset+length)
-                self.abstractSyntax = asData.toString().trimmingCharacters(in: .whitespaces)
-                
-                offset += length
-            }
-        }
-        
-        // parse transfer syntaxes
-        var tsType = data.subdata(in: offset..<offset+1).toInt8(byteOrder: .BigEndian)
-        // print("tsType: \(data.subdata(in: offset..<offset+1).toHex())")
-        while tsType == 0x40 {
-            offset += 2
+        switch presentationContextType.toUInt8(byteOrder: .BigEndian) {
+        case ItemType.acPresentationContext.rawValue:
+            // result / reason
+            guard let result = stream.read(length: 1) else { return nil }
+            self.result = result.toUInt8(byteOrder: .BigEndian)
             
-            let tsLength = data.subdata(in: offset..<offset+2).toInt16(byteOrder: .BigEndian)
-            offset += 2
-
-            let transferSyntaxData = data.subdata(in: offset..<offset+Int(tsLength))
-            if let acceptedTransferSyntax = String(bytes: transferSyntaxData, encoding: .utf8) {
-                transferSyntaxes.append(acceptedTransferSyntax)
-            }
+        case ItemType.rqPresentationContext.rawValue:
+            stream.forward(by: 1)
             
-            offset = offset+Int(tsLength)
+        default:
+            return nil
+        }
 
-            if offset <= data.count && offset+1 <= data.count {
-                tsType = data.subdata(in: offset..<offset+1).toInt8(byteOrder: .BigEndian)
-            } else {
-                tsType = 0
+        
+        stream.forward(by: 1)// reserved byte
+        
+        if presentationContextType.toUInt8() == ItemType.acPresentationContext.rawValue {
+            //
+            // 1 transfer syntax subitem
+            //
+            
+            // when result has a value other than 0 (acceptance), transfer syntax shall not be tested when received
+            if self.result != 0 { return }
+            
+            guard let itemType = stream.read(length: 1) else { return nil }
+            if itemType.toInt8(byteOrder: .BigEndian) != ItemType.transferSyntax.rawValue { return nil }
+            
+            stream.forward(by: 1)// reserved byte
+            
+            guard let itemLength = stream.read(length: 2) else { return nil }
+            let transferSyntaxItemLength = itemLength.toUInt16(byteOrder: .BigEndian)
+            
+            guard let transferSyntaxName = stream.read(length: Int(transferSyntaxItemLength)) else { return nil }
+            // in fact you don't need that ?
+            self.acceptedTransferSyntax = transferSyntaxName.toString()
+            // you need that
+            self.transferSyntaxes.append(transferSyntaxName.toString())
+            
+            
+            
+        } else if presentationContextType.toUInt8() == ItemType.rqPresentationContext.rawValue {
+            
+            //
+            // 1 abstract syntax subitem
+            //
+            guard let itemType = stream.read(length: 1) else { return nil }
+            // Todo: expects abstract syntax item type 30H error handling
+            if itemType.toUInt8() != ItemType.abstractSyntax.rawValue { return nil }
+            
+            stream.forward(by: 1)// reserved byte
+            
+            guard let itemLength = stream.read(length: 2) else { return nil }
+            let abstractSyntaxItemLength = itemLength.toUInt16()
+            
+            guard let abstractSyntaxName = stream.read(length: Int(abstractSyntaxItemLength)) else { return nil }
+            self.abstractSyntax = abstractSyntaxName.toString()
+            
+            //
+            // 1+ transfer syntaxes subitems
+            //
+            while stream.hasReadableBytes {
+                guard let itemType = stream.read(length: 1) else { return nil }
+                // Todo: expects abstract syntax item type 30H error handling
+                if itemType.toUInt8() != ItemType.transferSyntax.rawValue { return nil }
+                
+                stream.forward(by: 1)// reserved byte
+                
+                guard let itemLength = stream.read(length: 2) else { return nil }
+                let transferSyntaxItemLength = itemLength.toUInt16()
+                
+                guard let transferSyntaxName = stream.read(length: Int(transferSyntaxItemLength)) else { return nil }
+                if let tsn = String(bytes: transferSyntaxName, encoding: .utf8) {
+                    self.transferSyntaxes.append(tsn)
+                }
             }
+        } else {
+            Logger.error("Unknown presentation context type")
         }
     }
     

@@ -92,16 +92,20 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "&apos;/Users/nark/Pictures/DICOM/images/1.3.46.670589.5.2.14.2198403904.1100092395.803730.dcm&apos;"
+            argument = "&apos;/Users/paul/Desktop/OPALE/DICOM/Autres/MR/BRAINIX/BRAINIX/IRM c&#xe9;r&#xe9;brale, neuro-cr&#xe2;ne/sT2-TSE-T - 301/IM-0001-0001.dcm&apos;"
             isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "&apos;/Users/nark/Pictures/DICOM/images/1.3.46.670589.5.2.14.2198403904.1100092395.803730.dcm&apos;"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "&apos;/Users/nark/Pictures/DICOM/ST1/SE3-42-axial&apos;"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "&apos;/Users/nark/Pictures/DICOM/ST1/SE3-42-axial/IM30&apos;"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
    </LaunchAction>
