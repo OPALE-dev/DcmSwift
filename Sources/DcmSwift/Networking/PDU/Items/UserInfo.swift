@@ -36,34 +36,35 @@ public class UserInfo {
      - Remark: Why read max pdu length ? it's only a sub field in user info
      */
     public init?(data:Data) {
-        let uiItemData = data
+        let stream = OffsetInputStream(data: data)
         
-        var offset = 0
-        while offset < uiItemData.count-1 {
-            // read type
-            let uiItemType = uiItemData.subdata(in: offset..<offset+1).toInt8(byteOrder: .BigEndian)
-            let uiItemLength = uiItemData.subdata(in: offset+2..<offset+4).toInt16(byteOrder: .BigEndian)
-            offset += 4
+        stream.open()
+        
+        guard let itemType = stream.read(length: 1) else { return }
+        let userInfoItemType = itemType.toUInt8(byteOrder: .BigEndian)
+        
+        stream.forward(by: 1)// reserved byte
+        
+        guard let itemLength = stream.read(length: 2) else { return }
+        let userInfoItemLength = itemLength.toInt16(byteOrder: .BigEndian)
+        
+        switch userInfoItemType {
+        case ItemType.maxPduLength.rawValue:
+            guard let maxLengthReceived = stream.read(length: Int(userInfoItemLength)) else { return }
+            self.maxPDULength = Int(maxLengthReceived.toInt32(byteOrder: .BigEndian))
+            Logger.verbose("    -> Local  Max PDU: \(DicomConstants.maxPDULength)", "UserInfo")
+            Logger.verbose("    -> Remote Max PDU: \(self.maxPDULength)", "UserInfo")
             
-            if uiItemType == ItemType.maxPduLength.rawValue {
-                let maxPDU = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toInt32(byteOrder: .BigEndian)
-                self.maxPDULength = Int(maxPDU)
-                Logger.verbose("    -> Local  Max PDU: \(DicomConstants.maxPDULength)", "UserInfo")
-                Logger.verbose("    -> Remote Max PDU: \(self.maxPDULength)", "UserInfo")
-            }
-            else if uiItemType == ItemType.implClassUID.rawValue {
-                let impClasslUID = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toString()
-                self.implementationUID = impClasslUID
-                //Logger.info("    -> Implementation class UID: \(self.association!.remoteImplementationUID ?? "")")
-            }
-            else if uiItemType == ItemType.implVersionName.rawValue {
-                let impVersion = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toString()
-                self.implementationVersion = impVersion
-                //Logger.info("    -> Implementation version: \(self.association!.remoteImplementationVersion ?? "")")
-                
-            }
+        case ItemType.implVersionName.rawValue:
+            guard let implementationVersionName = stream.read(length: Int(userInfoItemLength)) else { return }
+            self.implementationVersion = implementationVersionName.toString()
             
-            offset += Int(uiItemLength)
+        case ItemType.implClassUID.rawValue:
+            guard let implementationClassUID = stream.read(length: Int(userInfoItemLength)) else { return }
+            self.implementationUID = implementationClassUID.toString()
+            
+        default:
+            Logger.error("Unexpected item type for user info")
         }
     }
     
