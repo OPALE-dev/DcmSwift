@@ -28,26 +28,27 @@ public class ApplicationContext {
     }
     
     /// Parse bytes to get Application Context fields
-    public init?(data:Data) {
+    public init(data:Data) throws {
         let stream = OffsetInputStream(data: data)
                 
         stream.open()
         
-        let applicationContextType = stream.read(length: 1)?.toUInt8()
+        let applicationContextType = try stream.read(length: 1).toUInt8()
         
         if applicationContextType != ItemType.applicationContext.rawValue {
-            return nil
+            //throws DulError.wrongItemType(message: String(format: "Encountered wrong item type, expected \(ItemType.applicationContext.rawValue), got \(applicationContextType)"))
+            throw DulError.unexpectedItemType(message: String(format: "Encountered wrong item type, expected \(ItemType.applicationContext.rawValue), got \(applicationContextType)"))
         }
         
-        stream.forward(by: 1)// reserved byte
+        try stream.forward(by: 1)// reserved byte
         
-        guard let length = stream.read(length: 2) else {
-            return nil
-        }
+        let length = try stream.read(length: 2)// else {
+        //    return nil
+        //}
         
         let applicationContextLength = length.toInt16(byteOrder: .BigEndian)
         
-        guard let applicationContextData = stream.read(length: Int(applicationContextLength)) else { return nil }
+        let applicationContextData = try stream.read(length: Int(applicationContextLength))// else { return nil }
         
         if let applicationContextName = String(bytes: applicationContextData, encoding: .utf8) {
             self.applicationContextName = applicationContextName

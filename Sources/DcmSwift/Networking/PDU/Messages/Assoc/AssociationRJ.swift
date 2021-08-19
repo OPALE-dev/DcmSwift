@@ -74,29 +74,34 @@ public class AssociationRJ: PDUMessage {
     public override func decodeData(data: Data) -> DIMSEStatus.Status {
         let status = super.decodeData(data: data)
         
-        // dead byte
-        _ = stream.read(length: 1)
-        
-        // read reject result
-        if let r = stream.read(length: 1)?.toInt8().bigEndian {
-            if let rr = DicomAssociation.RejectResult(rawValue: UInt8(r)) {
-                result = rr
+        do {
+            // dead byte
+            _ = try stream.read(length: 1)
+            
+            // read reject result
+            if let r = try stream.read(length: 1)?.toInt8().bigEndian {
+                if let rr = DicomAssociation.RejectResult(rawValue: UInt8(r)) {
+                    result = rr
+                }
             }
+            
+            // read reject source
+            if let r = try stream.read(length: 1)?.toInt8().bigEndian {
+                if let rr = DicomAssociation.RejectSource(rawValue: UInt8(r)) {
+                    source = rr
+                }
+            }
+            
+            // read reject reason
+            if let r = try stream.read(length: 1)?.toInt8().bigEndian {
+                if let rr = DicomAssociation.UserReason(rawValue: UInt8(r)) {
+                    reason = rr
+                }
+            }
+        } catch {
+            Logger.error("outOfBound")
         }
         
-        // read reject source
-        if let r = stream.read(length: 1)?.toInt8().bigEndian {
-            if let rr = DicomAssociation.RejectSource(rawValue: UInt8(r)) {
-                source = rr
-            }
-        }
-        
-        // read reject reason
-        if let r = stream.read(length: 1)?.toInt8().bigEndian {
-            if let rr = DicomAssociation.UserReason(rawValue: UInt8(r)) {
-                reason = rr
-            }
-        }
         
         return status
     }

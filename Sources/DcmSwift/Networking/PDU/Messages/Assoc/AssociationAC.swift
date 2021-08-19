@@ -126,12 +126,20 @@ public class AssociationAC: PDUMessage {
         // parse app context
         let acLength = Int(data.subdata(in: offset+2..<offset+4).toInt16(byteOrder: .BigEndian))
         let acData = data.subdata(in: offset..<offset+acLength+4)
-        guard let applicationContext = ApplicationContext(data: acData) else {
+        do {
+            let applicationContext = try ApplicationContext(data: acData)// else {
+            //    Logger.error("Missing application context. Abort.")
+            //    return .Refused
+            //}
+            
+            offset += acData.count
+            self.association.remoteApplicationContext = applicationContext
+            
+        } catch {
             Logger.error("Missing application context. Abort.")
             return .Refused
         }
-        offset += acData.count
-        self.association.remoteApplicationContext = applicationContext
+
         
         // parse presentation context
         var pcType = data.subdata(in: offset..<offset + 1).toInt8()
@@ -156,14 +164,22 @@ public class AssociationAC: PDUMessage {
         offset = offset + 4
         let userInfoData = data.subdata(in: offset..<data.count)
         
-        guard let userInfo = UserInfo(data: userInfoData) else {
+        do {
+            let userInfo = try UserInfo(data: userInfoData)// else {
+            //    Logger.warning("No user information values provided. Abort")
+            //    return .Refused
+            //}
+
+            self.association?.maxPDULength = userInfo.maxPDULength
+            self.association?.remoteImplementationUID = userInfo.implementationUID
+            self.association?.remoteImplementationVersion = userInfo.implementationVersion
+            
+        } catch {
             Logger.warning("No user information values provided. Abort")
             return .Refused
         }
+        
 
-        self.association?.maxPDULength = userInfo.maxPDULength
-        self.association?.remoteImplementationUID = userInfo.implementationUID
-        self.association?.remoteImplementationVersion = userInfo.implementationVersion
         self.association?.associationAccepted = true
         
         return .Success

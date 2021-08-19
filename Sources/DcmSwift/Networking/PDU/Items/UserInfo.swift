@@ -35,32 +35,32 @@ public class UserInfo {
     /**
      - Remark: Why read max pdu length ? it's only a sub field in user info
      */
-    public init?(data:Data) {
+    public init(data:Data) throws {
         let stream = OffsetInputStream(data: data)
         
         stream.open()
         
-        guard let itemType = stream.read(length: 1) else { return }
+        let itemType = try stream.read(length: 1)// else { return }
         let userInfoItemType = itemType.toUInt8(byteOrder: .BigEndian)
         
-        stream.forward(by: 1)// reserved byte
+        try stream.forward(by: 1)// reserved byte
         
-        guard let itemLength = stream.read(length: 2) else { return }
+        let itemLength = try stream.read(length: 2)// else { return }
         let userInfoItemLength = itemLength.toInt16(byteOrder: .BigEndian)
         
         switch userInfoItemType {
         case ItemType.maxPduLength.rawValue:
-            guard let maxLengthReceived = stream.read(length: Int(userInfoItemLength)) else { return }
+            let maxLengthReceived = try stream.read(length: Int(userInfoItemLength))// else { return }
             self.maxPDULength = Int(maxLengthReceived.toInt32(byteOrder: .BigEndian))
             Logger.verbose("    -> Local  Max PDU: \(DicomConstants.maxPDULength)", "UserInfo")
             Logger.verbose("    -> Remote Max PDU: \(self.maxPDULength)", "UserInfo")
             
         case ItemType.implVersionName.rawValue:
-            guard let implementationVersionName = stream.read(length: Int(userInfoItemLength)) else { return }
+            let implementationVersionName = try stream.read(length: Int(userInfoItemLength))// else { return }
             self.implementationVersion = implementationVersionName.toString()
             
         case ItemType.implClassUID.rawValue:
-            guard let implementationClassUID = stream.read(length: Int(userInfoItemLength)) else { return }
+            let implementationClassUID = try stream.read(length: Int(userInfoItemLength))// else { return }
             self.implementationUID = implementationClassUID.toString()
             
         default:

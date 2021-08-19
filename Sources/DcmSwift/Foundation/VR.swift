@@ -65,10 +65,10 @@ public class VR: CustomStringConvertible {
     /**
      Unused. Why not.. because enum are bet…faster!
      */
-    init?(stream:DicomInputStream) {
-        guard let data = stream.read(length: 2) else {
-            return nil
-        }
+    init?(stream:DicomInputStream) throws {
+        let data = try stream.read(length: 2)// else {
+        //    return nil
+        //}
         
         guard let vr = DicomSpec.vr(for: data.toString()) else {
             return nil
