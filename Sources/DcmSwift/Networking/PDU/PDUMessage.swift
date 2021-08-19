@@ -19,6 +19,11 @@ public protocol PDUResponsable {
     func handleRequest() -> PDUMessage?
 }
 
+public enum PDUError: Error {
+    case unknownPduType
+    case notImplementedYet
+}
+
 
 /**
  `PDUMessage` is a superclass used to form Protocol Data Units type of messages.
@@ -117,22 +122,23 @@ public class PDUMessage:
                 
         stream.open()
         
-        guard let pt = stream.read(length: 1)?.toInt8() else {
+        do {
+            
+            let pt = try stream.read(length: 1).toInt8()
+     
+            // fake read PDU type
+            try stream.forward(by: 1)
+            
+            // read PDU length
+            let pduLength = try stream.read(length: 4).toInt32(byteOrder: .BigEndian)
+
+            self.pduType    = PDUType(rawValue: UInt8(pt))
+            self.pduLength  = Int(pduLength)
+        } catch {
             Logger.error("Cannot read PDU Length")
             return .Refused
         }
- 
-        // fake read PDU type
-        stream.forward(by: 1)
-        
-        // read PDU length
-        guard let pduLength = stream.read(length: 4)?.toInt32(byteOrder: .BigEndian) else {
-            Logger.error("Cannot read PDU Length")
-            return .Refused
-        }
-        
-        self.pduType    = PDUType(rawValue: UInt8(pt))
-        self.pduLength  = Int(pduLength)
+
         
         return .Success
     }

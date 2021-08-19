@@ -20,6 +20,7 @@ public enum StreamError: LocalizedError {
     case cannotReadStream(message:String)
     case cannotWriteStream(message:String)
     case datasetIsCorrupted(message:String)
+    case outOfBound(message:String)
 }
 
 

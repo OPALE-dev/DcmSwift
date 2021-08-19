@@ -108,32 +108,38 @@ public class CFindRQ: DataTF {
             
             let transferSyntax = TransferSyntax(ts!)
             
-            guard let pdvLength = stream.read(length: 4)?.toInt32(byteOrder: .BigEndian) else {
-                Logger.error("Cannot read dataset data")
-                return .Refused
-            }
-            
-            self.pdvLength = Int(pdvLength)
-            
-            // jump context + flags
-            stream.forward(by: 2)
-            
-            // read dataset data
-            guard let datasetData = stream.read(length: Int(pdvLength - 2)) else {
-                Logger.error("Cannot read dataset data")
-                return .Refused
-            }
-            
-            let dis = DicomInputStream(data: datasetData)
-            
-            dis.vrMethod    = transferSyntax!.vrMethod
-            dis.byteOrder   = transferSyntax!.byteOrder
-            
-            if commandField == .C_FIND_RQ {
-                if let resultDataset = try? dis.readDataset() {
-                    resultsDataset = resultDataset
+            do {
+                let pdvLength = try stream.read(length: 4).toInt32(byteOrder: .BigEndian)// else {
+                //    Logger.error("Cannot read dataset data")
+                //    return .Refused
+                //}
+                
+                self.pdvLength = Int(pdvLength)
+                
+                // jump context + flags
+                try stream.forward(by: 2)
+                
+                // read dataset data
+                let datasetData = try stream.read(length: Int(pdvLength - 2))// else {
+                //    Logger.error("Cannot read dataset data")
+                //    return .Refused
+                //}
+                
+                let dis = DicomInputStream(data: datasetData)
+                
+                dis.vrMethod    = transferSyntax!.vrMethod
+                dis.byteOrder   = transferSyntax!.byteOrder
+                
+                if commandField == .C_FIND_RQ {
+                    if let resultDataset = try? dis.readDataset() {
+                        resultsDataset = resultDataset
+                    }
                 }
+            } catch {
+                Logger.error("Cannot read dataset data")
+                return .Refused
             }
+            
         }
         
         return status

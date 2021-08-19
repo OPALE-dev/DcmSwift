@@ -86,7 +86,7 @@ public class OffsetInputStream {
      - Parameter length: the number of bytes to read
      - Returns: the data read in the stream, or nil
      */
-    public func read(length:Int) -> Data? {
+    public func read(length:Int) throws -> Data {
         // allocate memory buffer with given length
         let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: length)
         
@@ -95,7 +95,7 @@ public class OffsetInputStream {
         
         if read < 0 || read < length {
             //Logger.warning("Cannot read \(length) bytes")
-            return nil
+            throw StreamError.outOfBound(message: "Cannot read \(length) bytes")
         }
         
         // create a Data object with filled buffer
@@ -116,8 +116,8 @@ public class OffsetInputStream {
      
      - Parameter bytes: the number of bytes to jump in the stream
      */
-    internal func forward(by bytes: Int) {
+    internal func forward(by bytes: Int) throws {
         // read into the void...
-        _ = read(length: bytes)
+        _ = try read(length: bytes)
     }
 }
