@@ -51,46 +51,45 @@ public class PresentationContext {
         return pcLength
     }
     
-    public init?(data:Data) {
+    public init(data:Data) throws {
        
         let stream = OffsetInputStream(data: data)
         
         stream.open()
         
-        guard let presentationContextType = stream.read(length: 1) else { return nil }
+        let presentationContextType = try stream.read(length: 1)// else { return nil }
         if presentationContextType.toUInt8() != ItemType.acPresentationContext.rawValue
            && presentationContextType.toUInt8() != ItemType.rqPresentationContext.rawValue {
             
-            return nil
+            throw DulError.unexpectedItemType(message: String(format: "Unexpected item type, expected \(ItemType.acPresentationContext.rawValue) or \(ItemType.rqPresentationContext.rawValue), got \(presentationContextType.toUInt8())"))
         }
         
-        stream.forward(by: 1)// reserved byte
+        try stream.forward(by: 1)// reserved byte
         
         // we don't need the length, except maybe to check all bounds are right
         // guard let itemLength = stream.read(length: 2) else { return nil }
         // let presentationContextItemLength = itemLength.toInt16(byteOrder: .BigEndian)
-        stream.forward(by: 2)
+        try stream.forward(by: 2)
         
-        guard let contextID = stream.read(length: 1) else { return nil }
+        let contextID = try stream.read(length: 1)// else { return nil }
         self.contextID = contextID.toUInt8(byteOrder: .BigEndian)
         
-        stream.forward(by: 1)// reserved byte
+        try stream.forward(by: 1)// reserved byte
         
-        switch presentationContextType.toUInt8(byteOrder: .BigEndian) {
-        case ItemType.acPresentationContext.rawValue:
+        if presentationContextType.toUInt8(byteOrder: .BigEndian) == ItemType.acPresentationContext.rawValue {
             // result / reason
-            guard let result = stream.read(length: 1) else { return nil }
+            let result = try stream.read(length: 1)// else { return nil }
             self.result = result.toUInt8(byteOrder: .BigEndian)
             
-        case ItemType.rqPresentationContext.rawValue:
-            stream.forward(by: 1)
+        } else if presentationContextType.toUInt8(byteOrder: .BigEndian) == ItemType.rqPresentationContext.rawValue {
+            try stream.forward(by: 1)
             
-        default:
-            return nil
+        //default:
+        //    return nil
         }
 
         
-        stream.forward(by: 1)// reserved byte
+        try stream.forward(by: 1)// reserved byte
         
         if presentationContextType.toUInt8() == ItemType.acPresentationContext.rawValue {
             //
@@ -100,15 +99,17 @@ public class PresentationContext {
             // when result has a value other than 0 (acceptance), transfer syntax shall not be tested when received
             if self.result != 0 { return }
             
-            guard let itemType = stream.read(length: 1) else { return nil }
-            if itemType.toInt8(byteOrder: .BigEndian) != ItemType.transferSyntax.rawValue { return nil }
+            let itemType = try stream.read(length: 1)// else { return nil }
+            if itemType.toInt8(byteOrder: .BigEndian) != ItemType.transferSyntax.rawValue {
+                throw DulError.unexpectedItemType(message: String(format: "Unexpected item type, expected \(ItemType.transferSyntax.rawValue), got \(itemType.toInt8(byteOrder: .BigEndian))"))
+            }
             
-            stream.forward(by: 1)// reserved byte
+            try stream.forward(by: 1)// reserved byte
             
-            guard let itemLength = stream.read(length: 2) else { return nil }
+            let itemLength = try stream.read(length: 2)// else { return nil }
             let transferSyntaxItemLength = itemLength.toUInt16(byteOrder: .BigEndian)
             
-            guard let transferSyntaxName = stream.read(length: Int(transferSyntaxItemLength)) else { return nil }
+            let transferSyntaxName = try stream.read(length: Int(transferSyntaxItemLength))// else { return nil }
             // in fact you don't need that ?
             self.acceptedTransferSyntax = transferSyntaxName.toString()
             // you need that
@@ -121,32 +122,36 @@ public class PresentationContext {
             //
             // 1 abstract syntax subitem
             //
-            guard let itemType = stream.read(length: 1) else { return nil }
+            let itemType = try stream.read(length: 1)// else { return nil }
             // Todo: expects abstract syntax item type 30H error handling
-            if itemType.toUInt8() != ItemType.abstractSyntax.rawValue { return nil }
+            if itemType.toUInt8() != ItemType.abstractSyntax.rawValue {
+                throw DulError.unexpectedItemType(message: String(format: "Unexpected item type, expected \(ItemType.abstractSyntax.rawValue), got \(itemType.toUInt8())"))
+            }
             
-            stream.forward(by: 1)// reserved byte
+            try stream.forward(by: 1)// reserved byte
             
-            guard let itemLength = stream.read(length: 2) else { return nil }
+            let itemLength = try stream.read(length: 2)// else { return nil }
             let abstractSyntaxItemLength = itemLength.toUInt16()
             
-            guard let abstractSyntaxName = stream.read(length: Int(abstractSyntaxItemLength)) else { return nil }
+            let abstractSyntaxName = try stream.read(length: Int(abstractSyntaxItemLength))// else { return nil }
             self.abstractSyntax = abstractSyntaxName.toString()
             
             //
             // 1+ transfer syntaxes subitems
             //
             while stream.hasReadableBytes {
-                guard let itemType = stream.read(length: 1) else { return nil }
+                let itemType = try stream.read(length: 1)// else { return nil }
                 // Todo: expects abstract syntax item type 30H error handling
-                if itemType.toUInt8() != ItemType.transferSyntax.rawValue { return nil }
+                if itemType.toUInt8() != ItemType.transferSyntax.rawValue {
+                    throw DulError.unexpectedItemType(message: String(format: "Unexpected item type, expected \(ItemType.transferSyntax.rawValue), got \(itemType.toUInt8())"))
+                }
                 
-                stream.forward(by: 1)// reserved byte
+                try stream.forward(by: 1)// reserved byte
                 
-                guard let itemLength = stream.read(length: 2) else { return nil }
+                let itemLength = try stream.read(length: 2)// else { return nil }
                 let transferSyntaxItemLength = itemLength.toUInt16()
                 
-                guard let transferSyntaxName = stream.read(length: Int(transferSyntaxItemLength)) else { return nil }
+                let transferSyntaxName = try stream.read(length: Int(transferSyntaxItemLength))// else { return nil }
                 if let tsn = String(bytes: transferSyntaxName, encoding: .utf8) {
                     self.transferSyntaxes.append(tsn)
                 }

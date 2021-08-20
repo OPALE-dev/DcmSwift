@@ -49,16 +49,17 @@ public class DataTag : DicomObject {
         - byteOrder: how to read the stream
      - Returns: a tag on successful read, else nil
      */
-    public init?(withStream stream:DicomInputStream, byteOrder:ByteOrder = .LittleEndian) {
+    public init(withStream stream:DicomInputStream, byteOrder:ByteOrder = .LittleEndian) throws {
         super.init()
         
-        guard let tagData = stream.read(length: 4) else {
-            return nil
-        }
+        let tagData = try stream.read(length: 4)// else {
+        //    return nil
+        //}
         
-        if tagData.count < 4 {
-            return nil
-        }
+        // if we read 4 bytes, length is always 4 no ?
+        //if tagData.count < 4 {
+        //    return nil
+        //}
         
         self.data       = tagData
         self.bytreOrder = byteOrder

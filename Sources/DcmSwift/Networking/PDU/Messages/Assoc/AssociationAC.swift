@@ -152,8 +152,13 @@ public class AssociationAC: PDUMessage {
             
             let pcData = data.subdata(in: offset-4..<offset+Int(pcLength))
             
-            if let presentationContext = PresentationContext(data: pcData) {
+            do {
+                let presentationContext = try PresentationContext(data: pcData)// {
                 self.association.acceptedPresentationContexts[presentationContext.contextID] = presentationContext
+                //}
+                
+            } catch {
+                Logger.error("Can't read presentation context")
             }
             
             offset += Int(pcLength)

@@ -72,48 +72,61 @@ public class CFindRSP: DataTF {
         // if the PDU message as been segmented
         if commandDataSetType == nil {
             // read dataset data
-            guard let datasetData = stream.read(length: Int(self.pdvLength - 2)) else {
+            do {
+                let datasetData = try stream.read(length: Int(self.pdvLength - 2))// else {
+                //    Logger.error("Cannot read dataset data")
+                //    return .Refused
+                //}
+            
+            
+            
+                let dis = DicomInputStream(data: datasetData)
+                
+                dis.vrMethod    = transferSyntax!.vrMethod
+                dis.byteOrder   = transferSyntax!.byteOrder
+                
+                if commandField == .C_FIND_RSP {
+                    if let resultDataset = try? dis.readDataset(enforceVR: false) {
+                        resultsDataset = resultDataset
+                    }
+                }
+            } catch {
                 Logger.error("Cannot read dataset data")
                 return .Refused
-            }
-            
-            let dis = DicomInputStream(data: datasetData)
-            
-            dis.vrMethod    = transferSyntax!.vrMethod
-            dis.byteOrder   = transferSyntax!.byteOrder
-            
-            if commandField == .C_FIND_RSP {
-                if let resultDataset = try? dis.readDataset(enforceVR: false) {
-                    resultsDataset = resultDataset
-                }
             }
             
         // if the PDU message is complete, and commandDataSetType indicates presence of dataset
         } else if commandDataSetType == 0 {
-            // read data PDV length
-            guard let dataPDVLength = stream.read(length: 4)?.toInt32(byteOrder: .BigEndian) else {
+            do {
+                // read data PDV length
+                let dataPDVLength = try stream.read(length: 4).toInt32(byteOrder: .BigEndian)// else {
+                //    Logger.error("Cannot read data PDV Length (CFindRSP)")
+                //    return .Refused
+                //}
+                            
+                // jump context + flags
+                try stream.forward(by: 2)
+                
+                // read dataset data
+                let datasetData = try stream.read(length: Int(dataPDVLength - 2))// else {
+                //    Logger.error("Cannot read dataset data")
+                //    return .Refused
+                //}
+                
+                let dis = DicomInputStream(data: datasetData)
+                
+                dis.vrMethod    = transferSyntax!.vrMethod
+                dis.byteOrder   = transferSyntax!.byteOrder
+                
+                if commandField == .C_FIND_RSP {
+                    if let resultDataset = try? dis.readDataset() {
+                        resultsDataset = resultDataset
+                    }
+                }
+            } catch {
                 Logger.error("Cannot read data PDV Length (CFindRSP)")
-                return .Refused
-            }
-                        
-            // jump context + flags
-            stream.forward(by: 2)
-            
-            // read dataset data
-            guard let datasetData = stream.read(length: Int(dataPDVLength - 2)) else {
                 Logger.error("Cannot read dataset data")
                 return .Refused
-            }
-            
-            let dis = DicomInputStream(data: datasetData)
-            
-            dis.vrMethod    = transferSyntax!.vrMethod
-            dis.byteOrder   = transferSyntax!.byteOrder
-            
-            if commandField == .C_FIND_RSP {
-                if let resultDataset = try? dis.readDataset() {
-                    resultsDataset = resultDataset
-                }
             }
         }
         

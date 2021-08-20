@@ -79,25 +79,25 @@ public class AssociationRJ: PDUMessage {
             _ = try stream.read(length: 1)
             
             // read reject result
-            if let r = try stream.read(length: 1)?.toInt8().bigEndian {
+            let r = try stream.read(length: 1).toInt8().bigEndian// {
                 if let rr = DicomAssociation.RejectResult(rawValue: UInt8(r)) {
                     result = rr
                 }
-            }
+            //}
             
             // read reject source
-            if let r = try stream.read(length: 1)?.toInt8().bigEndian {
-                if let rr = DicomAssociation.RejectSource(rawValue: UInt8(r)) {
+            let r2 = try stream.read(length: 1).toInt8().bigEndian// {
+                if let rr = DicomAssociation.RejectSource(rawValue: UInt8(r2)) {
                     source = rr
                 }
-            }
+            //}
             
             // read reject reason
-            if let r = try stream.read(length: 1)?.toInt8().bigEndian {
-                if let rr = DicomAssociation.UserReason(rawValue: UInt8(r)) {
+            let r3 = try stream.read(length: 1).toInt8().bigEndian// {
+                if let rr = DicomAssociation.UserReason(rawValue: UInt8(r3)) {
                     reason = rr
                 }
-            }
+            //}
         } catch {
             Logger.error("outOfBound")
         }

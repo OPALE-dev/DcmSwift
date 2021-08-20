@@ -120,7 +120,7 @@ public class DicomInputStream: OffsetInputStream {
                 order = .LittleEndian
             }
             
-            if let newElement = readDataElement(dataset: dataset, parent: nil, vrMethod: vrMethod, order: order) {
+            if let newElement = try readDataElement(dataset: dataset, parent: nil, vrMethod: vrMethod, order: order) {
                 // header only option
                 if headerOnly && newElement.tag.group != DicomConstants.metaInformationGroup {
                     break
@@ -188,8 +188,8 @@ public class DicomInputStream: OffsetInputStream {
      - Parameter order: the byte order to read the stream to
      - Returns: the `DataTag` read from the stream, or `nil` on failure
      */
-    private func readDataTag(order:ByteOrder = .LittleEndian) -> DataTag? {
-        return DataTag(withStream: self, byteOrder:order)
+    private func readDataTag(order:ByteOrder = .LittleEndian) throws -> DataTag? {
+        return try DataTag(withStream: self, byteOrder:order)
     }
     
     /**
@@ -336,19 +336,42 @@ public class DicomInputStream: OffsetInputStream {
     ) throws -> DataElement? {
         let startOffset = offset
         
-        // we try to read the tag only if no `inTag` given
-        guard let tag = inTag ?? readDataTag(order: order) else {
+        var inTagDup = inTag
+        
+        if let t = inTagDup {
+            // ignore delimitation items
+            if t.code == "fffee0dd" {
+                return nil
+            }
+            else if t.code == "fffee00d" {
+                return nil
+            }
+        } else {
+            inTagDup = try readDataTag(order: order)
+        }
+        
+        guard let tag = inTagDup else {
             Logger.error("Cannot read tag at offset at \(offset)")
             return nil
         }
+        
+        
+        
+        // we try to read the tag only if no `inTag` given
+        /*if var tag = try readDataTag(order: order) {
+            Logger.error("Cannot read tag at offset at \(offset)")
+            tag = inTag
+        }*/
+        /*if tag == nil {
+            
+        }*/
+        /*guard let tag = inTag ?? () else {
+            Logger.error("Cannot read tag at offset at \(offset)")
+            return nil
+        }
+         */
                 
-        // ignore delimitation items
-        if tag.code == "fffee0dd" {
-            return nil
-        }
-        else if tag.code == "fffee00d" {
-            return nil
-        }
+
                                 
         var element = DataElement(withTag:tag, dataset: dataset, parent: parent)
         
