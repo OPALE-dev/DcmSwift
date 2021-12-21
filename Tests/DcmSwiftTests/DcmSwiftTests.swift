@@ -23,7 +23,7 @@ class DcmSwiftTests: XCTestCase {
     // Configure the test suite with the following boolean attributes
     
     /// Run tests on DICOM Date and Time
-    private static var testDicomDateAndTime     = false
+    private static var testDicomDateAndTime     = true
     
     /// Run tests to read files (rely on embedded test files, dynamically generated)
     private static var testDicomFileRead        = true
