@@ -194,6 +194,10 @@ Binaries can be found in `.build/release` directory. For example:
 
 ## Unit Tests
 
+Before running the tests suite, you need to download test resources with this embedded script:
+
+    ./test.sh
+
 Run the command:
     
     swift test

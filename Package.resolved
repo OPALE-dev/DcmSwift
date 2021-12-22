@@ -20,12 +20,12 @@
         }
       },
       {
-        "package": "Html",
-        "repositoryURL": "https://github.com/pointfreeco/swift-html.git",
+        "package": "swift-html",
+        "repositoryURL": "https://github.com/pointfreeco/swift-html",
         "state": {
           "branch": null,
-          "revision": "3ffc3fc8feb5fde766f5f44fd06ebc030f0721f3",
-          "version": "0.3.1"
+          "revision": "f53c38c4b841841f36afa1866093c908cadaa736",
+          "version": "0.4.0"
         }
       },
       {
