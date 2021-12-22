@@ -21,7 +21,7 @@ let package = Package(
         // Dependencies declare other packages that this package depends on.
         .package(name: "Socket", url: "https://github.com/Kitura/BlueSocket.git", from:"1.0.8"),
         .package(url: "https://github.com/apple/swift-argument-parser", from: "0.4.0"),
-        .package(name: "Html", url: "https://github.com/pointfreeco/swift-html.git", from: "0.3.0"),
+        .package(url: "https://github.com/pointfreeco/swift-html", from: "0.4.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0")
     ],
     targets: [
@@ -30,7 +30,7 @@ let package = Package(
         
         .target(
             name: "DcmSwift",
-            dependencies: [ "Socket", .product(name: "NIO", package: "swift-nio"), "Html" ]),
+            dependencies: [ "Socket", .product(name: "NIO", package: "swift-nio"), .product(name: "Html", package: "swift-html") ]),
         .target(
             name: "DcmAnonymize",
             dependencies: [

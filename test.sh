@@ -1,4 +1,4 @@
-URL=localhost:8080/Resources.zip
+URL=https://github.com/OPALE-paris/DcmSwift/releases/download/v0.0.1/Test-Resources.zip
 wget $URL
-unzip Resources.zip -d Tests/DcmSwiftTests/
-rm Resources.zip
+unzip Test-Resources.zip -d Tests/DcmSwiftTests/
+rm Test-Resources.zip
