@@ -26,7 +26,7 @@ struct DcmEcho: ParsableCommand {
     mutating func run() throws {
         // disable internal logging with .ERROR
         Logger.setMaxLevel(.VERBOSE)
-        
+
         // create a calling AE, aka your local client (port is totally random and unused)
         let callingAE = DicomEntity(
             title: callingAET,

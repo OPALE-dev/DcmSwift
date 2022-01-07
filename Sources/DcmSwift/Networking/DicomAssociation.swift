@@ -240,7 +240,7 @@ public class DicomAssociation: ChannelInboundHandler {
         let bytes = buffer.readBytes(length: buffer.readableBytes)
         let pduData = Data(bytes!)
         
-        print("channelRead")
+        //print("channelRead")
         
         switch state {
         case .Sta2:
