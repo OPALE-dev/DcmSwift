@@ -246,7 +246,7 @@ All the executables from both `DCMTK` and `dcm4chee` are very good reference for
 
 MIT License
 
-Copyright (c) 2019 - OPALE <contact@opale.pro>
+Copyright (c) 2019 - OPALE, https://www.opale.fr
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
