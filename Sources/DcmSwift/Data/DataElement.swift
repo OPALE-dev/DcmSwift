@@ -90,7 +90,8 @@ public class DataElement : DicomObject {
         }
         else if self.vr == .OB ||
                 self.vr == .OW {
-                if let d = val as? Data {
+
+            if let d = val as? Data {
                     self.data = d
 
                     return true
@@ -397,6 +398,7 @@ public class DataElement : DicomObject {
                     //print("PixelSequence")
                     data.append(pixelSequence.toData(vrMethod: inVrMethod, byteOrder: inByteOrder))
                 } else {
+                    print("set")
                     data.append(self.data)
                 }
             }

@@ -49,6 +49,12 @@ public class DicomFile {
         if !self.read() { return nil }
     }
     
+    
+    public init?(withDataset dataset: DataSet, hasPreamble:Bool) {
+        self.dataset = dataset
+        self.hasPreamble = hasPreamble
+    }
+    
     /**
         Create a void dicomFile
      */
