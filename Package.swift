@@ -31,7 +31,11 @@ let package = Package(
         
         .target(
             name: "DcmSwift",
-            dependencies: [ "Socket", .product(name: "NIO", package: "swift-nio"), .product(name: "Html", package: "swift-html") ]),
+            dependencies: [
+                "Socket",
+                .product(name: "NIO", package: "swift-nio"),
+                .product(name: "Html", package: "swift-html")
+            ]),
         .target(
             name: "DcmAnonymize",
             dependencies: [
