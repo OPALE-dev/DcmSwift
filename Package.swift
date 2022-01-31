@@ -15,7 +15,8 @@ let package = Package(
         .executable(name: "DcmServer", targets: ["DcmServer"]),
         .executable(name: "DcmEcho", targets: ["DcmEcho"]),
         .executable(name: "DcmStore", targets: ["DcmStore"]),
-        .executable(name: "DcmSR", targets: ["DcmSR"])
+        .executable(name: "DcmSR", targets: ["DcmSR"]),
+        .executable(name: "DcmIzer", targets: ["DcmIzer"])
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -69,6 +70,12 @@ let package = Package(
             ]),
         .target(
             name: "DcmFind",
+            dependencies: [
+                "DcmSwift",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ]),
+        .target(
+            name: "DcmIzer",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
