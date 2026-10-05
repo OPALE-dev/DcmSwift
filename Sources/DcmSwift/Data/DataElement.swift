@@ -33,6 +33,10 @@ public class DataElement : DicomObject {
     public var vr:VR.VR               = VR.VR.UN
     public var vrMethod:VRMethod      = .Explicit
     public var byteOrder:ByteOrder    = .LittleEndian
+
+    /// Private Creator identifier that reserves this element's block, if found
+    /// in the same Data Set or Sequence Item.
+    public internal(set) var privateCreator:String?
     
     private var dataValues:[DataValue] = []
     

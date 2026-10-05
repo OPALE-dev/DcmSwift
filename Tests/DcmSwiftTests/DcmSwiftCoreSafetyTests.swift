@@ -387,4 +387,70 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
 
         XCTAssertThrowsError(try DicomInputStream(data: sequence).readDataset(enforceVR: false))
     }
+
+    func testImplicitVRPrivateCreatorResolvesPrivateBlock() throws {
+        var bytes = Data([0x09, 0x00, 0x11, 0x00])
+        bytes.append(uint32: 4)
+        bytes.append(contentsOf: Data("ACME".utf8))
+        bytes.append(contentsOf: [0x09, 0x00, 0x01, 0x11])
+        bytes.append(uint32: 2)
+        bytes.append(contentsOf: [0x12, 0x34])
+
+        let dataset = try XCTUnwrap(try DicomInputStream(data: bytes).readDataset())
+        let creator = try XCTUnwrap(dataset.allElements.first { $0.tagCode() == "00090011" })
+        let privateElement = try XCTUnwrap(dataset.allElements.first { $0.tagCode() == "00091101" })
+
+        XCTAssertTrue(creator.tag.isPrivateCreator)
+        XCTAssertEqual(creator.vr, .LO)
+        XCTAssertEqual(creator.value as? String, "ACME")
+        XCTAssertEqual(privateElement.vr, .UN)
+        XCTAssertEqual(privateElement.privateCreator, "ACME")
+        XCTAssertEqual(privateElement.data, Data([0x12, 0x34]))
+    }
+
+    func testPrivateCreatorReservationsAreScopedPerSequenceItem() throws {
+        func explicitElement(tag: [UInt8], vr: [UInt8], value: Data, longLength: Bool = false) -> Data {
+            var data = Data(tag + vr)
+            if longLength {
+                data.append(contentsOf: [0x00, 0x00])
+                data.append(uint32: UInt32(value.count))
+            } else {
+                data.append(uint16: UInt16(value.count))
+            }
+            data.append(value)
+            return data
+        }
+
+        func item(creator: String, value: UInt8) -> Data {
+            var content = explicitElement(
+                tag: [0x09, 0x00, 0x10, 0x00],
+                vr: [0x4c, 0x4f],
+                value: Data(creator.utf8)
+            )
+            content.append(explicitElement(
+                tag: [0x09, 0x00, 0x01, 0x10],
+                vr: [0x55, 0x4e],
+                value: Data([value, 0x00]),
+                longLength: true
+            ))
+            var encoded = Data([0xfe, 0xff, 0x00, 0xe0])
+            encoded.append(uint32: UInt32(content.count))
+            encoded.append(content)
+            return encoded
+        }
+
+        var sequence = Data([0x08, 0x00, 0x11, 0x11, 0x53, 0x51, 0x00, 0x00])
+        var items = item(creator: "ONE ", value: 1)
+        items.append(item(creator: "TWO ", value: 2))
+        sequence.append(uint32: UInt32(items.count))
+        sequence.append(items)
+
+        let dataset = try XCTUnwrap(
+            try DicomInputStream(data: sequence).readDataset(enforceVR: false)
+        )
+        let parsedSequence = try XCTUnwrap(dataset.allElements.first as? DataSequence)
+        XCTAssertEqual(parsedSequence.items.count, 2)
+        XCTAssertEqual(parsedSequence.items[0].elements.last?.privateCreator, "ONE")
+        XCTAssertEqual(parsedSequence.items[1].elements.last?.privateCreator, "TWO")
+    }
 }
