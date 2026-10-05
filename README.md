@@ -1,42 +1,81 @@
 # DcmSwift
 
-DcmSwift is a (partial, work in progress) DICOM implementation written in Swift. It aims to provide minimal support for the DICOM standard, focusing primarily on the DICOM file format implementation. Other aspects of the standard like networking and imaging will certainly be addressed later. 
+DcmSwift is a work-in-progress DICOM implementation written in Swift. The
+DcmSwift 2.0 effort currently prioritizes a safe, measurable implementation of
+the DICOM file format before expanding the networking stack.
+
+The normative baseline is **DICOM 2026d**. Registry knowledge is kept separate
+from actual structural, semantic, codec, and network support: the presence of a
+UID in the bundled dictionary does not mean that the corresponding feature is
+implemented.
 
 ## Requirements
 
-* MacOS 10.13
-* Xcode 12.4
-* Swift 5.3
+* macOS 10.15 or later
+* Swift 5.9 or later
 
 ## Dependencies
 
-* `IBM-Swift/BlueSocket` (networking)
+* `Kitura/BlueSocket` (networking)
+* `apple/swift-nio` (networking)
+* `apple/swift-argument-parser` (command-line tools)
 * `pointfreeco/swift-html` (HTML rendering of DICOM SR)
 
 *Dependencies are managed by SPM.*
 
-## Disclamer
+## Disclaimer
 
-DcmSwift is *not* a medical imaging nor diagnosis oriented library and is not intented to be used as such. It focuses on the computing aspects of the DICOM standard, and provide a powerful set of tools to deal with DICOM files at the atomic level. The authors of this source code cannot be held responsible for its misuses or malfunctions, as it is defined in the license below.
+DcmSwift is not a medical diagnosis library and is not intended to be used as
+one. It focuses on the computing aspects of DICOM and remains under active
+qualification. Applications must not infer clinical or IOD conformance merely
+because a file can be parsed.
 
 ## Overview
 
-DcmSwift is written in Swift 5.3 and mainly rely on the Foundation core library, in order to stay as compliant as possible with most of the common Swift toolchains.
+DcmSwift mainly relies on Foundation in order to remain usable across common
+Swift toolchains.
 
-A minimal DICOM specification is embed within the `DicomSpec` class itself. It provide a large set of tools to manipulate UIDs, SOP Classes, VRs, Tags and more DICOM specific identifiers.
+The runtime tag and UID registry is generated reproducibly from PS3.6 2026d. It
+currently contains 5,303 data-element entries and 1,990 UID entries. Command-set
+tags are provided by a bootstrap registry until PS3.7 generation is added.
 
-With the `DicomFile` class you can read/write standard DICOM files (even some broken ones!). It provides an abstract layer through the `DataSet` class and several tools to manipulate inner data. Such objects can be exported to several formats (raw data, XML, JSON) and translated to several Transfer Syntaxes.
+With `DicomFile`, DICOM Part 10 files can be read and written through the
+`DataSet` model. Malformed lengths are bounds-checked, File Meta Information is
+always written as Explicit VR Little Endian, and its group length is
+recalculated during serialization.
 
-The library also comes with a set of helpers to ease the manipulation of DICOM specific data type like dates, times, endianness, etc. The whole API want to stay as minimal as it is possible (despite the whole DICOM standard wildness), and still giving you a decent set of features to deal with it in a standard and secure way.
+The library also provides helpers for DICOM dates, times, UIDs, tags, VRs,
+endianness, pixel access, Structured Reports, and radiotherapy objects.
 
-DcmSwift is widely used in the **DicomiX** application for macOS, which is available *here*. The app is mainly developed as a showcase of concepts implemented by the DcmSwift library.
+## Current DICOM coverage
+
+| Area | Status |
+| --- | --- |
+| PS3.6 tag and UID registry | Generated from DICOM 2026d |
+| Implicit VR Little Endian | Structural read and write |
+| Explicit VR Little Endian | Structural read and write |
+| Explicit VR Big Endian | Structural read and write for interoperability; retired by DICOM |
+| Encapsulated JPEG/RLE transfer syntaxes | Fragment preservation only; no codec claim |
+| Deflated Explicit VR Little Endian | Known, not implemented |
+| Character sets | Default repertoire, ISO_IR 100, and ISO_IR 192 |
+| ISO 2022 code extensions | Not implemented; rejected rather than decoded as UTF-8 |
+| DICOM JSON and Native DICOM Model XML | Existing convenience output is not yet PS3.18 conformant |
+| DICOMDIR/media profiles | Partial and not yet claimed conformant |
+| DICOM Upper Layer/DIMSE | Experimental; C-ECHO is the most complete path |
+| C-STORE and C-FIND | Partial building blocks |
+| C-MOVE, C-GET, C-CANCEL and DIMSE-N | Not implemented or not qualified |
+| TLS, audit and DICOM security profiles | Not implemented |
+
+See the [DcmSwift 2.0 implementation plan](Documentation/DICOM_2_0_IMPLEMENTATION_PLAN.md)
+and the [working Conformance Statement](Documentation/DICOM_CONFORMANCE.md) for
+the detailed scope and release gates.
 
 ## Use DcmSwift in your project
 
 DcmSwift relies on SPM so all you have to do is to declare it as a dependency of your target in your `Package.swift` file:
 
     dependencies: [
-        .package(name: "DcmSwift", url: "http://gitlab.dev.opale.pro/rw/DcmSwift.git", from:"0.0.1"),
+        .package(url: "https://github.com/OPALE-dev/DcmSwift.git", branch: "master"),
     ]
     
     ...
@@ -192,15 +231,22 @@ Binaries can be found in `.build/release` directory. For example:
 
     .build/release/DcmPrint /my/dicom/file.dcm
 
-## Unit Tests
+## Unit tests
 
-Before running the tests suite, you need to download test resources with this embedded script:
+The repository includes DICOM fixtures. If those resources are absent from a
+source archive, retrieve them with:
 
     ./test.sh
 
-Run the command:
+Run the complete suite with:
     
     swift test
+
+Generated files are written to isolated temporary directories and removed by
+the tests. The DcmSwift 2.0 branch currently includes dedicated regression tests
+for malformed input, byte order, transfer syntax preservation, character sets,
+File Meta Information, modern VRs, pixel offsets, UID handling, and DIMSE
+command encoding.
     
 ## Documentation
 
