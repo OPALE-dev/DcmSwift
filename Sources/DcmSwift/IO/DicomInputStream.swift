@@ -14,6 +14,12 @@ public class DicomInputStream: OffsetInputStream {
     public var hasPreamble:Bool         = false
     public var vrMethod:VRMethod        = .Explicit
     public var byteOrder:ByteOrder      = .LittleEndian
+    public var limits                   = DicomReadLimits()
+
+    private var decodedElementCount     = 0
+    private var decodedItemCount        = 0
+    private var decodedFragmentCount    = 0
+    private var sequenceDepth           = 0
     
     /**
      Init a DicomInputStream with a file path
@@ -57,6 +63,10 @@ public class DicomInputStream: OffsetInputStream {
                 
         self.open()
         defer { self.close() }
+        decodedElementCount = 0
+        decodedItemCount = 0
+        decodedFragmentCount = 0
+        sequenceDepth = 0
         
         // try to read 128 00H + DCIM magic world
         let preambleData = read(length: 132)
@@ -165,6 +175,10 @@ public class DicomInputStream: OffsetInputStream {
                     throw StreamError.datasetIsCorrupted(message: "Dataset is corrupted")
                 }
             }
+        }
+
+        if dataset.isCorrupted {
+            throw StreamError.datasetIsCorrupted(message: "Dataset is corrupted")
         }
         
         dataset.sortElements()
@@ -347,6 +361,14 @@ public class DicomInputStream: OffsetInputStream {
         }
                                 
         var element = DataElement(withTag:tag, dataset: dataset, parent: parent)
+        decodedElementCount += 1
+        if decodedElementCount > limits.maximumElementCount {
+            return readError(
+                forLength: 0,
+                element: element,
+                message: "Fatal, maximum Data Element count exceeded (\(limits.maximumElementCount))"
+            )
+        }
         
         element.startOffset     = startOffset
         
@@ -377,6 +399,10 @@ public class DicomInputStream: OffsetInputStream {
             let message = "Fatal, invalid negative length for \(tag) at offset \(element.lengthOffset)"
             return readError(forLength: element.length, element: element, message: message)
         }
+        if element.length > limits.maximumElementValueLength {
+            let message = "Fatal, value length for \(tag) exceeds configured maximum (\(element.length) > \(limits.maximumElementValueLength))"
+            return readError(forLength: element.length, element: element, message: message)
+        }
         if element.length > readableBytes {
             let message = "Fatal, cannot read length properly, decoded \(tag) length at offset(\(offset-4)) overflows (\(element.length))"
             return readError(forLength: element.length, element: element, message: message)
@@ -398,9 +424,6 @@ public class DicomInputStream: OffsetInputStream {
                 sequence.lengthOffset   = element.lengthOffset
                 sequence.vrOffset       = element.vrOffset
                 element                 = sequence
-
-                // dead bytes
-                forward(by: 4)
 
             } else if element.length == 0 {
                 element.data = Data()
@@ -459,6 +482,12 @@ public class DicomInputStream: OffsetInputStream {
         parent: DataElement? = nil
     ) -> DataSequence? {
         let sequence:DataSequence = DataSequence(withTag:tag, parent: parent)
+        guard sequenceDepth < limits.maximumSequenceDepth else {
+            let message = "Fatal, maximum Sequence nesting depth exceeded (\(limits.maximumSequenceDepth))"
+            return readError(forLength: length, element: sequence, message: message) as? DataSequence
+        }
+        sequenceDepth += 1
+        defer { sequenceDepth -= 1 }
         var bytesRead = 0
                 
         if length > 0 {
@@ -481,6 +510,11 @@ public class DicomInputStream: OffsetInputStream {
                 }
 
                 let item         = DataItem(withTag:tag, parent: sequence)
+                decodedItemCount += 1
+                if decodedItemCount > limits.maximumItemCount {
+                    let message = "Fatal, maximum Sequence Item count exceeded (\(limits.maximumItemCount))"
+                    return readError(forLength: itemLength, element: sequence, message: message) as? DataSequence
+                }
                 item.length      = itemLength
                 item.startOffset = offset - 12
                 item.dataOffset  = offset
@@ -543,6 +577,11 @@ public class DicomInputStream: OffsetInputStream {
                 }
                 else if tag.code == "fffee000" {
                     let item            = DataItem(withTag:tag, parent: sequence)
+                    decodedItemCount += 1
+                    if decodedItemCount > limits.maximumItemCount {
+                        let message = "Fatal, maximum Sequence Item count exceeded (\(limits.maximumItemCount))"
+                        return readError(forLength: 0, element: sequence, message: message) as? DataSequence
+                    }
                     
                     // read item length
                     guard let itemLength = read32BitLength(byteOrder: byteOrder) else { return nil }
@@ -631,8 +670,28 @@ public class DicomInputStream: OffsetInputStream {
         // read item tag
         guard let firstItemTagData = read(length: 4) else { return nil }
         var itemTag = DataTag(withData: firstItemTagData, byteOrder: byteOrder)
-                
-        while itemTag.code != "fffee0dd" {
+        var isOffsetTable = true
+
+        while true {
+            if itemTag.code == "fffee0dd" {
+                guard let delimiterLength = read32BitLength(byteOrder: byteOrder),
+                      delimiterLength == 0 else {
+                    let message = "Fatal, invalid Pixel Data Sequence Delimitation Item"
+                    return readError(forLength: 0, element: pixelSequence, message: message) as? PixelSequence
+                }
+                break
+            }
+            guard itemTag.code == "fffee000" else {
+                let message = "Fatal, unexpected tag \(itemTag) in encapsulated Pixel Data"
+                return readError(forLength: 0, element: pixelSequence, message: message) as? PixelSequence
+            }
+            if !isOffsetTable {
+                decodedFragmentCount += 1
+                if decodedFragmentCount > limits.maximumPixelFragmentCount {
+                    let message = "Fatal, maximum Pixel Data fragment count exceeded (\(limits.maximumPixelFragmentCount))"
+                    return readError(forLength: 0, element: pixelSequence, message: message) as? PixelSequence
+                }
+            }
             // create item
             let item            = DataItem(withTag: itemTag)
             item.startOffset    = offset - 4
@@ -641,6 +700,10 @@ public class DicomInputStream: OffsetInputStream {
             
             // read item length
             guard let itemLength = read32BitLength(byteOrder: byteOrder) else { return nil }
+            if itemLength < 0 {
+                let message = "Fatal, encapsulated Pixel Data items require defined lengths"
+                return readError(forLength: itemLength, element: pixelSequence, message: message) as? PixelSequence
+            }
                                     
             // check for invalid lengths
             if itemLength > readableBytes {
@@ -655,17 +718,12 @@ public class DicomInputStream: OffsetInputStream {
                 item.data = itemData
             }
             
-            if itemLength < -1 {
-                break
-            }
-            
             pixelSequence.items.append(item)
+            isOffsetTable = false
             
             // read next again
-            if offset < total {
-                guard let nextItemTagData = read(length: 4) else { return nil }
-                itemTag = DataTag(withData: nextItemTagData, byteOrder: byteOrder)
-            }
+            guard let nextItemTagData = read(length: 4) else { return nil }
+            itemTag = DataTag(withData: nextItemTagData, byteOrder: byteOrder)
         }
         
         return pixelSequence

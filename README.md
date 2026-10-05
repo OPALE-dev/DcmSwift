@@ -42,7 +42,9 @@ tags are provided by a bootstrap registry until PS3.7 generation is added.
 With `DicomFile`, DICOM Part 10 files can be read and written through the
 `DataSet` model. Malformed lengths are bounds-checked, File Meta Information is
 always written as Explicit VR Little Endian, and its group length is
-recalculated during serialization.
+recalculated during serialization. `DicomInputStream.limits` provides
+configurable safeguards for value sizes, element counts, sequence depth,
+sequence items, and encapsulated Pixel Data fragments.
 
 The library also provides helpers for DICOM dates, times, UIDs, tags, VRs,
 endianness, pixel access, Structured Reports, and radiotherapy objects.

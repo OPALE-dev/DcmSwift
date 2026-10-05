@@ -313,4 +313,61 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertTrue(messages.contains("Missing required File Meta Information element TransferSyntaxUID"))
         XCTAssertTrue(messages.contains("Missing required File Meta Information element ImplementationClassUID"))
     }
+
+    func testReadLimitsRejectOversizedElementBeforeReadingItsValue() {
+        // PatientName, explicit VR Little Endian, four-byte value.
+        let bytes = Data([0x10, 0x00, 0x10, 0x00, 0x50, 0x4e, 0x04, 0x00, 0x41, 0x42, 0x43, 0x44])
+        let stream = DicomInputStream(data: bytes)
+        stream.limits.maximumElementValueLength = 2
+
+        XCTAssertThrowsError(try stream.readDataset(enforceVR: false)) { error in
+            guard case StreamError.datasetIsCorrupted = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+        }
+    }
+
+    func testReadLimitsRejectExcessiveElementCount() {
+        let first = Data([0x10, 0x00, 0x20, 0x00, 0x4c, 0x4f, 0x02, 0x00, 0x41, 0x20])
+        let second = Data([0x10, 0x00, 0x30, 0x00, 0x44, 0x41, 0x08, 0x00])
+            + Data("20000101".utf8)
+        let stream = DicomInputStream(data: first + second)
+        stream.limits.maximumElementCount = 1
+
+        XCTAssertThrowsError(try stream.readDataset(enforceVR: false)) { error in
+            guard case StreamError.datasetIsCorrupted = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+        }
+    }
+
+    func testReadLimitsRejectSequenceNesting() {
+        var sequence = Data([0x08, 0x00, 0x11, 0x11, 0x53, 0x51, 0x00, 0x00])
+        sequence.append(contentsOf: [0xff, 0xff, 0xff, 0xff])
+        let stream = DicomInputStream(data: sequence)
+        stream.limits.maximumSequenceDepth = 0
+
+        XCTAssertThrowsError(try stream.readDataset(enforceVR: false)) { error in
+            guard case StreamError.datasetIsCorrupted = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+        }
+    }
+
+    func testReadLimitsCountPixelFragmentsSeparatelyFromOffsetTable() {
+        var pixelData = Data([0xe0, 0x7f, 0x10, 0x00, 0x4f, 0x42, 0x00, 0x00])
+        pixelData.append(contentsOf: [0xff, 0xff, 0xff, 0xff])
+        // Empty Basic Offset Table followed by one two-byte fragment.
+        pixelData.append(contentsOf: [0xfe, 0xff, 0x00, 0xe0, 0x00, 0x00, 0x00, 0x00])
+        pixelData.append(contentsOf: [0xfe, 0xff, 0x00, 0xe0, 0x02, 0x00, 0x00, 0x00, 0x01, 0x02])
+        pixelData.append(contentsOf: [0xfe, 0xff, 0xdd, 0xe0, 0x00, 0x00, 0x00, 0x00])
+
+        let allowed = DicomInputStream(data: pixelData)
+        allowed.limits.maximumPixelFragmentCount = 1
+        XCTAssertNoThrow(try allowed.readDataset(enforceVR: false))
+
+        let rejected = DicomInputStream(data: pixelData)
+        rejected.limits.maximumPixelFragmentCount = 0
+        XCTAssertThrowsError(try rejected.readDataset(enforceVR: false))
+    }
 }
