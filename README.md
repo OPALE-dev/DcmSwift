@@ -45,6 +45,8 @@ always written as Explicit VR Little Endian, and its group length is
 recalculated during serialization. `DicomInputStream.limits` provides
 configurable safeguards for value sizes, element counts, sequence depth,
 sequence items, and encapsulated Pixel Data fragments.
+Defined and undefined-length Sequences validate Item tags, exact boundaries,
+and zero-length Item/Sequence delimiters.
 
 The library also provides helpers for DICOM dates, times, UIDs, tags, VRs,
 endianness, pixel access, Structured Reports, and radiotherapy objects.
