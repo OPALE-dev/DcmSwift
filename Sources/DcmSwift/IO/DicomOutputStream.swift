@@ -41,16 +41,19 @@ public class DicomOutputStream {
      - Returns: a boolean indicating success
      */
     public func write(dataset:DataSet) throws -> Bool {
-        if dataset.transferSyntax.tsUID == TransferSyntax.implicitVRLittleEndian {
-            vrMethod  = .Implicit
-            byteOrder = .LittleEndian
+        guard let syntax = dataset.transferSyntax,
+              syntax.capability.canWriteDataset else {
+            throw StreamError.unsupportedTransferSyntax(uid: dataset.transferSyntax?.tsUID ?? "")
         }
-        else if dataset.transferSyntax.tsUID == TransferSyntax.explicitVRBigEndian {
-            vrMethod  = .Explicit
-            byteOrder = .BigEndian
-        }
+        vrMethod = syntax.vrMethod
+        byteOrder = syntax.byteOrder
         
-        return try write(dataset: dataset, vrMethod: vrMethod, byteOrder: byteOrder)
+        return try writePrepared(
+            dataset: dataset,
+            vrMethod: vrMethod,
+            byteOrder: byteOrder,
+            transferSyntaxUID: syntax.tsUID
+        )
     }
     
     /**
@@ -66,10 +69,44 @@ public class DicomOutputStream {
         vrMethod: VRMethod? = nil,
         byteOrder: ByteOrder? = nil
     ) throws -> Bool {
+        let finalVR = vrMethod ?? dataset.transferSyntax?.vrMethod ?? self.vrMethod
+        let finalOrder = byteOrder ?? dataset.transferSyntax?.byteOrder ?? self.byteOrder
+        let syntaxUID: String
+        switch (finalVR, finalOrder) {
+        case (.Implicit, .LittleEndian): syntaxUID = TransferSyntax.implicitVRLittleEndian
+        case (.Explicit, .LittleEndian): syntaxUID = TransferSyntax.explicitVRLittleEndian
+        case (.Explicit, .BigEndian): syntaxUID = TransferSyntax.explicitVRBigEndian
+        case (.Implicit, .BigEndian):
+            throw StreamError.unsupportedTransferSyntax(uid: "Implicit VR Big Endian")
+        }
+
+        return try writePrepared(
+            dataset: dataset,
+            vrMethod: finalVR,
+            byteOrder: finalOrder,
+            transferSyntaxUID: syntaxUID
+        )
+    }
+
+    private func writePrepared(
+        dataset: DataSet,
+        vrMethod: VRMethod,
+        byteOrder: ByteOrder,
+        transferSyntaxUID syntaxUID: String
+    ) throws -> Bool {
         if outputStream == nil {
             throw StreamError.cannotOpenStream(message: "Cannot open stream, init failed")
         }
-        
+
+        guard DICOMCapabilities.transferSyntax(syntaxUID).canWriteDataset else {
+            throw StreamError.unsupportedTransferSyntax(uid: syntaxUID)
+        }
+        dataset.transferSyntax = TransferSyntax(syntaxUID)
+        if dataset.hasPreamble || !dataset.metaInformationHeaderElements.isEmpty {
+            _ = dataset.set(value: syntaxUID, forTagName: "TransferSyntaxUID")
+            _ = dataset.recalculateFileMetaInformationGroupLength()
+        }
+
         outputStream.open()
         defer { outputStream.close() }
         

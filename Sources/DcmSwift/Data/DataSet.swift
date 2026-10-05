@@ -69,6 +69,8 @@ public class DataSet: DicomObject {
     // MARK: - Public methods
     public override func toData(vrMethod inVrMethod:VRMethod? = .Explicit, byteOrder inByteOrder:ByteOrder? = .LittleEndian) -> Data {
         var newData     = Data()
+
+        _ = recalculateFileMetaInformationGroupLength()
         
         // be sure element are sorted properly before write
         sortElements()
@@ -85,11 +87,9 @@ public class DataSet: DicomObject {
                 finalOrder = inByteOrder!
             }
             
-            if hasPreamble {
-                if element.group == "0002" {
-                    finalVR = .Explicit
-                    finalOrder = .LittleEndian
-                }
+            if element.group == "0002" {
+                finalVR = .Explicit
+                finalOrder = .LittleEndian
             }
             
             newData.append(write(dataElement: element, vrMethod:finalVR, byteOrder:finalOrder))
@@ -101,6 +101,8 @@ public class DataSet: DicomObject {
     
     public override func toData(transferSyntax: TransferSyntax) -> Data {
         var newData     = Data()
+
+        _ = recalculateFileMetaInformationGroupLength()
         
         // be sure element are sorted properly before write
         sortElements()
@@ -110,11 +112,9 @@ public class DataSet: DicomObject {
             var finalVR     = transferSyntax.vrMethod
             var finalOrder  = transferSyntax.byteOrder
             
-            if hasPreamble {
-                if element.group == "0002" {
-                    finalVR = .Explicit
-                    finalOrder = .LittleEndian
-                }
+            if element.group == "0002" {
+                finalVR = .Explicit
+                finalOrder = .LittleEndian
             }
             
             newData.append(write(dataElement: element, vrMethod:finalVR, byteOrder:finalOrder))
@@ -478,6 +478,31 @@ public class DataSet: DicomObject {
         if element.name == "SpecificCharacterSet" {
             characterSet = DICOMCharacterSet(specificCharacterSet: element.data.toString())
         }
+    }
+
+    /// Updates (0002,0000) from the encoded size of the remaining File Meta
+    /// Information elements. Group 0002 is always Explicit VR Little Endian.
+    @discardableResult
+    public func recalculateFileMetaInformationGroupLength() -> UInt32? {
+        guard !metaInformationHeaderElements.isEmpty else { return nil }
+
+        let byteCount = metaInformationHeaderElements
+            .filter { $0.name != "FileMetaInformationGroupLength" }
+            .reduce(0) {
+                $0 + $1.toData(vrMethod: .Explicit, byteOrder: .LittleEndian).count
+            }
+        guard let length = UInt32(exactly: byteCount) else { return nil }
+
+        if let element = element(forTagName: "FileMetaInformationGroupLength") {
+            element.vr = .UL
+            element.vrMethod = .Explicit
+            element.byteOrder = .LittleEndian
+            _ = element.setValue(length)
+        } else {
+            _ = set(value: length, forTagName: "FileMetaInformationGroupLength")
+        }
+        fileMetaInformationGroupLength = Int(length)
+        return length
     }
     
     
