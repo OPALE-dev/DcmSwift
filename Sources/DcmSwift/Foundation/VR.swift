@@ -27,6 +27,8 @@ public class VR: CustomStringConvertible {
         case OB
         case OD
         case OF
+        case OL
+        case OV
         case OW
         case PN
         case SH
@@ -34,12 +36,16 @@ public class VR: CustomStringConvertible {
         case SQ
         case SS
         case ST
+        case SV
         case TM
+        case UC
         case UI
         case UL
         case UN
+        case UR
         case US
         case UT
+        case UV
     }
     
     var name:String

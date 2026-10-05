@@ -1,10 +1,13 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
     name: "DcmSwift",
+    platforms: [
+        .macOS(.v10_15)
+    ],
     products: [
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .library(
@@ -15,15 +18,16 @@ let package = Package(
         .executable(name: "DcmServer", targets: ["DcmServer"]),
         .executable(name: "DcmEcho", targets: ["DcmEcho"]),
         .executable(name: "DcmStore", targets: ["DcmStore"]),
+        .executable(name: "DcmFind", targets: ["DcmFind"]),
         .executable(name: "DcmSR", targets: ["DcmSR"]),
         .executable(name: "DcmIzer", targets: ["DcmIzer"])
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
-        .package(name: "Socket", url: "https://github.com/Kitura/BlueSocket.git", from:"1.0.8"),
-        .package(url: "https://github.com/apple/swift-argument-parser", from: "0.4.0"),
-        .package(url: "https://github.com/pointfreeco/swift-html", from: "0.4.0"),
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0")
+        .package(url: "https://github.com/Kitura/BlueSocket.git", from: "2.0.2"),
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.8.2"),
+        .package(url: "https://github.com/pointfreeco/swift-html", from: "0.5.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.103.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -32,53 +36,56 @@ let package = Package(
         .target(
             name: "DcmSwift",
             dependencies: [
-                "Socket",
+                .product(name: "Socket", package: "BlueSocket"),
                 .product(name: "NIO", package: "swift-nio"),
                 .product(name: "Html", package: "swift-html")
+            ],
+            resources: [
+                .process("Resources/dicom-dictionary-2026d.json")
             ]),
-        .target(
+        .executableTarget(
             name: "DcmAnonymize",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
-        .target(
+        .executableTarget(
             name: "DcmPrint",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
-        .target(
+        .executableTarget(
             name: "DcmSR",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
-        .target(
+        .executableTarget(
             name: "DcmServer",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
-        .target(
+        .executableTarget(
             name: "DcmEcho",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
-        .target(
+        .executableTarget(
             name: "DcmStore",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
-        .target(
+        .executableTarget(
             name: "DcmFind",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
-        .target(
+        .executableTarget(
             name: "DcmIzer",
             dependencies: [
                 "DcmSwift",

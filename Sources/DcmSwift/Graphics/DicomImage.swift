@@ -106,11 +106,11 @@ public class DicomImage {
             }
         }
         
-        if let v = self.dataset.integer16(forTag: "Rows") {
+        if let v = self.dataset.unsignedInteger16(forTag: "Rows") {
             self.rows = Int(v)
         }
         
-        if let v = self.dataset.integer16(forTag: "Columns") {
+        if let v = self.dataset.unsignedInteger16(forTag: "Columns") {
             self.columns = Int(v)
         }
         
@@ -130,19 +130,19 @@ public class DicomImage {
             self.rescaleIntercept = Int(v) ?? self.rescaleIntercept
         }
         
-        if let v = self.dataset.integer16(forTag: "BitsAllocated") {
+        if let v = self.dataset.unsignedInteger16(forTag: "BitsAllocated") {
             self.bitsAllocated = Int(v)
         }
         
-        if let v = self.dataset.integer16(forTag: "BitsStored") {
+        if let v = self.dataset.unsignedInteger16(forTag: "BitsStored") {
             self.bitsStored = Int(v)
         }
         
-        if let v = self.dataset.integer16(forTag: "SamplesPerPixel") {
+        if let v = self.dataset.unsignedInteger16(forTag: "SamplesPerPixel") {
             self.samplesPerPixel = Int(v)
         }
         
-        if let v = self.dataset.integer16(forTag: "PixelRepresentation") {
+        if let v = self.dataset.unsignedInteger16(forTag: "PixelRepresentation") {
             if v == 0 {
                 self.pixelRepresentation = .Unsigned
             } else if v == 1 {

@@ -39,55 +39,63 @@ public class UserInfo {
         let uiItemData = data
         
         var offset = 0
-        while offset < uiItemData.count-1 {
+        while offset + 4 <= uiItemData.count {
             // read type
-            let uiItemType = uiItemData.subdata(in: offset..<offset+1).toInt8(byteOrder: .BigEndian)
-            let uiItemLength = uiItemData.subdata(in: offset+2..<offset+4).toInt16(byteOrder: .BigEndian)
+            let uiItemType = uiItemData[offset]
+            let uiItemLength = Int(uiItemData.subdata(in: offset+2..<offset+4).toUInt16(byteOrder: .BigEndian))
             offset += 4
+            guard uiItemLength <= uiItemData.count - offset else { return nil }
+            let valueData = uiItemData.subdata(in: offset..<offset + uiItemLength)
             
             if uiItemType == ItemType.maxPduLength.rawValue {
-                let maxPDU = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toInt32(byteOrder: .BigEndian)
-                self.maxPDULength = Int(maxPDU)
+                guard uiItemLength == 4 else { return nil }
+                self.maxPDULength = Int(valueData.toUInt32(byteOrder: .BigEndian))
                 Logger.verbose("    -> Local  Max PDU: \(DicomConstants.maxPDULength)", "UserInfo")
                 Logger.verbose("    -> Remote Max PDU: \(self.maxPDULength)", "UserInfo")
             }
             else if uiItemType == ItemType.implClassUID.rawValue {
-                let impClasslUID = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toString()
-                self.implementationUID = impClasslUID
+                self.implementationUID = valueData.toString()
                 //Logger.info("    -> Implementation class UID: \(self.association!.remoteImplementationUID ?? "")")
             }
             else if uiItemType == ItemType.implVersionName.rawValue {
-                let impVersion = uiItemData.subdata(in: offset..<offset+Int(uiItemLength)).toString()
-                self.implementationVersion = impVersion
+                self.implementationVersion = valueData.toString()
                 //Logger.info("    -> Implementation version: \(self.association!.remoteImplementationVersion ?? "")")
                 
             }
             
-            offset += Int(uiItemLength)
+            offset += uiItemLength
         }
     }
     
     
     public func data() -> Data {
         var data = Data()
+        var items = Data()
         
         // Max PDU length item
-        var pduData = Data()
-        var itemLength = UInt16(4).bigEndian
-        var pduLength = UInt32(self.maxPDULength).bigEndian
-        pduData.append(Data(repeating: ItemType.maxPduLength.rawValue, count: 1)) // 51H (Max PDU Length)
-        pduData.append(Data(repeating: 0x00, count: 1)) // 00H
-        pduData.append(UnsafeBufferPointer(start: &itemLength, count: 1)) // Length
-        pduData.append(UnsafeBufferPointer(start: &pduLength, count: 1)) // PDU Length
-        
-        // TODO: Application UID and version
-        // Items
-        var length = UInt16(pduData.count).bigEndian
+        items.append(uint8: ItemType.maxPduLength.rawValue)
+        items.append(byte: 0x00)
+        items.append(uint16: 4, bigEndian: true)
+        items.append(uint32: UInt32(clamping: maxPDULength), bigEndian: true)
+
+        appendSubItem(type: .implClassUID, value: implementationUID, to: &items)
+        appendSubItem(type: .implVersionName, value: implementationVersion, to: &items)
+
         data.append(Data(repeating: ItemType.userInfo.rawValue, count: 1)) // 50H
         data.append(Data(repeating: 0x00, count: 1)) // 00H
-        data.append(UnsafeBufferPointer(start: &length, count: 1)) // Length
-        data.append(pduData) // Items
+        data.append(uint16: UInt16(clamping: items.count), bigEndian: true)
+        data.append(items)
         
         return data
+    }
+
+    private func appendSubItem(type: ItemType, value: String, to data: inout Data) {
+        guard !value.isEmpty, let valueData = value.data(using: .ascii), valueData.count <= Int(UInt16.max) else {
+            return
+        }
+        data.append(uint8: type.rawValue)
+        data.append(byte: 0x00)
+        data.append(uint16: UInt16(valueData.count), bigEndian: true)
+        data.append(valueData)
     }
 }

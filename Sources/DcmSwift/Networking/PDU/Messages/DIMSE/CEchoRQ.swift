@@ -33,10 +33,10 @@ public class CEchoRQ: DataTF {
           
         
         let commandDataset = DataSet()
-        _ = commandDataset.set(value: CommandField.C_ECHO_RQ.rawValue.bigEndian, forTagName: "CommandField")
+        _ = commandDataset.set(value: CommandField.C_ECHO_RQ.rawValue, forTagName: "CommandField")
         _ = commandDataset.set(value: self.association.abstractSyntax, forTagName: "AffectedSOPClassUID")
         _ = commandDataset.set(value: self.messageID, forTagName: "MessageID")
-        _ = commandDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
+        _ = commandDataset.set(value: UInt16(257), forTagName: "CommandDataSetType")
 
         let pduData = PDUData(
             pduType: self.pduType,

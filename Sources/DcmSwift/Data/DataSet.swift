@@ -250,6 +250,9 @@ public class DataSet: DicomObject {
                 if let v = el.value as? Int32 {
                     return v
                 }
+                if let v = el.value as? UInt32 {
+                    return Int32(exactly: v)
+                }
             }
         }
         return nil
@@ -262,9 +265,28 @@ public class DataSet: DicomObject {
                 if let v = el.value as? Int16 {
                     return v
                 }
+                if let v = el.value as? UInt16 {
+                    return Int16(exactly: v)
+                }
             }
         }
-        return 0
+        return nil
+    }
+
+    public func unsignedInteger32(forTag tag: String) -> UInt32? {
+        for element in allElements where element.name == tag {
+            if let value = element.value as? UInt32 { return value }
+            if let value = element.value as? Int32 { return UInt32(exactly: value) }
+        }
+        return nil
+    }
+
+    public func unsignedInteger16(forTag tag: String) -> UInt16? {
+        for element in allElements where element.name == tag {
+            if let value = element.value as? UInt16 { return value }
+            if let value = element.value as? Int16 { return UInt16(exactly: value) }
+        }
+        return nil
     }
     
     

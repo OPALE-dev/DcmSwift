@@ -73,9 +73,15 @@ public class DataSequence: DataElement {
             else if self.vr == .OB ||
                 self.vr == .OW ||
                 self.vr == .OF ||
+                self.vr == .OL ||
+                self.vr == .OV ||
                 self.vr == .SQ ||
+                self.vr == .SV ||
+                self.vr == .UC ||
                 self.vr == .UT ||
-                self.vr == .UN {
+                self.vr == .UN ||
+                self.vr == .UR ||
+                self.vr == .UV {
                 data.append(byte: 0x00, count: 2)
             }
         }
@@ -86,16 +92,20 @@ public class DataSequence: DataElement {
             if self.length == -1 {
                 data.append(byte: 0xff, count: 4)
             } else {
-                var intLength = UInt32(self.length)
-                let lengthData = Data(bytes: &intLength, count: 4)
-                data.append(lengthData)
+                data.append(uint32: UInt32(self.length), bigEndian: inByteOrder == .BigEndian)
             }
         }
         else if self.vr == .OB ||
             self.vr == .OW ||
             self.vr == .OF ||
+            self.vr == .OL ||
+            self.vr == .OV ||
+            self.vr == .SV ||
+            self.vr == .UC ||
             self.vr == .UT ||
-            self.vr == .UN {
+            self.vr == .UN ||
+            self.vr == .UR ||
+            self.vr == .UV {
             if self.length >= 0 {
                 let intLength = UInt32(self.length)
                 var convertedNumber = inByteOrder == .LittleEndian ?
@@ -124,22 +134,18 @@ public class DataSequence: DataElement {
                 }
             }
             else if inVrMethod == .Implicit {
-                var intLength = UInt32(self.length)
-                let lengthData = Data(bytes: &intLength, count: 4)
-                data.append(lengthData)
+                data.append(uint32: UInt32(bitPattern: Int32(self.length)), bigEndian: inByteOrder == .BigEndian)
             }
         }
         
         
         for item in self.items {
             // write item tag
-            data.append(item.tag.data)
+            data.append(item.tag.data(withByteOrder: inByteOrder))
             
             // write item length
             if item.length != -1 {
-                var intLength = UInt32(item.length)
-                let lengthData = Data(bytes: &intLength, count: 4)
-                data.append(lengthData)
+                data.append(uint32: UInt32(item.length), bigEndian: inByteOrder == .BigEndian)
             } else {
                 data.append(byte: 0xff, count: 4)
             }
@@ -151,16 +157,16 @@ public class DataSequence: DataElement {
             
             // write item delimiter
             if item.length == -1 {
-                let tag = DataTag(withGroup: "fffe", element: "e00d")
-                data.append(tag.data)
+                let tag = DataTag(withGroup: "fffe", element: "e00d", byteOrder: inByteOrder)
+                data.append(tag.data(withByteOrder: inByteOrder))
                 data.append(byte: 0x00, count: 4)
             }
         }
         
         // write sequence delimiter
         if length == -1 {
-            let tag = DataTag(withGroup: "fffe", element: "e0dd")
-            data.append(tag.data)
+            let tag = DataTag(withGroup: "fffe", element: "e0dd", byteOrder: inByteOrder)
+            data.append(tag.data(withByteOrder: inByteOrder))
             data.append(byte: 0x00, count: 4)
         }
         

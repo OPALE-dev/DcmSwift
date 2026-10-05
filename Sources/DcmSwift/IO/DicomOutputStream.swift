@@ -71,6 +71,7 @@ public class DicomOutputStream {
         }
         
         outputStream.open()
+        defer { outputStream.close() }
         
         if dataset.hasPreamble {
             // 128 bytes preamble
@@ -84,9 +85,7 @@ public class DicomOutputStream {
         dataset.sortElements()
         
         // write all elements
-        try write(data: dataset.toData(vrMethod: nil, byteOrder: nil))
-        
-        outputStream.close()
+        try write(data: dataset.toData(vrMethod: vrMethod, byteOrder: byteOrder))
         
         return true
     }
@@ -100,13 +99,21 @@ public class DicomOutputStream {
      - Throws: StreamError.cannotWriteStream
      */
     private func write(data:Data) throws {
+        if data.isEmpty { return }
         try data.withUnsafeBytes { (unsafeBytes) in
-            let bytes = unsafeBytes.bindMemory(to: UInt8.self).baseAddress!
-                        
-            let written = outputStream.write(bytes, maxLength: data.count)
-            
-            if written <= 0 {
-                throw StreamError.cannotWriteStream(message: "Write to stream failed")
+            guard let bytes = unsafeBytes.bindMemory(to: UInt8.self).baseAddress else {
+                throw StreamError.cannotWriteStream(message: "Cannot access bytes to write")
+            }
+            var totalWritten = 0
+            while totalWritten < data.count {
+                let written = outputStream.write(
+                    bytes.advanced(by: totalWritten),
+                    maxLength: data.count - totalWritten
+                )
+                if written <= 0 {
+                    throw StreamError.cannotWriteStream(message: "Write to stream failed")
+                }
+                totalWritten += written
             }
         }
     }
