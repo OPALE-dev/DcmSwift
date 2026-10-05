@@ -188,4 +188,55 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertEqual(signedShort.value as? Int16, -2)
         XCTAssertEqual(signedLong.value as? Int32, -3)
     }
+
+    func testUnimplementedTransferSyntaxIsRejected() throws {
+        let meta = DataSet()
+        _ = meta.set(value: "1.2.840.10008.1.2.1.99", forTagName: "TransferSyntaxUID")
+        var part10 = Data(repeating: 0, count: 128)
+        part10.append(contentsOf: [0x44, 0x49, 0x43, 0x4d])
+        part10.append(meta.toData())
+
+        XCTAssertThrowsError(try DicomInputStream(data: part10).readDataset()) { error in
+            guard case StreamError.unsupportedTransferSyntax(let uid) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(uid, "1.2.840.10008.1.2.1.99")
+        }
+    }
+
+    func testFileMetaInformationIsExplicitLittleEndianAndRecalculated() {
+        let dataset = DataSet()
+        dataset.hasPreamble = true
+        _ = dataset.set(value: UInt32(0), forTagName: "FileMetaInformationGroupLength")
+        _ = dataset.set(value: "1.2.840.10008.1.2.1", forTagName: "TransferSyntaxUID")
+        _ = dataset.set(value: "1.2.826.0.1.3680043.10.999", forTagName: "ImplementationClassUID")
+        _ = dataset.set(value: "TEST", forTagName: "PatientID")
+
+        let expected = dataset.metaInformationHeaderElements
+            .filter { $0.name != "FileMetaInformationGroupLength" }
+            .reduce(0) { $0 + $1.toData(vrMethod: .Explicit, byteOrder: .LittleEndian).count }
+        let encoded = dataset.toData(vrMethod: .Implicit, byteOrder: .BigEndian)
+
+        XCTAssertEqual(dataset.unsignedInteger32(forTag: "FileMetaInformationGroupLength"), UInt32(expected))
+        XCTAssertEqual(Array(encoded.prefix(8)), [0x02, 0x00, 0x00, 0x00, 0x55, 0x4c, 0x04, 0x00])
+    }
+
+    func testPart10BigEndianDatasetStartsAfterCompleteFileMetaInformation() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dcmswift-\(UUID().uuidString).dcm")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let source = DataSet()
+        source.hasPreamble = true
+        source.transferSyntax = try XCTUnwrap(TransferSyntax(TransferSyntax.explicitVRBigEndian))
+        _ = source.set(value: "1.2.826.0.1.3680043.10.999", forTagName: "ImplementationClassUID")
+        _ = source.set(value: "BIG-ENDIAN", forTagName: "PatientID")
+
+        XCTAssertTrue(try DicomOutputStream(url: url).write(dataset: source))
+        XCTAssertEqual(source.string(forTag: "TransferSyntaxUID"), TransferSyntax.explicitVRBigEndian)
+
+        let decoded = try XCTUnwrap(try DicomInputStream(url: url).readDataset())
+        XCTAssertEqual(decoded.transferSyntax.tsUID, TransferSyntax.explicitVRBigEndian)
+        XCTAssertEqual(decoded.string(forTag: "PatientID"), "BIG-ENDIAN")
+    }
 }

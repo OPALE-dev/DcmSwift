@@ -104,13 +104,15 @@ public class DicomInputStream: OffsetInputStream {
         dataset.hasPreamble = hasPreamble
         dataset.vrMethod = vrMethod
         dataset.byteOrder = byteOrder
+        var fileMetaEndOffset: Int? = nil
     
         // read elements to fill the dataset
         while(stream.hasBytesAvailable && offset < total && !dataset.isCorrupted) {
             var order = byteOrder
             
-            // always read Meta Info Header as Little Endian
-            if dataset.fileMetaInformationGroupLength + DicomConstants.dicomBytesOffset >= offset {
+            // The group length excludes the 12-byte (0002,0000) element itself.
+            // Until it is known, the first Part 10 element is always Little Endian.
+            if hasPreamble && (fileMetaEndOffset == nil || offset < fileMetaEndOffset!) {
                 order = .LittleEndian
             }
             
@@ -131,6 +133,7 @@ public class DicomInputStream: OffsetInputStream {
                 if newElement.name == "FileMetaInformationGroupLength" {
                     if let length = newElement.value as? UInt32 {
                         dataset.fileMetaInformationGroupLength = Int(length)
+                        fileMetaEndOffset = newElement.endOffset + Int(length)
                     }
                 }
                 
@@ -139,18 +142,15 @@ public class DicomInputStream: OffsetInputStream {
                     vrMethod  = .Explicit
                     byteOrder = .LittleEndian
                     
-                    if let ts = newElement.value as? String {
-                        dataset.transferSyntax = TransferSyntax(ts)
-                        
-                        if dataset.transferSyntax.tsUID == TransferSyntax.implicitVRLittleEndian {
-                            vrMethod  = .Implicit
-                            byteOrder = .LittleEndian
-                        }
-                        else if dataset.transferSyntax.tsUID == TransferSyntax.explicitVRBigEndian {
-                            vrMethod  = .Explicit
-                            byteOrder = .BigEndian
-                        }
+                    guard let uid = newElement.value as? String,
+                          let syntax = TransferSyntax(uid),
+                          syntax.capability.canReadDataset else {
+                        let uid = (newElement.value as? String) ?? ""
+                        throw StreamError.unsupportedTransferSyntax(uid: uid)
                     }
+                    dataset.transferSyntax = syntax
+                    vrMethod = syntax.vrMethod
+                    byteOrder = syntax.byteOrder
                     
                     // update the dataset properties
                     dataset.vrMethod = vrMethod
