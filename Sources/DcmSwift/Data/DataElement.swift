@@ -98,35 +98,45 @@ public class DataElement : DicomObject {
                 }
         }
                 
-        if self.isMultiple {
-            if let string = val as? String {
-                self.data       = string.data(using: .utf8)
-                if self.data.count % 2 != 0 {
-                    self.data.append(byte: self.vr == .UI ? 0x00 : 0x20)
+        if let string = val as? String {
+            let encoded: Data?
+            if usesSpecificCharacterSet {
+                if let dataset {
+                    encoded = dataset.characterSet.encode(string)
+                } else {
+                    encoded = DICOMCharacterSet.defaultRepertoire.encode(string)
                 }
-                self.length     = self.data.count
-                self.dataValues = []
-                
-                let slice = string.components(separatedBy: "\\")
-                var index = 0
-                
-                for string in slice {
-                    self.dataValues.append(DataValue(string, atIndex:index))
-                    
-                    index += 1
-                }
-                
+            } else {
+                encoded = string.data(using: .ascii)
+            }
+
+            guard var encoded else { return false }
+            if encoded.count % 2 != 0 {
+                encoded.append(byte: self.vr == .UI ? 0x00 : 0x20)
+            }
+            self.data = encoded
+            self.length = encoded.count
+            self.dataValues = string.components(separatedBy: "\\").enumerated().map {
+                DataValue($0.element, atIndex: $0.offset)
+            }
+            ret = true
+        } else {
+            if let v = val as? Int16 {
+                self.data = Data()
+                self.data.append(uint16: UInt16(bitPattern: v), bigEndian: self.byteOrder == .BigEndian)
+                self.length = self.data.count
                 ret = true
             }
-        } else {
-            if let string = val as? String {
-                self.data = string.data(using: .utf8)
-                
-                if self.data.count % 2 != 0 {
-                    self.data.append(byte: self.vr == .UI ? 0x00 : 0x20)
-                }
+            else if let v = val as? Int32 {
+                self.data = Data()
+                self.data.append(uint32: UInt32(bitPattern: v), bigEndian: self.byteOrder == .BigEndian)
                 self.length = self.data.count
-                
+                ret = true
+            }
+            else if let v = val as? Int64 {
+                self.data = Data()
+                self.data.append(uint64: UInt64(bitPattern: v), bigEndian: self.byteOrder == .BigEndian)
+                self.length = self.data.count
                 ret = true
             }
             else if let v = val as? UInt16 {
@@ -147,10 +157,6 @@ public class DataElement : DicomObject {
                 self.length = self.data.count
                 ret = true
             }
-            else {
-                //print("not supported yet")
-            }
-            
         }
         
         self.recalculateParentsLength()
@@ -206,18 +212,18 @@ public class DataElement : DicomObject {
             return Date(dicomTime: self.data.toString()) as Any
         }
         else if self.vr == .UI ||
-                self.vr == .SH ||
                 self.vr == .AS ||
                 self.vr == .CS ||
-                self.vr == .LO ||
-                self.vr == .ST ||
-                self.vr == .PN ||
-                self.vr == .DS ||
                 self.vr == .DS ||
                 self.vr == .IS ||
-                self.vr == .LT ||
                 self.vr == .AE {
-            return self.data.toString()
+            return DICOMCharacterSet.defaultRepertoire.decode(self.data) ?? self.data as Any
+        }
+        else if usesSpecificCharacterSet {
+            if let dataset {
+                return dataset.characterSet.decode(self.data) ?? self.data as Any
+            }
+            return DICOMCharacterSet.defaultRepertoire.decode(self.data) ?? self.data as Any
         }
         else if self.vr == .AT ||
                 self.vr == .OB ||
@@ -229,6 +235,15 @@ public class DataElement : DicomObject {
         }
         
         return self.data as Any
+    }
+
+    private var usesSpecificCharacterSet: Bool {
+        switch vr {
+        case .LO, .LT, .PN, .SH, .ST, .UC, .UR, .UT:
+            return true
+        default:
+            return false
+        }
     }
     
     
