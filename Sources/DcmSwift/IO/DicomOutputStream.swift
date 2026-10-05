@@ -69,6 +69,18 @@ public class DicomOutputStream {
         vrMethod: VRMethod? = nil,
         byteOrder: ByteOrder? = nil
     ) throws -> Bool {
+        if vrMethod == nil, byteOrder == nil, let syntax = dataset.transferSyntax {
+            guard syntax.capability.canWriteDataset else {
+                throw StreamError.unsupportedTransferSyntax(uid: syntax.tsUID)
+            }
+            return try writePrepared(
+                dataset: dataset,
+                vrMethod: syntax.vrMethod,
+                byteOrder: syntax.byteOrder,
+                transferSyntaxUID: syntax.tsUID
+            )
+        }
+
         let finalVR = vrMethod ?? dataset.transferSyntax?.vrMethod ?? self.vrMethod
         let finalOrder = byteOrder ?? dataset.transferSyntax?.byteOrder ?? self.byteOrder
         let syntaxUID: String
