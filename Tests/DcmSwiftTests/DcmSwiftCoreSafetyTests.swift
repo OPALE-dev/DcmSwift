@@ -239,4 +239,23 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertEqual(decoded.transferSyntax.tsUID, TransferSyntax.explicitVRBigEndian)
         XCTAssertEqual(decoded.string(forTag: "PatientID"), "BIG-ENDIAN")
     }
+
+    func testDefaultWriterPreservesEncapsulatedTransferSyntaxUID() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dcmswift-\(UUID().uuidString).dcm")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let source = DataSet()
+        source.hasPreamble = true
+        source.transferSyntax = try XCTUnwrap(TransferSyntax(TransferSyntax.JPEGLossless))
+        _ = source.set(value: "1.2.826.0.1.3680043.10.999", forTagName: "ImplementationClassUID")
+
+        XCTAssertTrue(try DicomOutputStream(url: url).write(
+            dataset: source,
+            vrMethod: nil,
+            byteOrder: nil
+        ))
+        XCTAssertEqual(source.transferSyntax.tsUID, TransferSyntax.JPEGLossless)
+        XCTAssertEqual(source.string(forTag: "TransferSyntaxUID"), TransferSyntax.JPEGLossless)
+    }
 }
