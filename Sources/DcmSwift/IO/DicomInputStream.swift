@@ -488,152 +488,133 @@ public class DicomInputStream: OffsetInputStream {
         }
         sequenceDepth += 1
         defer { sequenceDepth -= 1 }
-        var bytesRead = 0
-                
-        if length > 0 {
-            // data items
-            while (length > bytesRead) {
-                guard let tagData = read(length: 4),
-                      let itemLength = read32BitLength(byteOrder: byteOrder) else { return nil }
-                let tag = DataTag(withData: tagData, byteOrder: byteOrder)
-                bytesRead += 4
-                bytesRead += 4
 
-                // CHECK FOR INVALID LENGTH
-                if itemLength > readableBytes {
-                    let message = "Fatal, cannot read length properly, decoded \(tag) length at offset(\(offset-4)) overflows (\(itemLength))"
-                    return readError(forLength: itemLength, element: sequence, message: message) as? DataSequence
-                }
-                if itemLength < -1 {
-                    let message = "Fatal, cannot read length properly, decoded \(tag) length at offset(\(offset-4)) cannot be negative (\(itemLength))"
-                    return readError(forLength: itemLength, element: sequence, message: message) as? DataSequence
-                }
+        func fail(_ message: String, length: Int = 0) -> Bool {
+            _ = readError(forLength: length, element: sequence, message: message)
+            return false
+        }
 
-                let item         = DataItem(withTag:tag, parent: sequence)
-                decodedItemCount += 1
-                if decodedItemCount > limits.maximumItemCount {
-                    let message = "Fatal, maximum Sequence Item count exceeded (\(limits.maximumItemCount))"
-                    return readError(forLength: itemLength, element: sequence, message: message) as? DataSequence
-                }
-                item.length      = itemLength
-                item.startOffset = offset - 12
-                item.dataOffset  = offset
-                sequence.items.append(item)
-                
-                if item.length == -1 {
-                    while true {
-                        guard let itemTagData = read(length: 4) else { return nil }
-                        let itemTag = DataTag(withData: itemTagData, byteOrder: byteOrder)
-                                                    
-                        if itemTag.code == "fffee00d" {
-                            forward(by: 4)
-                            break
-                        }
-                                                
-                        guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: vrMethod, order: byteOrder, inTag: itemTag) else {
-                            Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
-                            return nil
-                        }
-                        
-                        item.elements.append(newElement)
+        func consumeDelimiter(_ name: String) -> Bool {
+            guard let delimiterLength = read32BitLength(byteOrder: byteOrder) else {
+                return fail("Fatal, truncated \(name) length")
+            }
+            guard delimiterLength == 0 else {
+                return fail("Fatal, \(name) length must be zero (\(delimiterLength))", length: delimiterLength)
+            }
+            return true
+        }
+
+        func readItem(_ itemTag: DataTag, itemLength: Int, enclosingEnd: Int?) -> Bool {
+            guard itemTag.code == "fffee000" else {
+                return fail("Fatal, expected Item tag in Sequence but found \(itemTag)")
+            }
+            guard itemLength >= -1 else {
+                return fail("Fatal, invalid negative Item length (\(itemLength))", length: itemLength)
+            }
+            guard itemLength == -1 || itemLength <= limits.maximumElementValueLength else {
+                return fail("Fatal, Item length exceeds configured maximum (\(itemLength) > \(limits.maximumElementValueLength))", length: itemLength)
+            }
+
+            decodedItemCount += 1
+            guard decodedItemCount <= limits.maximumItemCount else {
+                return fail("Fatal, maximum Sequence Item count exceeded (\(limits.maximumItemCount))", length: itemLength)
+            }
+
+            let item = DataItem(withTag: itemTag, parent: sequence)
+            item.length = itemLength
+            item.startOffset = offset - 8
+            item.dataOffset = offset
+            item.vrMethod = .Implicit
+            sequence.items.append(item)
+
+            if itemLength == -1 {
+                while true {
+                    guard let tagData = read(length: 4) else {
+                        return fail("Fatal, truncated undefined-length Item")
                     }
-                    
-                    item.endOffset = offset
-                } else {
-                    // item data elements
-                    var itemBytesRead = 0
-                    
-                    while(itemLength > itemBytesRead) {
-                        let oldOffset = offset
-                        
-                        guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: vrMethod, order: byteOrder) else {
-                            Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
-                            return nil
-                        }
-
-                        item.elements.append(newElement)
-
-                        itemBytesRead   += offset - oldOffset
-                        bytesRead       += offset - oldOffset
+                    let nestedTag = DataTag(withData: tagData, byteOrder: byteOrder)
+                    if nestedTag.code == "fffee00d" {
+                        guard consumeDelimiter("Item Delimitation Item") else { return false }
+                        break
                     }
-
-                    item.endOffset = offset
+                    if nestedTag.code == "fffee0dd" {
+                        return fail("Fatal, Sequence Delimitation Item found before Item Delimitation Item")
+                    }
+                    guard let element = readDataElement(
+                        dataset: self.dataset,
+                        parent: item,
+                        vrMethod: vrMethod,
+                        order: byteOrder,
+                        inTag: nestedTag
+                    ) else {
+                        return fail("Fatal, cannot read Data Element in undefined-length Item")
+                    }
+                    item.elements.append(element)
+                }
+            } else {
+                guard itemLength <= readableBytes else {
+                    return fail("Fatal, Item length overflows the remaining stream", length: itemLength)
+                }
+                let itemEnd = offset + itemLength
+                if let enclosingEnd, itemEnd > enclosingEnd {
+                    return fail("Fatal, Item length exceeds its enclosing Sequence", length: itemLength)
+                }
+                while offset < itemEnd {
+                    let previousOffset = offset
+                    guard let element = readDataElement(
+                        dataset: self.dataset,
+                        parent: item,
+                        vrMethod: vrMethod,
+                        order: byteOrder
+                    ) else {
+                        return fail("Fatal, cannot read Data Element in defined-length Item")
+                    }
+                    guard offset > previousOffset, offset <= itemEnd else {
+                        return fail("Fatal, Data Element crosses the defined Item boundary")
+                    }
+                    item.elements.append(element)
                 }
             }
+
+            item.endOffset = offset
+            return true
         }
-        // Undefined Length data items (length == FFFFFFFF)
-        else if length == -1 {
+
+        if length >= 0 {
+            guard length <= readableBytes else {
+                return readError(forLength: length, element: sequence, message: "Fatal, Sequence length overflows the remaining stream") as? DataSequence
+            }
+            let sequenceEnd = offset + length
+            while offset < sequenceEnd {
+                guard sequenceEnd - offset >= 8,
+                      let itemTagData = read(length: 4),
+                      let itemLength = read32BitLength(byteOrder: byteOrder) else {
+                    _ = fail("Fatal, truncated Item header in defined-length Sequence")
+                    return sequence
+                }
+                let itemTag = DataTag(withData: itemTagData, byteOrder: byteOrder)
+                guard readItem(itemTag, itemLength: itemLength, enclosingEnd: sequenceEnd) else { return sequence }
+            }
+            if offset != sequenceEnd {
+                _ = fail("Fatal, Sequence content does not match its defined length")
+            }
+        } else if length == -1 {
             sequence.vrMethod = .Implicit
-                                    
-            // undefined length sequence loop
             while true {
-                guard let tagData = read(length: 4) else { return nil }
-                let tag = DataTag(withData: tagData, byteOrder: byteOrder)
-                
-                // break sequence loop
-                if tag.code == "fffee0dd" {
-                    forward(by: 4)
+                guard let itemTagData = read(length: 4) else {
+                    _ = fail("Fatal, missing Sequence Delimitation Item")
+                    return sequence
+                }
+                let itemTag = DataTag(withData: itemTagData, byteOrder: byteOrder)
+                if itemTag.code == "fffee0dd" {
+                    guard consumeDelimiter("Sequence Delimitation Item") else { return sequence }
                     break
                 }
-                else if tag.code == "fffee000" {
-                    let item            = DataItem(withTag:tag, parent: sequence)
-                    decodedItemCount += 1
-                    if decodedItemCount > limits.maximumItemCount {
-                        let message = "Fatal, maximum Sequence Item count exceeded (\(limits.maximumItemCount))"
-                        return readError(forLength: 0, element: sequence, message: message) as? DataSequence
-                    }
-                    
-                    // read item length
-                    guard let itemLength = read32BitLength(byteOrder: byteOrder) else { return nil }
-                    item.length         = itemLength
-                    item.startOffset    = offset - 8
-                    item.dataOffset     = offset
-                    item.vrMethod       = .Implicit
-                    sequence.items.append(item)
-                                        
-                    // undefined length item
-                    if item.length == -1 {
-                        while true {
-                            guard let itemTagData = read(length: 4) else { return nil }
-                            let itemTag = DataTag(withData: itemTagData, byteOrder: byteOrder)
-                                                        
-                            if itemTag.code == "fffee00d" {
-                                forward(by: 4)
-                                break
-                            }
-                                                        
-                            guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: vrMethod, order: byteOrder, inTag: itemTag) else {
-                                Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
-                                return nil
-                            }
-                            
-                            item.elements.append(newElement)
-                        }
-                        
-                        item.endOffset = offset
-                    } else {
-                        var itemBytesRead = 0
-                        
-                        while(itemLength > itemBytesRead) {
-                            let oldOffset = offset
-                            
-                            guard let newElement = readDataElement(dataset: self.dataset, parent: item, vrMethod: vrMethod, order: byteOrder) else {
-                                Logger.debug("Cannot read element in sequence \(tag) at \(self.offset)")
-                                return nil
-                            }
-
-                            item.elements.append(newElement)
-
-                            itemBytesRead += offset - oldOffset
-                        }
-
-                        item.endOffset = offset
-                    }
+                guard let itemLength = read32BitLength(byteOrder: byteOrder) else {
+                    _ = fail("Fatal, truncated Item length in undefined-length Sequence")
+                    return sequence
                 }
-                else if tag.code == "fffee00d" {
-                    forward(by: 4)
-                    break
-                }
+                guard readItem(itemTag, itemLength: itemLength, enclosingEnd: nil) else { return sequence }
             }
         }
         

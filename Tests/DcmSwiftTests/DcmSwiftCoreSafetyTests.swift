@@ -370,4 +370,21 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         rejected.limits.maximumPixelFragmentCount = 0
         XCTAssertThrowsError(try rejected.readDataset(enforceVR: false))
     }
+
+    func testUndefinedSequenceRequiresZeroLengthDelimiter() {
+        var sequence = Data([0x08, 0x00, 0x11, 0x11, 0x53, 0x51, 0x00, 0x00])
+        sequence.append(contentsOf: [0xff, 0xff, 0xff, 0xff])
+        sequence.append(contentsOf: [0xfe, 0xff, 0xdd, 0xe0, 0x01, 0x00, 0x00, 0x00])
+
+        XCTAssertThrowsError(try DicomInputStream(data: sequence).readDataset(enforceVR: false))
+    }
+
+    func testDefinedSequenceRejectsNonItemContent() {
+        var sequence = Data([0x08, 0x00, 0x11, 0x11, 0x53, 0x51, 0x00, 0x00])
+        sequence.append(contentsOf: [0x08, 0x00, 0x00, 0x00])
+        // A regular Data Element tag and four bytes interpreted as its length.
+        sequence.append(contentsOf: [0x10, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00])
+
+        XCTAssertThrowsError(try DicomInputStream(data: sequence).readDataset(enforceVR: false))
+    }
 }
