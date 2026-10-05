@@ -23,6 +23,7 @@ public class DataSet: DicomObject {
     public var forceExplicit:Bool                   = false
     public var hasPreamble:Bool                     = false
     public var isCorrupted:Bool                     = false
+    public private(set) var characterSet:DICOMCharacterSet = .defaultRepertoire
     
     public var metaInformationHeaderElements:[DataElement]  = []
     public var datasetElements:[DataElement]                = []
@@ -336,6 +337,9 @@ public class DataSet: DicomObject {
         }
         
         let ret = element.setValue(value)
+        if ret && element.name == "SpecificCharacterSet" {
+            characterSet = DICOMCharacterSet(specificCharacterSet: value as? String)
+        }
         
         recalculateOffsets()
         
@@ -367,6 +371,9 @@ public class DataSet: DicomObject {
                 
                 sortElements()
                 recalculateOffsets()
+                if element.name == "SpecificCharacterSet" {
+                    characterSet = DICOMCharacterSet(specificCharacterSet: value as? String)
+                }
                 
                 return element
             }
@@ -459,6 +466,7 @@ public class DataSet: DicomObject {
      - Parameter element: the data element to add
      */
     public func add(element:DataElement) {
+        element.dataset = self
         if element.group != DicomConstants.metaInformationGroup {
             datasetElements.append(element)
         }
@@ -467,6 +475,9 @@ public class DataSet: DicomObject {
         }
         
         allElements.append(element)
+        if element.name == "SpecificCharacterSet" {
+            characterSet = DICOMCharacterSet(specificCharacterSet: element.data.toString())
+        }
     }
     
     

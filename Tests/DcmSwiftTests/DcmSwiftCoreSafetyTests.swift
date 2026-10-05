@@ -141,4 +141,51 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
             Data([0x00, 0x28, 0x00, 0x10, 0x55, 0x53, 0x00, 0x02, 0x12, 0x34])
         )
     }
+
+    func testLatin1SpecificCharacterSetRoundTrips() throws {
+        let source = DataSet()
+        XCTAssertNotNil(source.set(value: "ISO_IR 100", forTagName: "SpecificCharacterSet"))
+        let name = try XCTUnwrap(source.set(value: "Jérôme", forTagName: "PatientName"))
+        XCTAssertEqual(source.characterSet, .latin1)
+        XCTAssertTrue(name.data.contains(0xe9))
+
+        let encoded = source.toData(vrMethod: .Explicit, byteOrder: .LittleEndian)
+        let decoded = try XCTUnwrap(
+            try DicomInputStream(data: encoded).readDataset(enforceVR: false)
+        )
+        XCTAssertEqual(decoded.characterSet, .latin1)
+        XCTAssertEqual(decoded.string(forTag: "PatientName"), "Jérôme")
+    }
+
+    func testUTF8SpecificCharacterSetRoundTrips() throws {
+        let source = DataSet()
+        XCTAssertNotNil(source.set(value: "ISO_IR 192", forTagName: "SpecificCharacterSet"))
+        XCTAssertNotNil(source.set(value: "山田^太郎", forTagName: "PatientName"))
+
+        let encoded = source.toData(vrMethod: .Explicit, byteOrder: .LittleEndian)
+        let decoded = try XCTUnwrap(
+            try DicomInputStream(data: encoded).readDataset(enforceVR: false)
+        )
+        XCTAssertEqual(decoded.characterSet, .utf8)
+        XCTAssertEqual(decoded.string(forTag: "PatientName"), "山田^太郎")
+    }
+
+    func testUnsupportedCharacterSetDoesNotFallBackToUTF8() {
+        let dataset = DataSet()
+        XCTAssertNotNil(dataset.set(value: "ISO 2022 IR 87", forTagName: "SpecificCharacterSet"))
+        XCTAssertFalse(dataset.characterSet.isSupported)
+        XCTAssertNil(dataset.set(value: "山田", forTagName: "PatientName"))
+        XCTAssertNil(DICOMCharacterSet(specificCharacterSet: "ISO 2022 IR 87").decode(Data([0x41])))
+    }
+
+    func testSignedIntegerSettersPreserveSign() {
+        let dataset = DataSet()
+        let signedShort = dataset.set(value: Int16(-2), forTagName: "PixelPaddingValue")!
+        let signedLong = dataset.set(value: Int32(-3), forTagName: "IntegerNumericValue")!
+
+        // Pixel Padding Value has an ambiguous dictionary VR; select SS for this fixture.
+        signedShort.vr = .SS
+        XCTAssertEqual(signedShort.value as? Int16, -2)
+        XCTAssertEqual(signedLong.value as? Int32, -3)
+    }
 }
