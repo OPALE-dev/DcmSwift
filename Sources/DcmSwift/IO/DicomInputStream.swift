@@ -223,7 +223,11 @@ public class DicomInputStream: OffsetInputStream {
             vr = DicomSpec.vr(for: data.toString())
         }
         else {
-            vr = DicomSpec.shared.vrForTag(withCode: element.tagCode())
+            // PS3.5 7.8.1 assigns LO to Private Creator Data Elements even
+            // though their tags are not part of the public data dictionary.
+            vr = element.tag.isPrivateCreator
+                ? .LO
+                : DicomSpec.shared.vrForTag(withCode: element.tagCode())
         }
         
         if element.element == "0000" {
@@ -455,10 +459,38 @@ public class DicomInputStream: OffsetInputStream {
         }
         
         element.endOffset = offset
+
+        if element.tag.isPrivateDataElement {
+            element.privateCreator = privateCreator(for: element, parent: parent, dataset: dataset)
+        }
         
         //print("element \(element)")
                         
         return element
+    }
+
+    private func privateCreator(
+        for element: DataElement,
+        parent: DataElement?,
+        dataset: DataSet?
+    ) -> String? {
+        guard let creatorElement = element.tag.privateCreatorElement else { return nil }
+        let siblings: [DataElement]
+        if let item = parent as? DataItem {
+            siblings = item.elements
+        } else {
+            siblings = dataset?.allElements ?? []
+        }
+
+        guard let reservation = siblings.last(where: {
+            $0.group.lowercased() == element.group.lowercased() &&
+            $0.element.lowercased() == creatorElement
+        }), reservation.tag.isPrivateCreator, let data = reservation.data else {
+            return nil
+        }
+
+        return DICOMCharacterSet.defaultRepertoire.decode(data)?
+            .trimmingCharacters(in: CharacterSet(charactersIn: " \0"))
     }
     
     

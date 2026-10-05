@@ -26,6 +26,31 @@ public class DataTag : DicomObject {
     
     public var code:String { return "\(self.group)\(self.element)" }
     public var name:String { return DicomSpec.shared.nameForTag(withCode: code) ?? "Unknow" }
+
+    /// Whether this tag belongs to an odd-numbered private group.
+    public var isPrivate: Bool {
+        guard let groupNumber = UInt16(group, radix: 16) else { return false }
+        return groupNumber.isMultiple(of: 2) == false
+    }
+
+    /// Whether this is a Private Creator Data Element `(gggg,0010-00FF)`.
+    public var isPrivateCreator: Bool {
+        guard isPrivate, let elementNumber = UInt16(element, radix: 16) else { return false }
+        return (0x0010...0x00ff).contains(elementNumber)
+    }
+
+    /// Whether this is a Private Data Element in a reserved block.
+    public var isPrivateDataElement: Bool {
+        guard isPrivate, let elementNumber = UInt16(element, radix: 16) else { return false }
+        return elementNumber >= 0x1000
+    }
+
+    /// Element number of the Private Creator that reserves this tag's block.
+    public var privateCreatorElement: String? {
+        guard isPrivateDataElement,
+              let elementNumber = UInt16(element, radix: 16) else { return nil }
+        return String(format: "%04x", elementNumber >> 8)
+    }
     
     /**
      Inits a Tag with some Data and a byte order

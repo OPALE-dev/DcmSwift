@@ -47,6 +47,10 @@ configurable safeguards for value sizes, element counts, sequence depth,
 sequence items, and encapsulated Pixel Data fragments.
 Defined and undefined-length Sequences validate Item tags, exact boundaries,
 and zero-length Item/Sequence delimiters.
+Private Creator Data Elements are recognized as `LO` in implicit VR data sets,
+and private block reservations are resolved independently in the top-level data
+set and in every Sequence Item. Unknown private values remain byte-preserving
+`UN` values unless their explicit VR is present on the wire.
 
 The library also provides helpers for DICOM dates, times, UIDs, tags, VRs,
 endianness, pixel access, Structured Reports, and radiotherapy objects.
