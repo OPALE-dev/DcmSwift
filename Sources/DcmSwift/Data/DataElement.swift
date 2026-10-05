@@ -101,6 +101,9 @@ public class DataElement : DicomObject {
         if self.isMultiple {
             if let string = val as? String {
                 self.data       = string.data(using: .utf8)
+                if self.data.count % 2 != 0 {
+                    self.data.append(byte: self.vr == .UI ? 0x00 : 0x20)
+                }
                 self.length     = self.data.count
                 self.dataValues = []
                 
@@ -118,24 +121,29 @@ public class DataElement : DicomObject {
         } else {
             if let string = val as? String {
                 self.data = string.data(using: .utf8)
-                self.length = self.data.count
                 
-                if string.count % 2 != 0 {
-                    self.data.append(byte: 0x00)
-                    self.length += 1
+                if self.data.count % 2 != 0 {
+                    self.data.append(byte: self.vr == .UI ? 0x00 : 0x20)
                 }
+                self.length = self.data.count
                 
                 ret = true
             }
             else if let v = val as? UInt16 {
                 self.data = Data()
-                self.data.append(uint16: v)
+                self.data.append(uint16: v, bigEndian: self.byteOrder == .BigEndian)
                 self.length = self.data.count
                 ret = true
             }
             else if let v = val as? UInt32 {
                 self.data = Data()
-                self.data.append(uint32: v)
+                self.data.append(uint32: v, bigEndian: self.byteOrder == .BigEndian)
+                self.length = self.data.count
+                ret = true
+            }
+            else if let v = val as? UInt64 {
+                self.data = Data()
+                self.data.append(uint64: v, bigEndian: self.byteOrder == .BigEndian)
                 self.length = self.data.count
                 ret = true
             }
@@ -164,13 +172,23 @@ public class DataElement : DicomObject {
             return ""
         }
         
-        if self.vr == .UL ||
-           self.vr == .SL {
+        if self.vr == .UL {
+            return self.data.toUInt32(byteOrder: self.byteOrder)
+        }
+        else if self.vr == .SL {
             return self.data.toInt32(byteOrder: self.byteOrder)
         }
-        else if self.vr == .US ||
-                self.vr == .SS {
+        else if self.vr == .SV {
+            return self.data.toInt64(byteOrder: self.byteOrder)
+        }
+        else if self.vr == .US {
+            return self.data.toUInt16(byteOrder: self.byteOrder)
+        }
+        else if self.vr == .SS {
             return self.data.toInt16(byteOrder: self.byteOrder)
+        }
+        else if self.vr == .UV {
+            return self.data.toUInt64(byteOrder: self.byteOrder)
         }
         else if self.vr == .FL {
             return self.data.toFloat32(byteOrder: self.byteOrder)
@@ -330,9 +348,15 @@ public class DataElement : DicomObject {
             else if self.vr == .OB ||
                 self.vr == .OW ||
                 self.vr == .OF ||
+                self.vr == .OL ||
+                self.vr == .OV ||
                 self.vr == .SQ ||
+                self.vr == .SV ||
+                self.vr == .UC ||
                 self.vr == .UT ||
-                self.vr == .UN {
+                self.vr == .UN ||
+                self.vr == .UR ||
+                self.vr == .UV {
                 data.append(byte: 0x00, count: 2)
             }
         }
@@ -340,15 +364,19 @@ public class DataElement : DicomObject {
         
         // write length
         if self.vr == .SQ {
-            var intLength = UInt32(self.length)
-            let lengthData = Data(bytes: &intLength, count: 4)
-            data.append(lengthData)
+            data.append(uint32: UInt32(bitPattern: Int32(self.length)), bigEndian: inByteOrder == .BigEndian)
         }
         else if self.vr == .OB ||
             self.vr == .OW ||
             self.vr == .OF ||
+            self.vr == .OL ||
+            self.vr == .OV ||
+            self.vr == .SV ||
+            self.vr == .UC ||
             self.vr == .UT ||
-            self.vr == .UN {
+            self.vr == .UN ||
+            self.vr == .UR ||
+            self.vr == .UV {
             if self.length >= 0 {
                 let intLength = UInt32(self.length)
                 var convertedNumber = inByteOrder == .LittleEndian ?
@@ -378,80 +406,14 @@ public class DataElement : DicomObject {
                 }
             }
             else if inVrMethod == .Implicit {
-                var intLength = UInt32(self.length)
-                let lengthData = Data(bytes: &intLength, count: 4)
-                data.append(lengthData)
+                data.append(uint32: UInt32(bitPattern: Int32(self.length)), bigEndian: inByteOrder == .BigEndian)
             }
         }
         
         
         // write value
         if self.data != nil {
-            if  self.vr == .UL {
-                // TODO: fix empty data for UL VR, causing missing data on write !!!
-                data.append(self.data)
-            }
-            else if self.vr == .OB {
-                //print("OB \(type(of: self))")
-                if self is PixelSequence {
-                    let pixelSequence = self as! PixelSequence
-                    //print("PixelSequence")
-                    data.append(pixelSequence.toData(vrMethod: inVrMethod, byteOrder: inByteOrder))
-                } else {
-                    print("set")
-                    data.append(self.data)
-                }
-            }
-            else if self.vr == .OW {
-                if let pixelSequence = self as? PixelSequence {
-                    data.append(pixelSequence.toData(vrMethod: inVrMethod, byteOrder: inByteOrder))
-                } else {
-                    data.append(self.data)
-                }
-            }
-            else if self.vr == .UI {
-                data.append(self.data)
-            }
-            else if self.vr == .FL {
-                data.append(self.data)
-            }
-            else if self.vr == .FD {
-                data.append(self.data)
-            }
-            else if self.vr == .SL {
-                data.append(self.data)
-            }
-            else if self.vr == .SS {
-                data.append(self.data)
-            }
-            else if self.vr == .US {
-                data.append(self.data)
-            }
-            else if self.vr == .SQ {
-                if let sequence = self as? DataSequence {
-                    data.append(sequence.toData())
-                }
-            }
-            else if self.vr == .SH ||
-                self.vr == .AS ||
-                self.vr == .CS ||
-                self.vr == .DS ||
-                self.vr == .LO ||
-                self.vr == .LT ||
-                self.vr == .ST ||
-                self.vr == .OD ||
-                self.vr == .OF ||
-                self.vr == .AE ||
-                self.vr == .UT ||
-                self.vr == .IS ||
-                self.vr == .PN ||
-                self.vr == .DA ||
-                self.vr == .DT ||
-                self.vr == .UN ||
-                self.vr == .AT ||
-                self.vr == .TM  {
-                data.append(self.data)
-            }
+            data.append(encodedValueData(byteOrder: inByteOrder))
         }
         
         return data
@@ -516,5 +478,28 @@ public class DataElement : DicomObject {
             }
             p = p?.parent
         }
+    }
+
+    private func encodedValueData(byteOrder targetByteOrder: ByteOrder) -> Data {
+        guard byteOrder != targetByteOrder else { return data }
+
+        let wordSize: Int
+        switch vr {
+        case .US, .SS, .OW, .AT:
+            wordSize = 2
+        case .UL, .SL, .FL, .OF, .OL:
+            wordSize = 4
+        case .FD, .OD, .OV, .SV, .UV:
+            wordSize = 8
+        default:
+            return data
+        }
+
+        guard data.count.isMultiple(of: wordSize) else { return data }
+        var converted = Data(capacity: data.count)
+        for start in stride(from: 0, to: data.count, by: wordSize) {
+            converted.append(contentsOf: data[start..<start + wordSize].reversed())
+        }
+        return converted
     }
 }

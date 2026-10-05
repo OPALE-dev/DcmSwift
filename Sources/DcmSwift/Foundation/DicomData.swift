@@ -38,11 +38,7 @@ extension Data {
     
     
     public func toHexString(withLimit limit:Int = -1) -> String {
-        var data = self
-        
-        if limit != -1 && limit < data.count-1 {
-            data = data.subdata(in: limit..<data.count-1)
-        }
+        let data = limit >= 0 ? prefix(limit) : self[...]
         return "0x" + data.reduce("") { $0 + String(format: "%02x", $1) }
     }
 
@@ -55,63 +51,61 @@ extension Data {
 
     
     public func toInt8(byteOrder: ByteOrder = .LittleEndian) -> Int8 {
-        return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
-            let pointer = ptr.baseAddress!.assumingMemoryBound(to: Int8.self).pointee
-            return byteOrder == .LittleEndian ? pointer : pointer.bigEndian
-        })
+        return Int8(bitPattern: toUInt8(byteOrder: byteOrder))
     }
     
     public func toUInt8(byteOrder: ByteOrder = .LittleEndian) -> UInt8 {
-        return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
-            let pointer = ptr.baseAddress!.assumingMemoryBound(to: UInt8.self).pointee
-            return byteOrder == .LittleEndian ? pointer : pointer.bigEndian
-        })
+        return first ?? 0
     }
     
     
     public func toUInt16(byteOrder: ByteOrder = .LittleEndian) -> UInt16 {
-        return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
-            let pointer = ptr.baseAddress!.assumingMemoryBound(to: UInt16.self).pointee
-            return byteOrder == .LittleEndian ? CFSwapInt16HostToLittle(pointer) : CFSwapInt16HostToBig(pointer)
-        })
+        guard count >= 2 else { return 0 }
+        let bytes = prefix(2)
+        return byteOrder == .LittleEndian
+            ? UInt16(bytes[bytes.startIndex]) | UInt16(bytes[bytes.index(after: bytes.startIndex)]) << 8
+            : UInt16(bytes[bytes.startIndex]) << 8 | UInt16(bytes[bytes.index(after: bytes.startIndex)])
     }
     
     
     public func toInt16(byteOrder: ByteOrder = .LittleEndian) -> Int16 {
-        return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
-            let pointer = ptr.baseAddress!.assumingMemoryBound(to: Int16.self).pointee
-            return byteOrder == .LittleEndian ? pointer : pointer.bigEndian
-        })
+        return Int16(bitPattern: toUInt16(byteOrder: byteOrder))
     }
     
     
     public func toInt32(byteOrder: ByteOrder = .LittleEndian) -> Int32 {
-        return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
-            let pointer = ptr.baseAddress!.assumingMemoryBound(to: Int32.self).pointee
-            return byteOrder == .LittleEndian ? pointer : pointer.bigEndian
-        })
+        return Int32(bitPattern: toUInt32(byteOrder: byteOrder))
     }
     
     public func toUInt32(byteOrder: ByteOrder = .LittleEndian) -> UInt32 {
-        return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
-            let pointer = ptr.baseAddress!.assumingMemoryBound(to: UInt32.self).pointee
-            return byteOrder == .LittleEndian ? pointer : pointer.bigEndian
-        })
+        guard count >= 4 else { return 0 }
+        let bytes = Array(prefix(4))
+        if byteOrder == .LittleEndian {
+            return bytes.enumerated().reduce(0) { $0 | UInt32($1.element) << UInt32($1.offset * 8) }
+        }
+        return bytes.reduce(0) { ($0 << 8) | UInt32($1) }
+    }
+
+    public func toInt64(byteOrder: ByteOrder = .LittleEndian) -> Int64 {
+        return Int64(bitPattern: toUInt64(byteOrder: byteOrder))
+    }
+
+    public func toUInt64(byteOrder: ByteOrder = .LittleEndian) -> UInt64 {
+        guard count >= 8 else { return 0 }
+        let bytes = Array(prefix(8))
+        if byteOrder == .LittleEndian {
+            return bytes.enumerated().reduce(0) { $0 | UInt64($1.element) << UInt64($1.offset * 8) }
+        }
+        return bytes.reduce(0) { ($0 << 8) | UInt64($1) }
     }
     
     public func toFloat32(byteOrder: ByteOrder = .LittleEndian) -> Float32 {
-        return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
-            let pointer = ptr.baseAddress!.assumingMemoryBound(to: UInt32.self).pointee
-            return byteOrder == .LittleEndian ? Float32(bitPattern: pointer) : Float32(bitPattern: UInt32(bigEndian: pointer))
-        })
+        return Float32(bitPattern: toUInt32(byteOrder: byteOrder))
     }
     
     
     public func toFloat64(byteOrder: ByteOrder = .LittleEndian) -> Float64 {
-        return self.withUnsafeBytes( { (ptr : UnsafeRawBufferPointer) in
-            let pointer = ptr.baseAddress!.assumingMemoryBound(to: UInt64.self).pointee
-            return byteOrder == .LittleEndian ? Float64(bitPattern: pointer) : Float64(bitPattern: UInt64(bigEndian: pointer))
-        })
+        return Float64(bitPattern: toUInt64(byteOrder: byteOrder))
     }
     
     public func toUnsigned8Array() -> [UInt8] {
@@ -130,57 +124,47 @@ extension Data {
     
 
     
-    mutating func append(uint8 data: UInt8, bigEndian: Bool = true) {
+    mutating func append(uint8 data: UInt8, bigEndian: Bool = false) {
         let value = bigEndian ? data.bigEndian : data.littleEndian
         self.append(Data(from: value))
     }
     
     
-    mutating func append(uint16 data: UInt16, bigEndian: Bool = true) {
+    mutating func append(uint16 data: UInt16, bigEndian: Bool = false) {
         let value = bigEndian ? data.bigEndian : data.littleEndian
         self.append(Data(from: value))
     }
     
     
-    mutating func append(uint32 data: UInt32, bigEndian: Bool = true) {
+    mutating func append(uint32 data: UInt32, bigEndian: Bool = false) {
         let value = bigEndian ? data.bigEndian : data.littleEndian
         self.append(Data(from: value))
     }
     
     
-    mutating func append(uint64 data: UInt64, bigEndian: Bool = true) {
+    mutating func append(uint64 data: UInt64, bigEndian: Bool = false) {
         let value = bigEndian ? data.bigEndian : data.littleEndian
         self.append(Data(from: value))
     }
     
     
-    public func chunck(into size:Int) ->  [Data] {
-        let dataLen = self.count
-        let chunkSize = size
-        
-        let fullChunks = Int(dataLen / chunkSize)
-        let totalChunks = fullChunks + (dataLen % 1024 != 0 ? 1 : 0)
-        
-        var chunks:[Data] = [Data]()
-        
-        for chunkCounter in 0..<totalChunks {
-            var chunk:Data
-            let chunkBase = chunkCounter * chunkSize
-            var diff = chunkSize
-            if(chunkCounter == totalChunks - 1) {
-                diff = dataLen - chunkBase
-            }
-            
-            chunk = self.subdata(in: chunkBase..<(chunkBase + diff))
-            chunks.append(chunk)
+    public func chunked(into size: Int) -> [Data] {
+        guard size > 0 else { return [] }
+        return stride(from: 0, to: count, by: size).map {
+            subdata(in: $0..<Swift.min($0 + size, count))
         }
-        return chunks
+    }
+
+    @available(*, deprecated, renamed: "chunked(into:)")
+    public func chunck(into size:Int) -> [Data] {
+        return chunked(into: size)
     }
 }
 
 
 extension Array {
     public func chunked(into size: Int) -> [[Element]] {
+        guard size > 0 else { return [] }
         return stride(from: 0, to: count, by: size).map {
             Array(self[$0 ..< Swift.min($0 + size, count)])
         }

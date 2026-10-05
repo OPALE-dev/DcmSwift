@@ -32,11 +32,7 @@ public class PixelDataAccess {
         - pixelNumber: the pixel to get
      */
     public static func getPixelSigned32(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> Int32? {
-        let lowerBound = pixelNumber * 4
-        let upperBound = pixelNumber * 4 + 32
-        let  d = pixelDataElement.data.subdata(in: lowerBound..<upperBound)
-        
-        return d.toInt32(byteOrder: byteOrder)
+        return pixelBytes(pixelDataElement, pixelNumber: pixelNumber, width: 4)?.toInt32(byteOrder: byteOrder)
     }
     
     /**
@@ -45,33 +41,21 @@ public class PixelDataAccess {
      - Returns: the pixel in unsigned 32
      */
     public static func getPixelUnsigned32(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> UInt32? {
-        let lowerBound = pixelNumber * 4
-        let upperBound = pixelNumber * 4 + 32
-        let  d = pixelDataElement.data.subdata(in: lowerBound..<upperBound)
-
-        return d.toUInt32(byteOrder: byteOrder)
+        return pixelBytes(pixelDataElement, pixelNumber: pixelNumber, width: 4)?.toUInt32(byteOrder: byteOrder)
     }
     
     /**
      Returns the pixel as Signed 16 bits integer
      */
     public static func getPixelSigned16(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> Int16? {
-        let lowerBound = pixelNumber * 4
-        let upperBound = pixelNumber * 4 + 16
-        let  d = pixelDataElement.data.subdata(in: lowerBound..<upperBound)
-        
-        return d.toInt16(byteOrder: byteOrder)
+        return pixelBytes(pixelDataElement, pixelNumber: pixelNumber, width: 2)?.toInt16(byteOrder: byteOrder)
     }
     
     /**
      Returns the pixel as Unsigned 16 integer
      */
     public static func getPixelUnsigned16(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> UInt16? {
-        let lowerBound = pixelNumber * 4
-        let upperBound = pixelNumber * 4 + 16
-        let  d = pixelDataElement.data.subdata(in: lowerBound..<upperBound)
-
-        return d.toUInt16(byteOrder: byteOrder)
+        return pixelBytes(pixelDataElement, pixelNumber: pixelNumber, width: 2)?.toUInt16(byteOrder: byteOrder)
     }
     
     
@@ -80,67 +64,53 @@ public class PixelDataAccess {
      Get all pixels in a range, as unsigned 16 bits integer
      */
     public static func getUnsigned16Pixels(pixelDataElement: DataElement, from: Int, at: Int, byteOrder: ByteOrder) -> [UInt16] {
-        var upixels: [UInt16] = []
-        var i = 0
-        
-        while i != at {
-            let d = pixelDataElement.data.subdata(in: i..<i+2)
-            upixels.append(d.toUInt16(byteOrder: byteOrder))
-            
-            i += 2
-        }
-        
-        return upixels
+        return pixelRange(pixelDataElement, from: from, to: at, width: 2)?.map {
+            $0.toUInt16(byteOrder: byteOrder)
+        } ?? []
     }
     
     /**
      Get all pixels in a range, as unsigned 32 bits integer
      */
     public static func getUnsigned32Pixels(pixelDataElement: DataElement, from: Int, at: Int, byteOrder: ByteOrder) -> [UInt32] {
-        var upixels: [UInt32] = []
-        var i = 0
-        
-        while i != at {
-            let d = pixelDataElement.data.subdata(in: i..<i+4)
-            upixels.append(d.toUInt32(byteOrder: byteOrder))
-            
-            i += 4
-        }
-        
-        return upixels
+        return pixelRange(pixelDataElement, from: from, to: at, width: 4)?.map {
+            $0.toUInt32(byteOrder: byteOrder)
+        } ?? []
     }
     
     /**
      Get all pixels in a range, as signed 16 bits integer
      */
     public static func getSigned16Pixels(pixelDataElement: DataElement, from: Int, at: Int, byteOrder: ByteOrder) -> [Int16] {
-        var upixels: [Int16] = []
-        var i = 0
-        
-        while i != at {
-            let d = pixelDataElement.data.subdata(in: i..<i+2)
-            upixels.append(d.toInt16(byteOrder: byteOrder))
-            
-            i += 2
-        }
-        
-        return upixels
+        return pixelRange(pixelDataElement, from: from, to: at, width: 2)?.map {
+            $0.toInt16(byteOrder: byteOrder)
+        } ?? []
     }
     
     /**
      Get all pixels in a range, as signed 32 bits integer
      */
     public static func getSigned32Pixels(pixelDataElement: DataElement, from: Int, at: Int, byteOrder: ByteOrder) -> [Int32] {
-        var upixels: [Int32] = []
-        var i = 0
-        
-        while i != at {
-            let d = pixelDataElement.data.subdata(in: i..<i+4)
-            upixels.append(d.toInt32(byteOrder: byteOrder))
-            
-            i += 4
+        return pixelRange(pixelDataElement, from: from, to: at, width: 4)?.map {
+            $0.toInt32(byteOrder: byteOrder)
+        } ?? []
+    }
+
+    private static func pixelBytes(_ element: DataElement, pixelNumber: Int, width: Int) -> Data? {
+        guard pixelNumber >= 0, let data = element.data else { return nil }
+        let (lowerBound, overflow) = pixelNumber.multipliedReportingOverflow(by: width)
+        guard !overflow, lowerBound <= data.count, width <= data.count - lowerBound else { return nil }
+        return data.subdata(in: lowerBound..<lowerBound + width)
+    }
+
+    private static func pixelRange(_ element: DataElement, from: Int, to: Int, width: Int) -> [Data]? {
+        guard let data = element.data,
+              from >= 0,
+              to >= from,
+              to <= data.count,
+              (to - from).isMultiple(of: width) else { return nil }
+        return stride(from: from, to: to, by: width).map {
+            data.subdata(in: $0..<$0 + width)
         }
-        
-        return upixels
     }
 }

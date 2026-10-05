@@ -193,7 +193,7 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
     var byteOrder:ByteOrder         = .LittleEndian
     
     public init?(_ transferSyntax:String) {
-        if !DicomSpec.shared.isSupported(transferSyntax: transferSyntax) {
+        if !DicomSpec.shared.isKnown(transferSyntax: transferSyntax) {
             return nil
         }
         
@@ -203,7 +203,14 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
         if transferSyntax == TransferSyntax.implicitVRLittleEndian {
             vrMethod    = .Implicit
             byteOrder   = .LittleEndian
+        } else if transferSyntax == TransferSyntax.explicitVRBigEndian {
+            vrMethod    = .Explicit
+            byteOrder   = .BigEndian
         }
+    }
+
+    public var capability: TransferSyntaxCapability {
+        DICOMCapabilities.transferSyntax(tsUID)
     }
     
     public static func == (lhs: TransferSyntax, rhs: TransferSyntax) -> Bool {

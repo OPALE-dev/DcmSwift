@@ -30,12 +30,11 @@ class PixelSequence: DataSequence {
         // write items
         for item in self.items {
             // write item tag
-            itemsData.append(item.tag.data)
+            itemsData.append(item.tag.data(withByteOrder: inByteOrder))
             
             // write item length
-            var intLength = UInt32(item.length)
-            let lengthData = Data(bytes: &intLength, count: 4)
-            itemsData.append(lengthData)
+            let intLength = UInt32(item.length)
+            itemsData.append(uint32: intLength, bigEndian: inByteOrder == .BigEndian)
             
             // write item value
             if intLength > 0 {
@@ -53,7 +52,7 @@ class PixelSequence: DataSequence {
         // write tag code
         //print("self.tag : (\(self.tag.group),\(self.tag.element))")
         //data.append(self.tag.data(withByteOrder: inByteOrder))
-        data.append(contentsOf: [0xE0, 0x7f, 0x10, 0x00])
+        data.append(self.tag.data(withByteOrder: inByteOrder))
         
         // write VR (only explicit)
         if inVrMethod == .Explicit  {
@@ -96,8 +95,8 @@ class PixelSequence: DataSequence {
         
         
         // write pixel Sequence Delimiter Item
-        tag = DataTag(withGroup: "fffe", element: "e0dd")
-        data.append(tag.data)
+        let delimiterTag = DataTag(withGroup: "fffe", element: "e0dd", byteOrder: inByteOrder)
+        data.append(delimiterTag.data(withByteOrder: inByteOrder))
         data.append(byte: 0x00, count: 4)
 
         return data

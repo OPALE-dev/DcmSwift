@@ -38,7 +38,7 @@ internal class PDUData {
         
         // get command dataset length for CommandGroupLength element
         let commandGroupLength = commandDataset.toData(transferSyntax: transferSyntax).count
-        _ = commandDataset.set(value: UInt32(commandGroupLength).bigEndian, forTagName: "CommandGroupLength")
+        _ = commandDataset.set(value: UInt32(commandGroupLength), forTagName: "CommandGroupLength")
 
         // build PDV data
         var pdvData = Data()

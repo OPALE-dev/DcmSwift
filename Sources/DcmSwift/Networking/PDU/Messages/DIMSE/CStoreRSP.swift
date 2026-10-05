@@ -30,14 +30,14 @@ public class CStoreRSP: DataTF {
         if let pc = self.association.acceptedPresentationContexts.values.first,
            let transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian) {
             let commandDataset = DataSet()
-            _ = commandDataset.set(value: CommandField.C_STORE_RSP.rawValue.bigEndian, forTagName: "CommandField")
+            _ = commandDataset.set(value: CommandField.C_STORE_RSP.rawValue, forTagName: "CommandField")
             _ = commandDataset.set(value: pc.abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
             
             if let request = self.requestMessage {
                 _ = commandDataset.set(value: request.messageID, forTagName: "MessageIDBeingRespondedTo")
             }
-            _ = commandDataset.set(value: UInt16(257).bigEndian, forTagName: "CommandDataSetType")
-            _ = commandDataset.set(value: UInt16(0).bigEndian, forTagName: "Status")
+            _ = commandDataset.set(value: UInt16(257), forTagName: "CommandDataSetType")
+            _ = commandDataset.set(value: UInt16(0), forTagName: "Status")
             
             let pduData = PDUData(
                 pduType: self.pduType,

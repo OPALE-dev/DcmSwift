@@ -17,6 +17,30 @@ import Foundation
  */
 public class DicomSpec: NSObject, XMLParserDelegate {
 
+    private struct DictionaryResource: Decodable {
+        let edition: String
+        let tags: [TagEntry]
+        let uids: [UIDEntry]
+    }
+
+    private struct TagEntry: Decodable {
+        let group: String
+        let element: String
+        let name: String
+        let keyword: String
+        let vr: String
+        let vm: String
+        let retired: Bool
+    }
+
+    private struct UIDEntry: Decodable {
+        let uid: String
+        let name: String
+        let keyword: String
+        let type: String
+        let retired: Bool
+    }
+
     
     
     
@@ -46,6 +70,9 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     public var sopClassesArray:[[String : String]]       = []
     public var transferSyntaxArray:[[String : String]]   = []
     public var sopPairs:[String: [String]] = [:]
+
+    /// Edition of PS3.6 used to populate the runtime dictionary.
+    public private(set) var dictionaryEdition = "unknown"
     
     private var parser = XMLParser()
     
@@ -62,11 +89,14 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     private override init() {
         super.init()
         
+        // PS3.6 does not contain the command group dictionary from PS3.7, so
+        // retain the small legacy bootstrap dictionary and overlay 2026d data.
         let data = xmlSpec.data(using: .utf8)
         self.parser = XMLParser(data: data!)
         self.parser.delegate = self
-        
         self.parser.parse()
+        self.dictionaryEdition = "2017c-fallback"
+        _ = loadBundledDictionary()
         
         self.sopPairs = [
             DicomConstants.verificationSOP: [
@@ -90,6 +120,48 @@ public class DicomSpec: NSObject, XMLParserDelegate {
                 ]
             }
         }
+    }
+
+    private func loadBundledDictionary() -> Bool {
+        guard let url = Bundle.module.url(forResource: "dicom-dictionary-2026d", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let resource = try? JSONDecoder().decode(DictionaryResource.self, from: data) else {
+            return false
+        }
+
+        dictionaryEdition = resource.edition
+        for entry in resource.tags {
+            var attributes = [
+                "group": entry.group,
+                "element": entry.element,
+                "name": entry.name,
+                "keyword": entry.keyword,
+                "vr": entry.vr,
+                "vm": entry.vm
+            ]
+            if entry.retired { attributes["retired"] = "true" }
+            tags[entry.group + entry.element] = attributes
+            tagsByName[entry.keyword] = attributes
+        }
+
+        for entry in resource.uids {
+            var attributes = [
+                "uid": entry.uid,
+                "name": entry.name,
+                "keyword": entry.keyword,
+                "type": entry.type
+            ]
+            if entry.retired { attributes["retired"] = "true" }
+            uids[entry.uid] = attributes
+        }
+
+        sopClassesArray.removeAll(keepingCapacity: true)
+        transferSyntaxArray.removeAll(keepingCapacity: true)
+        for attributes in uids.values {
+            if attributes["type"] == "SOP Class" { sopClassesArray.append(attributes) }
+            if attributes["type"] == "Transfer Syntax" { transferSyntaxArray.append(attributes) }
+        }
+        return true
     }
     
     
@@ -127,10 +199,14 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             return 4
         case .SS:
             return 2
+        case .SV:
+            return 8
         case .UL:
             return 4
         case .US:
             return 2
+        case .UV:
+            return 8
         default:
             return 0
         }
@@ -196,7 +272,8 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      
      */
     public static func vr(for vr:String) -> VR.VR? {
-        switch vr {
+        let normalized = vr.replacingOccurrences(of: " ", with: "")
+        switch normalized {
         case "AE":
             return .AE
         case "AS":
@@ -227,6 +304,10 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             return .OD
         case "OF":
             return .OF
+        case "OL":
+            return .OL
+        case "OV":
+            return .OV
         case "OW":
             return .OW
         case "PN":
@@ -241,22 +322,32 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             return .SS
         case "ST":
             return .ST
+        case "SV":
+            return .SV
         case "TM":
             return .TM
+        case "UC":
+            return .UC
         case "UI":
             return .UI
         case "UL":
             return .UL
         case "UN":
             return .UN
+        case "UR":
+            return .UR
         case "US":
             return .US
         case "UT":
             return .UT
-        case "US/SS":
+        case "UV":
+            return .UV
+        case "US/SS", "USorSS", "USorSSorOW":
             return .US
-        case "OB/OW":
+        case "OB/OW", "OBorOW":
             return .OB
+        case "USorOW":
+            return .US
         default:
             return nil
         }
@@ -368,6 +459,11 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Returns: true if the TS is supported by the spec
      */
     public func isSupported(transferSyntax ts:String) -> Bool {
+        return DICOMCapabilities.transferSyntax(ts).isImplemented
+    }
+
+    /// Returns whether the UID is defined by the bundled PS3.6 registry.
+    public func isKnown(transferSyntax ts:String) -> Bool {
         for tss in self.transferSyntaxes() {
             if tss["uid"]! == ts {
                 return true
@@ -385,6 +481,14 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      - Returns: true if the SOP is supported by the spec
      */
     public func isSupported(sopClass sc:String) -> Bool {
+        return sc == DicomConstants.verificationSOP ||
+            sc == DicomConstants.PatientRootQueryRetrieveInformationModelFIND ||
+            sc == DicomConstants.StudyRootQueryRetrieveInformationModelFIND ||
+            DicomConstants.storageSOPClasses.contains(sc)
+    }
+
+    /// Returns whether the UID is defined by the bundled PS3.6 registry.
+    public func isKnown(sopClass sc:String) -> Bool {
         for scs in self.sopClasses() {
             if scs["uid"]! == sc {
                 return true

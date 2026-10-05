@@ -89,12 +89,12 @@ public class DataTF: PDUMessage {
             
             self.commandField = commandField
             
-            guard let commandDataSetType = commandDataset.integer16(forTag: "CommandDataSetType")?.bigEndian else {
+            guard let commandDataSetType = commandDataset.element(forTagName: "CommandDataSetType")?.value as? UInt16 else {
                 Logger.error("Cannot read Command Data Set Type")
                 return .Refused
             }
             
-            self.commandDataSetType = commandDataSetType
+            self.commandDataSetType = Int16(bitPattern: commandDataSetType)
             
             if let s = commandDataset.element(forTagName: "Status") {
                 if let ss = DIMSEStatus.Status(rawValue: s.data.toUInt16(byteOrder: .LittleEndian)) {

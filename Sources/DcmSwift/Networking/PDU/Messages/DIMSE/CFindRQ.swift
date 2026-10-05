@@ -43,11 +43,11 @@ public class CFindRQ: DataTF {
         
         // build comand dataset
         let commandDataset = DataSet()
-        _ = commandDataset.set(value: CommandField.C_FIND_RQ.rawValue.bigEndian, forTagName: "CommandField")
+        _ = commandDataset.set(value: CommandField.C_FIND_RQ.rawValue, forTagName: "CommandField")
         _ = commandDataset.set(value: abstractSyntax as Any, forTagName: "AffectedSOPClassUID")
-        _ = commandDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
-        _ = commandDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
-        _ = commandDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
+        _ = commandDataset.set(value: UInt16(1), forTagName: "MessageID")
+        _ = commandDataset.set(value: UInt16(0), forTagName: "Priority")
+        _ = commandDataset.set(value: UInt16(1), forTagName: "CommandDataSetType")
         
         let pduData = PDUData(
             pduType: self.pduType,

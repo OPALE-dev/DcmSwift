@@ -39,11 +39,11 @@ public class CStoreRQ: DataTF {
            let pc = self.association.acceptedPresentationContexts(forSOPClassUID: sopClassUID).first {
             
             let commandDataset = DataSet()
-            _ = commandDataset.set(value: CommandField.C_STORE_RQ.rawValue.bigEndian, forTagName: "CommandField")
+            _ = commandDataset.set(value: CommandField.C_STORE_RQ.rawValue, forTagName: "CommandField")
             _ = commandDataset.set(value: sopClassUID, forTagName: "AffectedSOPClassUID")
-            _ = commandDataset.set(value: UInt16(1).bigEndian, forTagName: "MessageID")
-            _ = commandDataset.set(value: UInt16(0).bigEndian, forTagName: "Priority")
-            _ = commandDataset.set(value: UInt16(1).bigEndian, forTagName: "CommandDataSetType")
+            _ = commandDataset.set(value: UInt16(1), forTagName: "MessageID")
+            _ = commandDataset.set(value: UInt16(0), forTagName: "Priority")
+            _ = commandDataset.set(value: UInt16(1), forTagName: "CommandDataSetType")
             _ = commandDataset.set(value: sopInstanceUID, forTagName: "AffectedSOPInstanceUID")
                         
             let pduData = PDUData(

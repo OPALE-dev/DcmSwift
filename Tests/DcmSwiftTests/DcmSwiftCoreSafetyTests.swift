@@ -1,0 +1,144 @@
+import Foundation
+import XCTest
+@testable import DcmSwift
+
+final class DcmSwiftCoreSafetyTests: XCTestCase {
+    func testRuntimeDictionaryComesFromDICOM2026d() {
+        XCTAssertEqual(DicomSpec.shared.dictionaryEdition, "2026d")
+        XCTAssertEqual(DicomSpec.shared.nameForTag(withCode: "00100010"), "PatientName")
+        XCTAssertNotNil(DicomSpec.shared.dataTag(forName: "LongCodeValue"))
+    }
+
+    func testKnownTransferSyntaxIsNotAutomaticallyImplemented() {
+        let deflated = "1.2.840.10008.1.2.1.99"
+        XCTAssertTrue(DicomSpec.shared.isKnown(transferSyntax: deflated))
+        XCTAssertFalse(DicomSpec.shared.isSupported(transferSyntax: deflated))
+        XCTAssertFalse(TransferSyntax(deflated)!.capability.canReadDataset)
+
+        let jpegBaseline = TransferSyntax.JPEGLossy8bit
+        XCTAssertTrue(DicomSpec.shared.isKnown(transferSyntax: jpegBaseline))
+        XCTAssertTrue(TransferSyntax(jpegBaseline)!.capability.canPreservePixelData)
+        XCTAssertFalse(TransferSyntax(jpegBaseline)!.capability.canDecodePixelData)
+        XCTAssertFalse(TransferSyntax(jpegBaseline)!.capability.canNegotiateForDIMSE)
+    }
+
+    func testNumericDecodingHonorsByteOrderAndShortInputIsSafe() {
+        XCTAssertEqual(Data([0x34, 0x12]).toUInt16(), 0x1234)
+        XCTAssertEqual(Data([0x12, 0x34]).toUInt16(byteOrder: .BigEndian), 0x1234)
+        XCTAssertEqual(Data([0x78, 0x56, 0x34, 0x12]).toUInt32(), 0x12345678)
+        XCTAssertEqual(Data([0x12, 0x34, 0x56, 0x78]).toUInt32(byteOrder: .BigEndian), 0x12345678)
+        XCTAssertEqual(Data([0xff, 0xff]).toInt16(), -1)
+        XCTAssertEqual(Data().toUInt32(), 0)
+    }
+
+    func testChunkingUsesRequestedSize() {
+        let data = Data(0..<10)
+        XCTAssertEqual(data.chunked(into: 4), [Data(0..<4), Data(4..<8), Data(8..<10)])
+        XCTAssertEqual(data.chunked(into: 0), [])
+        XCTAssertEqual(Array(0..<5).chunked(into: 2), [[0, 1], [2, 3], [4]])
+    }
+
+    func testOffsetInputStreamRejectsInvalidAndTruncatedReads() {
+        let stream = OffsetInputStream(data: Data([1, 2, 3]))
+        stream.open()
+        defer { stream.close() }
+
+        XCTAssertNil(stream.read(length: -1))
+        XCTAssertEqual(stream.read(length: 2), Data([1, 2]))
+        XCTAssertNil(stream.read(length: 2))
+        XCTAssertEqual(stream.readableBytes, 1)
+    }
+
+    func testUserInfoEncodingContainsRequiredSubItemsAndRoundTrips() {
+        let source = UserInfo(
+            implementationVersion: "DCMSWIFT_2",
+            implementationUID: "1.2.826.0.1.3680043.10.999",
+            maxPDULength: 131_072
+        )
+        let encoded = source.data()
+
+        XCTAssertEqual(encoded.first, ItemType.userInfo.rawValue)
+        XCTAssertEqual(encoded.subdata(in: 2..<4).toUInt16(byteOrder: .BigEndian), UInt16(encoded.count - 4))
+
+        let decoded = UserInfo(data: encoded.subdata(in: 4..<encoded.count))
+        XCTAssertEqual(decoded?.maxPDULength, 131_072)
+        XCTAssertEqual(decoded?.implementationUID, source.implementationUID)
+        XCTAssertEqual(decoded?.implementationVersion, source.implementationVersion)
+    }
+
+    func testUserInfoRejectsTruncatedSubItem() {
+        XCTAssertNil(UserInfo(data: Data([ItemType.maxPduLength.rawValue, 0, 0, 4, 0, 1])))
+    }
+
+    func testPixelAccessUsesPixelWidthAndRangeOffset() {
+        let dataset = DataSet()
+        let bytes = Data([0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x00])
+        let element = dataset.set(value: bytes, forTagName: "PixelData")!
+
+        XCTAssertEqual(PixelDataAccess.getPixelUnsigned16(pixelDataElement: element, pixelNumber: 2, byteOrder: .LittleEndian), 3)
+        XCTAssertNil(PixelDataAccess.getPixelUnsigned16(pixelDataElement: element, pixelNumber: 4, byteOrder: .LittleEndian))
+        XCTAssertEqual(
+            PixelDataAccess.getUnsigned16Pixels(pixelDataElement: element, from: 2, at: 6, byteOrder: .LittleEndian),
+            [2, 3]
+        )
+    }
+
+    func testUnsignedVRValuesPreserveFullRange() {
+        let dataset = DataSet()
+        let rows = dataset.set(value: UInt16.max, forTagName: "Rows")!
+        XCTAssertEqual(rows.value as? UInt16, UInt16.max)
+
+        let groupLength = dataset.set(value: UInt32.max - 1, forTagName: "FileMetaInformationGroupLength")!
+        XCTAssertEqual(groupLength.value as? UInt32, UInt32.max - 1)
+    }
+
+    func testBigEndianTransferSyntaxExposesBigEndianEncoding() {
+        let syntax = TransferSyntax(TransferSyntax.explicitVRBigEndian)
+        XCTAssertEqual(syntax?.byteOrder, .BigEndian)
+        XCTAssertEqual(syntax?.vrMethod, .Explicit)
+    }
+
+    func testTruncatedDeclaredValueThrowsCorruptionError() {
+        // PatientName, explicit VR Little Endian, declares 8 bytes but only contains 2.
+        let bytes = Data([0x10, 0x00, 0x10, 0x00, 0x50, 0x4e, 0x08, 0x00, 0x41, 0x42])
+        XCTAssertThrowsError(try DicomInputStream(data: bytes).readDataset(enforceVR: false)) { error in
+            guard case StreamError.datasetIsCorrupted = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+        }
+    }
+
+    func testDIMSECommandSetUsesLittleEndianValues() throws {
+        let command = DataSet()
+        _ = command.set(value: CommandField.C_ECHO_RQ.rawValue, forTagName: "CommandField")
+        _ = command.set(value: UInt16(7), forTagName: "MessageID")
+        _ = command.set(value: UInt16(0x0101), forTagName: "CommandDataSetType")
+
+        let pdu = PDUData(
+            pduType: .dataTF,
+            commandDataset: command,
+            abstractSyntax: DicomConstants.verificationSOP,
+            transferSyntax: try XCTUnwrap(TransferSyntax(TransferSyntax.implicitVRLittleEndian)),
+            pcID: 1,
+            flags: 0x03
+        ).data()
+
+        let pdvLength = Int(pdu.subdata(in: 6..<10).toUInt32(byteOrder: .BigEndian))
+        let commandData = pdu.subdata(in: 12..<10 + pdvLength)
+        let decoded = try XCTUnwrap(try DicomInputStream(data: commandData).readDataset())
+
+        XCTAssertEqual(decoded.unsignedInteger16(forTag: "CommandField"), CommandField.C_ECHO_RQ.rawValue)
+        XCTAssertEqual(decoded.unsignedInteger16(forTag: "MessageID"), 7)
+        XCTAssertEqual(decoded.unsignedInteger16(forTag: "CommandDataSetType"), 0x0101)
+        XCTAssertEqual(decoded.unsignedInteger32(forTag: "CommandGroupLength"), UInt32(commandData.count - 12))
+    }
+
+    func testDataElementTranscodesNumericValueByteOrder() {
+        let dataset = DataSet()
+        let rows = dataset.set(value: UInt16(0x1234), forTagName: "Rows")!
+        XCTAssertEqual(
+            rows.toData(vrMethod: .Explicit, byteOrder: .BigEndian),
+            Data([0x00, 0x28, 0x00, 0x10, 0x55, 0x53, 0x00, 0x02, 0x12, 0x34])
+        )
+    }
+}
