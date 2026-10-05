@@ -298,4 +298,19 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertEqual(offsets.vr, .OL)
         XCTAssertEqual(offsets.data, Data([1, 2, 3, 4]))
     }
+
+    func testFileMetaValidationReportsMissingAndMismatchedIdentifiers() {
+        let dataset = DataSet()
+        dataset.hasPreamble = true
+        _ = dataset.set(value: "1.2.840.10008.5.1.4.1.1.2", forTagName: "SOPClassUID")
+        _ = dataset.set(value: "1.2.3.4", forTagName: "SOPInstanceUID")
+        _ = dataset.set(value: "1.2.840.10008.5.1.4.1.1.4", forTagName: "MediaStorageSOPClassUID")
+        _ = dataset.set(value: "1.2.3.5", forTagName: "MediaStorageSOPInstanceUID")
+
+        let messages = dataset.validateFileMetaInformation().map(\.message)
+        XCTAssertTrue(messages.contains("MediaStorageSOPClassUID does not match SOPClassUID"))
+        XCTAssertTrue(messages.contains("MediaStorageSOPInstanceUID does not match SOPInstanceUID"))
+        XCTAssertTrue(messages.contains("Missing required File Meta Information element TransferSyntaxUID"))
+        XCTAssertTrue(messages.contains("Missing required File Meta Information element ImplementationClassUID"))
+    }
 }

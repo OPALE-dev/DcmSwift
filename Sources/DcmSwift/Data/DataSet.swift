@@ -504,6 +504,58 @@ public class DataSet: DicomObject {
         fileMetaInformationGroupLength = Int(length)
         return length
     }
+
+    /// Validates the PS3.10 File Meta Information layer independently from
+    /// IOD/module validation. A parsed Data Set is not necessarily an IOD-valid
+    /// SOP Instance.
+    public func validateFileMetaInformation() -> [ValidationResult] {
+        guard hasPreamble || !metaInformationHeaderElements.isEmpty else { return [] }
+
+        var results: [ValidationResult] = []
+        let required = [
+            "FileMetaInformationGroupLength",
+            "FileMetaInformationVersion",
+            "MediaStorageSOPClassUID",
+            "MediaStorageSOPInstanceUID",
+            "TransferSyntaxUID",
+            "ImplementationClassUID"
+        ]
+        for keyword in required where element(forTagName: keyword) == nil {
+            results.append(ValidationResult(
+                self,
+                message: "Missing required File Meta Information element \(keyword)",
+                severity: .Error
+            ))
+        }
+
+        let pairs = [
+            (meta: "MediaStorageSOPClassUID", dataset: "SOPClassUID"),
+            (meta: "MediaStorageSOPInstanceUID", dataset: "SOPInstanceUID")
+        ]
+        for pair in pairs {
+            guard let metaValue = string(forTag: pair.meta),
+                  let datasetValue = string(forTag: pair.dataset) else { continue }
+            if metaValue != datasetValue {
+                results.append(ValidationResult(
+                    self,
+                    message: "\(pair.meta) does not match \(pair.dataset)",
+                    severity: .Error
+                ))
+            }
+        }
+
+        if let declared = string(forTag: "TransferSyntaxUID"),
+           let actual = transferSyntax?.tsUID,
+           declared != actual {
+            results.append(ValidationResult(
+                self,
+                message: "TransferSyntaxUID does not match the Data Set transfer syntax",
+                severity: .Error
+            ))
+        }
+
+        return results
+    }
     
     
     public func write(

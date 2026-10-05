@@ -597,15 +597,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             results.append(ValidationResult(file, message: "No prefix header was found", severity: .Notice))
         }
         
-        if file.dataset.string(forTag: "TransferSyntaxUID") == nil {
-            results.append(ValidationResult(file, message: "Undefined Transfer Syntax", severity: .Warning))
-        }
-        
-        for e in file.dataset.allElements {
-            results.append(contentsOf: validate(dataElement: e))
-        }
-        
-        results.append(contentsOf: file.dataset.internalValidations)
+        results.append(contentsOf: validate(dataSet: file.dataset))
         
         return results
     }
@@ -616,6 +608,8 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         for e in dataset.allElements {
             results.append(contentsOf: validate(dataElement: e))
         }
+
+        results.append(contentsOf: dataset.validateFileMetaInformation())
         
         results.append(contentsOf: dataset.internalValidations)
         
@@ -627,13 +621,15 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         
         // check individual tags
         if element.name == "TransferSyntaxUID" {
-            if !self.isSupported(transferSyntax: element.value as! String) {
-                results.append(ValidationResult(element, message: "Transfer Syntax is not supported by this implementation [\(element.value)]", severity: .Warning))
+            if let uid = element.value as? String,
+               !self.isSupported(transferSyntax: uid) {
+                results.append(ValidationResult(element, message: "Transfer Syntax is not supported by this implementation [\(uid)]", severity: .Warning))
             }
         }
         else if element.name == "SOPClassUID" {
-            if !self.isSupported(sopClass: element.value as! String) {
-                results.append(ValidationResult(element, message: "Transfer Syntax is not supported by this implementation [\(element.value)]", severity: .Warning))
+            if let uid = element.value as? String,
+               !self.isSupported(sopClass: uid) {
+                results.append(ValidationResult(element, message: "SOP Class is not supported by this implementation [\(uid)]", severity: .Warning))
             }
         }
 
