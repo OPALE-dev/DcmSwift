@@ -84,18 +84,31 @@ public class DataElement : DicomObject {
     public func setValue(_ val:Any) -> Bool {
         var ret = false
         
-        if  self.vr == .AT {
-            // currently not implemented
-            return ret
+        if self.vr == .AT {
+            let tags: [DataTag]
+            if let tag = val as? DataTag {
+                tags = [tag]
+            } else if let values = val as? [DataTag] {
+                tags = values
+            } else {
+                return false
+            }
+            self.data = tags.reduce(into: Data()) {
+                $0.append($1.data(withByteOrder: self.byteOrder))
+            }
+            self.length = self.data.count
+            self.recalculateParentsLength()
+            return true
         }
-        else if self.vr == .OB ||
-                self.vr == .OW {
-
-            if let d = val as? Data {
-                    self.data = d
-
-                    return true
-                }
+        else if self.vr == .OB || self.vr == .OD || self.vr == .OF ||
+                self.vr == .OL || self.vr == .OV || self.vr == .OW ||
+                self.vr == .UN {
+            if let data = val as? Data {
+                self.data = data
+                self.length = data.count
+                self.recalculateParentsLength()
+                return true
+            }
         }
                 
         if let string = val as? String {
@@ -154,6 +167,18 @@ public class DataElement : DicomObject {
             else if let v = val as? UInt64 {
                 self.data = Data()
                 self.data.append(uint64: v, bigEndian: self.byteOrder == .BigEndian)
+                self.length = self.data.count
+                ret = true
+            }
+            else if let v = val as? Float32 {
+                self.data = Data()
+                self.data.append(uint32: v.bitPattern, bigEndian: self.byteOrder == .BigEndian)
+                self.length = self.data.count
+                ret = true
+            }
+            else if let v = val as? Float64 {
+                self.data = Data()
+                self.data.append(uint64: v.bitPattern, bigEndian: self.byteOrder == .BigEndian)
                 self.length = self.data.count
                 ret = true
             }
@@ -216,7 +241,8 @@ public class DataElement : DicomObject {
                 self.vr == .CS ||
                 self.vr == .DS ||
                 self.vr == .IS ||
-                self.vr == .AE {
+                self.vr == .AE ||
+                self.vr == .UR {
             return DICOMCharacterSet.defaultRepertoire.decode(self.data) ?? self.data as Any
         }
         else if usesSpecificCharacterSet {
@@ -239,7 +265,7 @@ public class DataElement : DicomObject {
 
     private var usesSpecificCharacterSet: Bool {
         switch vr {
-        case .LO, .LT, .PN, .SH, .ST, .UC, .UR, .UT:
+        case .LO, .LT, .PN, .SH, .ST, .UC, .UT:
             return true
         default:
             return false

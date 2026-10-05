@@ -258,4 +258,44 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertEqual(source.transferSyntax.tsUID, TransferSyntax.JPEGLossless)
         XCTAssertEqual(source.string(forTag: "TransferSyntaxUID"), TransferSyntax.JPEGLossless)
     }
+
+    func testAttributeTagValueUsesTargetByteOrder() throws {
+        let dataset = DataSet()
+        let pointer = try XCTUnwrap(dataset.set(
+            value: DataTag(withGroup: "0028", element: "0010"),
+            forTagName: "DimensionIndexPointer"
+        ))
+
+        XCTAssertEqual(pointer.data, Data([0x28, 0x00, 0x10, 0x00]))
+        XCTAssertEqual(
+            pointer.toData(vrMethod: .Explicit, byteOrder: .BigEndian).suffix(4),
+            Data([0x00, 0x28, 0x00, 0x10])
+        )
+    }
+
+    func testModernTextVRUsesLongExplicitHeaderAndURIStaysASCII() throws {
+        let dataset = DataSet()
+        _ = dataset.set(value: "ISO_IR 192", forTagName: "SpecificCharacterSet")
+        let url = try XCTUnwrap(dataset.set(
+            value: "https://example.test/dicom",
+            forTagName: "CodingSchemeURL"
+        ))
+        let encoded = url.toData(vrMethod: .Explicit, byteOrder: .LittleEndian)
+
+        XCTAssertEqual(Array(encoded[4..<8]), [0x55, 0x52, 0x00, 0x00])
+        XCTAssertEqual(encoded.subdata(in: 8..<12).toUInt32(), UInt32(url.length))
+        XCTAssertNil(dataset.set(value: "https://example.test/é", forTagName: "CodingSchemeURL"))
+    }
+
+    func testFloatingPointAndModernBinaryVRSetters() throws {
+        let dataset = DataSet()
+        let float = try XCTUnwrap(dataset.set(value: Float32(1.5), forTagName: "RecommendedDisplayFrameRateInFloat"))
+        let double = try XCTUnwrap(dataset.set(value: Float64(-2.25), forTagName: "EventTimeOffset"))
+        let offsets = try XCTUnwrap(dataset.set(value: Data([1, 2, 3, 4]), forTagName: "LongPrimitivePointIndexList"))
+
+        XCTAssertEqual(float.value as? Float32, 1.5)
+        XCTAssertEqual(double.value as? Float64, -2.25)
+        XCTAssertEqual(offsets.vr, .OL)
+        XCTAssertEqual(offsets.data, Data([1, 2, 3, 4]))
+    }
 }
