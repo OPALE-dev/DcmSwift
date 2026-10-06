@@ -243,6 +243,72 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         })
     }
 
+    func testScopeOfInventoryMacroValidation() throws {
+        let directory = makeDirectory()
+        let dataSet = DataSet()
+        let records = try XCTUnwrap(directory.createDirectoryRecordSequence())
+        dataSet.add(element: records)
+        directory.dataset = dataSet
+        let patient = try XCTUnwrap(records.items.first)
+        XCTAssertTrue(patient.element(withName: "DirectoryRecordType")?.setValue("INVENTORY") == true)
+
+        let scope = appendSequence(named: "ScopeOfInventorySequence", to: patient, dataSet: dataSet)
+        let first = DataItem(withTag: DataTag(withGroup: "fffe", element: "e000"), parent: scope)
+        let second = DataItem(withTag: DataTag(withGroup: "fffe", element: "e000"), parent: scope)
+        scope.items = [first, second]
+        append(
+            value: "RELATIONAL\\TIMEZONE_ADJUST",
+            name: "ExtendedMatchingMechanisms",
+            to: first,
+            dataSet: dataSet
+        )
+        let range = appendSequence(named: "RangeMatchingSequence", to: first, dataSet: dataSet)
+        range.items.append(DataItem(
+            withTag: DataTag(withGroup: "fffe", element: "e000"),
+            parent: range
+        ))
+        _ = appendSequence(named: "ListOfUIDMatchingSequence", to: first, dataSet: dataSet)
+        let empty = appendSequence(named: "EmptyValueMatchingSequence", to: first, dataSet: dataSet)
+        empty.items = [
+            DataItem(withTag: DataTag(withGroup: "fffe", element: "e000"), parent: empty),
+            DataItem(withTag: DataTag(withGroup: "fffe", element: "e000"), parent: empty)
+        ]
+        _ = appendSequence(named: "GeneralMatchingSequence", to: first, dataSet: dataSet)
+
+        var messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("permits zero or one Item") })
+        XCTAssertTrue(messages.contains { $0.contains("requires TimezoneOffsetFromUTC") })
+        XCTAssertTrue(messages.contains { $0.contains("requires QueryRetrieveLevel") })
+        XCTAssertTrue(messages.contains { $0.contains("RangeMatchingSequence requires exactly 2 Items") })
+        XCTAssertTrue(messages.contains { $0.contains("ListOfUIDMatchingSequence requires at least 1 Item") })
+        XCTAssertTrue(messages.contains { $0.contains("EmptyValueMatchingSequence requires exactly 1 Item") })
+        XCTAssertTrue(messages.contains { $0.contains("GeneralMatchingSequence requires exactly 1 Item") })
+
+        scope.items = [first]
+        append(value: "+0200", name: "TimezoneOffsetFromUTC", to: first, dataSet: dataSet)
+        append(value: "STUDY", name: "QueryRetrieveLevel", to: first, dataSet: dataSet)
+        range.items.append(DataItem(
+            withTag: DataTag(withGroup: "fffe", element: "e000"),
+            parent: range
+        ))
+        let list = try XCTUnwrap(first.element(withName: "ListOfUIDMatchingSequence") as? DataSequence)
+        list.items.append(DataItem(
+            withTag: DataTag(withGroup: "fffe", element: "e000"),
+            parent: list
+        ))
+        empty.items.removeLast()
+        let general = try XCTUnwrap(first.element(withName: "GeneralMatchingSequence") as? DataSequence)
+        general.items.append(DataItem(
+            withTag: DataTag(withGroup: "fffe", element: "e000"),
+            parent: general
+        ))
+
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertFalse(messages.contains { $0.contains("ScopeOfInventorySequence permits") })
+        XCTAssertFalse(messages.contains { $0.contains("Scope of Inventory Item") })
+        XCTAssertFalse(messages.contains { $0.contains("MatchingSequence requires") })
+    }
+
     func testDirectoryRecordSelfContainedConditionalRules() throws {
         let directory = makeDirectory()
         let dataSet = DataSet()

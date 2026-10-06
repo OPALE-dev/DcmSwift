@@ -399,6 +399,9 @@ extension DicomDir {
             if type == .hangingProtocol {
                 validateHangingProtocolDefinitionItems(record, results: &results)
             }
+            if type == .inventory {
+                validateScopeOfInventory(record, results: &results)
+            }
 
             validateIncludedMacros(record.elements, results: &results)
         }
@@ -547,6 +550,99 @@ extension DicomDir {
         }
     }
 
+    private func validateScopeOfInventory(
+        _ record:DICOMDirectoryRecord,
+        results:inout [ValidationResult]
+    ) {
+        guard let scope = record.item.element(withName: "ScopeOfInventorySequence") as? DataSequence else {
+            return
+        }
+        if scope.items.count > 1 {
+            results.append(ValidationResult(
+                scope,
+                message: "ScopeOfInventorySequence permits zero or one Item",
+                severity: .Error
+            ))
+        }
+        for item in scope.items {
+            let mechanisms = normalizedDirectoryStrings(
+                item.element(withName: "ExtendedMatchingMechanisms")
+            )
+            if item.element(withName: "ExtendedMatchingMechanisms") != nil && mechanisms.isEmpty {
+                results.append(ValidationResult(
+                    item,
+                    message: "Scope of Inventory Item has an empty Type 1C key ExtendedMatchingMechanisms",
+                    severity: .Error
+                ))
+            }
+            if mechanisms.contains("TIMEZONE_ADJUST") {
+                appendRequiredMacroValue(
+                    "TimezoneOffsetFromUTC",
+                    reason: "Scope of Inventory Item using TIMEZONE_ADJUST requires TimezoneOffsetFromUTC",
+                    item: item,
+                    results: &results
+                )
+            }
+            if mechanisms.contains("RELATIONAL") {
+                appendRequiredMacroValue(
+                    "QueryRetrieveLevel",
+                    reason: "Scope of Inventory Item using RELATIONAL requires QueryRetrieveLevel",
+                    item: item,
+                    results: &results
+                )
+            }
+            validateSequenceCardinality(
+                "RangeMatchingSequence",
+                in: item,
+                minimum: 2,
+                maximum: 2,
+                results: &results
+            )
+            validateSequenceCardinality(
+                "ListOfUIDMatchingSequence",
+                in: item,
+                minimum: 1,
+                maximum: nil,
+                results: &results
+            )
+            validateSequenceCardinality(
+                "EmptyValueMatchingSequence",
+                in: item,
+                minimum: 1,
+                maximum: 1,
+                results: &results
+            )
+            validateSequenceCardinality(
+                "GeneralMatchingSequence",
+                in: item,
+                minimum: 1,
+                maximum: 1,
+                results: &results
+            )
+        }
+    }
+
+    private func validateSequenceCardinality(
+        _ name:String,
+        in item:DataItem,
+        minimum:Int,
+        maximum:Int?,
+        results:inout [ValidationResult]
+    ) {
+        guard let sequence = item.element(withName: name) as? DataSequence else { return }
+        let isInvalid = sequence.items.count < minimum || maximum.map {
+            sequence.items.count > $0
+        } ?? false
+        if isInvalid {
+            let expected = maximum == minimum ? "exactly \(minimum)" : "at least \(minimum)"
+            results.append(ValidationResult(
+                sequence,
+                message: "\(name) requires \(expected) Item\(minimum == 1 && maximum == 1 ? "" : "s")",
+                severity: .Error
+            ))
+        }
+    }
+
     private func appendMissingOrEmptyConditionalKey(
         _ name:String,
         reason:String,
@@ -598,6 +694,13 @@ extension DicomDir {
         guard let value = element?.value as? String else { return nil }
         let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters))
         return normalized.isEmpty ? nil : normalized
+    }
+
+    private func normalizedDirectoryStrings(_ element:DataElement?) -> Set<String> {
+        guard let value = element?.value as? String else { return [] }
+        return Set(value.split(separator: "\\", omittingEmptySubsequences: true).map {
+            String($0).trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters))
+        }.filter { !$0.isEmpty })
     }
 
     private func isEmptyDirectoryValue(_ element:DataElement) -> Bool {

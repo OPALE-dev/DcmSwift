@@ -81,7 +81,10 @@ those introduced by included macros. This is not a claim that every conditional
 or nested included-macro rule or referenced-IOD condition is qualified.
 Basic and Enhanced Coded Entry attributes are recursively validated in code
 sequences, including code-value choice, meaning, scheme, Context Group, and
-extension provenance conditions.
+extension provenance conditions. Scope of Inventory validation covers the
+outer Sequence cardinality, RELATIONAL and TIMEZONE_ADJUST dependencies, and
+the cardinality of present matching Sequences. Conditions that depend on
+knowing which matching operations were applied remain outside this claim.
 
 ## Network support
 
