@@ -749,7 +749,6 @@ public class DicomInputStream: OffsetInputStream {
             // create item
             let item            = DataItem(withTag: itemTag)
             item.startOffset    = offset - 4
-            item.dataOffset     = offset
             item.vrMethod       = .Explicit
             
             // read item length
@@ -758,6 +757,8 @@ public class DicomInputStream: OffsetInputStream {
                 let message = "Fatal, encapsulated Pixel Data items require defined lengths"
                 return readError(forLength: itemLength, element: pixelSequence, message: message) as? PixelSequence
             }
+
+            item.dataOffset = offset
                                     
             // check for invalid lengths
             if itemLength > readableBytes {
@@ -768,9 +769,9 @@ public class DicomInputStream: OffsetInputStream {
             item.length = itemLength
             
             if itemLength > 0 {
-                guard let itemData = read(length: itemLength) else { return nil }
-                item.data = itemData
+                guard readValue(for: item) else { return nil }
             }
+            item.endOffset = offset
             
             pixelSequence.items.append(item)
             isOffsetTable = false

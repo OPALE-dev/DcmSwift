@@ -148,6 +148,7 @@ public class DataSet: DicomObject {
         func materialize(_ element:DataElement) throws {
             if let sequence = element as? DataSequence {
                 for item in sequence.items {
+                    if item.bulkDataReference != nil { _ = try item.loadData() }
                     for child in item.elements { try materialize(child) }
                 }
             } else if element.bulkDataReference != nil {
