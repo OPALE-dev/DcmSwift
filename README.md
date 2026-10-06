@@ -55,6 +55,10 @@ Private Creator Data Elements are recognized as `LO` in implicit VR data sets,
 and private block reservations are resolved independently in the top-level data
 set and in every Sequence Item. Unknown private values remain byte-preserving
 `UN` values unless their explicit VR is present on the wire.
+Fixed-width numeric VRs support typed multi-valued encoding and decoding for
+signed and unsigned 16/32/64-bit integers and 32/64-bit floating-point values.
+Dictionary VM expressions, including bounded ranges and `2-2n`/`3-3n`
+multiples, are validated independently from IOD requirements.
 
 The library also provides helpers for DICOM dates, times, UIDs, tags, VRs,
 endianness, pixel access, Structured Reports, and radiotherapy objects.

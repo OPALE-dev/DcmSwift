@@ -31,6 +31,7 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Unknown/private elements | Unknown implicit values preserved as UN; private creator blocks resolved within each Data Set scope |
 | Defined/undefined-length sequences | Read and write; Item tags, boundaries, delimiters, nesting depth, and resource limits validated |
 | Specific Character Set | Default repertoire, ISO_IR 100, and ISO_IR 192, including nested inheritance and local override |
+| Fixed-width numeric VR values | Scalar and multi-valued signed/unsigned integer and floating-point read/write with dictionary VM validation |
 | DICOM JSON / Native DICOM Model XML | Existing convenience output is not PS3.18 conformant |
 | DICOMDIR and media profiles | Existing implementation is not yet claimed conformant |
 
@@ -38,8 +39,8 @@ Known UIDs are not automatically supported. `TransferSyntaxCapability` is the
 authoritative programmatic statement for structural I/O, Pixel Data
 preservation, codec operations, and DIMSE negotiation.
 
-The next file-core priorities are multi-valued binary VR handling and VR/VM
-validation, lazy Bulk Data, Deflated Explicit VR Little Endian, and DICOMDIR.
+The next file-core priorities are remaining semantic VR validation, lazy Bulk
+Data, Deflated Explicit VR Little Endian, and DICOMDIR.
 PS3.18 JSON and XML representations follow those binary-format milestones.
 
 ## Network support

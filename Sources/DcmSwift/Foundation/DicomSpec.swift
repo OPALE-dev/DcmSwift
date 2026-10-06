@@ -433,6 +433,40 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         
         return nil
     }
+
+    /// All VRs permitted by the public dictionary for a tag. Some attributes
+    /// have a context-dependent VR such as US/SS or OB/OW.
+    public func vrsForTag(withCode code:String) -> [VR.VR] {
+        guard let encoded = tags[code.lowercased()]?["vr"] else { return [] }
+        switch encoded.replacingOccurrences(of: " ", with: "") {
+        case "US/SS", "USorSS": return [.US, .SS]
+        case "OB/OW", "OBorOW": return [.OB, .OW]
+        case "USorOW": return [.US, .OW]
+        case "USorSSorOW": return [.US, .SS, .OW]
+        default: return DicomSpec.vr(for: encoded).map { [$0] } ?? []
+        }
+    }
+
+    public func vmForTag(withCode code:String) -> String? {
+        return tags[code.lowercased()]?["vm"]
+    }
+
+    public func valueMultiplicity(_ count:Int, isAllowedBy expression:String) -> Bool {
+        let normalized = expression.replacingOccurrences(of: " ", with: "")
+        if normalized == "1-nor1" { return count >= 1 }
+        if let exact = Int(normalized) { return count == exact }
+
+        let bounds = normalized.components(separatedBy: "-")
+        guard bounds.count == 2, let minimum = Int(bounds[0]) else { return false }
+        if bounds[1] == "n" { return count >= minimum }
+        if bounds[1].hasSuffix("n"), let factor = Int(bounds[1].dropLast()) {
+            return count >= minimum && count.isMultiple(of: factor)
+        }
+        if let maximum = Int(bounds[1]) {
+            return (minimum...maximum).contains(count)
+        }
+        return false
+    }
     
     
     /**
@@ -633,16 +667,25 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             }
         }
 
-        // check VR length
-        var desiredLength = DicomSpec.lengthOf(vr: element.vr)
-        if desiredLength != 0 && element.length > desiredLength {
-            results.append(ValidationResult(element, message: "Invalid VR length of \(element.vr) element [\(element.name)] (\(element.length) > \(desiredLength))", severity: .Error))
+        // Fixed-width binary VRs contain one or more complete values.
+        let fixedWidth:Int
+        switch element.vr {
+        case .AT, .FL, .SL, .UL: fixedWidth = 4
+        case .SS, .US: fixedWidth = 2
+        case .FD, .SV, .UV: fixedWidth = 8
+        default: fixedWidth = 0
+        }
+        if fixedWidth > 0 && !element.length.isMultiple(of: fixedWidth) {
+            results.append(ValidationResult(element, message: "Invalid VR length of \(element.vr) element [\(element.name)] (\(element.length) is not a multiple of \(fixedWidth))", severity: .Error))
         }
         
         // check max VR length
-        desiredLength = DicomSpec.maxLengthOf(vr: element.vr)
-        if desiredLength != 0 && element.length > desiredLength {
-            results.append(ValidationResult(element, message: "Invalid max VR length of \(element.vr) element [\(element.name)] (\(element.length) > \(desiredLength))", severity: .Warning))
+        let maximumLength = DicomSpec.maxLengthOf(vr: element.vr)
+        if maximumLength != 0, let text = element.value as? String {
+            for component in text.components(separatedBy: "\\") where component.count > maximumLength {
+                results.append(ValidationResult(element, message: "Invalid max VR length of \(element.vr) element [\(element.name)] (\(component.count) > \(maximumLength))", severity: .Warning))
+                break
+            }
         }
         
         // check if tag is retired
@@ -656,9 +699,15 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         }
         
         // check if VR is respected
-        let neededVR = vrForTag(withCode: element.tagCode())
-        if element.name != "Unknow" && element.vr != neededVR {
-            results.append(ValidationResult(element, message: "Value Representation mismatch, \(element.tagCode()) required", severity: .Error))
+        let permittedVRs = vrsForTag(withCode: element.tagCode())
+        if element.name != "Unknow" && !permittedVRs.contains(element.vr) {
+            results.append(ValidationResult(element, message: "Value Representation mismatch, \(element.tagCode()) permits \(permittedVRs)", severity: .Error))
+        }
+
+        if element.length > 0,
+           let vm = vmForTag(withCode: element.tagCode()),
+           !valueMultiplicity(element.valueMultiplicity, isAllowedBy: vm) {
+            results.append(ValidationResult(element, message: "Value Multiplicity mismatch, \(element.tagCode()) requires VM \(vm) but contains \(element.valueMultiplicity)", severity: .Error))
         }
         
         return results
