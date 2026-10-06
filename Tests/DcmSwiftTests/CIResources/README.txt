@@ -1,5 +1,7 @@
-This tracked resource ensures that Bundle.module exists in clean checkouts.
+This tracked directory is reserved for small synthetic fixtures required by the
+unit-test suite. Synthetic RT fixtures are currently assembled deterministically
+by the test fixture builders so that their intent remains reviewable in source.
 
-The larger DICOM, DICOMDIR, SR, and RT interoperability corpora are local and
-optional. Package.swift includes them automatically when their ignored
-directories are present.
+Large DICOM, DICOMDIR, SR, and RT corpora are not SwiftPM resources. They are an
+optional interoperability qualification input selected with the
+DCMSWIFT_INTEROP_CORPUS environment variable.

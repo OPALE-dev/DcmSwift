@@ -7,14 +7,14 @@
 //
 
 import XCTest
-import DcmSwift
+@testable import DcmSwift
 
 /**
  This class provides a suite of unit tests to qualify DcmSwift framework features.
  
- Tests backed by the optional local DICOM corpus iterate over every bundled
- `.dcm` file. Synthetic regression tests remain available in clean checkouts
- and on Linux CI.
+ Mandatory regression tests use synthetic inputs. The two explicitly named
+ external-corpus tests are an optional interoperability qualification run and
+ read their input from `DCMSWIFT_INTEROP_CORPUS`.
  
  */
 class DcmSwiftTests: XCTestCase {
@@ -195,23 +195,51 @@ class DcmSwiftTests: XCTestCase {
     
 
     public func testExternalDICOMCorpusReads() throws {
-        let paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
-        guard !paths.isEmpty else {
-            throw XCTSkip("Optional local DICOM interoperability corpus is not installed")
-        }
+        let paths = try externalDICOMCorpusPaths()
         for path in paths {
             XCTAssertTrue(readFile(withPath: path), path)
         }
     }
 
     public func testExternalDICOMCorpusRoundTrips() throws {
-        let paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
-        guard !paths.isEmpty else {
-            throw XCTSkip("Optional local DICOM interoperability corpus is not installed")
-        }
+        let paths = try externalDICOMCorpusPaths()
         for path in paths {
             XCTAssertTrue(readWriteFile(withPath: path), path)
         }
+    }
+
+    private func externalDICOMCorpusPaths() throws -> [String] {
+        guard let root = ProcessInfo.processInfo.environment["DCMSWIFT_INTEROP_CORPUS"],
+              !root.isEmpty else {
+            throw XCTSkip("Set DCMSWIFT_INTEROP_CORPUS to run optional interoperability qualification")
+        }
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: root, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            XCTFail("DCMSWIFT_INTEROP_CORPUS is not a readable directory: \(root)")
+            return []
+        }
+        let keys: [URLResourceKey] = [.isRegularFileKey]
+        guard let enumerator = FileManager.default.enumerator(
+            at: URL(fileURLWithPath: root, isDirectory: true),
+            includingPropertiesForKeys: keys
+        ) else {
+            XCTFail("Unable to enumerate DICOM interoperability corpus: \(root)")
+            return []
+        }
+        let paths = enumerator.compactMap { entry -> String? in
+            guard let url = entry as? URL,
+                  ["dcm", "dicomdir"].contains(url.pathExtension.lowercased()),
+                  (try? url.resourceValues(forKeys: Set(keys)).isRegularFile) == true else {
+                return nil
+            }
+            return url.path
+        }.sorted()
+        guard !paths.isEmpty else {
+            XCTFail("No .dcm or .dicomdir file found below DCMSWIFT_INTEROP_CORPUS: \(root)")
+            return []
+        }
+        return paths
     }
     
     
@@ -523,10 +551,145 @@ class DcmSwiftTests: XCTestCase {
     }
 
     private func requireDICOMResource(_ name: String) throws -> String {
-        guard let path = Bundle.module.path(forResource: name, ofType: "dcm") else {
-            throw XCTSkip("Optional DICOM interoperability fixture \(name).dcm is not installed")
+        let path = URL(fileURLWithPath: finderTestDir)
+            .appendingPathComponent("\(name).dcm")
+            .path
+        if FileManager.default.fileExists(atPath: path) {
+            return path
         }
+
+        let dataset: DataSet
+        if name.hasPrefix("rt_dose_") {
+            dataset = syntheticRTDoseDataset()
+        } else if name.hasPrefix("rt_RTXPLAN") {
+            dataset = syntheticRTPlanDataset()
+        } else if name.hasPrefix("rt_RTSTRUCT") {
+            dataset = syntheticRTStructureSetDataset()
+        } else {
+            throw SyntheticFixtureError.unknownFixture(name)
+        }
+        let file = try XCTUnwrap(DicomFile(withDataset: dataset, hasPreamble: true))
+        XCTAssertTrue(file.write(atPath: path), "Unable to write synthetic fixture \(name)")
         return path
+    }
+
+    private enum SyntheticFixtureError: Error {
+        case unknownFixture(String)
+    }
+
+    private func syntheticBaseDataset(sopClassUID: String, modality: String) -> DataSet {
+        let dataset = DataSet()
+        dataset.hasPreamble = true
+        dataset.transferSyntax = TransferSyntax(TransferSyntax.explicitVRLittleEndian)
+        let instanceUID = "2.25.9990001"
+        _ = dataset.set(value: Data([0x00, 0x01]), forTagName: "FileMetaInformationVersion")
+        _ = dataset.set(value: sopClassUID, forTagName: "MediaStorageSOPClassUID")
+        _ = dataset.set(value: instanceUID, forTagName: "MediaStorageSOPInstanceUID")
+        _ = dataset.set(value: TransferSyntax.explicitVRLittleEndian, forTagName: "TransferSyntaxUID")
+        _ = dataset.set(value: "2.25.9990000", forTagName: "ImplementationClassUID")
+        _ = dataset.set(value: sopClassUID, forTagName: "SOPClassUID")
+        _ = dataset.set(value: instanceUID, forTagName: "SOPInstanceUID")
+        _ = dataset.set(value: modality, forTagName: "Modality")
+        return dataset
+    }
+
+    private func syntheticRTDoseDataset() -> DataSet {
+        let dataset = syntheticBaseDataset(
+            sopClassUID: "1.2.840.10008.5.1.4.1.1.481.2",
+            modality: "RTDOSE"
+        )
+        _ = dataset.set(value: "2", forTagName: "NumberOfFrames")
+        _ = dataset.set(value: UInt16(10), forTagName: "Rows")
+        _ = dataset.set(value: UInt16(10), forTagName: "Columns")
+        _ = dataset.set(value: UInt16(32), forTagName: "BitsAllocated")
+        _ = dataset.set(value: UInt16(32), forTagName: "BitsStored")
+        _ = dataset.set(value: UInt16(31), forTagName: "HighBit")
+        _ = dataset.set(value: UInt16(0), forTagName: "PixelRepresentation")
+        _ = dataset.set(value: UInt16(1), forTagName: "SamplesPerPixel")
+        _ = dataset.set(value: "MONOCHROME2", forTagName: "PhotometricInterpretation")
+        _ = dataset.set(value: "0.0000000107734", forTagName: "DoseGridScaling")
+
+        var pixels = Data()
+        for index in 0..<200 {
+            let value: UInt32 = index == 143 ? 137_984_544 : 0
+            pixels.append(uint32: value)
+        }
+        _ = dataset.set(value: pixels, forTagName: "PixelData")
+        return dataset
+    }
+
+    private func syntheticRTPlanDataset() -> DataSet {
+        let dataset = syntheticBaseDataset(
+            sopClassUID: "1.2.840.10008.5.1.4.1.1.481.5",
+            modality: "RTPLAN"
+        )
+        addSequence(named: "ToleranceTableSequence", identifier: "ToleranceTableNumber", values: ["1", "2", "3"], to: dataset)
+        addSequence(named: "FractionGroupSequence", identifier: "FractionGroupNumber", values: ["1"], to: dataset)
+        addSequence(named: "BeamSequence", identifier: "BeamNumber", values: ["1", "2", "3"], to: dataset)
+        addSequence(named: "PatientSetupSequence", identifier: "PatientSetupNumber", values: ["1"], to: dataset)
+        return dataset
+    }
+
+    private func syntheticRTStructureSetDataset() -> DataSet {
+        let dataset = syntheticBaseDataset(
+            sopClassUID: "1.2.840.10008.5.1.4.1.1.481.3",
+            modality: "RTSTRUCT"
+        )
+        addSequence(
+            named: "ReferencedFrameOfReferenceSequence",
+            identifier: "FrameOfReferenceUID",
+            values: ["1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.11"],
+            to: dataset
+        )
+        addSequence(
+            named: "RTROIObservationsSequence",
+            identifiers: [
+                ["ObservationNumber": "1", "ReferencedROINumber": "1"],
+                ["ObservationNumber": "2", "ReferencedROINumber": "2"],
+                ["ObservationNumber": "3", "ReferencedROINumber": "3"]
+            ],
+            to: dataset
+        )
+        return dataset
+    }
+
+    private func addSequence(
+        named name: String,
+        identifier: String,
+        values: [String],
+        to dataset: DataSet
+    ) {
+        addSequence(named: name, identifiers: values.map { [identifier: $0] }, to: dataset)
+    }
+
+    private func addSequence(
+        named name: String,
+        identifiers: [[String: String]],
+        to dataset: DataSet
+    ) {
+        guard let tag = DicomSpec.shared.dataTag(forName: name) else {
+            XCTFail("Missing dictionary tag for synthetic sequence \(name)")
+            return
+        }
+        let sequence = DataSequence(withTag: tag)
+        sequence.vr = .SQ
+        sequence.length = -1
+        for identifiersByName in identifiers {
+            let item = DataItem(withTag: DataTag(withGroup: "fffe", element: "e000"), parent: sequence)
+            item.length = -1
+            for (identifierName, value) in identifiersByName.sorted(by: { $0.key < $1.key }) {
+                guard let element = DataElement(withTagName: identifierName, dataset: dataset, parent: item) else {
+                    XCTFail("Missing dictionary tag for synthetic identifier \(identifierName)")
+                    continue
+                }
+                XCTAssertTrue(element.setValue(value))
+                item.elements.append(element)
+            }
+            item.length = -1
+            sequence.items.append(item)
+        }
+        sequence.length = -1
+        dataset.add(element: sequence)
     }
     
     
@@ -580,40 +743,17 @@ class DcmSwiftTests: XCTestCase {
         }
     }
     
-    public func testToPNG() throws {
 #if os(macOS) || os(iOS)
-        // finderTestDir
-        
-        var paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
-        paths = paths.filter { $0.contains("rt_") }
-        guard !paths.isEmpty else {
-            throw XCTSkip("Optional RT interoperability corpus is not installed")
-        }
-        
-        paths.forEach { path in
-            if let dcmFile = DicomFile(forPath: path) {
-                if let dcmImage = DicomImage(dcmFile.dataset) {
-                    dcmImage.toPNG(path: finderTestDir, baseName: dcmFile.fileName())
-                }
-            }
-            
-        }
-        
-        /*
-        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
-        if let p = path {
-            
-            if let dcmFile = DicomFile(forPath: p) {
-                if let dcmImage = DicomImage(dcmFile.dataset) {
-                    dcmImage.toPNG(path: finderTestDir, baseName: dcmFile.fileName())
-                }
-            }
-        }
-        */
-#else
-        throw XCTSkip("PNG export is only available on Apple platforms")
-#endif
+    public func testToPNG() throws {
+        let path = try requireDICOMResource("rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424")
+        let dcmFile = try XCTUnwrap(DicomFile(forPath: path))
+        let dcmImage = try XCTUnwrap(DicomImage(dcmFile.dataset))
+        dcmImage.toPNG(path: finderTestDir, baseName: dcmFile.fileName())
+        let outputs = try FileManager.default.contentsOfDirectory(atPath: finderTestDir)
+            .filter { $0.hasSuffix(".png") }
+        XCTAssertEqual(outputs.count, 2)
     }
+#endif
     
     public func testGetUnscaledDose() throws {
         let p = try requireDICOMResource("rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424")
