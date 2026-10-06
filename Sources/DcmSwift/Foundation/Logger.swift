@@ -241,7 +241,7 @@ public class Logger {
             var isDirectory = ObjCBool(true)
             // if file doesn't exist we create it
             if !FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) {
-                FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
+                _ = FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
             }
 
             do {
@@ -373,22 +373,22 @@ public class Logger {
     /**/
 
     private func getFileSize() -> UInt64 {
-        var fileSize : UInt64 = 0
-
-        do {
-            if let path = filePath?.path {
-                let attr = try FileManager.default.attributesOfItem(atPath: path)
-                fileSize = attr[FileAttributeKey.size] as! UInt64
-
-                //if you convert to NSDictionary, you can get file size old way as well.
-                let dict = attr as NSDictionary
-                fileSize = dict.fileSize()
-            }
-        } catch {
-            print("Error: \(error)")
+        guard let path = filePath?.path else {
+            return 0
         }
 
-        return fileSize
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: path)
+
+            if let size = attributes[.size] as? NSNumber {
+                return size.uint64Value
+            }
+
+            return 0
+        } catch {
+            // The file may simply not exist yet.
+            return 0
+        }
     }
 
     public static func getSizeLimit() -> UInt64 {
