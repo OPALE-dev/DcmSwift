@@ -3,7 +3,7 @@ stages:
 
 swift-package:
   stage: test
-  image: swift:6.0
+  image: swift:6.1
   tags:
     - deploy
   script:
