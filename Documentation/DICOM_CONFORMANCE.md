@@ -63,9 +63,12 @@ descriptor content decoding, remaining record-specific conditional F.5 keys
 or included macro content, or any specific media storage application profile.
 Unconditional top-level Type 1 and Type 2 keys are represented for every
 current F.5 record type. Common Type 1C validation covers PRIVATE record UIDs,
-referenced-SOP identity tuples, and extended character sets in record keys. The
-optional File-set Descriptor File ID and character-set declaration are
-preserved, and the descriptor target can be checked for containment and
+referenced-SOP identity tuples, extended character sets in record keys, present
+non-empty conditional keys, verified SR documents, and Hanging Protocol
+Definition Items. Conditions that require inspecting the referenced SOP
+Instance remain deferred. The optional File-set Descriptor File ID and
+character-set declaration are preserved, and the descriptor target can be
+checked for containment and
 existence.
 
 ## Network support

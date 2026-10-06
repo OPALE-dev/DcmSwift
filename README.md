@@ -219,10 +219,11 @@ relative to the DICOMDIR. A generic public record view exposes every current
 Unconditional top-level Type 1 and Type 2 keys are represented for every
 current F.5 record type. Common Type 1C rules validate PRIVATE record UIDs,
 complete referenced-SOP identity tuples, and Specific Character Set when a
-record key uses an extended repertoire. The remaining record-specific
-conditional keys, included macro content, writing the additional record types,
-and PS3.12 media application profiles remain outside the currently qualified
-scope.
+record key uses an extended repertoire. Present Type 1C keys cannot be empty;
+self-contained conditions are enforced for verified SR documents and Hanging
+Protocol Definition Items. Conditions that require inspecting the referenced
+SOP Instance, included macro content, writing the additional record types, and
+PS3.12 media application profiles remain outside the currently qualified scope.
 
 `validateDirectoryStructure()` checks the Basic Directory container, File-set
 ID, required pointer elements, consistency flag, cycles, root chain, and orphan
