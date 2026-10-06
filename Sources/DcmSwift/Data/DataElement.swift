@@ -142,7 +142,63 @@ public class DataElement : DicomObject {
             }
             ret = true
         } else {
-            if let v = val as? Int16 {
+            if let values = val as? [Int16], self.vr == .SS {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint16: UInt16(bitPattern: $1), bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [Int32], self.vr == .SL {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint32: UInt32(bitPattern: $1), bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [Int64], self.vr == .SV {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint64: UInt64(bitPattern: $1), bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [UInt16], self.vr == .US {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint16: $1, bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [UInt32], self.vr == .UL {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint32: $1, bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [UInt64], self.vr == .UV {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint64: $1, bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [Float32], self.vr == .FL {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint32: $1.bitPattern, bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [Float64], self.vr == .FD {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint64: $1.bitPattern, bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let v = val as? Int16 {
                 self.data = Data()
                 self.data.append(uint16: UInt16(bitPattern: v), bigEndian: self.byteOrder == .BigEndian)
                 self.length = self.data.count
@@ -195,6 +251,36 @@ public class DataElement : DicomObject {
         self.recalculateParentsLength()
 
         return ret
+    }
+
+    public var int16Values:[Int16]? { fixedWidthValues(for: .SS, width: 2) { $0.toInt16(byteOrder: byteOrder) } }
+    public var int32Values:[Int32]? { fixedWidthValues(for: .SL, width: 4) { $0.toInt32(byteOrder: byteOrder) } }
+    public var int64Values:[Int64]? { fixedWidthValues(for: .SV, width: 8) { $0.toInt64(byteOrder: byteOrder) } }
+    public var uint16Values:[UInt16]? { fixedWidthValues(for: .US, width: 2) { $0.toUInt16(byteOrder: byteOrder) } }
+    public var uint32Values:[UInt32]? { fixedWidthValues(for: .UL, width: 4) { $0.toUInt32(byteOrder: byteOrder) } }
+    public var uint64Values:[UInt64]? { fixedWidthValues(for: .UV, width: 8) { $0.toUInt64(byteOrder: byteOrder) } }
+    public var float32Values:[Float32]? { fixedWidthValues(for: .FL, width: 4) { $0.toFloat32(byteOrder: byteOrder) } }
+    public var float64Values:[Float64]? { fixedWidthValues(for: .FD, width: 8) { $0.toFloat64(byteOrder: byteOrder) } }
+
+    public var attributeTagValues:[DataTag]? {
+        guard vr == .AT, let data, data.count.isMultiple(of: 4) else { return nil }
+        return data.chunked(into: 4).map { DataTag(withData: $0, byteOrder: byteOrder) }
+    }
+
+    /// Number of Values encoded by this Data Element. A zero-length Value Field
+    /// has no values; bulk byte VRs and Sequences otherwise have VM 1.
+    public var valueMultiplicity:Int {
+        guard length > 0 else { return 0 }
+        switch vr {
+        case .AT: return data.count / 4
+        case .SS, .US: return data.count / 2
+        case .FL, .SL, .UL: return data.count / 4
+        case .FD, .SV, .UV: return data.count / 8
+        case .AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UI, .UR, .UT:
+            guard let text = value as? String else { return 1 }
+            return text.components(separatedBy: "\\").count
+        default: return 1
+        }
     }
     
 
@@ -524,6 +610,11 @@ public class DataElement : DicomObject {
             }
             p = p?.parent
         }
+    }
+
+    private func fixedWidthValues<T>(for expectedVR:VR.VR, width:Int, decode:(Data) -> T) -> [T]? {
+        guard vr == expectedVR, let data, data.count.isMultiple(of: width) else { return nil }
+        return data.chunked(into: width).map(decode)
     }
 
     private func encodedValueData(byteOrder targetByteOrder: ByteOrder) -> Data {

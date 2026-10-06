@@ -508,4 +508,61 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertEqual(secondName.effectiveCharacterSet, .utf8)
         XCTAssertEqual(secondName.value as? String, "山田")
     }
+
+    func testMultiValuedBinaryVRsRoundTripWithTypedAccessors() throws {
+        let source = DataSet()
+        XCTAssertNotNil(source.set(value: [UInt16.max, 1], forTagName: "SynchronizationChannel"))
+        XCTAssertNotNil(source.set(value: [Int16(-2), 3], forTagName: "CenterOfCircularExposureControlSensingRegion"))
+        XCTAssertNotNil(source.set(value: [UInt32(1), 2, 3], forTagName: "SimpleFrameList"))
+        XCTAssertNotNil(source.set(value: [Int64.min, 7], forTagName: "SelectorSVValue"))
+        XCTAssertNotNil(source.set(value: [UInt64.max, 8], forTagName: "SelectorUVValue"))
+        XCTAssertNotNil(source.set(value: [Float32(1.5), -2.25], forTagName: "LocalizingCursorPosition"))
+        XCTAssertNotNil(source.set(value: [Float64.pi, -0.5], forTagName: "TimeRange"))
+        XCTAssertNotNil(source.set(value: [
+            DataTag(withGroup: "0018", element: "1063"),
+            DataTag(withGroup: "0018", element: "1065")
+        ], forTagName: "FrameIncrementPointer"))
+
+        let decoded = try XCTUnwrap(
+            try DicomInputStream(data: source.toData()).readDataset(enforceVR: false)
+        )
+        XCTAssertEqual(decoded.element(forTagName: "SynchronizationChannel")?.uint16Values, [UInt16.max, 1])
+        XCTAssertEqual(decoded.element(forTagName: "CenterOfCircularExposureControlSensingRegion")?.int16Values, [-2, 3])
+        XCTAssertEqual(decoded.element(forTagName: "SimpleFrameList")?.uint32Values, [1, 2, 3])
+        XCTAssertEqual(decoded.element(forTagName: "SelectorSVValue")?.int64Values, [Int64.min, 7])
+        XCTAssertEqual(decoded.element(forTagName: "SelectorUVValue")?.uint64Values, [UInt64.max, 8])
+        XCTAssertEqual(decoded.element(forTagName: "LocalizingCursorPosition")?.float32Values, [1.5, -2.25])
+        XCTAssertEqual(decoded.element(forTagName: "TimeRange")?.float64Values, [Double.pi, -0.5])
+        let pointers = try XCTUnwrap(
+            decoded.element(forTagName: "FrameIncrementPointer")?.attributeTagValues
+        )
+        XCTAssertEqual(pointers.map(\.code), ["00181063", "00181065"])
+    }
+
+    func testDictionaryVMValidationHandlesRangesAndMultiples() throws {
+        let dataset = DataSet()
+        let valid = try XCTUnwrap(dataset.set(
+            value: [UInt32(1), 2, 3, 4, 5, 6],
+            forTagName: "CalculatedFrameList"
+        ))
+        XCTAssertEqual(valid.valueMultiplicity, 6)
+        XCTAssertFalse(DicomSpec.shared.validate(dataElement: valid).contains { $0.message.contains("Multiplicity") })
+
+        let invalid = try XCTUnwrap(dataset.set(
+            value: [UInt16(1), 2, 3],
+            forTagName: "SynchronizationChannel"
+        ))
+        let results = DicomSpec.shared.validate(dataElement: invalid)
+        XCTAssertTrue(results.contains { $0.message.contains("requires VM 2 but contains 3") })
+    }
+
+    func testContextDependentVRValidationAcceptsSignedPixelPadding() throws {
+        let dataset = DataSet()
+        let element = try XCTUnwrap(dataset.set(value: Int16(-1), forTagName: "PixelPaddingValue"))
+        element.vr = .SS
+
+        XCTAssertFalse(DicomSpec.shared.validate(dataElement: element).contains {
+            $0.message.contains("Value Representation mismatch")
+        })
+    }
 }
