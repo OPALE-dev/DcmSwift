@@ -115,6 +115,18 @@ conformance without that evidence.
   hostname validation, authentication hooks, ATNA audit, digital signatures,
   encrypted attributes, and de-identification profiles.
 
+## Cross-platform implementation
+
+- Linux is a required platform, but CoreGraphics/AppKit/UIKit-backed image
+  creation and PNG export are currently Apple-only. A portable pixel rendering
+  and image export layer remains to be designed and qualified.
+- GitLab CI currently qualifies the official Swift 6.1 Linux image. Additional
+  Linux distributions, architectures, Swift releases, and libc variants are
+  not yet part of the tested platform matrix.
+- The large interoperability corpus is intentionally not versioned. Clean CI
+  executes tracked synthetic tests and reports corpus-dependent coverage as
+  skipped; passing CI alone is therefore not corpus interoperability evidence.
+
 ## Completion rule
 
 The target is broad coverage of the standard, but claims remain capability

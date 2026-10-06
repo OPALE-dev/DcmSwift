@@ -161,6 +161,8 @@ Each minor release must include:
 - capability and conformance-document updates in the same commit as behavior;
 - normative references and automated tests for every new claim;
 - no regression in malformed-input, round-trip, and interoperability suites;
+- successful package build and platform-independent tests on both Apple and
+  Linux toolchains;
 - a migration note for any source or behavior change;
 - a reproducible dependency and generated-registry update.
 

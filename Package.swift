@@ -2,6 +2,22 @@
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
+import Foundation
+
+let localTestResourcePaths = [
+    "Resources/DICOM",
+    "Resources/DICOMDIR",
+    "Resources/SR",
+    "Resources/RT"
+]
+let localTestResources: [Resource] = localTestResourcePaths.compactMap { path in
+    let absolutePath = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .appendingPathComponent("Tests/DcmSwiftTests")
+        .appendingPathComponent(path)
+        .path
+    return FileManager.default.fileExists(atPath: absolutePath) ? .process(path) : nil
+}
 
 let package = Package(
     name: "DcmSwift",
@@ -101,12 +117,7 @@ let package = Package(
         .testTarget(
             name: "DcmSwiftTests",
             dependencies: ["DcmSwift"],
-            resources: [
-                .process("Resources/DICOM"),
-                .process("Resources/DICOMDIR"),
-                .process("Resources/SR"),
-                .process("Resources/RT"),
-            ]
+            resources: [.process("CIResources")] + localTestResources
         )
     ]
 )
