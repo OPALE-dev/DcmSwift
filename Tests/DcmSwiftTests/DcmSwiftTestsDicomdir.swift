@@ -75,6 +75,11 @@ class DcmSwiftTestsDicomdir: XCTestCase {
 
         let directory = makeDirectory()
         directory.fileSetID = "MEDIA_01"
+        directory.fileSetDescriptorFileID = "README"
+        directory.fileSetDescriptorCharacterSet = "ISO_IR 192"
+        try Data("DICOM file-set description".utf8).write(
+            to: temporaryDirectory.appendingPathComponent("README")
+        )
         let referencedURL = temporaryDirectory
             .appendingPathComponent("PAT00001", isDirectory: true)
             .appendingPathComponent("IMG00001")
@@ -119,6 +124,8 @@ class DcmSwiftTestsDicomdir: XCTestCase {
 
         let reloaded = try XCTUnwrap(DicomDir(forPath: outputURL.path))
         XCTAssertEqual(reloaded.fileSetID, "MEDIA_01")
+        XCTAssertEqual(reloaded.fileSetDescriptorFileID, "README")
+        XCTAssertEqual(reloaded.fileSetDescriptorCharacterSet, "ISO_IR 192")
         XCTAssertTrue(reloaded.validateDirectoryStructure().isEmpty)
         XCTAssertTrue(reloaded.validateReferencedFiles().isEmpty)
         XCTAssertEqual(reloaded.patientsKeys, ["P1", "P2"])
@@ -167,6 +174,9 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         XCTAssertFalse(directory.writeDicomDir(atPath: FileManager.default.temporaryDirectory.path))
         directory.images["1.2.3.4"]?["ReferencedFileID"] = "PAT00001\\IMG00001"
         directory.fileSetID = "INVALID-LABEL"
+        XCTAssertFalse(directory.writeDicomDir(atPath: FileManager.default.temporaryDirectory.path))
+        directory.fileSetID = ""
+        directory.fileSetDescriptorCharacterSet = "ISO_IR 192"
         XCTAssertFalse(directory.writeDicomDir(atPath: FileManager.default.temporaryDirectory.path))
     }
 

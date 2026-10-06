@@ -24,6 +24,10 @@ public class DicomDir:DicomFile {
     /// Optional human-readable PS3.10 File-set identifier (zero to sixteen
     /// characters from the File ID repertoire).
     public var fileSetID:String = ""
+    /// Optional PS3.3 File-set Descriptor File ID and its declared character
+    /// set. The descriptor itself is a non-DICOM file.
+    public var fileSetDescriptorFileID:String?
+    public var fileSetDescriptorCharacterSet:String?
     
     public var patients:[String:String] = [:]
     public var patientsKeys:[String] = []
@@ -229,6 +233,8 @@ public class DicomDir:DicomFile {
         }
 
         fileSetID = dataSet.string(forTag: "FileSetID") ?? ""
+        fileSetDescriptorFileID = dataSet.string(forTag: "FileSetDescriptorFileID")
+        fileSetDescriptorCharacterSet = dataSet.string(forTag: "SpecificCharacterSetOfFileSetDescriptorFile")
 
         guard let sequence = dataSet.element(forTagName: "DirectoryRecordSequence") as? DataSequence else {
             return dataSet.string(forTag: "MediaStorageSOPClassUID") == "1.2.840.10008.1.3.10"

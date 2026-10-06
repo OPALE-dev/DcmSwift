@@ -58,7 +58,9 @@ conformance without that evidence.
   Directory Record type and its required/conditional keys from PS3.3.
 - Preserve and expose unknown Directory Record types without losing their
   attributes or breaking hierarchy traversal.
-- Implement File-set Descriptor File handling and validate its character set.
+- Decode File-set Descriptor content according to its declared character set;
+  the ID, declaration, containment, and existence are currently preserved and
+  validated without interpreting the non-DICOM text file.
 - Implement File-set update semantics, including consistency flag handling,
   inactive records, additions, deletions, and safe offset rewriting.
 - Decide and document whether file-set integrity validation must be mandatory

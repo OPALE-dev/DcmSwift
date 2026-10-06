@@ -193,6 +193,11 @@ uniqueness and containment, target existence, and agreement of the referenced
 SOP Class, SOP Instance, and Transfer Syntax UIDs. These checks do not imply
 conformance with a PS3.11 media storage application profile.
 
+The optional non-DICOM File-set Descriptor is represented by
+`fileSetDescriptorFileID` and `fileSetDescriptorCharacterSet`; its File ID,
+containment, and existence are included in validation. DcmSwift does not yet
+decode the descriptor content according to the declared character set.
+
 Get all files indexed by a DICOMDIR file:
 
     if let dicomDir = DicomDir(forPath: dicomDirPath) {

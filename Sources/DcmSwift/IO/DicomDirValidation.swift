@@ -28,6 +28,18 @@ extension DicomDir {
         if !DicomDir.isValidFileSetID(fileSetID) {
             error(fileSetElement, "FileSetID violates the PS3.10 character or 16-character limit")
         }
+        let descriptorElement = dataSet.element(forTagName: "FileSetDescriptorFileID")
+        if let descriptorElement,
+           let rawDescriptorID = descriptorElement.value as? String {
+            let descriptorID = rawDescriptorID.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !DicomDir.isValidFileID(descriptorID) {
+                error(descriptorElement, "FileSetDescriptorFileID violates PS3.10")
+            }
+        }
+        if dataSet.element(forTagName: "SpecificCharacterSetOfFileSetDescriptorFile") != nil,
+           descriptorElement == nil {
+            error(dataSet, "Descriptor character set requires FileSetDescriptorFileID")
+        }
 
         guard let sequence = dataSet.element(forTagName: "DirectoryRecordSequence") as? DataSequence else {
             // The Directory Information Module is optional for primitive
@@ -148,6 +160,26 @@ extension DicomDir {
             results.append(ValidationResult(object, message: message, severity: .Error))
         }
 
+        func resolvedURL(for fileID:String) -> URL {
+            return fileID.split(separator: "\\").reduce(root) {
+                $0.appendingPathComponent(String($1))
+            }.standardizedFileURL.resolvingSymlinksInPath()
+        }
+
+        if let descriptorElement = dataSet.element(forTagName: "FileSetDescriptorFileID"),
+           let rawDescriptorID = descriptorElement.value as? String {
+            let descriptorID = rawDescriptorID.trimmingCharacters(in: .whitespacesAndNewlines)
+            if DicomDir.isValidFileID(descriptorID) {
+                seenFileIDs.insert(descriptorID)
+                let descriptorURL = resolvedURL(for: descriptorID)
+                if !descriptorURL.path.hasPrefix(rootPrefix) {
+                    error(descriptorElement, "File-set Descriptor resolves outside the File-set")
+                } else if !FileManager.default.fileExists(atPath: descriptorURL.path) {
+                    error(descriptorElement, "File-set Descriptor file does not exist")
+                }
+            }
+        }
+
         for item in sequence.items {
             guard let fileElement = item.element(withName: "ReferencedFileID"),
                   let rawFileID = fileElement.value as? String else { continue }
@@ -160,9 +192,7 @@ extension DicomDir {
                 error(fileElement, "ReferencedFileID is not unique within the File-set")
             }
 
-            let target = fileID.split(separator: "\\").reduce(root) {
-                $0.appendingPathComponent(String($1))
-            }.standardizedFileURL.resolvingSymlinksInPath()
+            let target = resolvedURL(for: fileID)
             guard target.path.hasPrefix(rootPrefix) else {
                 error(fileElement, "ReferencedFileID resolves outside the File-set")
                 continue

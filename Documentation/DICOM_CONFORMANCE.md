@@ -56,8 +56,11 @@ It rejects dangling, cyclic, duplicate, or orphan graph references and
 Referenced File IDs outside the PS3.10 one-to-eight component syntax. Explicit
 file-set integrity validation checks unique contained targets and their SOP
 Class, SOP Instance, and Transfer Syntax identities. It does not yet claim
-support for every Directory Record type, File-set update semantics, File-set
-Descriptor files, or any specific media storage application profile.
+support for every Directory Record type, File-set update semantics, descriptor
+content decoding, or any specific media storage application profile. The
+optional File-set Descriptor File ID and character-set declaration are
+preserved, and the descriptor target can be checked for containment and
+existence.
 
 ## Network support
 
