@@ -219,6 +219,25 @@ enum DICOMDirectoryRecordSchemas {
         ],
         .private: [:]
     ]
+
+    /// F.5 record definitions that make Specific Character Set (0008,0005)
+    /// Type 1C when an extended or replacement repertoire is used in a key.
+    static let specificCharacterSetTypes:Set<DICOMDirectoryRecordType> = [
+        .patient, .study, .series, .image, .rtDose, .rtStructureSet,
+        .rtPlan, .rtTreatmentRecord, .presentation, .waveform,
+        .structuredReport, .keyObjectDocument, .spectroscopy, .rawData,
+        .registration, .fiducial, .hangingProtocol, .encapsulatedDocument,
+        .valueMap, .stereometric, .palette, .plan, .measurement, .surface,
+        .surfaceScan, .tract, .assessment, .radiotherapy, .annotation,
+        .inventory, .waveformPresentation
+    ]
+
+    static let referencedSOPKeys = [
+        "ReferencedFileID",
+        "ReferencedSOPClassUIDInFile",
+        "ReferencedSOPInstanceUIDInFile",
+        "ReferencedTransferSyntaxUIDInFile"
+    ]
 }
 
 extension DICOMDirectoryRecordType {
@@ -239,9 +258,8 @@ extension DicomDir {
         return sequence.items.map(DICOMDirectoryRecord.init(item:))
     }
 
-    /// Validates unconditional Type 1 and Type 2 keys covered by the current
-    /// PS3.3 Annex F schema registry. This is independent of media-profile and
-    /// conditional-key validation.
+    /// Validates the represented Type 1, Type 2 and common Type 1C keys from
+    /// PS3.3 Annex F. This is independent of media-profile validation.
     public func validateDirectoryRecordKeys() -> [ValidationResult] {
         var results:[ValidationResult] = []
 
@@ -267,8 +285,88 @@ extension DicomDir {
                     ))
                 }
             }
+
+            if type == .private {
+                appendMissingOrEmptyConditionalKey(
+                    "PrivateRecordUID",
+                    reason: "Directory Record Type PRIVATE requires Type 1C key PrivateRecordUID",
+                    record: record,
+                    results: &results
+                )
+            }
+
+            let hasReferencedSOPKey = DICOMDirectoryRecordSchemas.referencedSOPKeys
+                .dropFirst()
+                .contains { record.item.element(withName: $0) != nil }
+            if hasReferencedSOPKey {
+                for name in DICOMDirectoryRecordSchemas.referencedSOPKeys {
+                    appendMissingOrEmptyConditionalKey(
+                        name,
+                        reason: "Directory Record references a SOP Instance and requires Type 1C key \(name)",
+                        record: record,
+                        results: &results
+                    )
+                }
+            }
+
+            if DICOMDirectoryRecordSchemas.specificCharacterSetTypes.contains(type),
+               recordUsesExtendedCharacterSet(record) {
+                appendMissingOrEmptyConditionalKey(
+                    "SpecificCharacterSet",
+                    reason: "Directory Record Type \(type.rawValue) uses an extended character set in a key and requires Type 1C key SpecificCharacterSet",
+                    record: record,
+                    results: &results
+                )
+            }
         }
         return results
+    }
+
+    private func appendMissingOrEmptyConditionalKey(
+        _ name:String,
+        reason:String,
+        record:DICOMDirectoryRecord,
+        results:inout [ValidationResult]
+    ) {
+        guard let element = record.item.element(withName: name) else {
+            results.append(ValidationResult(record.item, message: reason, severity: .Error))
+            return
+        }
+        if isEmptyDirectoryValue(element) {
+            results.append(ValidationResult(
+                element,
+                message: "\(reason) and it shall not be empty",
+                severity: .Error
+            ))
+        }
+    }
+
+    private func recordUsesExtendedCharacterSet(_ record:DICOMDirectoryRecord) -> Bool {
+        return directoryElementsUseExtendedCharacterSet(record.elements)
+    }
+
+    private func directoryElementsUseExtendedCharacterSet(_ elements:[DataElement]) -> Bool {
+        return elements.contains { element in
+            if directoryKeyUsesSpecificCharacterSet(element), let data = element.data,
+               data.contains(where: { $0 > 0x7f || $0 == 0x1b }) {
+                return true
+            }
+            if let sequence = element as? DataSequence {
+                return sequence.items.contains {
+                    directoryElementsUseExtendedCharacterSet($0.elements)
+                }
+            }
+            return false
+        }
+    }
+
+    private func directoryKeyUsesSpecificCharacterSet(_ element:DataElement) -> Bool {
+        switch element.vr {
+        case .LO, .LT, .PN, .SH, .ST, .UC, .UT:
+            return true
+        default:
+            return false
+        }
     }
 
     private func isEmptyDirectoryValue(_ element:DataElement) -> Bool {

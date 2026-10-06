@@ -217,9 +217,12 @@ The reader rejects dangling record pointers and resolves referenced files
 relative to the DICOMDIR. A generic public record view exposes every current
 2026d F.4-1 type without discarding unknown or private attributes.
 Unconditional top-level Type 1 and Type 2 keys are represented for every
-current F.5 record type. Conditional keys, included macro content, writing the
-additional record types, and PS3.12 media application profiles remain outside
-the currently qualified scope.
+current F.5 record type. Common Type 1C rules validate PRIVATE record UIDs,
+complete referenced-SOP identity tuples, and Specific Character Set when a
+record key uses an extended repertoire. The remaining record-specific
+conditional keys, included macro content, writing the additional record types,
+and PS3.12 media application profiles remain outside the currently qualified
+scope.
 
 `validateDirectoryStructure()` checks the Basic Directory container, File-set
 ID, required pointer elements, consistency flag, cycles, root chain, and orphan
