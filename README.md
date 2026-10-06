@@ -4,6 +4,10 @@ DcmSwift is a work-in-progress DICOM implementation written in Swift. The
 DcmSwift 2.0 effort currently prioritizes a safe, measurable implementation of
 the DICOM file format before expanding the networking stack.
 
+The remaining file roadmap prioritizes binary VR/VM completeness, lazy Bulk
+Data, Deflated Explicit VR Little Endian, and DICOMDIR before the PS3.18 JSON
+and XML representations.
+
 The normative baseline is **DICOM 2026d**. Registry knowledge is kept separate
 from actual structural, semantic, codec, and network support: the presence of a
 UID in the bundled dictionary does not mean that the corresponding feature is
@@ -75,8 +79,9 @@ endianness, pixel access, Structured Reports, and radiotherapy objects.
 | TLS, audit and DICOM security profiles | Not implemented |
 
 See the [DcmSwift 2.0 implementation plan](Documentation/DICOM_2_0_IMPLEMENTATION_PLAN.md)
-and the [working Conformance Statement](Documentation/DICOM_CONFORMANCE.md) for
-the detailed scope and release gates.
+the [working Conformance Statement](Documentation/DICOM_CONFORMANCE.md), and
+the [DICOM traceability matrix](Documentation/DICOM_TRACEABILITY.md) for the
+detailed scope, automated evidence, and release gates.
 
 ## Use DcmSwift in your project
 

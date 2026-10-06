@@ -31,6 +31,9 @@ Deliverables:
 - define a corpus policy: synthetic edge cases, public DICOM samples, and
   round trips with independent toolkits.
 
+The current implementation evidence and remaining gaps are tracked in
+`Documentation/DICOM_TRACEABILITY.md`.
+
 Acceptance criteria:
 
 - an unknown or unimplemented transfer syntax is never silently treated as
@@ -39,6 +42,19 @@ Acceptance criteria:
 - the generated registry is reproducible from the pinned standard edition.
 
 ## Phase 1 — File and Data Set core (priority)
+
+Implementation order for the remaining Phase 1 work:
+
+1. keep the capability matrix, Conformance Statement, and tests synchronized;
+2. complete binary and multi-valued VR handling plus VR/VM validation;
+3. introduce lazy Bulk Data access;
+4. implement Deflated Explicit VR Little Endian;
+5. rebuild and qualify DICOMDIR and media-file handling;
+6. implement the PS3.18 DICOM JSON model;
+7. implement the PS3.18 Native DICOM Model XML representation.
+
+JSON and XML work deliberately follows the binary core so that alternate
+representations are built on a stable, lossless Data Set model.
 
 ### 1.1 Binary safety and VR completeness
 
@@ -82,6 +98,9 @@ Acceptance criteria:
   models, including Value, InlineBinary, BulkDataURI, PN objects, and nulls;
 - rebuild DICOMDIR around PS3.10/PS3.12 record offset rules;
 - validate File-set IDs, referenced file IDs, and supported media profiles.
+
+The media-file work in this section precedes JSON and XML in the current
+implementation order.
 
 ### 1.6 Validation and interoperability
 
