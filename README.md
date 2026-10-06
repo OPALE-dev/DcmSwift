@@ -59,6 +59,8 @@ Fixed-width numeric VRs support typed multi-valued encoding and decoding for
 signed and unsigned 16/32/64-bit integers and 32/64-bit floating-point values.
 Dictionary VM expressions, including bounded ranges and `2-2n`/`3-3n`
 multiples, are validated independently from IOD requirements.
+Explicit VR parsing rejects unknown VR codes and non-zero reserved bytes in
+long-form headers; validation also reports odd-length Value Fields.
 
 The library also provides helpers for DICOM dates, times, UIDs, tags, VRs,
 endianness, pixel access, Structured Reports, and radiotherapy objects.

@@ -565,4 +565,24 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
             $0.message.contains("Value Representation mismatch")
         })
     }
+
+    func testExplicitVRRejectsUnknownCodeAndNonZeroReservedBytes() {
+        let unknownVR = Data([0x10, 0x00, 0x10, 0x00, 0x5a, 0x5a, 0x00, 0x00])
+        XCTAssertThrowsError(try DicomInputStream(data: unknownVR).readDataset(enforceVR: false))
+
+        let invalidReservedBytes = Data([
+            0xe0, 0x7f, 0x10, 0x00, 0x4f, 0x42, 0x01, 0x00,
+            0x00, 0x00, 0x00, 0x00
+        ])
+        XCTAssertThrowsError(try DicomInputStream(data: invalidReservedBytes).readDataset(enforceVR: false))
+    }
+
+    func testValidationRejectsOddValueFieldLength() throws {
+        let dataset = DataSet()
+        let element = try XCTUnwrap(dataset.set(value: Data([1, 2, 3]), forTagName: "SelectorOBValue"))
+
+        XCTAssertTrue(DicomSpec.shared.validate(dataElement: element).contains {
+            $0.message == "Value Field length must be even (3)"
+        })
+    }
 }
