@@ -40,6 +40,10 @@ public class DicomDir:DicomFile {
     
     public var images:[String:[String:Any]] = [:]
     public var imagesKeys:[String] = []
+
+    /// Optional generic record tree used by the DcmSwift 2.0 writer. When it
+    /// is empty, the legacy PATIENT/STUDY/SERIES/IMAGE dictionaries are used.
+    public var directoryRecordRoots:[DICOMDirectoryRecordDefinition] = []
     
     public var offsetsNextPatients:[Int]    = []
     public var offsetsNextSeries:[Int]      = []

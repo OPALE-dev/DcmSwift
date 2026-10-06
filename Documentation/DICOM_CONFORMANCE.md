@@ -38,7 +38,7 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Fixed-width numeric VR values | Scalar and multi-valued signed/unsigned integer and floating-point read/write with dictionary VM validation |
 | Lazy Bulk Data | Opt-in file-backed references and bounded reads for defined-length binary VRs and encapsulated Pixel Data Items |
 | DICOM JSON / Native DICOM Model XML | Existing convenience output is not PS3.18 conformant |
-| Basic DICOMDIR | PATIENT/STUDY/SERIES/IMAGE read/write; lossless generic view of all current F.4-1 types; serialized Item offsets, complete reachability, all unconditional top-level F.5 keys, common Type 1C keys, File-set/File IDs, consistency flag, and referenced Part 10 identities can be validated |
+| Basic DICOMDIR | Legacy PATIENT/STUDY/SERIES/IMAGE and generic typed record-tree read/write; lossless view of all current F.4-1 types; serialized Item offsets, complete reachability, all unconditional top-level F.5 keys, common Type 1C keys, File-set/File IDs, consistency flag, and referenced Part 10 identities can be validated |
 | PS3.12 media profiles | Not qualified; no media-profile conformance claim |
 
 Known UIDs are not automatically supported. `TransferSyntaxCapability` is the
@@ -58,7 +58,7 @@ PS3.10 one-to-eight component syntax. PRIVATE records require their defining
 UID and retired record types remain observable. Explicit
 file-set integrity validation checks unique contained targets and their SOP
 Class, SOP Instance, and Transfer Syntax identities. It does not yet claim
-support for writing every Directory Record type, File-set update semantics,
+complete write qualification for every Directory Record type, File-set update semantics,
 descriptor content decoding, remaining record-specific conditional F.5 keys
 or included macro content, or any specific media storage application profile.
 Unconditional top-level Type 1 and Type 2 keys are represented for every

@@ -120,7 +120,7 @@ endianness, pixel access, Structured Reports, and radiotherapy objects.
 | Character sets | Default repertoire, ISO_IR 100, and ISO_IR 192, with nested Data Set inheritance/override |
 | ISO 2022 code extensions | Not implemented; rejected rather than decoded as UTF-8 |
 | DICOM JSON and Native DICOM Model XML | Existing convenience output is not yet PS3.18 conformant |
-| DICOMDIR | Basic hierarchy read/write; all current F.4-1 types have a lossless generic view; computed offsets, graph, selected F.5 keys, File-set IDs, and referenced Part 10 identities are validated |
+| DICOMDIR | Legacy Basic hierarchy plus generic record-tree read/write; all current F.4-1 types have a lossless view; computed offsets, graph, selected F.5 keys, File-set IDs, and referenced Part 10 identities are validated |
 | PS3.12 media profiles | Not yet qualified; Basic DICOMDIR support is not a media-profile conformance claim |
 | DICOM Upper Layer/DIMSE | Experimental; C-ECHO is the most complete path |
 | C-STORE and C-FIND | Partial building blocks |
@@ -210,9 +210,12 @@ Add an element, here a sequence, to a dataset:
     
 ## DICOMDIR
 
-`DicomDir` reads and writes the Basic Directory PATIENT → STUDY → SERIES →
-IMAGE hierarchy. The writer calculates record offsets from the final Explicit
-VR Little Endian byte layout and rejects invalid PS3.10 Referenced File IDs.
+`DicomDir` preserves its legacy Basic Directory PATIENT → STUDY → SERIES →
+IMAGE construction API. The `directoryRecordRoots` API additionally writes
+arbitrary current PS3.3 record trees from typed `DICOMDirectoryValue` values,
+including nested Sequences. The writer calculates record offsets from the final
+Explicit VR Little Endian byte layout, validates the hierarchy and required
+keys before writing, and rejects invalid PS3.10 Referenced File IDs.
 The reader rejects dangling record pointers and resolves referenced files
 relative to the DICOMDIR. A generic public record view exposes every current
 2026d F.4-1 type without discarding unknown or private attributes.
@@ -223,9 +226,22 @@ record key uses an extended repertoire. Present Type 1C keys cannot be empty;
 self-contained conditions are enforced for verified SR documents and Hanging
 Protocol Definition Items. File-set integrity validation also checks selected
 Type 1C keys whose condition is determined by the referenced SOP Instance.
-Deeper IOD/module conditions, included macro content, writing the additional
-record types, and PS3.12 media application profiles remain outside the
+Deeper IOD/module conditions, complete per-type writer qualification, included
+macro validation, and PS3.12 media application profiles remain outside the
 currently qualified scope.
+
+For example, an RT Dose record definition can be added to a Series record's
+`children` array with:
+
+```swift
+let dose = DICOMDirectoryRecordDefinition(
+    type: .rtDose,
+    elements: [
+        "InstanceNumber": .string("1"),
+        "DoseSummationType": .string("PLAN")
+    ]
+)
+```
 
 `validateDirectoryStructure()` checks the Basic Directory container, File-set
 ID, required pointer elements, consistency flag, cycles, root chain, and orphan

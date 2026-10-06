@@ -53,9 +53,11 @@ conformance without that evidence.
 
 ## DICOMDIR, file-sets, and media profiles
 
-- The qualified writer currently emits only the Basic Directory hierarchy
-  PATIENT → STUDY → SERIES → IMAGE. Implement and test every applicable
-  Directory Record type and its required/conditional keys from PS3.3. Current
+- The legacy convenience writer emits the Basic Directory hierarchy PATIENT →
+  STUDY → SERIES → IMAGE. A typed generic record-tree writer can emit additional
+  current types and nested Sequences through the same offset and validation
+  path; RT DOSE and SR DOCUMENT have round-trip coverage. Qualify every
+  applicable Directory Record type and its required/conditional keys. Current
   type names and F.4-1 parent/child relationships are validated, and all current
   F.5 tables have their unconditional top-level Type 1 and Type 2 keys
   represented. Common Type 1C rules cover PRIVATE record UIDs, referenced-SOP
@@ -63,8 +65,8 @@ conformance without that evidence.
   documents, and Hanging Protocol Definition Items. Conditional requirements
   directly mirrored by a referenced SOP Instance are checked during file-set
   integrity validation. Deeper IOD/module-dependent conditions, complete
-  included macro validation, and writers for the additional record types remain
-  unimplemented.
+  included macro validation and complete per-type writer qualification remain
+  unfinished.
 - Preserve and expose unknown Directory Record types without losing their
   attributes or breaking hierarchy traversal.
 - Decode File-set Descriptor content according to its declared character set;
