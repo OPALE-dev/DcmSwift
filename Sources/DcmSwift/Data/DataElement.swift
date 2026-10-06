@@ -28,7 +28,54 @@ public class DataElement : DicomObject {
     public var parent:DataElement?
     public var dataset:DataSet?
     public var tag:DataTag
-    public var data:Data!
+    private var storedData:Data?
+    public internal(set) var bulkDataReference:DICOMBulkDataReference?
+
+    /// Accessing `data` preserves the historical API and materializes lazy
+    /// file-backed Bulk Data on first access. Use `loadData()` when errors must
+    /// be observed explicitly.
+    public var data:Data! {
+        get {
+            if storedData == nil, bulkDataReference != nil {
+                storedData = try? bulkDataReference?.load()
+            }
+            return storedData
+        }
+        set {
+            storedData = newValue
+            bulkDataReference = nil
+        }
+    }
+
+    public var isDataLoaded:Bool { storedData != nil }
+
+    public func loadData() throws -> Data {
+        if let storedData { return storedData }
+        guard let reference = bulkDataReference else { return Data() }
+        let loaded = try reference.load()
+        storedData = loaded
+        return loaded
+    }
+
+    /// Reads a Value Field subrange without forcing a deferred value to become
+    /// resident in memory.
+    public func loadData(range:Range<Int>) throws -> Data {
+        if let storedData {
+            guard range.lowerBound >= 0, range.upperBound <= storedData.count else {
+                throw StreamError.cannotReadStream(message: "Invalid Data Element value range")
+            }
+            return storedData.subdata(in: range)
+        }
+        guard let reference = bulkDataReference else {
+            throw StreamError.cannotReadStream(message: "Data Element has no Value Field")
+        }
+        return try reference.load(range: range)
+    }
+
+    internal func deferData(to reference:DICOMBulkDataReference) {
+        storedData = nil
+        bulkDataReference = reference
+    }
     
     public var vr:VR.VR               = VR.VR.UN
     public var vrMethod:VRMethod      = .Explicit

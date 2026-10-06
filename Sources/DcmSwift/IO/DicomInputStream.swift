@@ -15,6 +15,7 @@ public class DicomInputStream: OffsetInputStream {
     public var vrMethod:VRMethod        = .Explicit
     public var byteOrder:ByteOrder      = .LittleEndian
     public var limits                   = DicomReadLimits()
+    public var bulkDataLoadingPolicy    = DICOMBulkDataLoadingPolicy.eager
 
     private var decodedElementCount     = 0
     private var decodedItemCount        = 0
@@ -436,7 +437,7 @@ public class DicomInputStream: OffsetInputStream {
             } else if element.length == 0 {
                 element.data = Data()
             } else {
-                element.data = readValue(length: element.length)
+                guard readValue(for: element) else { return nil }
             }
         }
         else if element.vr == .SQ {
@@ -464,7 +465,7 @@ public class DicomInputStream: OffsetInputStream {
             element.data = Data()
         }
         else {
-            element.data = readValue(length: element.length)
+            guard readValue(for: element) else { return nil }
         }
         
         element.endOffset = offset
@@ -479,6 +480,32 @@ public class DicomInputStream: OffsetInputStream {
         //print("element \(element)")
                         
         return element
+    }
+
+    private func readValue(for element:DataElement) -> Bool {
+        if case .lazy(let minimumLength) = bulkDataLoadingPolicy,
+           minimumLength >= 0,
+           element.length >= minimumLength,
+           isBulkDataVR(element.vr),
+           let sourceURL {
+            element.deferData(to: DICOMBulkDataReference(
+                url: sourceURL,
+                offset: offset,
+                length: element.length
+            ))
+            return skip(length: element.length)
+        }
+
+        guard let value = readValue(length: element.length) else { return false }
+        element.data = value
+        return true
+    }
+
+    private func isBulkDataVR(_ vr:VR.VR) -> Bool {
+        switch vr {
+        case .OB, .OD, .OF, .OL, .OV, .OW, .UN: return true
+        default: return false
+        }
     }
 
     private func privateCreator(

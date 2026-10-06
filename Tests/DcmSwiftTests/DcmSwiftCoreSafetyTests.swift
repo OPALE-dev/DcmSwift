@@ -585,4 +585,51 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
             $0.message == "Value Field length must be even (3)"
         })
     }
+
+    func testFileBackedBulkDataRemainsLazyUntilRequested() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dcmswift-bulk-\(UUID().uuidString).dcm")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let largeValue = Data(repeating: 0xa5, count: 256 * 1024)
+        let source = DataSet()
+        XCTAssertNotNil(source.set(value: largeValue, forTagName: "SelectorOBValue"))
+        XCTAssertNotNil(source.set(value: Data([0x01, 0x02]), forTagName: "SelectorUNValue"))
+        try source.toData().write(to: url)
+
+        let stream = DicomInputStream(url: url)
+        stream.bulkDataLoadingPolicy = .lazy(minimumLength: 1024)
+        let decoded = try XCTUnwrap(try stream.readDataset(enforceVR: false))
+        let large = try XCTUnwrap(decoded.element(forTagName: "SelectorOBValue"))
+        let small = try XCTUnwrap(decoded.element(forTagName: "SelectorUNValue"))
+
+        XCTAssertFalse(large.isDataLoaded)
+        XCTAssertEqual(large.bulkDataReference?.length, largeValue.count)
+        XCTAssertEqual(large.bulkDataReference?.offset, large.dataOffset)
+        XCTAssertTrue(small.isDataLoaded)
+        XCTAssertEqual(try large.loadData(range: 1024..<1032), Data(repeating: 0xa5, count: 8))
+        XCTAssertFalse(large.isDataLoaded)
+        XCTAssertEqual(try large.loadData(), largeValue)
+        XCTAssertTrue(large.isDataLoaded)
+    }
+
+    func testLazyBulkDataReportsMissingSourceBeforeWrite() throws {
+        let sourceURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dcmswift-bulk-source-\(UUID().uuidString).bin")
+        let outputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dcmswift-bulk-output-\(UUID().uuidString).dcm")
+        defer {
+            try? FileManager.default.removeItem(at: sourceURL)
+            try? FileManager.default.removeItem(at: outputURL)
+        }
+        try Data([1, 2, 3, 4]).write(to: sourceURL)
+
+        let dataset = DataSet()
+        let element = try XCTUnwrap(dataset.set(value: Data(), forTagName: "SelectorOBValue"))
+        element.length = 4
+        element.deferData(to: DICOMBulkDataReference(url: sourceURL, offset: 0, length: 4))
+        try FileManager.default.removeItem(at: sourceURL)
+
+        XCTAssertThrowsError(try DicomOutputStream(url: outputURL).write(dataset: dataset))
+    }
 }
