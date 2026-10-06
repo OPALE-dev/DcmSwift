@@ -329,6 +329,126 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         messages = directory.validateReferencedFiles().map(\.message)
         XCTAssertFalse(messages.contains { $0.contains("HAS CONCEPT MOD") })
     }
+
+    func testGenericDirectoryRecordTreeWritesAdditionalRecordTypes() throws {
+        let temporaryDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+        let conceptName:DICOMDirectoryValue = .sequence([[
+            "CodeValue": .string("113012"),
+            "CodingSchemeDesignator": .string("DCM"),
+            "CodeMeaning": .string("Key Object Description")
+        ]])
+        let rtDose = DICOMDirectoryRecordDefinition(
+            type: .rtDose,
+            elements: [
+                "InstanceNumber": .string("1"),
+                "DoseSummationType": .string("PLAN")
+            ]
+        )
+        let structuredReport = DICOMDirectoryRecordDefinition(
+            type: .structuredReport,
+            elements: [
+                "InstanceNumber": .string("2"),
+                "CompletionFlag": .string("COMPLETE"),
+                "VerificationFlag": .string("UNVERIFIED"),
+                "ContentDate": .string("20261006"),
+                "ContentTime": .string("120000"),
+                "ConceptNameCodeSequence": conceptName
+            ]
+        )
+        let series = DICOMDirectoryRecordDefinition(
+            type: .series,
+            elements: [
+                "Modality": .string("RTDOSE"),
+                "SeriesInstanceUID": .string("1.2.3.1"),
+                "SeriesNumber": .string("1")
+            ],
+            children: [rtDose, structuredReport]
+        )
+        let study = DICOMDirectoryRecordDefinition(
+            type: .study,
+            elements: [
+                "StudyDate": .string("20261006"),
+                "StudyTime": .string("120000"),
+                "StudyDescription": .string("Generic tree"),
+                "StudyInstanceUID": .string("1.2.3"),
+                "StudyID": .string("STUDY1"),
+                "AccessionNumber": .string("")
+            ],
+            children: [series]
+        )
+        let patient = DICOMDirectoryRecordDefinition(
+            type: .patient,
+            elements: [
+                "PatientName": .string("DOE^JANE"),
+                "PatientID": .string("P1")
+            ],
+            children: [study]
+        )
+
+        let directory = DicomDir()
+        directory.fileSetID = "GENERIC"
+        directory.directoryRecordRoots = [patient]
+        XCTAssertTrue(directory.writeDicomDir(atPath: temporaryDirectory.path))
+
+        let reloaded = try XCTUnwrap(DicomDir(
+            forPath: temporaryDirectory.appendingPathComponent("DICOMDIR").path
+        ))
+        XCTAssertTrue(reloaded.validateDirectoryStructure().isEmpty)
+        XCTAssertTrue(reloaded.validateDirectoryRecordKeys().isEmpty)
+        XCTAssertEqual(
+            reloaded.directoryRecords.compactMap(\.type),
+            [.patient, .study, .series, .rtDose, .structuredReport]
+        )
+        let sr = try XCTUnwrap(reloaded.directoryRecords.first { $0.type == .structuredReport })
+        let sequence = try XCTUnwrap(
+            sr.item.element(withName: "ConceptNameCodeSequence") as? DataSequence
+        )
+        XCTAssertEqual(sequence.items.count, 1)
+        XCTAssertEqual(
+            (sequence.items[0].element(withName: "CodeMeaning")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+            "Key Object Description"
+        )
+    }
+
+    func testGenericDirectoryRecordTreeRejectsInvalidDefinitions() {
+        let missingPatientID = DicomDir()
+        missingPatientID.directoryRecordRoots = [DICOMDirectoryRecordDefinition(
+            type: .patient,
+            elements: ["PatientName": .string("DOE^JANE")]
+        )]
+        XCTAssertFalse(missingPatientID.writeDicomDir(
+            atPath: FileManager.default.temporaryDirectory.path
+        ))
+
+        let invalidRootType = DicomDir()
+        invalidRootType.directoryRecordRoots = [DICOMDirectoryRecordDefinition(
+            type: .rtDose,
+            elements: [
+                "InstanceNumber": .string("1"),
+                "DoseSummationType": .string("PLAN")
+            ]
+        )]
+        XCTAssertFalse(invalidRootType.writeDicomDir(
+            atPath: FileManager.default.temporaryDirectory.path
+        ))
+
+        let invalidFileID = DicomDir()
+        invalidFileID.directoryRecordRoots = [DICOMDirectoryRecordDefinition(
+            type: .private,
+            elements: [
+                "PrivateRecordUID": .string("1.2.826.0.1.3680043.10.999"),
+                "ReferencedFileID": .string("bad-name")
+            ]
+        )]
+        XCTAssertFalse(invalidFileID.writeDicomDir(
+            atPath: FileManager.default.temporaryDirectory.path
+        ))
+    }
     
     func testWriteDicomDir() throws {
         let temporaryDirectory = FileManager.default.temporaryDirectory

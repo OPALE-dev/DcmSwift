@@ -35,7 +35,11 @@ extension DicomDir {
     /// Preserves the original public construction API. Offsets are assigned
     /// only when the surrounding Part 10 file layout is known during writing.
     public func createDirectoryRecordSequence() -> DataSequence? {
-        return buildDirectoryRecords(dataSet: dataset ?? DataSet()).0
+        let dataSet = dataset ?? DataSet()
+        if directoryRecordRoots.isEmpty {
+            return buildDirectoryRecords(dataSet: dataSet).0
+        }
+        return buildDirectoryRecords(from: directoryRecordRoots, dataSet: dataSet)?.0
     }
 
     /// Builds and writes a PS3.10 Basic Directory object. Directory Record
@@ -45,7 +49,8 @@ extension DicomDir {
         guard DicomDir.isValidFileSetID(fileSetID),
               fileSetDescriptorFileID.map(DicomDir.isValidFileID) ?? true,
               fileSetDescriptorCharacterSet == nil || fileSetDescriptorFileID != nil,
-              imagesKeys.allSatisfy({ sopInstanceUID in
+              directoryRecordRoots.isEmpty || validReferencedFileIDs(in: directoryRecordRoots),
+              (!directoryRecordRoots.isEmpty || imagesKeys.allSatisfy({ sopInstanceUID in
             guard let image = images[sopInstanceUID],
                   let fileID = image["ReferencedFileID"] as? String,
                   DicomDir.isValidFileID(fileID),
@@ -54,7 +59,7 @@ extension DicomDir {
                 return false
             }
             return true
-        }) else { return false }
+        })) else { return false }
 
         let dataSet = DataSet()
         dataSet.hasPreamble = true
@@ -77,7 +82,17 @@ extension DicomDir {
         let lastRoot = dataSet.set(value: UInt32(0), forTagName: "OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity")
         _ = dataSet.set(value: UInt16(0), forTagName: "FileSetConsistencyFlag")
 
-        let (sequence, roots, orderedNodes) = buildDirectoryRecords(dataSet: dataSet)
+        let records:DICOMDirectoryRecordBuildResult
+        if directoryRecordRoots.isEmpty {
+            records = buildDirectoryRecords(dataSet: dataSet)
+        } else {
+            guard let genericRecords = buildDirectoryRecords(
+                from: directoryRecordRoots,
+                dataSet: dataSet
+            ) else { return false }
+            records = genericRecords
+        }
+        let (sequence, roots, orderedNodes) = records
         dataSet.add(element: sequence)
         dataSet.sortElements()
         _ = dataSet.recalculateFileMetaInformationGroupLength()
@@ -93,6 +108,10 @@ extension DicomDir {
 
         dataset = dataSet
         hasPreamble = true
+        guard validateDirectoryStructure().allSatisfy({ $0.severity != .Error }),
+              validateDirectoryRecordKeys().allSatisfy({ $0.severity != .Error }) else {
+            return false
+        }
         let output = URL(fileURLWithPath: folderPath, isDirectory: true)
             .appendingPathComponent("DICOMDIR")
         return write(atPath: output.path)
@@ -100,7 +119,7 @@ extension DicomDir {
 
     private func buildDirectoryRecords(
         dataSet:DataSet
-    ) -> (DataSequence, [DICOMDirectoryRecordNode], [DICOMDirectoryRecordNode]) {
+    ) -> DICOMDirectoryRecordBuildResult {
         let sequence = DataSequence(
             withTag: DataTag(withGroup: "0004", element: "1220"),
             parent: nil
@@ -162,6 +181,73 @@ extension DicomDir {
         return (sequence, roots, ordered)
     }
 
+    private typealias DICOMDirectoryRecordBuildResult = (
+        DataSequence,
+        [DICOMDirectoryRecordNode],
+        [DICOMDirectoryRecordNode]
+    )
+
+    private func buildDirectoryRecords(
+        from definitions:[DICOMDirectoryRecordDefinition],
+        dataSet:DataSet
+    ) -> DICOMDirectoryRecordBuildResult? {
+        let sequence = DataSequence(
+            withTag: DataTag(withGroup: "0004", element: "1220"),
+            parent: nil
+        )
+        sequence.dataset = dataSet
+        sequence.vr = .SQ
+        sequence.vrMethod = .Explicit
+        var ordered:[DICOMDirectoryRecordNode] = []
+
+        func build(
+            _ definition:DICOMDirectoryRecordDefinition,
+            depth:Int = 0
+        ) -> DICOMDirectoryRecordNode? {
+            guard depth <= 256,
+                  DICOMDirectoryRecordType.standard2026d.contains(definition.type),
+                  definition.elements.keys.allSatisfy({ !Self.generatedDirectoryElementNames.contains($0) }) else {
+                return nil
+            }
+            let node = makeRecord(
+                type: definition.type.rawValue,
+                sequence: sequence,
+                dataSet: dataSet
+            )
+            if case .string(let identifier)? = definition.elements["SpecificCharacterSet"] {
+                node.item.characterSet = DICOMCharacterSet(specificCharacterSet: identifier)
+            }
+            for name in definition.elements.keys.sorted() {
+                guard let value = definition.elements[name],
+                      append(value: value, name: name, to: node.item, dataSet: dataSet) else {
+                    return nil
+                }
+            }
+            ordered.append(node)
+            for childDefinition in definition.children {
+                guard let child = build(childDefinition, depth: depth + 1) else { return nil }
+                node.children.append(child)
+            }
+            return node
+        }
+
+        var roots:[DICOMDirectoryRecordNode] = []
+        for definition in definitions {
+            guard let root = build(definition) else { return nil }
+            roots.append(root)
+        }
+        sequence.items = ordered.map(\.item)
+        prepareLengths(sequence)
+        return (sequence, roots, ordered)
+    }
+
+    private static let generatedDirectoryElementNames:Set<String> = [
+        "OffsetOfTheNextDirectoryRecord",
+        "RecordInUseFlag",
+        "OffsetOfReferencedLowerLevelDirectoryEntity",
+        "DirectoryRecordType"
+    ]
+
     private func makeRecord(type:String, sequence:DataSequence, dataSet:DataSet) -> DICOMDirectoryRecordNode {
         let item = DataItem(withTag: DataTag(withGroup: "fffe", element: "e000"), parent: sequence)
         append(value: UInt32(0), name: "OffsetOfTheNextDirectoryRecord", to: item, dataSet: dataSet)
@@ -175,6 +261,97 @@ extension DicomDir {
         guard let element = DataElement(withTagName: name, dataset: dataSet, parent: item),
               element.setValue(value) else { return }
         item.elements.append(element)
+    }
+
+    @discardableResult
+    private func append(
+        value:DICOMDirectoryValue,
+        name:String,
+        to item:DataItem,
+        dataSet:DataSet,
+        depth:Int = 0
+    ) -> Bool {
+        guard depth <= 256,
+              let tag = DicomSpec.shared.dataTag(forName: name) else { return false }
+        if case .sequence(let itemDefinitions) = value {
+            guard DicomSpec.shared.vrForTag(withCode: tag.code) == .SQ else { return false }
+            let sequence = DataSequence(withTag: tag, parent: item)
+            sequence.dataset = dataSet
+            sequence.vr = .SQ
+            sequence.vrMethod = .Explicit
+            sequence.length = -1
+            for itemDefinition in itemDefinitions {
+                let sequenceItem = DataItem(
+                    withTag: DataTag(withGroup: "fffe", element: "e000"),
+                    parent: sequence
+                )
+                sequenceItem.dataset = dataSet
+                sequenceItem.characterSet = item.effectiveCharacterSet
+                if case .string(let identifier)? = itemDefinition["SpecificCharacterSet"] {
+                    sequenceItem.characterSet = DICOMCharacterSet(specificCharacterSet: identifier)
+                }
+                for childName in itemDefinition.keys.sorted() {
+                    guard let childValue = itemDefinition[childName],
+                          append(
+                            value: childValue,
+                            name: childName,
+                            to: sequenceItem,
+                            dataSet: dataSet,
+                            depth: depth + 1
+                          ) else { return false }
+                }
+                sequenceItem.elements.sort { $0.tagCode() < $1.tagCode() }
+                sequenceItem.length = -1
+                sequence.items.append(sequenceItem)
+            }
+            sequence.length = -1
+            item.elements.append(sequence)
+            return true
+        }
+
+        let element = DataElement(withTag: tag, dataset: dataSet, parent: item)
+        element.vr = DicomSpec.shared.vrForTag(withCode: tag.code) ?? .UN
+        element.characterSet = item.effectiveCharacterSet
+        let rawValue:Any
+        switch value {
+        case .string(let value): rawValue = value
+        case .data(let value): rawValue = value
+        case .int16(let value): rawValue = value
+        case .int32(let value): rawValue = value
+        case .int64(let value): rawValue = value
+        case .uint16(let value): rawValue = value
+        case .uint32(let value): rawValue = value
+        case .uint64(let value): rawValue = value
+        case .float32(let value): rawValue = value
+        case .float64(let value): rawValue = value
+        case .int16Values(let value): rawValue = value
+        case .int32Values(let value): rawValue = value
+        case .int64Values(let value): rawValue = value
+        case .uint16Values(let value): rawValue = value
+        case .uint32Values(let value): rawValue = value
+        case .uint64Values(let value): rawValue = value
+        case .float32Values(let value): rawValue = value
+        case .float64Values(let value): rawValue = value
+        case .attributeTags(let value): rawValue = value
+        case .sequence: return false
+        }
+        guard element.setValue(rawValue) else { return false }
+        item.elements.append(element)
+        return true
+    }
+
+    private func validReferencedFileIDs(
+        in definitions:[DICOMDirectoryRecordDefinition]
+    ) -> Bool {
+        for definition in definitions {
+            if let value = definition.elements["ReferencedFileID"] {
+                guard case .string(let fileID) = value, DicomDir.isValidFileID(fileID) else {
+                    return false
+                }
+            }
+            if !validReferencedFileIDs(in: definition.children) { return false }
+        }
+        return true
     }
 
     private func appendDirectoryValue(_ value:Any, name:String, to item:DataItem, dataSet:DataSet) {
@@ -211,6 +388,7 @@ extension DicomDir {
         var itemOffset = sequenceStart + 12
         for node in orderedNodes {
             node.offset = itemOffset
+            node.item.startOffset = itemOffset
             itemOffset += 8 + node.item.length
         }
         guard itemOffset <= Int(UInt32.max) else { return false }

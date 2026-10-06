@@ -64,6 +64,9 @@ Current progress in that order:
 - Basic DICOMDIR PATIENT/STUDY/SERIES/IMAGE read/write now computes offsets
   from the serialized layout and validates the record graph, File-set/File IDs,
   and referenced Part 10 identities;
+- a typed generic record-tree writer now shares the same offset and validation
+  path, supports nested Sequences, and has round-trip coverage for RT DOSE and
+  SR DOCUMENT records while preserving the legacy construction API;
 - every current PS3.3 2026d Table F.4-1 Directory Record Type now has an
   extensible public identifier and a lossless generic record view; unconditional
   top-level Type 1 and Type 2 keys are represented for every current F.5 record
