@@ -55,7 +55,9 @@ conformance without that evidence.
 
 - The qualified writer currently emits only the Basic Directory hierarchy
   PATIENT → STUDY → SERIES → IMAGE. Implement and test every applicable
-  Directory Record type and its required/conditional keys from PS3.3.
+  Directory Record type and its required/conditional keys from PS3.3. Current
+  type names and F.4-1 parent/child relationships are validated, but that does
+  not validate each record type's F.5 key table.
 - Preserve and expose unknown Directory Record types without losing their
   attributes or breaking hierarchy traversal.
 - Decode File-set Descriptor content according to its declared character set;

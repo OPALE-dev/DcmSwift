@@ -1,5 +1,37 @@
 import Foundation
 
+private enum DICOMDirectoryHierarchy {
+    static let root:Set<String> = [
+        "PATIENT", "HANGING PROTOCOL", "PALETTE", "IMPLANT", "IMPLANT ASSY",
+        "IMPLANT GROUP", "INVENTORY", "PRIVATE"
+    ]
+    static let seriesChildren:Set<String> = [
+        "IMAGE", "RT DOSE", "RT STRUCTURE SET", "RT PLAN", "RT TREAT RECORD",
+        "PRESENTATION", "WAVEFORM", "SR DOCUMENT", "KEY OBJECT DOC",
+        "SPECTROSCOPY", "RAW DATA", "REGISTRATION", "FIDUCIAL", "ENCAP DOC",
+        "VALUE MAP", "STEREOMETRIC", "PLAN", "MEASUREMENT", "SURFACE", "TRACT",
+        "ASSESSMENT", "RADIOTHERAPY", "ANNOTATION", "WF PRESENTATION", "PRIVATE"
+    ]
+    static let allCurrent:Set<String> = root
+        .union(["STUDY", "SERIES", "SURFACE SCAN"])
+        .union(seriesChildren)
+    static let retired:Set<String> = [
+        "PRINT QUEUE", "FILM SESSION", "FILM BOX", "IMAGE BOX", "OVERLAY",
+        "MODALITY LUT", "VOI LUT", "CURVE", "TOPIC", "VISIT", "RESULTS",
+        "INTERPRETATION", "STUDY COMPONENT", "STORED PRINT", "MRDR"
+    ]
+
+    static func children(of type:String) -> Set<String> {
+        switch type {
+        case "PATIENT": return ["STUDY", "PRIVATE"]
+        case "STUDY": return ["SERIES", "PRIVATE"]
+        case "SERIES": return seriesChildren
+        case "PRIVATE": return allCurrent.union(retired)
+        default: return ["PRIVATE"]
+        }
+    }
+}
+
 extension DicomDir {
     /// Validates the Basic Directory container and offset graph independently
     /// from any PS3.11 application profile or PS3.12 media format.
@@ -11,6 +43,9 @@ extension DicomDir {
         var results:[ValidationResult] = []
         func error(_ object:Any, _ message:String) {
             results.append(ValidationResult(object, message: message, severity: .Error))
+        }
+        func warning(_ object:Any, _ message:String) {
+            results.append(ValidationResult(object, message: message, severity: .Warning))
         }
 
         if dataSet.string(forTag: "MediaStorageSOPClassUID") != "1.2.840.10008.1.3.10" {
@@ -103,7 +138,17 @@ extension DicomDir {
 
         var visited:Set<Int> = []
         var activePath:Set<Int> = []
-        func visitEntity(startingAt start:Int, depth:Int = 0) -> Int? {
+        func recordType(of item:DataItem) -> String? {
+            return (item.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        func visitEntity(
+            startingAt start:Int,
+            allowedTypes:Set<String>,
+            parentDescription:String,
+            depth:Int = 0
+        ) -> Int? {
             guard depth <= 256 else {
                 error(sequence, "Directory Record hierarchy exceeds the validation depth limit")
                 return nil
@@ -123,8 +168,29 @@ extension DicomDir {
                 activePath.insert(current)
                 last = current
 
+                guard let type = recordType(of: item), !type.isEmpty else {
+                    activePath.remove(current)
+                    return last
+                }
+                if DICOMDirectoryHierarchy.retired.contains(type) {
+                    warning(item, "Directory Record Type \(type) is retired")
+                } else if !DICOMDirectoryHierarchy.allCurrent.contains(type) {
+                    error(item, "Unknown Directory Record Type \(type)")
+                }
+                if !allowedTypes.contains(type) {
+                    error(item, "Directory Record Type \(type) is not permitted below \(parentDescription)")
+                }
+                if type == "PRIVATE", item.element(withName: "PrivateRecordUID") == nil {
+                    error(item, "PRIVATE Directory Record requires PrivateRecordUID")
+                }
+
                 if let lower = itemOffset("OffsetOfReferencedLowerLevelDirectoryEntity", item), lower != 0 {
-                    _ = visitEntity(startingAt: lower, depth: depth + 1)
+                    _ = visitEntity(
+                        startingAt: lower,
+                        allowedTypes: DICOMDirectoryHierarchy.children(of: type),
+                        parentDescription: type,
+                        depth: depth + 1
+                    )
                 }
                 activePath.remove(current)
                 guard let next = itemOffset("OffsetOfTheNextDirectoryRecord", item) else { return last }
@@ -133,7 +199,11 @@ extension DicomDir {
             return last
         }
 
-        let actualLastRoot = visitEntity(startingAt: firstRoot)
+        let actualLastRoot = visitEntity(
+            startingAt: firstRoot,
+            allowedTypes: DICOMDirectoryHierarchy.root,
+            parentDescription: "the Root Directory Entity"
+        )
         if actualLastRoot != declaredLastRoot {
             error(lastElement, "Last root Directory Record offset does not match the root sibling chain")
         }

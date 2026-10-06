@@ -196,8 +196,10 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         XCTAssertTrue(decoded.element(forTagName: "OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity")?
             .setValue(UInt32(sequence.items[1].startOffset)) == true)
         XCTAssertTrue(decoded.element(forTagName: "FileSetConsistencyFlag")?.setValue(UInt16.max) == true)
-        XCTAssertTrue(sequence.items[0].element(withName: "OffsetOfTheNextDirectoryRecord")?
-            .setValue(UInt32(sequence.items[0].startOffset)) == true)
+        XCTAssertTrue(sequence.items[3].element(withName: "OffsetOfTheNextDirectoryRecord")?
+            .setValue(UInt32(sequence.items[3].startOffset)) == true)
+        XCTAssertTrue(sequence.items[1].element(withName: "DirectoryRecordType")?.setValue("IMAGE") == true)
+        XCTAssertTrue(sequence.items[4].element(withName: "DirectoryRecordType")?.setValue("PRIVATE") == true)
         let invalid = DicomDir()
         invalid.dataset = decoded
         invalid.filepath = outputURL.path
@@ -205,7 +207,8 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         XCTAssertTrue(messages.contains { $0.contains("Last root Directory Record offset") })
         XCTAssertTrue(messages.contains { $0.contains("FileSetConsistencyFlag must be 0000H") })
         XCTAssertTrue(messages.contains { $0.contains("cycle or duplicate reference") })
-        XCTAssertTrue(messages.contains { $0.contains("unreachable or orphan") })
+        XCTAssertTrue(messages.contains { $0.contains("IMAGE is not permitted below PATIENT") })
+        XCTAssertTrue(messages.contains { $0.contains("PRIVATE Directory Record requires PrivateRecordUID") })
     }
 
     func testPrimitiveDICOMDIRWithoutDirectoryInformationIsAccepted() throws {

@@ -52,8 +52,10 @@ PS3.18 JSON and XML representations follow those binary-format milestones.
 
 The Basic DICOMDIR implementation uses Explicit VR Little Endian, defined
 length Directory Record Sequence Items, and offsets that reference Item Tags.
-It rejects dangling, cyclic, duplicate, or orphan graph references and
-Referenced File IDs outside the PS3.10 one-to-eight component syntax. Explicit
+It rejects dangling, cyclic, duplicate, or orphan graph references, invalid
+PS3.3 Table F.4-1 record relationships, and Referenced File IDs outside the
+PS3.10 one-to-eight component syntax. PRIVATE records require their defining
+UID and retired record types remain observable. Explicit
 file-set integrity validation checks unique contained targets and their SOP
 Class, SOP Instance, and Transfer Syntax identities. It does not yet claim
 support for every Directory Record type, File-set update semantics, descriptor
