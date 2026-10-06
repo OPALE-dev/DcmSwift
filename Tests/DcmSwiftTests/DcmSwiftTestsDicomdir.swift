@@ -449,6 +449,49 @@ class DcmSwiftTestsDicomdir: XCTestCase {
             atPath: FileManager.default.temporaryDirectory.path
         ))
     }
+
+    func testGenericWriterRoundTripsEveryCurrentDirectoryRecordType() throws {
+        let seriesChildTypes:[DICOMDirectoryRecordType] = [
+            .image, .rtDose, .rtStructureSet, .rtPlan, .rtTreatmentRecord,
+            .presentation, .waveform, .structuredReport, .keyObjectDocument,
+            .spectroscopy, .rawData, .registration, .fiducial,
+            .encapsulatedDocument, .valueMap, .stereometric, .plan,
+            .measurement, .surface, .surfaceScan, .tract, .assessment,
+            .radiotherapy, .annotation, .waveformPresentation
+        ]
+        let series = makeMinimalRecordDefinition(
+            type: .series,
+            children: seriesChildTypes.map { makeMinimalRecordDefinition(type: $0) }
+        )
+        let study = makeMinimalRecordDefinition(type: .study, children: [series])
+        let patient = makeMinimalRecordDefinition(type: .patient, children: [study])
+        let otherRoots:[DICOMDirectoryRecordType] = [
+            .hangingProtocol, .palette, .implant, .implantAssembly,
+            .implantGroup, .inventory, .private
+        ]
+
+        let temporaryDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+        let directory = DicomDir()
+        directory.fileSetID = "ALL_TYPES"
+        directory.directoryRecordRoots = [patient] + otherRoots.map {
+            makeMinimalRecordDefinition(type: $0)
+        }
+        XCTAssertTrue(directory.writeDicomDir(atPath: temporaryDirectory.path))
+
+        let reloaded = try XCTUnwrap(DicomDir(
+            forPath: temporaryDirectory.appendingPathComponent("DICOMDIR").path
+        ))
+        XCTAssertTrue(reloaded.validateDirectoryStructure().isEmpty)
+        XCTAssertTrue(reloaded.validateDirectoryRecordKeys().isEmpty)
+        XCTAssertEqual(
+            Set(reloaded.directoryRecords.compactMap(\.type)),
+            DICOMDirectoryRecordType.standard2026d
+        )
+    }
     
     func testWriteDicomDir() throws {
         let temporaryDirectory = FileManager.default.temporaryDirectory
@@ -664,6 +707,57 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         }
         XCTAssertTrue(element.setValue(value))
         item.elements.append(element)
+    }
+
+    private func makeMinimalRecordDefinition(
+        type:DICOMDirectoryRecordType,
+        children:[DICOMDirectoryRecordDefinition] = []
+    ) -> DICOMDirectoryRecordDefinition {
+        var elements:[String:DICOMDirectoryValue] = [:]
+        for (name, requirement) in DICOMDirectoryRecordSchemas.requirements[type] ?? [:] {
+            guard let tag = DicomSpec.shared.dataTag(forName: name),
+                  let vr = DicomSpec.shared.vrForTag(withCode: tag.code) else {
+                XCTFail("Missing dictionary metadata for \(name)")
+                continue
+            }
+            elements[name] = minimalDirectoryValue(vr: vr, mayBeEmpty: requirement == .type2)
+        }
+        if type == .private {
+            elements["PrivateRecordUID"] = .string("1.2.826.0.1.3680043.10.999")
+        }
+        if type == .hangingProtocol {
+            elements["HangingProtocolDefinitionSequence"] = .sequence([[
+                "Modality": .string("CT")
+            ]])
+        }
+        return DICOMDirectoryRecordDefinition(
+            type: type,
+            elements: elements,
+            children: children
+        )
+    }
+
+    private func minimalDirectoryValue(vr:VR.VR, mayBeEmpty:Bool) -> DICOMDirectoryValue {
+        if mayBeEmpty {
+            return vr == .SQ ? .sequence([]) : .string("")
+        }
+        switch vr {
+        case .SQ: return .sequence([[:]])
+        case .SS: return .int16(1)
+        case .SL: return .int32(1)
+        case .SV: return .int64(1)
+        case .US: return .uint16(1)
+        case .UL: return .uint32(1)
+        case .UV: return .uint64(1)
+        case .FL: return .float32(1)
+        case .FD: return .float64(1)
+        case .DA: return .string("20261006")
+        case .TM: return .string("120000")
+        case .DT: return .string("20261006120000")
+        case .UI: return .string("1.2.826.0.1.3680043.10.999.1")
+        case .IS, .DS: return .string("1")
+        default: return .string("VALUE")
+        }
     }
 
     @discardableResult
