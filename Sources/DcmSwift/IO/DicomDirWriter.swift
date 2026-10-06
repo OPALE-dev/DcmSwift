@@ -43,6 +43,8 @@ extension DicomDir {
     /// layout and point to Item Tags, not Item Value Fields.
     public func writeDicomDir(atPath folderPath:String) -> Bool {
         guard DicomDir.isValidFileSetID(fileSetID),
+              fileSetDescriptorFileID.map(DicomDir.isValidFileID) ?? true,
+              fileSetDescriptorCharacterSet == nil || fileSetDescriptorFileID != nil,
               imagesKeys.allSatisfy({ sopInstanceUID in
             guard let image = images[sopInstanceUID],
                   let fileID = image["ReferencedFileID"] as? String,
@@ -65,6 +67,12 @@ extension DicomDir {
         _ = dataSet.set(value: orgRoot, forTagName: "ImplementationClassUID")
         _ = dataSet.set(value: "DCMSWIFT_2", forTagName: "ImplementationVersionName")
         _ = dataSet.set(value: fileSetID, forTagName: "FileSetID")
+        if let fileSetDescriptorFileID {
+            _ = dataSet.set(value: normalizedFileID(fileSetDescriptorFileID), forTagName: "FileSetDescriptorFileID")
+        }
+        if let fileSetDescriptorCharacterSet {
+            _ = dataSet.set(value: fileSetDescriptorCharacterSet, forTagName: "SpecificCharacterSetOfFileSetDescriptorFile")
+        }
         let firstRoot = dataSet.set(value: UInt32(0), forTagName: "OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity")
         let lastRoot = dataSet.set(value: UInt32(0), forTagName: "OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity")
         _ = dataSet.set(value: UInt16(0), forTagName: "FileSetConsistencyFlag")
