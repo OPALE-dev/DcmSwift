@@ -33,9 +33,16 @@ let package = Package(
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         
+        .systemLibrary(
+            name: "CZlib",
+            providers: [
+                .brew(["zlib"]),
+                .apt(["zlib1g-dev"])
+            ]),
         .target(
             name: "DcmSwift",
             dependencies: [
+                "CZlib",
                 .product(name: "Socket", package: "BlueSocket"),
                 .product(name: "NIO", package: "swift-nio"),
                 .product(name: "Html", package: "swift-html")

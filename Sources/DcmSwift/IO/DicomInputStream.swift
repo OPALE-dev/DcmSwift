@@ -116,6 +116,7 @@ public class DicomInputStream: OffsetInputStream {
         dataset.vrMethod = vrMethod
         dataset.byteOrder = byteOrder
         var fileMetaEndOffset: Int? = nil
+        var shouldInflateDataSet = false
     
         // read elements to fill the dataset
         while(stream.hasBytesAvailable && offset < total && !dataset.isCorrupted) {
@@ -162,6 +163,7 @@ public class DicomInputStream: OffsetInputStream {
                     dataset.transferSyntax = syntax
                     vrMethod = syntax.vrMethod
                     byteOrder = syntax.byteOrder
+                    shouldInflateDataSet = uid == TransferSyntax.deflatedExplicitVRLittleEndian
                     
                     // update the dataset properties
                     dataset.vrMethod = vrMethod
@@ -171,6 +173,27 @@ public class DicomInputStream: OffsetInputStream {
                 // append element to sub-datasets, if everything is OK
                 if !dataset.isCorrupted {
                     dataset.add(element: newElement)
+
+                    if shouldInflateDataSet,
+                       let fileMetaEndOffset,
+                       offset == fileMetaEndOffset {
+                        guard let compressed = read(length: readableBytes) else {
+                            throw StreamError.cannotReadStream(message: "Cannot read deflated Data Set")
+                        }
+                        let inflated = try DICOMDeflate.decompress(
+                            compressed,
+                            maximumOutputLength: limits.maximumInflatedDataSetLength
+                        )
+                        let inflatedStream = DicomInputStream(data: inflated)
+                        inflatedStream.limits = limits
+                        guard let inflatedDataSet = try inflatedStream.readDataset(enforceVR: false) else {
+                            throw StreamError.cannotReadStream(message: "Cannot parse inflated Data Set")
+                        }
+                        for inflatedElement in inflatedDataSet.datasetElements {
+                            dataset.add(element: inflatedElement)
+                        }
+                        break
+                    }
                     
                 } else {
                     throw StreamError.datasetIsCorrupted(message: "Dataset is corrupted")

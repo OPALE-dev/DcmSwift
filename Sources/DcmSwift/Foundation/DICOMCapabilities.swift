@@ -28,6 +28,18 @@ public enum DICOMCapabilities {
     }
 
     public static func transferSyntax(_ uid: String) -> TransferSyntaxCapability {
+        if uid == TransferSyntax.deflatedExplicitVRLittleEndian {
+            return TransferSyntaxCapability(
+                uid: uid,
+                canReadDataset: true,
+                canWriteDataset: true,
+                canPreservePixelData: true,
+                canDecodePixelData: false,
+                canEncodePixelData: false,
+                canNegotiateForDIMSE: false
+            )
+        }
+
         if nativeUIDs.contains(uid) {
             return TransferSyntaxCapability(
                 uid: uid,
