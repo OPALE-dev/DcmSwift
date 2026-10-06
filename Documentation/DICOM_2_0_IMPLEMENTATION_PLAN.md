@@ -69,7 +69,8 @@ Current progress in that order:
   top-level Type 1 and Type 2 keys are represented for every current F.5 record
   type, and common Type 1C rules cover PRIVATE record UIDs, referenced-SOP
   identity tuples, extended character sets used by record keys, verified SR
-  documents, and Hanging Protocol Definition Items;
+  documents, Hanging Protocol Definition Items, Related General SOP Class UID,
+  and selected keys conditioned by the referenced SOP Instance;
 - broader Directory Record coverage and PS3.12 media-profile qualification are
   still required before starting the planned JSON and XML work.
 

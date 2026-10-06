@@ -82,6 +82,11 @@ class DcmSwiftTestsDicomdir: XCTestCase {
                 XCTAssertNotNil(DicomSpec.shared.dataTag(forName: key), key)
             }
         }
+        for keys in DICOMDirectoryRecordSchemas.referencedInstanceConditionalKeys.values {
+            for key in keys {
+                XCTAssertNotNil(DicomSpec.shared.dataTag(forName: key), key)
+            }
+        }
         XCTAssertEqual(
             DICOMDirectoryRecordSchemas.specificCharacterSetTypes,
             DICOMDirectoryRecordType.standard2026d.subtracting([
@@ -243,6 +248,86 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         append(value: "", name: "Laterality", to: definition, dataSet: dataSet)
         messages = directory.validateDirectoryRecordKeys().map(\.message)
         XCTAssertFalse(messages.contains { $0.contains("requires Type 2C key Laterality") })
+    }
+
+    func testReferencedInstanceConditionalDirectoryKeys() throws {
+        let temporaryDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+        let referencedURL = temporaryDirectory
+            .appendingPathComponent("PAT00001", isDirectory: true)
+            .appendingPathComponent("IMG00001")
+        try writeReferencedFile(
+            to: referencedURL,
+            sopInstanceUID: "1.2.3.4",
+            additionalValues: [
+                "RelatedGeneralSOPClassUID": "1.2.840.10008.5.1.4.1.1.481.23",
+                "UserContentLabel": "ADAPTIVE PLAN"
+            ]
+        )
+        let source = makeDirectory()
+        XCTAssertTrue(source.writeDicomDir(atPath: temporaryDirectory.path))
+        let directory = try XCTUnwrap(DicomDir(
+            forPath: temporaryDirectory.appendingPathComponent("DICOMDIR").path
+        ))
+        let dataSet = try XCTUnwrap(directory.dataset)
+        let record = try XCTUnwrap(directory.directoryRecords.first { $0.type == .image })
+        XCTAssertTrue(record.item.element(withName: "DirectoryRecordType")?.setValue("RADIOTHERAPY") == true)
+
+        var messages = directory.validateReferencedFiles().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("requires ReferencedRelatedGeneralSOPClassUIDInFile") })
+        XCTAssertTrue(messages.contains { $0.contains("contains UserContentLabel") })
+
+        append(
+            value: "1.2.840.10008.5.1.4.1.1.481.23",
+            name: "ReferencedRelatedGeneralSOPClassUIDInFile",
+            to: record.item,
+            dataSet: dataSet
+        )
+        append(value: "ADAPTIVE PLAN", name: "UserContentLabel", to: record.item, dataSet: dataSet)
+        messages = directory.validateReferencedFiles().map(\.message)
+        XCTAssertFalse(messages.contains { $0.contains("ReferencedRelatedGeneralSOPClassUIDInFile") })
+        XCTAssertFalse(messages.contains { $0.contains("UserContentLabel") })
+
+        XCTAssertTrue(record.item.element(withName: "UserContentLabel")?.setValue("WRONG") == true)
+        messages = directory.validateReferencedFiles().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("UserContentLabel does not match") })
+    }
+
+    func testReferencedSRConceptModifierRequiresDirectoryContentSequence() throws {
+        let temporaryDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+        let referencedURL = temporaryDirectory
+            .appendingPathComponent("PAT00001", isDirectory: true)
+            .appendingPathComponent("IMG00001")
+        try writeReferencedFile(
+            to: referencedURL,
+            sopInstanceUID: "1.2.3.4",
+            hasRootConceptModifier: true
+        )
+        let source = makeDirectory()
+        XCTAssertTrue(source.writeDicomDir(atPath: temporaryDirectory.path))
+        let directory = try XCTUnwrap(DicomDir(
+            forPath: temporaryDirectory.appendingPathComponent("DICOMDIR").path
+        ))
+        let dataSet = try XCTUnwrap(directory.dataset)
+        let record = try XCTUnwrap(directory.directoryRecords.first { $0.type == .image })
+        XCTAssertTrue(record.item.element(withName: "DirectoryRecordType")?.setValue("SR DOCUMENT") == true)
+
+        var messages = directory.validateReferencedFiles().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("HAS CONCEPT MOD") })
+        let content = appendSequence(named: "ContentSequence", to: record.item, dataSet: dataSet)
+        content.items.append(DataItem(
+            withTag: DataTag(withGroup: "fffe", element: "e000"),
+            parent: content
+        ))
+        messages = directory.validateReferencedFiles().map(\.message)
+        XCTAssertFalse(messages.contains { $0.contains("HAS CONCEPT MOD") })
     }
     
     func testWriteDicomDir() throws {
@@ -479,7 +564,12 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         return sequence
     }
 
-    private func writeReferencedFile(to url:URL, sopInstanceUID:String) throws {
+    private func writeReferencedFile(
+        to url:URL,
+        sopInstanceUID:String,
+        additionalValues:[String:Any] = [:],
+        hasRootConceptModifier:Bool = false
+    ) throws {
         try FileManager.default.createDirectory(
             at: url.deletingLastPathComponent(),
             withIntermediateDirectories: true
@@ -495,6 +585,28 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         _ = dataSet.set(value: "2.25.22010055", forTagName: "ImplementationClassUID")
         _ = dataSet.set(value: sopClassUID, forTagName: "SOPClassUID")
         _ = dataSet.set(value: sopInstanceUID, forTagName: "SOPInstanceUID")
+        for (name, value) in additionalValues {
+            XCTAssertNotNil(dataSet.set(value: value, forTagName: name), name)
+        }
+        if hasRootConceptModifier {
+            guard let contentTag = DicomSpec.shared.dataTag(forName: "ContentSequence") else {
+                return XCTFail("Missing ContentSequence dictionary tag")
+            }
+            let content = DataSequence(withTag: contentTag)
+            content.dataset = dataSet
+            content.vr = .SQ
+            content.length = -1
+            let item = DataItem(
+                withTag: DataTag(withGroup: "fffe", element: "e000"),
+                parent: content
+            )
+            item.length = -1
+            append(value: "HAS CONCEPT MOD", name: "RelationshipType", to: item, dataSet: dataSet)
+            item.length = -1
+            content.items.append(item)
+            content.length = -1
+            dataSet.add(element: content)
+        }
         let file = try XCTUnwrap(DicomFile(withDataset: dataSet, hasPreamble: true))
         XCTAssertTrue(file.write(atPath: url.path))
     }

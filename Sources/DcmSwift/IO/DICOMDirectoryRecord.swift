@@ -251,6 +251,17 @@ enum DICOMDirectoryRecordSchemas {
         .radiotherapy: ["UserContentLabel", "UserContentLongLabel"],
         .waveformPresentation: ["ReferencedSeriesSequence"]
     ]
+
+    /// F.5 Type 1C keys whose presence is conditioned by the same Attribute
+    /// being present in the referenced SOP Instance.
+    static let referencedInstanceConditionalKeys:[DICOMDirectoryRecordType:Set<String>] = [
+        .presentation: ["ReferencedSeriesSequence", "BlendingSequence"],
+        .spectroscopy: ["ReferencedImageEvidenceSequence"],
+        .encapsulatedDocument: ["HL7InstanceIdentifier"],
+        .implant: ["ImplantSize"],
+        .radiotherapy: ["UserContentLabel", "UserContentLongLabel"],
+        .waveformPresentation: ["ReferencedSeriesSequence"]
+    ]
 }
 
 extension DICOMDirectoryRecordType {
