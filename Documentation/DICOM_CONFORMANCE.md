@@ -59,10 +59,9 @@ UID and retired record types remain observable. Explicit
 file-set integrity validation checks unique contained targets and their SOP
 Class, SOP Instance, and Transfer Syntax identities. It does not yet claim
 support for writing every Directory Record type, File-set update semantics,
-descriptor content decoding, all conditional or type-specific F.5 keys, or any
-specific media storage application profile. Unconditional Type 1 and Type 2
-key checks currently cover PATIENT, STUDY, SERIES, IMAGE, RT DOSE, RT STRUCTURE
-SET, RT PLAN, and RT TREAT RECORD. The
+descriptor content decoding, conditional F.5 keys or included macro content,
+or any specific media storage application profile. Unconditional top-level
+Type 1 and Type 2 keys are represented for every current F.5 record type. The
 optional File-set Descriptor File ID and character-set declaration are
 preserved, and the descriptor target can be checked for containment and
 existence.
