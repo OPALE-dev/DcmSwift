@@ -11,13 +11,24 @@ import ArgumentParser
 
 
 struct DcmPrint: ParsableCommand {
+    @Option(name: .shortAndLong, help: "Output format of the dictionary (TEXT, XML or JSON)")
+    var format: String = "TEXT"
+    
     @Argument(help: "Path of DICOM file to print")
     var sourcePath: String
 
     mutating func run() throws {
         if let dicomFile = DicomFile(forPath: sourcePath) {
             if let dataset = dicomFile.dataset {
-                Logger.info(dataset.description)
+                if format == "TEXT" {
+                    Logger.info(dataset.description)
+                }
+                else if format == "XML" {
+                    Logger.info(dataset.toXML())
+                }
+                else if format == "JSON" {
+                    Logger.info(dataset.toJSON())
+                }
             }
         }
     }
