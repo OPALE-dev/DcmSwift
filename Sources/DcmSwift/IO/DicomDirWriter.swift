@@ -24,6 +24,14 @@ extension DicomDir {
         }
     }
 
+    /// PS3.10 permits an empty File-set ID or up to sixteen characters from
+    /// the same restricted repertoire used by File ID components.
+    public static func isValidFileSetID(_ value:String) -> Bool {
+        guard value.count <= 16 else { return false }
+        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_")
+        return value.unicodeScalars.allSatisfy(allowed.contains)
+    }
+
     /// Preserves the original public construction API. Offsets are assigned
     /// only when the surrounding Part 10 file layout is known during writing.
     public func createDirectoryRecordSequence() -> DataSequence? {
@@ -34,7 +42,8 @@ extension DicomDir {
     /// offsets are calculated from the final Explicit VR Little Endian byte
     /// layout and point to Item Tags, not Item Value Fields.
     public func writeDicomDir(atPath folderPath:String) -> Bool {
-        guard imagesKeys.allSatisfy({ sopInstanceUID in
+        guard DicomDir.isValidFileSetID(fileSetID),
+              imagesKeys.allSatisfy({ sopInstanceUID in
             guard let image = images[sopInstanceUID],
                   let fileID = image["ReferencedFileID"] as? String,
                   DicomDir.isValidFileID(fileID),
@@ -55,7 +64,7 @@ extension DicomDir {
         _ = dataSet.set(value: TransferSyntax.explicitVRLittleEndian, forTagName: "TransferSyntaxUID")
         _ = dataSet.set(value: orgRoot, forTagName: "ImplementationClassUID")
         _ = dataSet.set(value: "DCMSWIFT_2", forTagName: "ImplementationVersionName")
-        _ = dataSet.set(value: "", forTagName: "FileSetID")
+        _ = dataSet.set(value: fileSetID, forTagName: "FileSetID")
         let firstRoot = dataSet.set(value: UInt32(0), forTagName: "OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity")
         let lastRoot = dataSet.set(value: UInt32(0), forTagName: "OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity")
         _ = dataSet.set(value: UInt16(0), forTagName: "FileSetConsistencyFlag")
