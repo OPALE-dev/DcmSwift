@@ -65,7 +65,7 @@ endianness, pixel access, Structured Reports, and radiotherapy objects.
 | Explicit VR Big Endian | Structural read and write for interoperability; retired by DICOM |
 | Encapsulated JPEG/RLE transfer syntaxes | Fragment preservation only; no codec claim |
 | Deflated Explicit VR Little Endian | Known, not implemented |
-| Character sets | Default repertoire, ISO_IR 100, and ISO_IR 192 |
+| Character sets | Default repertoire, ISO_IR 100, and ISO_IR 192, with nested Data Set inheritance/override |
 | ISO 2022 code extensions | Not implemented; rejected rather than decoded as UTF-8 |
 | DICOM JSON and Native DICOM Model XML | Existing convenience output is not yet PS3.18 conformant |
 | DICOMDIR/media profiles | Partial and not yet claimed conformant |

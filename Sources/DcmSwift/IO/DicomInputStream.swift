@@ -365,6 +365,7 @@ public class DicomInputStream: OffsetInputStream {
         }
                                 
         var element = DataElement(withTag:tag, dataset: dataset, parent: parent)
+        element.characterSet = (parent as? DataItem)?.effectiveCharacterSet ?? dataset?.characterSet
         decodedElementCount += 1
         if decodedElementCount > limits.maximumElementCount {
             return readError(
@@ -436,7 +437,12 @@ public class DicomInputStream: OffsetInputStream {
             }
         }
         else if element.vr == .SQ {
-            guard let sequence = readDataSequence(tag:element.tag, length: Int(element.length), byteOrder:order) else {
+            guard let sequence = readDataSequence(
+                tag: element.tag,
+                length: Int(element.length),
+                byteOrder: order,
+                parent: parent
+            ) else {
                 Logger.error("Cannot read Sequence \(tag) at \(self.offset)")
                 return nil
             }
@@ -462,6 +468,9 @@ public class DicomInputStream: OffsetInputStream {
 
         if element.tag.isPrivateDataElement {
             element.privateCreator = privateCreator(for: element, parent: parent, dataset: dataset)
+        }
+        if element.name == "SpecificCharacterSet", let item = parent as? DataItem {
+            item.characterSet = DICOMCharacterSet(specificCharacterSet: element.data.toString())
         }
         
         //print("element \(element)")
@@ -553,6 +562,8 @@ public class DicomInputStream: OffsetInputStream {
             }
 
             let item = DataItem(withTag: itemTag, parent: sequence)
+            item.characterSet = (sequence.parent as? DataItem)?.effectiveCharacterSet
+                ?? self.dataset.characterSet
             item.length = itemLength
             item.startOffset = offset - 8
             item.dataOffset = offset

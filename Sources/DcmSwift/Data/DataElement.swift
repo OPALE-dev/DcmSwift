@@ -37,6 +37,14 @@ public class DataElement : DicomObject {
     /// Private Creator identifier that reserves this element's block, if found
     /// in the same Data Set or Sequence Item.
     public internal(set) var privateCreator:String?
+
+    /// Character repertoire effective when this element was decoded. Nested
+    /// Data Sets may override the repertoire inherited from their container.
+    public internal(set) var characterSet:DICOMCharacterSet?
+
+    public var effectiveCharacterSet:DICOMCharacterSet {
+        return characterSet ?? dataset?.characterSet ?? .defaultRepertoire
+    }
     
     private var dataValues:[DataValue] = []
     
@@ -118,11 +126,7 @@ public class DataElement : DicomObject {
         if let string = val as? String {
             let encoded: Data?
             if usesSpecificCharacterSet {
-                if let dataset {
-                    encoded = dataset.characterSet.encode(string)
-                } else {
-                    encoded = DICOMCharacterSet.defaultRepertoire.encode(string)
-                }
+                encoded = effectiveCharacterSet.encode(string)
             } else {
                 encoded = string.data(using: .ascii)
             }
@@ -250,10 +254,7 @@ public class DataElement : DicomObject {
             return DICOMCharacterSet.defaultRepertoire.decode(self.data) ?? self.data as Any
         }
         else if usesSpecificCharacterSet {
-            if let dataset {
-                return dataset.characterSet.decode(self.data) ?? self.data as Any
-            }
-            return DICOMCharacterSet.defaultRepertoire.decode(self.data) ?? self.data as Any
+            return effectiveCharacterSet.decode(self.data) ?? self.data as Any
         }
         else if self.vr == .AT ||
                 self.vr == .OB ||
