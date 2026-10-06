@@ -190,6 +190,59 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         XCTAssertTrue(directory.validateDirectoryRecordKeys().isEmpty)
     }
 
+    func testDirectoryRecordIncludedMacroTopLevelKeys() throws {
+        let directory = makeDirectory()
+        let dataSet = DataSet()
+        let sequence = try XCTUnwrap(directory.createDirectoryRecordSequence())
+        dataSet.add(element: sequence)
+        directory.dataset = dataSet
+
+        let image = try XCTUnwrap(sequence.items.first {
+            ($0.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) == "IMAGE"
+        })
+        XCTAssertTrue(image.element(withName: "DirectoryRecordType")?.setValue("PRESENTATION") == true)
+        image.elements.removeAll { $0.name == "InstanceNumber" }
+        append(value: "20261006", name: "PresentationCreationDate", to: image, dataSet: dataSet)
+        append(value: "120000", name: "PresentationCreationTime", to: image, dataSet: dataSet)
+        append(value: "VIEW", name: "ContentLabel", to: image, dataSet: dataSet)
+        append(value: "", name: "ContentDescription", to: image, dataSet: dataSet)
+
+        var messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains {
+            $0.contains("PRESENTATION is missing Type 1 key InstanceNumber")
+        })
+        XCTAssertFalse(messages.contains {
+            $0.contains("PRESENTATION is missing Type 2 key ContentDescription")
+        })
+
+        append(value: "1", name: "InstanceNumber", to: image, dataSet: dataSet)
+        XCTAssertFalse(directory.validateDirectoryRecordKeys().contains {
+            $0.message.contains("Directory Record Type PRESENTATION")
+        })
+
+        let patient = try XCTUnwrap(sequence.items.first {
+            ($0.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) == "PATIENT"
+        })
+        XCTAssertTrue(patient.element(withName: "DirectoryRecordType")?.setValue("INVENTORY") == true)
+        append(value: "20261006", name: "ContentDate", to: patient, dataSet: dataSet)
+        append(value: "120000", name: "ContentTime", to: patient, dataSet: dataSet)
+        append(value: "", name: "InventoryPurpose", to: patient, dataSet: dataSet)
+        append(value: "STUDY", name: "InventoryLevel", to: patient, dataSet: dataSet)
+        append(value: "COMPLETE", name: "InventoryCompletionStatus", to: patient, dataSet: dataSet)
+        append(value: UInt32(1), name: "TotalNumberOfStudyRecords", to: patient, dataSet: dataSet)
+
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains {
+            $0.contains("INVENTORY is missing Type 2 key ScopeOfInventorySequence")
+        })
+        _ = appendSequence(named: "ScopeOfInventorySequence", to: patient, dataSet: dataSet)
+        XCTAssertFalse(directory.validateDirectoryRecordKeys().contains {
+            $0.message.contains("Directory Record Type INVENTORY")
+        })
+    }
+
     func testDirectoryRecordSelfContainedConditionalRules() throws {
         let directory = makeDirectory()
         let dataSet = DataSet()

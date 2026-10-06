@@ -58,11 +58,13 @@ PS3.10 one-to-eight component syntax. PRIVATE records require their defining
 UID and retired record types remain observable. Explicit
 file-set integrity validation checks unique contained targets and their SOP
 Class, SOP Instance, and Transfer Syntax identities. It does not yet claim
-complete macro and conditional-key qualification for every Directory Record type, File-set update semantics,
-descriptor content decoding, remaining record-specific conditional F.5 keys
-or included macro content, or any specific media storage application profile.
+complete conditional and nested macro qualification for every Directory Record
+type, File-set update semantics, descriptor content decoding, remaining
+record-specific conditional F.5 keys, or any specific media storage application
+profile.
 Unconditional top-level Type 1 and Type 2 keys are represented for every
-current F.5 record type. Common Type 1C validation covers PRIVATE record UIDs,
+current F.5 record type, including attributes from the Content Identification
+and Scope of Inventory Macros. Common Type 1C validation covers PRIVATE record UIDs,
 referenced-SOP identity tuples, extended character sets in record keys, present
 non-empty conditional keys, verified SR documents, and Hanging Protocol
 Definition Items. File-set integrity validation additionally enforces Related
@@ -74,8 +76,9 @@ checked for containment and
 existence.
 
 The generic writer has synthetic round-trip coverage for all 35 current F.4-1
-types populated with their unconditional top-level Type 1/2 keys. This is not a
-claim that every included macro or referenced-IOD condition is qualified.
+types populated with their unconditional top-level Type 1/2 keys, including
+those introduced by included macros. This is not a claim that every conditional
+or nested included-macro rule or referenced-IOD condition is qualified.
 Basic and Enhanced Coded Entry attributes are recursively validated in code
 sequences, including code-value choice, meaning, scheme, Context Group, and
 extension provenance conditions.
