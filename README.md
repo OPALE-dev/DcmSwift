@@ -45,12 +45,20 @@ Run the same package-level checks on macOS or Linux:
     swift build -c release
     swift test
 
-The repository tracks synthetic fixtures required by the core regression
-suite. Larger DICOM, DICOMDIR, SR, and RT interoperability corpora may be kept
-locally under `Tests/DcmSwiftTests/Resources`; SwiftPM includes those ignored
-directories automatically when present. Corpus-dependent tests are reported as
-skipped in a clean checkout instead of preventing the portable synthetic suite
-from compiling and running.
+The mandatory unit suite uses only small, deterministic synthetic fixtures that
+are versioned with the source. It executes identically in a clean checkout on
+macOS and Linux and never depends on a private or downloaded corpus.
+
+Large DICOM, DICOMDIR, SR, and RT collections are a separate, explicitly
+optional interoperability qualification suite. To run it against a local
+corpus:
+
+    DCMSWIFT_INTEROP_CORPUS=/absolute/path/to/corpus \
+      swift test --filter DcmSwiftTests/testExternalDICOMCorpus
+
+The qualification suite recursively discovers `.dcm` and `.dicomdir` files.
+Its absence does not reduce or skip mandatory unit coverage; it only leaves
+this separate qualification run unavailable.
 
 ## Disclaimer
 
@@ -310,12 +318,7 @@ Binaries can be found in `.build/release` directory. For example:
 
 ## Unit tests
 
-The repository includes DICOM fixtures. If those resources are absent from a
-source archive, retrieve them with:
-
-    ./test.sh
-
-Run the complete suite with:
+Run the mandatory synthetic suite with:
     
     swift test
 
@@ -324,6 +327,11 @@ the tests. The DcmSwift 2.0 branch currently includes dedicated regression tests
 for malformed input, byte order, transfer syntax preservation, character sets,
 File Meta Information, modern VRs, pixel offsets, UID handling, and DIMSE
 command encoding.
+
+The external interoperability corpus is intentionally not distributed with the
+package. Set `DCMSWIFT_INTEROP_CORPUS` and use the qualification command from
+the Build and test section when such a corpus is available. A successful unit
+run does not claim interoperability with files that were not qualified.
     
 ## Documentation
 
