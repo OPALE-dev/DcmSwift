@@ -8,6 +8,9 @@
 
 import Foundation
 
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
 
 
 
@@ -74,7 +77,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /// Edition of PS3.6 used to populate the runtime dictionary.
     public private(set) var dictionaryEdition = "unknown"
     
-    private var parser = XMLParser()
+    private var xmlParser: XMLParser?
     
     /**
      The `validate` flag is aimed to enable nor disable the DICOM specifications
@@ -91,10 +94,12 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         
         // PS3.6 does not contain the command group dictionary from PS3.7, so
         // retain the small legacy bootstrap dictionary and overlay 2026d data.
-        let data = xmlSpec.data(using: .utf8)
-        self.parser = XMLParser(data: data!)
-        self.parser.delegate = self
-        self.parser.parse()
+        if let data = xmlSpec.data(using: .utf8) {
+            let parser = XMLParser(data: data)
+            parser.delegate = self
+            self.xmlParser = parser
+            _ = parser.parse()
+        }
         self.dictionaryEdition = "2017c-fallback"
         _ = loadBundledDictionary()
         
