@@ -235,6 +235,11 @@ their unconditional top-level Type 1/2 keys. This verifies generic construction,
 hierarchy offsets, serialization, and re-reading; it does not yet qualify every
 included macro or referenced-IOD condition for those types.
 
+Included Basic/Enhanced Coded Entry attributes are validated recursively for
+code sequences: exactly one code-value form, Code Meaning, Coding Scheme
+Designator when applicable, Context Group provenance, and private-extension
+provenance. Other included macros remain incremental work.
+
 For example, an RT Dose record definition can be added to a Series record's
 `children` array with:
 

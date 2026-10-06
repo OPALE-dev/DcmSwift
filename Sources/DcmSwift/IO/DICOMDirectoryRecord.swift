@@ -366,8 +366,108 @@ extension DicomDir {
             if type == .hangingProtocol {
                 validateHangingProtocolDefinitionItems(record, results: &results)
             }
+
+            validateIncludedMacros(record.elements, results: &results)
         }
         return results
+    }
+
+    private func validateIncludedMacros(
+        _ elements:[DataElement],
+        results:inout [ValidationResult]
+    ) {
+        for element in elements {
+            guard let sequence = element as? DataSequence else { continue }
+            if sequence.name.hasSuffix("CodeSequence") || sequence.name == "AnatomicRegionSequence" {
+                for item in sequence.items {
+                    validateCodedEntry(item, sequenceName: sequence.name, results: &results)
+                }
+            }
+            for item in sequence.items {
+                validateIncludedMacros(item.elements, results: &results)
+            }
+        }
+    }
+
+    private func validateCodedEntry(
+        _ item:DataItem,
+        sequenceName:String,
+        results:inout [ValidationResult]
+    ) {
+        let valueNames = ["CodeValue", "LongCodeValue", "URNCodeValue"]
+        let presentValues = valueNames.filter {
+            guard let element = item.element(withName: $0) else { return false }
+            return !isEmptyDirectoryValue(element)
+        }
+        if presentValues.count != 1 {
+            results.append(ValidationResult(
+                item,
+                message: "\(sequenceName) coded entry requires exactly one of CodeValue, LongCodeValue, or URNCodeValue",
+                severity: .Error
+            ))
+        }
+        appendRequiredMacroValue(
+            "CodeMeaning",
+            reason: "\(sequenceName) coded entry requires CodeMeaning",
+            item: item,
+            results: &results
+        )
+        if presentValues.contains("CodeValue") || presentValues.contains("LongCodeValue") {
+            appendRequiredMacroValue(
+                "CodingSchemeDesignator",
+                reason: "\(sequenceName) coded entry with CodeValue or LongCodeValue requires CodingSchemeDesignator",
+                item: item,
+                results: &results
+            )
+        }
+        if item.element(withName: "CodingSchemeDesignator") == nil,
+           item.element(withName: "CodingSchemeVersion") != nil {
+            results.append(ValidationResult(
+                item,
+                message: "\(sequenceName) coded entry shall not contain CodingSchemeVersion without CodingSchemeDesignator",
+                severity: .Error
+            ))
+        }
+        if item.element(withName: "ContextIdentifier") != nil {
+            appendRequiredMacroValue(
+                "MappingResource",
+                reason: "\(sequenceName) coded entry with ContextIdentifier requires MappingResource",
+                item: item,
+                results: &results
+            )
+            appendRequiredMacroValue(
+                "ContextGroupVersion",
+                reason: "\(sequenceName) coded entry with ContextIdentifier requires ContextGroupVersion",
+                item: item,
+                results: &results
+            )
+        }
+        if normalizedDirectoryString(item.element(withName: "ContextGroupExtensionFlag")) == "Y" {
+            appendRequiredMacroValue(
+                "ContextGroupLocalVersion",
+                reason: "\(sequenceName) extended coded entry requires ContextGroupLocalVersion",
+                item: item,
+                results: &results
+            )
+            appendRequiredMacroValue(
+                "ContextGroupExtensionCreatorUID",
+                reason: "\(sequenceName) extended coded entry requires ContextGroupExtensionCreatorUID",
+                item: item,
+                results: &results
+            )
+        }
+    }
+
+    private func appendRequiredMacroValue(
+        _ name:String,
+        reason:String,
+        item:DataItem,
+        results:inout [ValidationResult]
+    ) {
+        guard let element = item.element(withName: name), !isEmptyDirectoryValue(element) else {
+            results.append(ValidationResult(item, message: reason, severity: .Error))
+            return
+        }
     }
 
     private func validateHangingProtocolDefinitionItems(

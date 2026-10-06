@@ -492,6 +492,47 @@ class DcmSwiftTestsDicomdir: XCTestCase {
             DICOMDirectoryRecordType.standard2026d
         )
     }
+
+    func testDirectoryRecordCodeSequenceMacroValidation() throws {
+        let directory = makeDirectory()
+        let dataSet = DataSet()
+        let sequence = try XCTUnwrap(directory.createDirectoryRecordSequence())
+        dataSet.add(element: sequence)
+        directory.dataset = dataSet
+        let image = try XCTUnwrap(sequence.items.first {
+            ($0.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) == "IMAGE"
+        })
+        XCTAssertTrue(image.element(withName: "DirectoryRecordType")?.setValue("SR DOCUMENT") == true)
+        append(value: "COMPLETE", name: "CompletionFlag", to: image, dataSet: dataSet)
+        append(value: "UNVERIFIED", name: "VerificationFlag", to: image, dataSet: dataSet)
+        append(value: "20261006", name: "ContentDate", to: image, dataSet: dataSet)
+        append(value: "120000", name: "ContentTime", to: image, dataSet: dataSet)
+        let concept = appendSequence(named: "ConceptNameCodeSequence", to: image, dataSet: dataSet)
+        let codedEntry = DataItem(
+            withTag: DataTag(withGroup: "fffe", element: "e000"),
+            parent: concept
+        )
+        concept.items.append(codedEntry)
+        append(value: "113012", name: "CodeValue", to: codedEntry, dataSet: dataSet)
+        append(value: "urn:oid:1.2.3", name: "URNCodeValue", to: codedEntry, dataSet: dataSet)
+
+        var messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("requires exactly one") })
+        XCTAssertTrue(messages.contains { $0.contains("requires CodeMeaning") })
+        XCTAssertTrue(messages.contains { $0.contains("requires CodingSchemeDesignator") })
+
+        codedEntry.elements.removeAll { $0.name == "URNCodeValue" }
+        append(value: "DCM", name: "CodingSchemeDesignator", to: codedEntry, dataSet: dataSet)
+        append(value: "Key Object Description", name: "CodeMeaning", to: codedEntry, dataSet: dataSet)
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertFalse(messages.contains { $0.contains("coded entry") })
+
+        append(value: "DCMR", name: "ContextIdentifier", to: codedEntry, dataSet: dataSet)
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("requires MappingResource") })
+        XCTAssertTrue(messages.contains { $0.contains("requires ContextGroupVersion") })
+    }
     
     func testWriteDicomDir() throws {
         let temporaryDirectory = FileManager.default.temporaryDirectory
@@ -720,7 +761,12 @@ class DcmSwiftTestsDicomdir: XCTestCase {
                 XCTFail("Missing dictionary metadata for \(name)")
                 continue
             }
-            elements[name] = minimalDirectoryValue(vr: vr, mayBeEmpty: requirement == .type2)
+            if vr == .SQ, requirement == .type1,
+               name.hasSuffix("CodeSequence") || name == "AnatomicRegionSequence" {
+                elements[name] = minimalCodedEntrySequence()
+            } else {
+                elements[name] = minimalDirectoryValue(vr: vr, mayBeEmpty: requirement == .type2)
+            }
         }
         if type == .private {
             elements["PrivateRecordUID"] = .string("1.2.826.0.1.3680043.10.999")
@@ -758,6 +804,14 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         case .IS, .DS: return .string("1")
         default: return .string("VALUE")
         }
+    }
+
+    private func minimalCodedEntrySequence() -> DICOMDirectoryValue {
+        return .sequence([[
+            "CodeValue": .string("113012"),
+            "CodingSchemeDesignator": .string("DCM"),
+            "CodeMeaning": .string("Synthetic coded entry")
+        ]])
     }
 
     @discardableResult
