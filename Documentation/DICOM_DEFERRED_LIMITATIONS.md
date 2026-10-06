@@ -66,8 +66,8 @@ conformance without that evidence.
   documents, and Hanging Protocol Definition Items. Conditional requirements
   directly mirrored by a referenced SOP Instance are checked during file-set
   integrity validation. Deeper IOD/module-dependent conditions, complete
-  included macro validation and complete semantic per-type qualification remain
-  unfinished.
+  included macro validation beyond the current recursive Basic/Enhanced Coded
+  Entry checks, and complete semantic per-type qualification remain unfinished.
 - Preserve and expose unknown Directory Record types without losing their
   attributes or breaking hierarchy traversal.
 - Decode File-set Descriptor content according to its declared character set;

@@ -76,6 +76,9 @@ existence.
 The generic writer has synthetic round-trip coverage for all 35 current F.4-1
 types populated with their unconditional top-level Type 1/2 keys. This is not a
 claim that every included macro or referenced-IOD condition is qualified.
+Basic and Enhanced Coded Entry attributes are recursively validated in code
+sequences, including code-value choice, meaning, scheme, Context Group, and
+extension provenance conditions.
 
 ## Network support
 
