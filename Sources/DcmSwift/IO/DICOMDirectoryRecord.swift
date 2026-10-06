@@ -272,6 +272,14 @@ enum DICOMDirectoryRecordSchemas {
         "ReferencedTransferSyntaxUIDInFile"
     ]
 
+    /// F.5 Sequences whose Items include the PS3.3 Table 10-11 SOP Instance
+    /// Reference Macro.
+    static let sopInstanceReferenceSequenceNames:Set<String> = [
+        "ReferencedImageSequence",
+        "ReferencedInstanceSequence",
+        "ReferencedWaveformSequence"
+    ]
+
     /// Type 1C keys whose value, when present, is always non-empty. Their
     /// presence condition may still depend on the referenced SOP Instance.
     static let conditionalType1Keys:[DICOMDirectoryRecordType:Set<String>] = [
@@ -414,6 +422,9 @@ extension DicomDir {
     ) {
         for element in elements {
             guard let sequence = element as? DataSequence else { continue }
+            if DICOMDirectoryRecordSchemas.sopInstanceReferenceSequenceNames.contains(sequence.name) {
+                validateSOPInstanceReferenceSequence(sequence, results: &results)
+            }
             if sequence.name.hasSuffix("CodeSequence") || sequence.name == "AnatomicRegionSequence" {
                 for item in sequence.items {
                     validateCodedEntry(item, sequenceName: sequence.name, results: &results)
@@ -422,6 +433,33 @@ extension DicomDir {
             for item in sequence.items {
                 validateIncludedMacros(item.elements, results: &results)
             }
+        }
+    }
+
+    private func validateSOPInstanceReferenceSequence(
+        _ sequence:DataSequence,
+        results:inout [ValidationResult]
+    ) {
+        if sequence.items.isEmpty {
+            results.append(ValidationResult(
+                sequence,
+                message: "\(sequence.name) requires one or more Items",
+                severity: .Error
+            ))
+        }
+        for item in sequence.items {
+            appendRequiredMacroValue(
+                "ReferencedSOPClassUID",
+                reason: "\(sequence.name) SOP Instance Reference Item requires ReferencedSOPClassUID",
+                item: item,
+                results: &results
+            )
+            appendRequiredMacroValue(
+                "ReferencedSOPInstanceUID",
+                reason: "\(sequence.name) SOP Instance Reference Item requires ReferencedSOPInstanceUID",
+                item: item,
+                results: &results
+            )
         }
     }
 
