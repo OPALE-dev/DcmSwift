@@ -113,6 +113,7 @@ public class DicomOutputStream {
         guard DICOMCapabilities.transferSyntax(syntaxUID).canWriteDataset else {
             throw StreamError.unsupportedTransferSyntax(uid: syntaxUID)
         }
+        try dataset.materializeBulkData()
         dataset.transferSyntax = TransferSyntax(syntaxUID)
         if dataset.hasPreamble || !dataset.metaInformationHeaderElements.isEmpty {
             _ = dataset.set(value: syntaxUID, forTagName: "TransferSyntaxUID")

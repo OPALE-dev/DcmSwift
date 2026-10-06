@@ -141,6 +141,22 @@ public class DataSet: DicomObject {
         return data
     }
 
+    /// Loads every deferred file-backed Value Field. Streaming output can use
+    /// the references directly in the future; the current serializer requires
+    /// materialization and surfaces source-file failures before writing.
+    public func materializeBulkData() throws {
+        func materialize(_ element:DataElement) throws {
+            if let sequence = element as? DataSequence {
+                for item in sequence.items {
+                    for child in item.elements { try materialize(child) }
+                }
+            } else if element.bulkDataReference != nil {
+                _ = try element.loadData()
+            }
+        }
+        for element in allElements { try materialize(element) }
+    }
+
     
     /**
      Converts the `DataSet` into `XML`

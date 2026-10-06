@@ -24,7 +24,7 @@ conformance.
 | Private Creator block resolution | PS3.5 7.8 | Structural resolution and byte preservation | `testImplicitVRPrivateCreatorResolvesPrivateBlock`, `testPrivateCreatorReservationsAreScopedPerSequenceItem` | Safe creation/editing and optional private dictionaries |
 | Default, ISO_IR 100, ISO_IR 192 repertoires | PS3.5 6.1 and 6.2 | Semantic read/write for supported repertoires | `testLatin1SpecificCharacterSetRoundTrips`, `testUTF8SpecificCharacterSetRoundTrips`, `testNestedCharacterSetOverrideDoesNotLeakToSiblingItem` | PN model, ISO 2022, wider repertoire corpus |
 | Unsupported character repertoires | PS3.5 6.1 | Explicitly unsupported | `testUnsupportedCharacterSetDoesNotFallBackToUTF8` | Add repertoires with normative vectors |
-| Lazy Bulk Data | PS3.5 value fields, PS3.18/PS3.19 bulk-data model | Not implemented | none | File-backed ranges, lifecycle, streaming, limits |
+| Lazy Bulk Data | PS3.5 value fields, PS3.18/PS3.19 bulk-data model | Opt-in file-backed ranges for defined-length binary VRs | `testFileBackedBulkDataRemainsLazyUntilRequested`, `testLazyBulkDataReportsMissingSourceBeforeWrite` | Lazy encapsulated fragments and streaming output |
 | DICOMDIR and file-sets | PS3.10 and PS3.12 | Legacy partial implementation | `DcmSwiftTestsDicomdir` | Rebuild offsets and validate media profiles |
 | DICOM JSON | PS3.18 Annex F | Not conformant | none | Value, PN, SQ, null, InlineBinary, BulkDataURI |
 | Native DICOM Model XML | PS3.19 Annex A, used by PS3.18 | Not conformant | none | Namespace, values, PN, SQ, bulk data, escaping |

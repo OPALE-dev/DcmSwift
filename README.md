@@ -62,6 +62,14 @@ multiples, are validated independently from IOD requirements.
 Explicit VR parsing rejects unknown VR codes and non-zero reserved bytes in
 long-form headers; validation also reports odd-length Value Fields.
 
+For file-backed input, `DicomInputStream.bulkDataLoadingPolicy` can defer
+defined-length `OB`, `OD`, `OF`, `OL`, `OV`, `OW`, and `UN` Value Fields above a
+configurable threshold. Deferred values expose their source URL, byte offset,
+and length through `bulkDataReference`; `loadData()` reports I/O errors, while
+the historical `.data` accessor materializes on first use. `loadData(range:)`
+can read a bounded subrange without materializing the whole value. Encapsulated
+Pixel Data fragments are not lazy yet.
+
 The library also provides helpers for DICOM dates, times, UIDs, tags, VRs,
 endianness, pixel access, Structured Reports, and radiotherapy objects.
 

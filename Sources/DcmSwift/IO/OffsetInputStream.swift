@@ -18,6 +18,7 @@ public class OffsetInputStream {
     
     /// The total number of bytes in the stream
     internal var total  = 0
+    internal var sourceURL:URL?
     
     public var hasReadableBytes:Bool {
         get {
@@ -35,6 +36,7 @@ public class OffsetInputStream {
      Init a DicomInputStream with a file path
      */
     public init(filePath:String) {
+        sourceURL   = URL(fileURLWithPath: filePath)
         stream      = InputStream(fileAtPath: filePath)
         backstream  = InputStream(fileAtPath: filePath)
         total       = Int(DicomFile.fileSize(path: filePath))
@@ -44,6 +46,7 @@ public class OffsetInputStream {
     Init a DicomInputStream with a file URL
     */
     public init(url:URL) {
+        sourceURL   = url
         stream      = InputStream(url: url)
         backstream  = InputStream(url: url)
         total       = Int(DicomFile.fileSize(path: url.path))
@@ -119,7 +122,23 @@ public class OffsetInputStream {
      - Parameter bytes: the number of bytes to jump in the stream
      */
     internal func forward(by bytes: Int) {
-        // read into the void...
-        _ = read(length: bytes)
+        _ = skip(length: bytes)
+    }
+
+    /// Advances without allocating a buffer proportional to the skipped Value
+    /// Field. This is used by file-backed lazy Bulk Data parsing.
+    @discardableResult
+    internal func skip(length:Int) -> Bool {
+        guard length >= 0, length <= readableBytes else { return false }
+        var remaining = length
+        var buffer = [UInt8](repeating: 0, count: Swift.min(64 * 1024, Swift.max(remaining, 1)))
+        while remaining > 0 {
+            let requested = Swift.min(remaining, buffer.count)
+            let count = stream.read(&buffer, maxLength: requested)
+            guard count > 0 else { return false }
+            remaining -= count
+            offset += count
+        }
+        return true
     }
 }
