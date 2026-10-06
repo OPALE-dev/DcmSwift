@@ -6,7 +6,7 @@
 //
 
 import XCTest
-import DcmSwift
+@testable import DcmSwift
 
 /**
  */
@@ -62,6 +62,65 @@ class DcmSwiftTestsDicomdir: XCTestCase {
                 .trimmingCharacters(in: .whitespacesAndNewlines),
             "PATIENT"
         )
+    }
+
+    func testDirectoryRecordTypeRegistryAndLosslessGenericView() throws {
+        XCTAssertTrue(DICOMDirectoryRecordType.standard2026d.contains(.rtDose))
+        XCTAssertTrue(DICOMDirectoryRecordType.standard2026d.contains(.waveformPresentation))
+        XCTAssertTrue(DICOMDirectoryRecordType.standard2026d.contains(.private))
+
+        let directory = makeDirectory()
+        let sequence = try XCTUnwrap(directory.createDirectoryRecordSequence())
+        let imageItem = try XCTUnwrap(sequence.items.first {
+            ($0.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) == "IMAGE"
+        })
+        XCTAssertTrue(imageItem.element(withName: "DirectoryRecordType")?.setValue("VENDOR RECORD") == true)
+        let privateTag = DataTag(withGroup: "0011", element: "1010")
+        let privateElement = DataElement(withTag: privateTag, dataset: directory.dataset, parent: imageItem)
+        privateElement.vr = .UN
+        XCTAssertTrue(privateElement.setValue(Data([0xde, 0xad, 0xbe, 0xef])))
+        imageItem.elements.append(privateElement)
+        let dataSet = DataSet()
+        dataSet.add(element: sequence)
+        directory.dataset = dataSet
+
+        let record = try XCTUnwrap(directory.directoryRecords.first { $0.type?.rawValue == "VENDOR RECORD" })
+        XCTAssertFalse(DICOMDirectoryRecordType.standard2026d.contains(try XCTUnwrap(record.type)))
+        XCTAssertTrue(record.elements.contains { $0 === privateElement })
+        XCTAssertEqual(privateElement.data, Data([0xde, 0xad, 0xbe, 0xef]))
+    }
+
+    func testDirectoryRecordKeyValidationCoversBasicAndRTRecords() throws {
+        let directory = makeDirectory()
+        let dataSet = DataSet()
+        let sequence = try XCTUnwrap(directory.createDirectoryRecordSequence())
+        dataSet.add(element: sequence)
+        directory.dataset = dataSet
+        XCTAssertTrue(directory.validateDirectoryRecordKeys().isEmpty)
+
+        let study = try XCTUnwrap(sequence.items.first {
+            ($0.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) == "STUDY"
+        })
+        XCTAssertTrue(study.element(withName: "StudyID")?.setValue("") == true)
+        study.elements.removeAll { $0.name == "AccessionNumber" }
+        var messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("empty Type 1 key StudyID") })
+        XCTAssertTrue(messages.contains { $0.contains("missing Type 2 key AccessionNumber") })
+
+        XCTAssertTrue(study.element(withName: "StudyID")?.setValue("STUDY1") == true)
+        append(value: "", name: "AccessionNumber", to: study, dataSet: dataSet)
+        let image = try XCTUnwrap(sequence.items.first {
+            ($0.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) == "IMAGE"
+        })
+        XCTAssertTrue(image.element(withName: "DirectoryRecordType")?.setValue("RT DOSE") == true)
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("missing Type 1 key DoseSummationType") })
+
+        append(value: "PLAN", name: "DoseSummationType", to: image, dataSet: dataSet)
+        XCTAssertTrue(directory.validateDirectoryRecordKeys().isEmpty)
     }
     
     func testWriteDicomDir() throws {
@@ -238,7 +297,14 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         directory.patients = ["P1": "DOE^JANE", "P2": "DOE^JOHN"]
         directory.studiesKeys = ["1.2.3"]
         directory.studies = [
-            "1.2.3": ["PatientID": "P1", "StudyID": "STUDY1"]
+            "1.2.3": [
+                "PatientID": "P1",
+                "StudyDate": "20261006",
+                "StudyTime": "120000",
+                "StudyDescription": "Synthetic study",
+                "StudyID": "STUDY1",
+                "AccessionNumber": ""
+            ]
         ]
         directory.seriesKeys = ["1.2.3.1"]
         directory.series = [
@@ -263,6 +329,14 @@ class DcmSwiftTestsDicomdir: XCTestCase {
 
     private func offset(named name:String, in item:DataItem) -> UInt32? {
         return item.element(withName: name)?.value as? UInt32
+    }
+
+    private func append(value:Any, name:String, to item:DataItem, dataSet:DataSet) {
+        guard let element = DataElement(withTagName: name, dataset: dataSet, parent: item) else {
+            return XCTFail("Missing dictionary tag \(name)")
+        }
+        XCTAssertTrue(element.setValue(value))
+        item.elements.append(element)
     }
 
     private func writeReferencedFile(to url:URL, sopInstanceUID:String) throws {

@@ -38,7 +38,7 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Fixed-width numeric VR values | Scalar and multi-valued signed/unsigned integer and floating-point read/write with dictionary VM validation |
 | Lazy Bulk Data | Opt-in file-backed references and bounded reads for defined-length binary VRs and encapsulated Pixel Data Items |
 | DICOM JSON / Native DICOM Model XML | Existing convenience output is not PS3.18 conformant |
-| Basic DICOMDIR | PATIENT/STUDY/SERIES/IMAGE read/write; serialized Item offsets, complete reachability, File-set/File IDs, consistency flag, and referenced Part 10 identities can be validated |
+| Basic DICOMDIR | PATIENT/STUDY/SERIES/IMAGE read/write; lossless generic view of all current F.4-1 types; serialized Item offsets, complete reachability, selected unconditional F.5 keys, File-set/File IDs, consistency flag, and referenced Part 10 identities can be validated |
 | PS3.12 media profiles | Not qualified; no media-profile conformance claim |
 
 Known UIDs are not automatically supported. `TransferSyntaxCapability` is the
@@ -58,8 +58,11 @@ PS3.10 one-to-eight component syntax. PRIVATE records require their defining
 UID and retired record types remain observable. Explicit
 file-set integrity validation checks unique contained targets and their SOP
 Class, SOP Instance, and Transfer Syntax identities. It does not yet claim
-support for every Directory Record type, File-set update semantics, descriptor
-content decoding, or any specific media storage application profile. The
+support for writing every Directory Record type, File-set update semantics,
+descriptor content decoding, all conditional or type-specific F.5 keys, or any
+specific media storage application profile. Unconditional Type 1 and Type 2
+key checks currently cover PATIENT, STUDY, SERIES, IMAGE, RT DOSE, RT STRUCTURE
+SET, RT PLAN, and RT TREAT RECORD. The
 optional File-set Descriptor File ID and character-set declaration are
 preserved, and the descriptor target can be checked for containment and
 existence.

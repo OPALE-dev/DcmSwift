@@ -12,9 +12,9 @@ private enum DICOMDirectoryHierarchy {
         "VALUE MAP", "STEREOMETRIC", "PLAN", "MEASUREMENT", "SURFACE", "TRACT",
         "ASSESSMENT", "RADIOTHERAPY", "ANNOTATION", "WF PRESENTATION", "PRIVATE"
     ]
-    static let allCurrent:Set<String> = root
-        .union(["STUDY", "SERIES", "SURFACE SCAN"])
-        .union(seriesChildren)
+    static let allCurrent:Set<String> = Set(
+        DICOMDirectoryRecordType.standard2026d.map(\.rawValue)
+    )
     static let retired:Set<String> = [
         "PRINT QUEUE", "FILM SESSION", "FILM BOX", "IMAGE BOX", "OVERLAY",
         "MODALITY LUT", "VOI LUT", "CURVE", "TOPIC", "VISIT", "RESULTS",

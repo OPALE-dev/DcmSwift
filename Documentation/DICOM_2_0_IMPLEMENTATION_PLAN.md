@@ -64,6 +64,10 @@ Current progress in that order:
 - Basic DICOMDIR PATIENT/STUDY/SERIES/IMAGE read/write now computes offsets
   from the serialized layout and validates the record graph, File-set/File IDs,
   and referenced Part 10 identities;
+- every current PS3.3 2026d Table F.4-1 Directory Record Type now has an
+  extensible public identifier and a lossless generic record view; unconditional
+  F.5 keys are validated for the basic hierarchy and four first-generation RT
+  record types;
 - broader Directory Record coverage and PS3.12 media-profile qualification are
   still required before starting the planned JSON and XML work.
 
