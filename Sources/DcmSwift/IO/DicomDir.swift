@@ -90,9 +90,7 @@ public class DicomDir:DicomFile {
             return false
         }
         
-        load()
-        
-        return rez
+        return load()
     }
     
     /**
@@ -225,7 +223,145 @@ public class DicomDir:DicomFile {
     /**
         Load all the properties of a DicomDir instance (patients, index etc)
      */
-    private func load() {
+    private func load() -> Bool {
+        guard let dataSet = dataset,
+              let sequence = dataSet.element(forTagName: "DirectoryRecordSequence") as? DataSequence else {
+            return false
+        }
+
+        index.removeAll()
+        patients.removeAll()
+        patientsKeys.removeAll()
+        studies.removeAll()
+        studiesKeys.removeAll()
+        series.removeAll()
+        seriesKeys.removeAll()
+        images.removeAll()
+        imagesKeys.removeAll()
+
+        let itemsByOffset = Dictionary(
+            uniqueKeysWithValues: sequence.items.map { ($0.startOffset, $0) }
+        )
+        var visited:Set<Int> = []
+        let fileSetRoot = URL(fileURLWithPath: filepath).deletingLastPathComponent()
+
+        func string(_ name:String, in item:DataItem) -> String? {
+            guard let value = item.element(withName: name)?.value as? String else { return nil }
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+
+        func offset(_ name:String, in item:DataItem) -> Int {
+            guard let value = item.element(withName: name)?.value as? UInt32 else { return 0 }
+            return Int(value)
+        }
+
+        let firstRoot = Int(dataSet.unsignedInteger32(
+            forTag: "OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity"
+        ) ?? 0)
+        let lastRoot = Int(dataSet.unsignedInteger32(
+            forTag: "OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity"
+        ) ?? 0)
+        let referencedOffsets = [firstRoot, lastRoot] + sequence.items.flatMap {
+            [
+                offset("OffsetOfTheNextDirectoryRecord", in: $0),
+                offset("OffsetOfReferencedLowerLevelDirectoryEntity", in: $0)
+            ]
+        }
+        guard referencedOffsets.allSatisfy({ $0 == 0 || itemsByOffset[$0] != nil }) else {
+            return false
+        }
+
+        func visitSiblings(
+            startingAt firstOffset:Int,
+            patientID inheritedPatientID:String? = nil,
+            studyUID inheritedStudyUID:String? = nil,
+            seriesUID inheritedSeriesUID:String? = nil
+        ) {
+            var currentOffset = firstOffset
+            while currentOffset != 0,
+                  !visited.contains(currentOffset),
+                  let item = itemsByOffset[currentOffset] {
+                visited.insert(currentOffset)
+                let type = string("DirectoryRecordType", in: item)
+                var patientID = inheritedPatientID
+                var studyUID = inheritedStudyUID
+                var seriesUID = inheritedSeriesUID
+
+                switch type {
+                case "PATIENT":
+                    if let value = string("PatientID", in: item) {
+                        patientID = value
+                        patients[value] = string("PatientName", in: item) ?? ""
+                        if !patientsKeys.contains(value) { patientsKeys.append(value) }
+                    }
+
+                case "STUDY":
+                    if let value = string("StudyInstanceUID", in: item) {
+                        studyUID = value
+                        var attributes:[String:Any] = [:]
+                        if let patientID { attributes["PatientID"] = patientID }
+                        for name in ["StudyDate", "StudyTime", "AccessionNumber", "StudyDescription", "StudyID"] {
+                            if let value = string(name, in: item) { attributes[name] = value }
+                        }
+                        studies[value] = attributes
+                        if !studiesKeys.contains(value) { studiesKeys.append(value) }
+                    }
+
+                case "SERIES":
+                    if let value = string("SeriesInstanceUID", in: item) {
+                        seriesUID = value
+                        var attributes:[String:String] = [:]
+                        if let studyUID { attributes["StudyInstanceUID"] = studyUID }
+                        if let modality = string("Modality", in: item) { attributes["Modality"] = modality }
+                        if let number = string("SeriesNumber", in: item) { attributes["SeriesNumber"] = number }
+                        series[value] = attributes
+                        if !seriesKeys.contains(value) { seriesKeys.append(value) }
+                    }
+
+                case "IMAGE":
+                    if let sopInstanceUID = string("ReferencedSOPInstanceUIDInFile", in: item) {
+                        var attributes:[String:Any] = [:]
+                        if let seriesUID { attributes["SeriesInstanceUID"] = seriesUID }
+                        for name in ["ReferencedFileID", "ReferencedSOPClassUIDInFile", "ReferencedTransferSyntaxUIDInFile", "InstanceNumber"] {
+                            if let value = string(name, in: item) { attributes[name] = value }
+                        }
+                        images[sopInstanceUID] = attributes
+                        if !imagesKeys.contains(sopInstanceUID) { imagesKeys.append(sopInstanceUID) }
+
+                        if let fileID = attributes["ReferencedFileID"] as? String {
+                            let relativeComponents = fileID.split(separator: "\\").map(String.init)
+                            let resolved = relativeComponents.reduce(fileSetRoot) {
+                                $0.appendingPathComponent($1)
+                            }.path
+                            index.append(resolved)
+                        }
+                    }
+
+                default:
+                    break
+                }
+
+                let lowerOffset = offset("OffsetOfReferencedLowerLevelDirectoryEntity", in: item)
+                if lowerOffset != 0 {
+                    visitSiblings(
+                        startingAt: lowerOffset,
+                        patientID: patientID,
+                        studyUID: studyUID,
+                        seriesUID: seriesUID
+                    )
+                }
+                currentOffset = offset("OffsetOfTheNextDirectoryRecord", in: item)
+            }
+        }
+
+        visitSiblings(startingAt: firstRoot)
+        return visited.count == sequence.items.count
+    }
+
+    /// Retained temporarily as a reference while the offset-driven reader is
+    /// qualified against external media fixtures.
+    private func legacyLoad() {
         if let dataset = self.dataset {
             if let directoryRecordSequence = dataset.element(forTagName: "DirectoryRecordSequence") as? DataSequence {
                 
@@ -436,10 +572,7 @@ public class DicomDir:DicomFile {
         let dcmDir = DicomDir.init()
         dcmDir.filepath = amputation(forPath:folderPath)
         
-        var pathFolder = folderPath
-        if(pathFolder.last != "/") {
-            pathFolder += "/"
-        }
+        let rootURL = URL(fileURLWithPath: folderPath, isDirectory: true).standardizedFileURL
             
         let files = DicomDir.browse(atPath: folderPath)
         
@@ -534,9 +667,11 @@ public class DicomDir:DicomFile {
             let instanceNumber = dcmFile.dataset.string(forTag: "InstanceNumber")
             let SOPClassUID = dcmFile.dataset.string(forTag: "SOPClassUID")
             
-            let index = pathFolder.lastIndex(of: "/")
-            let imgPath = absolutePath[index!...]
-            let pathFormatted = String(formatPath(forPath: String(imgPath)))
+            let fileURL = URL(fileURLWithPath: absolutePath).standardizedFileURL
+            let rootPath = rootURL.path.hasSuffix("/") ? rootURL.path : rootURL.path + "/"
+            guard fileURL.path.hasPrefix(rootPath) else { continue }
+            let relativePath = String(fileURL.path.dropFirst(rootPath.count))
+            let pathFormatted = relativePath.replacingOccurrences(of: "/", with: "\\")
             
             if let key = imageSOPinstance {
                 if dcmDir.images[key] == nil {
@@ -604,7 +739,7 @@ public class DicomDir:DicomFile {
      
      - Returns: the DirectoryRecordSequence
      */
-    public func createDirectoryRecordSequence() -> DataSequence? {
+    private func legacyCreateDirectoryRecordSequence() -> DataSequence? {
         // All the useful tags
         let dataTag = DataTag.init(withGroup: "0004", element: "1220", byteOrder: .LittleEndian)
         let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
@@ -898,46 +1033,8 @@ public class DicomDir:DicomFile {
      - Parameter sequence: the directory record sequence fully written but with wrong offsets for each item
      - Returns: the directory record sequence but with the rights offsets !
      */
+    @available(*, deprecated, message: "Directory offsets are assigned by writeDicomDir(atPath:)")
     public func addOffsets(ForSequence sequence: DataSequence?) -> DataSequence? {
-        print(offsetsNextPatients)
-        print(offsetsNextStudies)
-        print(offsetsNextSeries)
-        print(offsetsNextImages)
-        
-        print(offsetsLowerPatients)
-        print(offsetsLowerStudies)
-        print(offsetsLowerSeries)
-        
-        let tagNextRecord = DataTag.init(withGroup: "0004", element: "1400", byteOrder: .LittleEndian)
-        let tagLowerRecord = DataTag.init(withGroup: "0004", element: "1420", byteOrder: .LittleEndian)
-        let tagItem = DataTag.init(withGroup: "fffe", element: "e000", byteOrder: .LittleEndian)
-        
-        if let s = sequence {
-            for item in s.items {
-                for element in item.elements {
-                    if "\(element.tag)" != "\(tagItem)" {
-                        for i:Int in 0 ..< patientsKeys.count {
-                            let _ = addValue(addString: "\(offsetsNextPatients[i])", forTag: tagNextRecord, withParent: item)
-                            let _ = addValue(addString: "\(offsetsLowerPatients[i])", forTag: tagLowerRecord, withParent: item)
-                            
-                            for j:Int in 0 ..< studiesKeys.count {
-                                let _ = addValue(addString: "\(offsetsNextStudies[j])", forTag: tagNextRecord, withParent: item)
-                                let _ = addValue(addString: "\(offsetsLowerStudies[j])", forTag: tagLowerRecord, withParent: item)
-                                
-                                for k:Int in 0 ..< seriesKeys.count {
-                                    let _ = addValue(addString: "\(offsetsNextSeries[k])", forTag: tagNextRecord, withParent: item)
-                                   let _ = addValue(addString: "\(offsetsLowerSeries[k])", forTag: tagLowerRecord, withParent: item)
-                                    
-                                    for l:Int in 0 ..< imagesKeys.count {
-                                        let _ = addValue(addString: "\(offsetsNextStudies[l])", forTag: tagNextRecord, withParent: item)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
         return sequence
     }
 
@@ -977,7 +1074,7 @@ public class DicomDir:DicomFile {
      - Parameter folderPath: the path to write the DICOM DIR
      - Returns: a `Bool` indicating success
      */
-    public func writeDicomDir(atPath folderPath:String) -> Bool {
+    private func legacyWriteDicomDir(atPath folderPath:String) -> Bool {
         hasPreamble = true
         dataset = DataSet()
         
@@ -1009,15 +1106,12 @@ public class DicomDir:DicomFile {
         offset += sizeAfterOffset
                 
         // Write the DirectoryRecordSequence
-        if let c:DataSequence = createDirectoryRecordSequence() {
-            
-            if let d:DataSequence = addOffsets(ForSequence: c) {
-                for item in d.items {
-                    item.length = -1
-                }
-                d.length = -1
-                dataset.add(element: d as DataElement)
+        if let c:DataSequence = legacyCreateDirectoryRecordSequence() {
+            for item in c.items {
+                item.length = -1
             }
+            c.length = -1
+            dataset.add(element: c as DataElement)
         }
         
         _ = dataset.set(value: UInt32(offsetFirst).bigEndian, forTagName:  "OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity") // offsetFirst

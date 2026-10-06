@@ -5,6 +5,10 @@ Implementation: DcmSwift 2.0 development branch
 Status: incomplete implementation statement; not a claim of full DICOM
 conformance
 
+All deliberately deferred gaps are tracked in
+`Documentation/DICOM_DEFERRED_LIMITATIONS.md`; they are not implied to be
+covered by broader structural claims in this document.
+
 ## Implementation model
 
 DcmSwift is a Swift library with command-line examples. It currently provides
@@ -34,15 +38,24 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Fixed-width numeric VR values | Scalar and multi-valued signed/unsigned integer and floating-point read/write with dictionary VM validation |
 | Lazy Bulk Data | Opt-in file-backed references and bounded reads for defined-length binary VRs and encapsulated Pixel Data Items |
 | DICOM JSON / Native DICOM Model XML | Existing convenience output is not PS3.18 conformant |
-| DICOMDIR and media profiles | Existing implementation is not yet claimed conformant |
+| Basic DICOMDIR | PATIENT/STUDY/SERIES/IMAGE read/write; serialized Item offsets, pointer targets, and PS3.10 Referenced File IDs are validated |
+| PS3.12 media profiles | Not qualified; no media-profile conformance claim |
 
 Known UIDs are not automatically supported. `TransferSyntaxCapability` is the
 authoritative programmatic statement for structural I/O, Pixel Data
 preservation, codec operations, and DIMSE negotiation.
 
-The next file-core priorities are remaining semantic VR validation and
-DICOMDIR. Deflated DIMSE negotiation remains separate network work.
+The next file-core priorities are remaining semantic VR validation, broader
+DICOMDIR Directory Record coverage, and PS3.12 media-profile qualification.
+Deflated DIMSE negotiation remains separate network work.
 PS3.18 JSON and XML representations follow those binary-format milestones.
+
+The Basic DICOMDIR implementation uses Explicit VR Little Endian, defined
+length Directory Record Sequence Items, and offsets that reference Item Tags.
+It rejects dangling pointers and Referenced File IDs outside the PS3.10
+one-to-eight component syntax. It does not yet claim support for every
+Directory Record type, File-set update semantics, File-set Descriptor files,
+or any specific General Purpose media application profile.
 
 ## Network support
 

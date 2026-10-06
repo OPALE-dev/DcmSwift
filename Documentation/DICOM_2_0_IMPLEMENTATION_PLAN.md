@@ -32,7 +32,9 @@ Deliverables:
   round trips with independent toolkits.
 
 The current implementation evidence and remaining gaps are tracked in
-`Documentation/DICOM_TRACEABILITY.md`.
+`Documentation/DICOM_TRACEABILITY.md`. Intentionally deferred limitations stay
+listed in `Documentation/DICOM_DEFERRED_LIMITATIONS.md` until their evidence and
+documentation release gates are complete.
 
 Acceptance criteria:
 
@@ -52,6 +54,18 @@ Implementation order for the remaining Phase 1 work:
 5. rebuild and qualify DICOMDIR and media-file handling;
 6. implement the PS3.18 DICOM JSON model;
 7. implement the PS3.18 Native DICOM Model XML representation.
+
+Current progress in that order:
+
+- capability/conformance documentation is synchronized through the Basic
+  DICOMDIR milestone;
+- binary multi-valued VR/VM handling, lazy Bulk Data, and Deflated Explicit VR
+  Little Endian are implemented with malformed-input regression tests;
+- Basic DICOMDIR PATIENT/STUDY/SERIES/IMAGE read/write now computes offsets
+  from the serialized layout and validates pointer targets and Referenced File
+  IDs;
+- broader Directory Record coverage and PS3.12 media-profile qualification are
+  still required before starting the planned JSON and XML work.
 
 JSON and XML work deliberately follows the binary core so that alternate
 representations are built on a stable, lossless Data Set model.

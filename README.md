@@ -4,9 +4,10 @@ DcmSwift is a work-in-progress DICOM implementation written in Swift. The
 DcmSwift 2.0 effort currently prioritizes a safe, measurable implementation of
 the DICOM file format before expanding the networking stack.
 
-The remaining file roadmap prioritizes binary VR/VM completeness, lazy Bulk
-Data, Deflated Explicit VR Little Endian, and DICOMDIR before the PS3.18 JSON
-and XML representations.
+The binary VR/VM, lazy Bulk Data, Deflated Explicit VR Little Endian, and Basic
+DICOMDIR milestones are now implemented with structural regression tests. The
+remaining binary-file work and media-profile qualification still precede the
+PS3.18 JSON and XML representations.
 
 The normative baseline is **DICOM 2026d**. Registry knowledge is kept separate
 from actual structural, semantic, codec, and network support: the presence of a
@@ -88,7 +89,8 @@ endianness, pixel access, Structured Reports, and radiotherapy objects.
 | Character sets | Default repertoire, ISO_IR 100, and ISO_IR 192, with nested Data Set inheritance/override |
 | ISO 2022 code extensions | Not implemented; rejected rather than decoded as UTF-8 |
 | DICOM JSON and Native DICOM Model XML | Existing convenience output is not yet PS3.18 conformant |
-| DICOMDIR/media profiles | Partial and not yet claimed conformant |
+| DICOMDIR | Basic Directory read/write with computed record offsets, offset validation, and PS3.10 Referenced File ID validation |
+| PS3.12 media profiles | Not yet qualified; Basic DICOMDIR support is not a media-profile conformance claim |
 | DICOM Upper Layer/DIMSE | Experimental; C-ECHO is the most complete path |
 | C-STORE and C-FIND | Partial building blocks |
 | C-MOVE, C-GET, C-CANCEL and DIMSE-N | Not implemented or not qualified |
@@ -98,6 +100,9 @@ See the [DcmSwift 2.0 implementation plan](Documentation/DICOM_2_0_IMPLEMENTATIO
 the [working Conformance Statement](Documentation/DICOM_CONFORMANCE.md), and
 the [DICOM traceability matrix](Documentation/DICOM_TRACEABILITY.md) for the
 detailed scope, automated evidence, and release gates.
+Intentionally deferred gaps are retained in the
+[limitations register](Documentation/DICOM_DEFERRED_LIMITATIONS.md) until their
+implementation and qualification evidence are complete.
 
 ## Use DcmSwift in your project
 
@@ -174,6 +179,13 @@ Add an element, here a sequence, to a dataset:
     
 ## DICOMDIR
 
+`DicomDir` reads and writes the Basic Directory PATIENT → STUDY → SERIES →
+IMAGE hierarchy. The writer calculates record offsets from the final Explicit
+VR Little Endian byte layout and rejects invalid PS3.10 Referenced File IDs.
+The reader rejects dangling record pointers and resolves referenced files
+relative to the DICOMDIR. Other Directory Record types and PS3.12 media
+application profiles remain outside the currently qualified scope.
+
 Get all files indexed by a DICOMDIR file:
 
     if let dicomDir = DicomDir(forPath: dicomDirPath) {
@@ -189,9 +201,7 @@ List patients indexed in the DICOMDIR:
 Get files indexed by a DICOMDIR file for a specific `PatientID`:
 
     if let dicomDir = DicomDir(forPath: dicomDirPath) {
-        if let files = dicomDir.index(forPatientID: "198726783") {
-            print(files)
-        }
+        print(dicomDir.index(forPatientID: "198726783"))
     }
 
 ## DICOM SR
