@@ -164,16 +164,25 @@ public class DataSet: DicomObject {
      
      - Returns: an `XML` string of the dataset
      */
-    public override func toXML() -> String {
+    public override func toXML(_ pretty: Bool? = true) -> String {
         var xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         
         xml += "<NativeDicomModel xml:space=\"preserve\">"
         
         for element in allElements {
-            xml += element.toXML()
+            xml += element.toXML(pretty)
         }
         
         xml += "</NativeDicomModel>"
+        
+        if pretty == true {
+            if let xmlDoc = try? XMLDocument.init(xmlString: xml) {
+                let data = xmlDoc.xmlData(options: .nodePrettyPrint)
+                if let prettified = String(data: data, encoding: .utf8) {
+                    return prettified
+                }
+            }
+        }
         
         return xml
     }

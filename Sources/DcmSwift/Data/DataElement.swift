@@ -478,7 +478,7 @@ public class DataElement : DicomObject {
      
      - Returns: an XML `String` representing the `DataElement`
      */
-    public override func toXML() -> String {
+    public override func toXML(_ pretty: Bool? = true) -> String {
         var xml = "<DicomAttribute Tag=\"\(self.tagCode())\" VR=\"\(self.vr)\" Keyword=\"\(self.name)\">"
         if self.isMultiple {
             for v in self.values {
