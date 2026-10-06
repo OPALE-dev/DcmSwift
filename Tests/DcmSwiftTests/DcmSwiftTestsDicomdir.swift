@@ -77,6 +77,17 @@ class DcmSwiftTestsDicomdir: XCTestCase {
                 XCTAssertNotNil(DicomSpec.shared.dataTag(forName: key), key)
             }
         }
+        for keys in DICOMDirectoryRecordSchemas.conditionalType1Keys.values {
+            for key in keys {
+                XCTAssertNotNil(DicomSpec.shared.dataTag(forName: key), key)
+            }
+        }
+        XCTAssertEqual(
+            DICOMDirectoryRecordSchemas.specificCharacterSetTypes,
+            DICOMDirectoryRecordType.standard2026d.subtracting([
+                .implant, .implantAssembly, .implantGroup, .private
+            ])
+        )
 
         let directory = makeDirectory()
         let sequence = try XCTUnwrap(directory.createDirectoryRecordSequence())
@@ -172,6 +183,66 @@ class DcmSwiftTestsDicomdir: XCTestCase {
 
         append(value: "ISO_IR 100", name: "SpecificCharacterSet", to: patient, dataSet: dataSet)
         XCTAssertTrue(directory.validateDirectoryRecordKeys().isEmpty)
+    }
+
+    func testDirectoryRecordSelfContainedConditionalRules() throws {
+        let directory = makeDirectory()
+        let dataSet = DataSet()
+        let sequence = try XCTUnwrap(directory.createDirectoryRecordSequence())
+        dataSet.add(element: sequence)
+        directory.dataset = dataSet
+        let record = try XCTUnwrap(sequence.items.first {
+            ($0.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) == "IMAGE"
+        })
+
+        XCTAssertTrue(record.element(withName: "DirectoryRecordType")?.setValue("SR DOCUMENT") == true)
+        append(value: "VERIFIED", name: "VerificationFlag", to: record, dataSet: dataSet)
+        let emptyContent = appendSequence(named: "ContentSequence", to: record, dataSet: dataSet)
+        var messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("requires Type 1C key VerificationDateTime") })
+        XCTAssertTrue(messages.contains { $0.contains("empty Type 1C key ContentSequence") })
+
+        append(value: "20261006120000", name: "VerificationDateTime", to: record, dataSet: dataSet)
+        emptyContent.items.append(DataItem(
+            withTag: DataTag(withGroup: "fffe", element: "e000"),
+            parent: emptyContent
+        ))
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertFalse(messages.contains { $0.contains("VerificationDateTime") })
+        XCTAssertFalse(messages.contains { $0.contains("empty Type 1C key ContentSequence") })
+
+        XCTAssertTrue(record.element(withName: "DirectoryRecordType")?.setValue("HANGING PROTOCOL") == true)
+        record.elements.removeAll { ["VerificationFlag", "VerificationDateTime", "ContentSequence"].contains($0.name) }
+        let definitions = appendSequence(
+            named: "HangingProtocolDefinitionSequence",
+            to: record,
+            dataSet: dataSet
+        )
+        let definition = DataItem(
+            withTag: DataTag(withGroup: "fffe", element: "e000"),
+            parent: definitions
+        )
+        definitions.items.append(definition)
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains {
+            $0.contains("requires Modality or AnatomicRegionSequence")
+        })
+
+        let anatomicRegions = appendSequence(
+            named: "AnatomicRegionSequence",
+            to: definition,
+            dataSet: dataSet
+        )
+        anatomicRegions.items.append(DataItem(
+            withTag: DataTag(withGroup: "fffe", element: "e000"),
+            parent: anatomicRegions
+        ))
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("requires Type 2C key Laterality") })
+        append(value: "", name: "Laterality", to: definition, dataSet: dataSet)
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertFalse(messages.contains { $0.contains("requires Type 2C key Laterality") })
     }
     
     func testWriteDicomDir() throws {
@@ -388,6 +459,24 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         }
         XCTAssertTrue(element.setValue(value))
         item.elements.append(element)
+    }
+
+    @discardableResult
+    private func appendSequence(
+        named name:String,
+        to item:DataItem,
+        dataSet:DataSet
+    ) -> DataSequence {
+        guard let tag = DicomSpec.shared.dataTag(forName: name) else {
+            XCTFail("Missing dictionary tag \(name)")
+            return DataSequence(withTag: DataTag(withGroup: "ffff", element: "ffff"), parent: item)
+        }
+        let sequence = DataSequence(withTag: tag, parent: item)
+        sequence.dataset = dataSet
+        sequence.vr = .SQ
+        sequence.length = -1
+        item.elements.append(sequence)
+        return sequence
     }
 
     private func writeReferencedFile(to url:URL, sopInstanceUID:String) throws {

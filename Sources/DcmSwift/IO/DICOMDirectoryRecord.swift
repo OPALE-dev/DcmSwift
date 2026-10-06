@@ -238,6 +238,19 @@ enum DICOMDirectoryRecordSchemas {
         "ReferencedSOPInstanceUIDInFile",
         "ReferencedTransferSyntaxUIDInFile"
     ]
+
+    /// Type 1C keys whose value, when present, is always non-empty. Their
+    /// presence condition may still depend on the referenced SOP Instance.
+    static let conditionalType1Keys:[DICOMDirectoryRecordType:Set<String>] = [
+        .presentation: ["ReferencedSeriesSequence", "BlendingSequence"],
+        .structuredReport: ["VerificationDateTime", "ContentSequence"],
+        .keyObjectDocument: ["ContentSequence"],
+        .spectroscopy: ["ReferencedImageEvidenceSequence"],
+        .encapsulatedDocument: ["HL7InstanceIdentifier"],
+        .implant: ["ImplantSize"],
+        .radiotherapy: ["UserContentLabel", "UserContentLongLabel"],
+        .waveformPresentation: ["ReferencedSeriesSequence"]
+    ]
 }
 
 extension DICOMDirectoryRecordType {
@@ -318,8 +331,76 @@ extension DicomDir {
                     results: &results
                 )
             }
+
+            for name in DICOMDirectoryRecordSchemas.conditionalType1Keys[type] ?? [] {
+                if let element = record.item.element(withName: name), isEmptyDirectoryValue(element) {
+                    results.append(ValidationResult(
+                        element,
+                        message: "Directory Record Type \(type.rawValue) has an empty Type 1C key \(name)",
+                        severity: .Error
+                    ))
+                }
+            }
+
+            if type == .structuredReport,
+               normalizedDirectoryString(record.item.element(withName: "VerificationFlag")) == "VERIFIED" {
+                appendMissingOrEmptyConditionalKey(
+                    "VerificationDateTime",
+                    reason: "SR DOCUMENT with VerificationFlag VERIFIED requires Type 1C key VerificationDateTime",
+                    record: record,
+                    results: &results
+                )
+            }
+
+            if type == .hangingProtocol {
+                validateHangingProtocolDefinitionItems(record, results: &results)
+            }
         }
         return results
+    }
+
+    private func validateHangingProtocolDefinitionItems(
+        _ record:DICOMDirectoryRecord,
+        results:inout [ValidationResult]
+    ) {
+        guard let sequence = record.item.element(withName: "HangingProtocolDefinitionSequence") as? DataSequence else {
+            return
+        }
+        for item in sequence.items {
+            let modality = item.element(withName: "Modality")
+            let anatomicRegion = item.element(withName: "AnatomicRegionSequence")
+            let hasModality = modality.map { !isEmptyDirectoryValue($0) } ?? false
+            let hasAnatomicRegion = anatomicRegion.map { !isEmptyDirectoryValue($0) } ?? false
+
+            if !hasModality && !hasAnatomicRegion {
+                results.append(ValidationResult(
+                    item,
+                    message: "Hanging Protocol Definition Item requires Modality or AnatomicRegionSequence",
+                    severity: .Error
+                ))
+            }
+            if let modality, isEmptyDirectoryValue(modality) {
+                results.append(ValidationResult(
+                    modality,
+                    message: "Hanging Protocol Definition Item has an empty Type 1C key Modality",
+                    severity: .Error
+                ))
+            }
+            if let anatomicRegion, isEmptyDirectoryValue(anatomicRegion) {
+                results.append(ValidationResult(
+                    anatomicRegion,
+                    message: "Hanging Protocol Definition Item has an empty Type 1C key AnatomicRegionSequence",
+                    severity: .Error
+                ))
+            }
+            if hasAnatomicRegion && item.element(withName: "Laterality") == nil {
+                results.append(ValidationResult(
+                    item,
+                    message: "Hanging Protocol Definition Item with AnatomicRegionSequence requires Type 2C key Laterality",
+                    severity: .Error
+                ))
+            }
+        }
     }
 
     private func appendMissingOrEmptyConditionalKey(
@@ -367,6 +448,12 @@ extension DicomDir {
         default:
             return false
         }
+    }
+
+    private func normalizedDirectoryString(_ element:DataElement?) -> String? {
+        guard let value = element?.value as? String else { return nil }
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters))
+        return normalized.isEmpty ? nil : normalized
     }
 
     private func isEmptyDirectoryValue(_ element:DataElement) -> Bool {

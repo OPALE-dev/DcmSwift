@@ -68,7 +68,8 @@ Current progress in that order:
   extensible public identifier and a lossless generic record view; unconditional
   top-level Type 1 and Type 2 keys are represented for every current F.5 record
   type, and common Type 1C rules cover PRIVATE record UIDs, referenced-SOP
-  identity tuples, and extended character sets used by record keys;
+  identity tuples, extended character sets used by record keys, verified SR
+  documents, and Hanging Protocol Definition Items;
 - broader Directory Record coverage and PS3.12 media-profile qualification are
   still required before starting the planned JSON and XML work.
 
