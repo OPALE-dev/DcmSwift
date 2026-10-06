@@ -120,7 +120,7 @@ endianness, pixel access, Structured Reports, and radiotherapy objects.
 | Character sets | Default repertoire, ISO_IR 100, and ISO_IR 192, with nested Data Set inheritance/override |
 | ISO 2022 code extensions | Not implemented; rejected rather than decoded as UTF-8 |
 | DICOM JSON and Native DICOM Model XML | Existing convenience output is not yet PS3.18 conformant |
-| DICOMDIR | Basic Directory read/write with computed record offsets, graph/File-set ID validation, and referenced Part 10 identity checks |
+| DICOMDIR | Basic hierarchy read/write; all current F.4-1 types have a lossless generic view; computed offsets, graph, selected F.5 keys, File-set IDs, and referenced Part 10 identities are validated |
 | PS3.12 media profiles | Not yet qualified; Basic DICOMDIR support is not a media-profile conformance claim |
 | DICOM Upper Layer/DIMSE | Experimental; C-ECHO is the most complete path |
 | C-STORE and C-FIND | Partial building blocks |
@@ -214,8 +214,12 @@ Add an element, here a sequence, to a dataset:
 IMAGE hierarchy. The writer calculates record offsets from the final Explicit
 VR Little Endian byte layout and rejects invalid PS3.10 Referenced File IDs.
 The reader rejects dangling record pointers and resolves referenced files
-relative to the DICOMDIR. Other Directory Record types and PS3.12 media
-application profiles remain outside the currently qualified scope.
+relative to the DICOMDIR. A generic public record view exposes every current
+2026d F.4-1 type without discarding unknown or private attributes.
+Unconditional Type 1 and Type 2 keys are validated for PATIENT, STUDY, SERIES,
+IMAGE, RT DOSE, RT STRUCTURE SET, RT PLAN, and RT TREAT RECORD. Conditional
+keys, the remaining F.5 tables, writing those additional record types, and
+PS3.12 media application profiles remain outside the currently qualified scope.
 
 `validateDirectoryStructure()` checks the Basic Directory container, File-set
 ID, required pointer elements, consistency flag, cycles, root chain, and orphan
