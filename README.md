@@ -188,7 +188,10 @@ application profiles remain outside the currently qualified scope.
 
 `validateDirectoryStructure()` checks the Basic Directory container, File-set
 ID, required pointer elements, consistency flag, cycles, root chain, and orphan
-records. `validateReferencedFiles()` additionally checks Referenced File ID
+records. It also checks current Directory Record types and parent/child
+relationships against PS3.3 Table F.4-1, requires a UID for PRIVATE records,
+and reports retired record types. `validateReferencedFiles()` additionally
+checks Referenced File ID
 uniqueness and containment, target existence, and agreement of the referenced
 SOP Class, SOP Instance, and Transfer Syntax UIDs. These checks do not imply
 conformance with a PS3.11 media storage application profile.
