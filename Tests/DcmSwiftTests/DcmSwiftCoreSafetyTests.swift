@@ -453,4 +453,59 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertEqual(parsedSequence.items[0].elements.last?.privateCreator, "ONE")
         XCTAssertEqual(parsedSequence.items[1].elements.last?.privateCreator, "TWO")
     }
+
+    func testNestedCharacterSetOverrideDoesNotLeakToSiblingItem() throws {
+        func explicitElement(tag: [UInt8], vr: [UInt8], value: Data) -> Data {
+            var data = Data(tag + vr)
+            data.append(uint16: UInt16(value.count))
+            data.append(value)
+            return data
+        }
+
+        func item(_ content: Data) -> Data {
+            var data = Data([0xfe, 0xff, 0x00, 0xe0])
+            data.append(uint32: UInt32(content.count))
+            data.append(content)
+            return data
+        }
+
+        var bytes = explicitElement(
+            tag: [0x08, 0x00, 0x05, 0x00],
+            vr: [0x43, 0x53],
+            value: Data("ISO_IR 192".utf8)
+        )
+        let latin1Name = try XCTUnwrap("Jérôme".data(using: .isoLatin1))
+        var firstContent = explicitElement(
+            tag: [0x08, 0x00, 0x05, 0x00],
+            vr: [0x43, 0x53],
+            value: Data("ISO_IR 100".utf8)
+        )
+        firstContent.append(explicitElement(
+            tag: [0x10, 0x00, 0x10, 0x00],
+            vr: [0x50, 0x4e],
+            value: latin1Name
+        ))
+        let secondContent = explicitElement(
+            tag: [0x10, 0x00, 0x10, 0x00],
+            vr: [0x50, 0x4e],
+            value: Data("山田".utf8)
+        )
+        var items = item(firstContent)
+        items.append(item(secondContent))
+        bytes.append(contentsOf: [0x08, 0x00, 0x11, 0x11, 0x53, 0x51, 0x00, 0x00])
+        bytes.append(uint32: UInt32(items.count))
+        bytes.append(items)
+
+        let dataset = try XCTUnwrap(
+            try DicomInputStream(data: bytes).readDataset(enforceVR: false)
+        )
+        let sequence = try XCTUnwrap(dataset.allElements.last as? DataSequence)
+        let firstName = try XCTUnwrap(sequence.items[0].element(withName: "PatientName"))
+        let secondName = try XCTUnwrap(sequence.items[1].element(withName: "PatientName"))
+
+        XCTAssertEqual(firstName.effectiveCharacterSet, .latin1)
+        XCTAssertEqual(firstName.value as? String, "Jérôme")
+        XCTAssertEqual(secondName.effectiveCharacterSet, .utf8)
+        XCTAssertEqual(secondName.value as? String, "山田")
+    }
 }
