@@ -72,6 +72,8 @@ Current progress in that order:
   Macro and top-level Scope of Inventory Sequence;
 - Basic and Enhanced Coded Entry macro rules are validated recursively in
   Directory Record code sequences;
+- Scope of Inventory validates its outer cardinality, locally determinable
+  extended-matching dependencies, and present matching Sequence cardinalities;
 - every current PS3.3 2026d Table F.4-1 Directory Record Type now has an
   extensible public identifier and a lossless generic record view; unconditional
   top-level Type 1 and Type 2 keys are represented for every current F.5 record

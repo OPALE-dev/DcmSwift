@@ -240,8 +240,9 @@ nested semantics of every included macro or referenced-IOD condition.
 Included Basic/Enhanced Coded Entry attributes are validated recursively for
 code sequences: exactly one code-value form, Code Meaning, Coding Scheme
 Designator when applicable, Context Group provenance, and private-extension
-provenance. Other included-macro conditions and nested semantics remain
-incremental work.
+provenance. Scope of Inventory validates its zero-or-one Item constraint,
+extended-matching dependencies, and matching Sequence cardinalities. Other
+included-macro conditions and nested semantics remain incremental work.
 
 For example, an RT Dose record definition can be added to a Series record's
 `children` array with:
