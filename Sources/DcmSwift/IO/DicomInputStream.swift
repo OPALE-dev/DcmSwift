@@ -219,8 +219,11 @@ public class DicomInputStream: OffsetInputStream {
             guard let data = self.read(length: 2) else {
                 return nil
             }
-            
-            vr = DicomSpec.vr(for: data.toString())
+
+            guard let explicitVR = DicomSpec.vr(for: data.toString()) else {
+                return nil
+            }
+            vr = explicitVR
         }
         else {
             // PS3.5 7.8.1 assigns LO to Private Creator Data Elements even
@@ -252,9 +255,9 @@ public class DicomInputStream: OffsetInputStream {
                vr == .UN ||
                vr == .UR ||
                vr == .UV {
-            // read 2 empty bytes
+            // Long-form Explicit VR headers contain two reserved zero bytes.
             if vrMethod == .Explicit {
-                _ = read(length: 2)
+                guard read(length: 2) == Data([0x00, 0x00]) else { return nil }
             }
         }
         
@@ -385,8 +388,8 @@ public class DicomInputStream: OffsetInputStream {
         element.vrOffset        = offset
         
         guard let vr = readVR(element:element, vrMethod: element.vrMethod) else {
-            Logger.error("Cannot read VR at offset at \(offset)")
-            return nil
+            let message = "Fatal, invalid or truncated Explicit VR header for \(tag) at offset \(element.vrOffset)"
+            return readError(forLength: 0, element: element, message: message)
         }
         
         element.vr              = vr

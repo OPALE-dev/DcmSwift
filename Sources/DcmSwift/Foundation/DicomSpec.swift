@@ -652,6 +652,10 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     
     public func validate(dataElement element:DataElement) -> [ValidationResult] {
         var results:[ValidationResult] = []
+
+        if element.length >= 0 && !element.length.isMultiple(of: 2) {
+            results.append(ValidationResult(element, message: "Value Field length must be even (\(element.length))", severity: .Error))
+        }
         
         // check individual tags
         if element.name == "TransferSyntaxUID" {
