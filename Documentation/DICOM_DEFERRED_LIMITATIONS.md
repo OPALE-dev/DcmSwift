@@ -69,8 +69,9 @@ conformance without that evidence.
   directly mirrored by a referenced SOP Instance are checked during file-set
   integrity validation. Deeper IOD/module-dependent conditions, complete
   included macro validation beyond the current recursive Basic/Enhanced Coded
-  Entry checks, Scope of Inventory structural/dependency checks, and
-  unconditional top-level macro attributes remains unfinished. In particular,
+  Entry checks, SOP Instance Reference UID checks, Scope of Inventory
+  structural/dependency checks, and unconditional top-level macro attributes
+  remains unfinished. In particular,
   Scope of Inventory cannot infer whether range, UID-list, empty-value, general,
   or other matching was applied when the corresponding Sequence is absent.
   Complete semantic per-type qualification also remains unfinished.

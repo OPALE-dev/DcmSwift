@@ -72,6 +72,8 @@ Current progress in that order:
   Macro and top-level Scope of Inventory Sequence;
 - Basic and Enhanced Coded Entry macro rules are validated recursively in
   Directory Record code sequences;
+- SOP Instance Reference Macros in Referenced Image, Instance, and Waveform
+  Sequences validate non-empty cardinality and both mandatory UIDs;
 - Scope of Inventory validates its outer cardinality, locally determinable
   extended-matching dependencies, and present matching Sequence cardinalities;
 - every current PS3.3 2026d Table F.4-1 Directory Record Type now has an

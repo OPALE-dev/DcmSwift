@@ -652,6 +652,55 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         XCTAssertTrue(messages.contains { $0.contains("requires MappingResource") })
         XCTAssertTrue(messages.contains { $0.contains("requires ContextGroupVersion") })
     }
+
+    func testSOPInstanceReferenceMacroValidation() throws {
+        let directory = makeDirectory()
+        let dataSet = DataSet()
+        let records = try XCTUnwrap(directory.createDirectoryRecordSequence())
+        dataSet.add(element: records)
+        directory.dataset = dataSet
+        let image = try XCTUnwrap(records.items.first {
+            ($0.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) == "IMAGE"
+        })
+
+        let blending = appendSequence(named: "BlendingSequence", to: image, dataSet: dataSet)
+        let blendingItem = DataItem(
+            withTag: DataTag(withGroup: "fffe", element: "e000"),
+            parent: blending
+        )
+        blending.items.append(blendingItem)
+        let references = appendSequence(
+            named: "ReferencedImageSequence",
+            to: blendingItem,
+            dataSet: dataSet
+        )
+
+        var messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains {
+            $0.contains("ReferencedImageSequence requires one or more Items")
+        })
+
+        let reference = DataItem(
+            withTag: DataTag(withGroup: "fffe", element: "e000"),
+            parent: references
+        )
+        references.items.append(reference)
+        append(value: "", name: "ReferencedSOPInstanceUID", to: reference, dataSet: dataSet)
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("requires ReferencedSOPClassUID") })
+        XCTAssertTrue(messages.contains { $0.contains("requires ReferencedSOPInstanceUID") })
+
+        append(
+            value: "1.2.840.10008.5.1.4.1.1.2",
+            name: "ReferencedSOPClassUID",
+            to: reference,
+            dataSet: dataSet
+        )
+        XCTAssertTrue(reference.element(withName: "ReferencedSOPInstanceUID")?.setValue("1.2.3.4") == true)
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertFalse(messages.contains { $0.contains("ReferencedImageSequence") })
+    }
     
     func testWriteDicomDir() throws {
         let temporaryDirectory = FileManager.default.temporaryDirectory

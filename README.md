@@ -240,7 +240,9 @@ nested semantics of every included macro or referenced-IOD condition.
 Included Basic/Enhanced Coded Entry attributes are validated recursively for
 code sequences: exactly one code-value form, Code Meaning, Coding Scheme
 Designator when applicable, Context Group provenance, and private-extension
-provenance. Scope of Inventory validates its zero-or-one Item constraint,
+provenance. SOP Instance Reference Items in Referenced Image, Instance, and
+Waveform Sequences require both referenced UIDs and non-empty Sequences.
+Scope of Inventory validates its zero-or-one Item constraint,
 extended-matching dependencies, and matching Sequence cardinalities. Other
 included-macro conditions and nested semantics remain incremental work.
 
