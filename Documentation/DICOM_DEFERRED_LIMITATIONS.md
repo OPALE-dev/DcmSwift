@@ -56,17 +56,19 @@ conformance without that evidence.
 - The qualified writer currently emits only the Basic Directory hierarchy
   PATIENT → STUDY → SERIES → IMAGE. Implement and test every applicable
   Directory Record type and its required/conditional keys from PS3.3. Current
-  type names and F.4-1 parent/child relationships are validated, and
-  unconditional F.5 keys are checked for PATIENT, STUDY, SERIES, IMAGE, RT
-  DOSE, RT STRUCTURE SET, RT PLAN, and RT TREAT RECORD. Conditional keys and
-  the other F.5 tables remain unimplemented.
+  type names and F.4-1 parent/child relationships are validated, and all current
+  F.5 tables have their unconditional top-level Type 1 and Type 2 keys
+  represented. Conditional keys, included macro content, and writers for the
+  additional record types remain unimplemented.
 - Preserve and expose unknown Directory Record types without losing their
   attributes or breaking hierarchy traversal.
 - Decode File-set Descriptor content according to its declared character set;
   the ID, declaration, containment, and existence are currently preserved and
   validated without interpreting the non-DICOM text file.
-- Implement File-set update semantics, including consistency flag handling,
-  inactive records, additions, deletions, and safe offset rewriting.
+- Implement File-set update semantics for additions, replacements, deletions,
+  and safe offset rewriting. Current PS3.3 requires FileSetConsistencyFlag to
+  be 0000H and RecordInUseFlag to be FFFFH; their former inconsistent/inactive
+  values are retired and intentionally rejected.
 - Decide and document whether file-set integrity validation must be mandatory
   during writing. It is currently an explicit validation step so callers can
   construct the DICOMDIR before copying all referenced files into place.

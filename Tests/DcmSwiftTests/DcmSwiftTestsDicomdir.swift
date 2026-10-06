@@ -68,6 +68,15 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         XCTAssertTrue(DICOMDirectoryRecordType.standard2026d.contains(.rtDose))
         XCTAssertTrue(DICOMDirectoryRecordType.standard2026d.contains(.waveformPresentation))
         XCTAssertTrue(DICOMDirectoryRecordType.standard2026d.contains(.private))
+        XCTAssertEqual(
+            DICOMDirectoryRecordType.unconditionalKeyValidation2026d,
+            DICOMDirectoryRecordType.standard2026d
+        )
+        for requirements in DICOMDirectoryRecordSchemas.requirements.values {
+            for key in requirements.keys {
+                XCTAssertNotNil(DicomSpec.shared.dataTag(forName: key), key)
+            }
+        }
 
         let directory = makeDirectory()
         let sequence = try XCTUnwrap(directory.createDirectoryRecordSequence())
@@ -121,6 +130,11 @@ class DcmSwiftTestsDicomdir: XCTestCase {
 
         append(value: "PLAN", name: "DoseSummationType", to: image, dataSet: dataSet)
         XCTAssertTrue(directory.validateDirectoryRecordKeys().isEmpty)
+
+        XCTAssertTrue(image.element(withName: "DirectoryRecordType")?.setValue("WAVEFORM") == true)
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("missing Type 1 key ContentDate") })
+        XCTAssertTrue(messages.contains { $0.contains("missing Type 1 key ContentTime") })
     }
     
     func testWriteDicomDir() throws {

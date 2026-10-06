@@ -66,8 +66,8 @@ Current progress in that order:
   and referenced Part 10 identities;
 - every current PS3.3 2026d Table F.4-1 Directory Record Type now has an
   extensible public identifier and a lossless generic record view; unconditional
-  F.5 keys are validated for the basic hierarchy and four first-generation RT
-  record types;
+  top-level Type 1 and Type 2 keys are represented for every current F.5 record
+  type;
 - broader Directory Record coverage and PS3.12 media-profile qualification are
   still required before starting the planned JSON and XML work.
 

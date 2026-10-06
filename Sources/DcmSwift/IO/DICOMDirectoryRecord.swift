@@ -57,6 +57,7 @@ public struct DICOMDirectoryRecordType: RawRepresentable, Hashable, Sendable {
         .measurement, .surface, .surfaceScan, .tract, .assessment,
         .radiotherapy, .annotation, .inventory, .waveformPresentation, .private
     ]
+
 }
 
 /// Lossless view of one item in a Directory Record Sequence.
@@ -96,17 +97,17 @@ public struct DICOMDirectoryRecord {
     }
 }
 
-private enum DICOMDirectoryKeyType: Equatable {
+enum DICOMDirectoryKeyType: Equatable {
     case type1
     case type2
 }
 
-private enum DICOMDirectoryRecordSchemas {
+enum DICOMDirectoryRecordSchemas {
     typealias Requirements = [String:DICOMDirectoryKeyType]
 
-    /// Unconditional top-level keys from PS3.3 2026d Tables F.5-1 through
-    /// F.5-4 and F.5-19 through F.5-22. Conditional and included macro keys
-    /// are intentionally validated separately as their conditions are added.
+    /// Unconditional top-level keys from the PS3.3 2026d F.5 tables.
+    /// Conditional keys and included macro keys are intentionally validated
+    /// separately as their conditions are added.
     static let requirements:[DICOMDirectoryRecordType:Requirements] = [
         .patient: ["PatientName": .type2, "PatientID": .type1],
         .study: [
@@ -131,8 +132,101 @@ private enum DICOMDirectoryRecordSchemas {
         .rtTreatmentRecord: [
             "InstanceNumber": .type1, "TreatmentDate": .type2,
             "TreatmentTime": .type2
-        ]
+        ],
+        .presentation: [
+            "PresentationCreationDate": .type1,
+            "PresentationCreationTime": .type1
+        ],
+        .waveform: [
+            "InstanceNumber": .type1, "ContentDate": .type1,
+            "ContentTime": .type1
+        ],
+        .structuredReport: [
+            "InstanceNumber": .type1, "CompletionFlag": .type1,
+            "VerificationFlag": .type1, "ContentDate": .type1,
+            "ContentTime": .type1, "ConceptNameCodeSequence": .type1
+        ],
+        .keyObjectDocument: [
+            "InstanceNumber": .type1, "ContentDate": .type1,
+            "ContentTime": .type1, "ConceptNameCodeSequence": .type1
+        ],
+        .spectroscopy: [
+            "ImageType": .type1, "ContentDate": .type1,
+            "ContentTime": .type1, "InstanceNumber": .type1,
+            "NumberOfFrames": .type1, "Rows": .type1, "Columns": .type1,
+            "DataPointRows": .type1, "DataPointColumns": .type1
+        ],
+        .rawData: [
+            "ContentDate": .type1, "ContentTime": .type1,
+            "InstanceNumber": .type2
+        ],
+        .registration: ["ContentDate": .type1, "ContentTime": .type1],
+        .fiducial: ["ContentDate": .type1, "ContentTime": .type1],
+        .hangingProtocol: [
+            "HangingProtocolName": .type1,
+            "HangingProtocolDescription": .type1,
+            "HangingProtocolLevel": .type1,
+            "HangingProtocolCreator": .type1,
+            "HangingProtocolCreationDateTime": .type1,
+            "HangingProtocolDefinitionSequence": .type1,
+            "NumberOfPriorsReferenced": .type1,
+            "HangingProtocolUserIdentificationCodeSequence": .type2
+        ],
+        .encapsulatedDocument: [
+            "ContentDate": .type2, "ContentTime": .type2,
+            "InstanceNumber": .type1, "DocumentTitle": .type2,
+            "ConceptNameCodeSequence": .type2,
+            "MIMETypeOfEncapsulatedDocument": .type1
+        ],
+        .valueMap: ["ContentDate": .type1, "ContentTime": .type1],
+        .stereometric: [:],
+        .palette: ["ContentLabel": .type1, "ContentDescription": .type2],
+        .implant: [
+            "Manufacturer": .type1, "ImplantName": .type1,
+            "ImplantPartNumber": .type1
+        ],
+        .implantAssembly: [
+            "ImplantAssemblyTemplateName": .type1,
+            "Manufacturer": .type1, "ProcedureTypeCodeSequence": .type1
+        ],
+        .implantGroup: [
+            "ImplantTemplateGroupName": .type1,
+            "ImplantTemplateGroupIssuer": .type1
+        ],
+        .plan: [:],
+        .measurement: ["ContentDate": .type1, "ContentTime": .type1],
+        .surface: ["ContentDate": .type1, "ContentTime": .type1],
+        .surfaceScan: ["ContentDate": .type1, "ContentTime": .type1],
+        .tract: ["ContentDate": .type1, "ContentTime": .type1],
+        .assessment: [
+            "InstanceNumber": .type1, "InstanceCreationDate": .type1,
+            "InstanceCreationTime": .type2
+        ],
+        .radiotherapy: [
+            "InstanceNumber": .type1, "ContentDescription": .type2,
+            "ContentCreatorName": .type2
+        ],
+        .annotation: ["ContentDate": .type1, "ContentTime": .type1],
+        .inventory: [
+            "ContentDate": .type1, "ContentTime": .type1,
+            "InventoryPurpose": .type2, "InventoryLevel": .type1,
+            "InventoryCompletionStatus": .type1,
+            "TotalNumberOfStudyRecords": .type1
+        ],
+        .waveformPresentation: [
+            "PresentationCreationDate": .type1,
+            "PresentationCreationTime": .type1
+        ],
+        .private: [:]
     ]
+}
+
+extension DICOMDirectoryRecordType {
+    /// Types whose unconditional top-level PS3.3 F.5 keys are represented by
+    /// the validator. Conditional keys and included macros remain separate.
+    public static var unconditionalKeyValidation2026d:Set<Self> {
+        return Set(DICOMDirectoryRecordSchemas.requirements.keys)
+    }
 }
 
 extension DicomDir {

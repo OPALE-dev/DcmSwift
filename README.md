@@ -216,10 +216,10 @@ VR Little Endian byte layout and rejects invalid PS3.10 Referenced File IDs.
 The reader rejects dangling record pointers and resolves referenced files
 relative to the DICOMDIR. A generic public record view exposes every current
 2026d F.4-1 type without discarding unknown or private attributes.
-Unconditional Type 1 and Type 2 keys are validated for PATIENT, STUDY, SERIES,
-IMAGE, RT DOSE, RT STRUCTURE SET, RT PLAN, and RT TREAT RECORD. Conditional
-keys, the remaining F.5 tables, writing those additional record types, and
-PS3.12 media application profiles remain outside the currently qualified scope.
+Unconditional top-level Type 1 and Type 2 keys are represented for every
+current F.5 record type. Conditional keys, included macro content, writing the
+additional record types, and PS3.12 media application profiles remain outside
+the currently qualified scope.
 
 `validateDirectoryStructure()` checks the Basic Directory container, File-set
 ID, required pointer elements, consistency flag, cycles, root chain, and orphan
