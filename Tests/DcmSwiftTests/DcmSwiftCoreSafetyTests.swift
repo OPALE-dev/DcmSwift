@@ -12,8 +12,9 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
     func testKnownTransferSyntaxIsNotAutomaticallyImplemented() {
         let deflated = "1.2.840.10008.1.2.1.99"
         XCTAssertTrue(DicomSpec.shared.isKnown(transferSyntax: deflated))
-        XCTAssertFalse(DicomSpec.shared.isSupported(transferSyntax: deflated))
-        XCTAssertFalse(TransferSyntax(deflated)!.capability.canReadDataset)
+        XCTAssertTrue(DicomSpec.shared.isSupported(transferSyntax: deflated))
+        XCTAssertTrue(TransferSyntax(deflated)!.capability.canReadDataset)
+        XCTAssertFalse(TransferSyntax(deflated)!.capability.canNegotiateForDIMSE)
 
         let jpegBaseline = TransferSyntax.JPEGLossy8bit
         XCTAssertTrue(DicomSpec.shared.isKnown(transferSyntax: jpegBaseline))
@@ -190,8 +191,9 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
     }
 
     func testUnimplementedTransferSyntaxIsRejected() throws {
+        let unsupported = "1.2.840.10008.1.2.6.2"
         let meta = DataSet()
-        _ = meta.set(value: "1.2.840.10008.1.2.1.99", forTagName: "TransferSyntaxUID")
+        _ = meta.set(value: unsupported, forTagName: "TransferSyntaxUID")
         var part10 = Data(repeating: 0, count: 128)
         part10.append(contentsOf: [0x44, 0x49, 0x43, 0x4d])
         part10.append(meta.toData())
@@ -200,7 +202,7 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
             guard case StreamError.unsupportedTransferSyntax(let uid) = error else {
                 return XCTFail("Unexpected error: \(error)")
             }
-            XCTAssertEqual(uid, "1.2.840.10008.1.2.1.99")
+            XCTAssertEqual(uid, unsupported)
         }
     }
 
@@ -659,5 +661,76 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertFalse(parsedFragment.isDataLoaded)
         XCTAssertEqual(try parsedFragment.loadData(range: 10..<18), Data(repeating: 0x5a, count: 8))
         XCTAssertFalse(parsedFragment.isDataLoaded)
+    }
+
+    func testDeflatedExplicitVRLittleEndianPart10RoundTrip() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dcmswift-deflated-\(UUID().uuidString).dcm")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let source = DataSet()
+        source.hasPreamble = true
+        source.transferSyntax = try XCTUnwrap(TransferSyntax(TransferSyntax.deflatedExplicitVRLittleEndian))
+        XCTAssertNotNil(source.set(value: "1.2.826.0.1.3680043.10.999", forTagName: "ImplementationClassUID"))
+        XCTAssertNotNil(source.set(value: "DEFLATED", forTagName: "PatientID"))
+        XCTAssertNotNil(source.set(value: [Float64.pi, -0.5], forTagName: "TimeRange"))
+
+        XCTAssertTrue(try DicomOutputStream(url: url).write(dataset: source))
+        let decoded = try XCTUnwrap(try DicomInputStream(url: url).readDataset())
+        XCTAssertEqual(decoded.transferSyntax.tsUID, TransferSyntax.deflatedExplicitVRLittleEndian)
+        XCTAssertEqual(decoded.string(forTag: "PatientID"), "DEFLATED")
+        XCTAssertEqual(decoded.element(forTagName: "TimeRange")?.float64Values, [Double.pi, -0.5])
+    }
+
+    func testDeflatedDataSetHonorsInflatedSizeLimit() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dcmswift-deflated-limit-\(UUID().uuidString).dcm")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let source = DataSet()
+        source.hasPreamble = true
+        source.transferSyntax = try XCTUnwrap(TransferSyntax(TransferSyntax.deflatedExplicitVRLittleEndian))
+        XCTAssertNotNil(source.set(value: "1.2.826.0.1.3680043.10.999", forTagName: "ImplementationClassUID"))
+        XCTAssertNotNil(source.set(value: Data(repeating: 0, count: 4096), forTagName: "SelectorOBValue"))
+        XCTAssertTrue(try DicomOutputStream(url: url).write(dataset: source))
+
+        let stream = DicomInputStream(url: url)
+        stream.limits.maximumInflatedDataSetLength = 128
+        XCTAssertThrowsError(try stream.readDataset())
+    }
+
+    func testRawDeflateRejectsTruncationAndUnexpectedTrailingBytes() throws {
+        let compressed = try DICOMDeflate.compress(Data(repeating: 0x41, count: 4096))
+        XCTAssertEqual(compressed.count % 2, 0)
+        XCTAssertThrowsError(try DICOMDeflate.decompress(
+            Data(compressed.dropLast(2)),
+            maximumOutputLength: 8192
+        ))
+
+        var extra = compressed
+        extra.append(contentsOf: [0x01, 0x02])
+        XCTAssertThrowsError(try DICOMDeflate.decompress(extra, maximumOutputLength: 8192))
+    }
+
+    func testReadsIndependentPythonRawDeflateFixture() throws {
+        // The compressed bytes were produced independently with Python's
+        // zlib.compressobj(wbits: -15), not by DcmSwift's encoder.
+        var part10 = Data(repeating: 0, count: 128)
+        part10.append(contentsOf: [
+            0x44, 0x49, 0x43, 0x4d,
+            0x02, 0x00, 0x00, 0x00, 0x55, 0x4c, 0x04, 0x00,
+            0x1e, 0x00, 0x00, 0x00,
+            0x02, 0x00, 0x10, 0x00, 0x55, 0x49, 0x16, 0x00,
+            0x31, 0x2e, 0x32, 0x2e, 0x38, 0x34, 0x30, 0x2e,
+            0x31, 0x30, 0x30, 0x30, 0x38, 0x2e, 0x31, 0x2e,
+            0x32, 0x2e, 0x31, 0x2e, 0x39, 0x39,
+            0x13, 0x60, 0x50, 0x60, 0xf0, 0xf1, 0xe7, 0x60,
+            0x08, 0x88, 0x0c, 0xf1, 0xf0, 0xf7, 0x53, 0x50,
+            0x00, 0x00
+        ])
+
+        let dataset = try XCTUnwrap(try DicomInputStream(data: part10).readDataset())
+        XCTAssertEqual(dataset.transferSyntax.tsUID, TransferSyntax.deflatedExplicitVRLittleEndian)
+        XCTAssertEqual(dataset.string(forTag: "PatientID"), "PYTHON")
     }
 }

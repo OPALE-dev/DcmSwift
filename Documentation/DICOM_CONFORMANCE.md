@@ -25,7 +25,7 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Implicit VR Little Endian | Structural read and write |
 | Explicit VR Little Endian | Structural read and write |
 | Explicit VR Big Endian (retired) | Structural read and write for interoperability |
-| Deflated Explicit VR Little Endian | Known, not implemented |
+| Deflated Explicit VR Little Endian | Part 10 read/write using raw RFC 1951 Deflate; decompressed size is bounded; DIMSE negotiation not claimed |
 | Encapsulated Pixel Data | Fragment structure preservation only; no codec claim |
 | Native uncompressed Pixel Data | Byte access; full image interpretation is not yet claimed |
 | Unknown/private elements | Unknown implicit values preserved as UN; private creator blocks resolved within each Data Set scope |
@@ -40,8 +40,8 @@ Known UIDs are not automatically supported. `TransferSyntaxCapability` is the
 authoritative programmatic statement for structural I/O, Pixel Data
 preservation, codec operations, and DIMSE negotiation.
 
-The next file-core priorities are remaining semantic VR validation, Deflated
-Explicit VR Little Endian, and DICOMDIR.
+The next file-core priorities are remaining semantic VR validation and
+DICOMDIR. Deflated DIMSE negotiation remains separate network work.
 PS3.18 JSON and XML representations follow those binary-format milestones.
 
 ## Network support

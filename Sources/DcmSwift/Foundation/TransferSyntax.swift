@@ -16,7 +16,8 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
     public static let transfersSyntaxes:[String] = [
         TransferSyntax.implicitVRLittleEndian,
         TransferSyntax.explicitVRLittleEndian,
-        TransferSyntax.explicitVRBigEndian
+        TransferSyntax.explicitVRBigEndian,
+        TransferSyntax.deflatedExplicitVRLittleEndian
     ]
     
     
@@ -62,6 +63,7 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
      Transfer Syntax : Explicit Value Representation, Big Endian
      */
     public static let explicitVRBigEndian = "1.2.840.10008.1.2.2"
+    public static let deflatedExplicitVRLittleEndian = "1.2.840.10008.1.2.1.99"
 
     
     

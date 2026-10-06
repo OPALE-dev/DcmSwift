@@ -133,9 +133,20 @@ public class DicomOutputStream {
         
         // make sure element are in correct order
         dataset.sortElements()
-        
-        // write all elements
-        try write(data: dataset.toData(vrMethod: vrMethod, byteOrder: byteOrder))
+
+        if syntaxUID == TransferSyntax.deflatedExplicitVRLittleEndian {
+            let metaData = dataset.metaInformationHeaderElements.reduce(into: Data()) {
+                $0.append($1.toData(vrMethod: .Explicit, byteOrder: .LittleEndian))
+            }
+            let dataSetBytes = dataset.datasetElements.reduce(into: Data()) {
+                $0.append($1.toData(vrMethod: .Explicit, byteOrder: .LittleEndian))
+            }
+            try write(data: metaData)
+            try write(data: DICOMDeflate.compress(dataSetBytes))
+        } else {
+            // write all elements
+            try write(data: dataset.toData(vrMethod: vrMethod, byteOrder: byteOrder))
+        }
         
         return true
     }
