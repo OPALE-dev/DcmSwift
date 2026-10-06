@@ -12,35 +12,12 @@ import DcmSwift
 /**
  This class provides a suite of unit tests to qualify DcmSwift framework features.
  
- It is sort of decomposed by categories using boolean attributes you can toggle to target some features
- more easily (`testDicomFileRead`, `testDicomFileWrite`, `testDicomImage`, etc.)
-
- Some of the tests, especially those done around actual files, are dynamically generated using NSInvocation
- for better integration and readability.
+ Tests backed by the optional local DICOM corpus iterate over every bundled
+ `.dcm` file. Synthetic regression tests remain available in clean checkouts
+ and on Linux CI.
  
  */
 class DcmSwiftTests: XCTestCase {
-    // Configure the test suite with the following boolean attributes
-    
-    /// Run tests on DICOM Date and Time
-    private static var testDicomDateAndTime     = true
-    
-    /// Run tests to read files (rely on embedded test files, dynamically generated)
-    private static var testDicomFileRead        = true
-    
-    /// Run tests to write files (rely on embedded test files, dynamically generated)
-    private static var testDicomFileWrite       = true
-    
-    /// Run tests to update dataset (rely on embedded test files, dynamically generated)
-    private static var testDicomDataSet         = false
-    
-    /// Run tests to read image(s) (rely on embedded test files, dynamically generated)
-    private static var testDicomImage           = false
-
-    /// Run DicomRT helpers tests
-    private static var testRT                   = true
-
-    
     internal var filePath:String!
     private var finderTestDir:String = ""
     private var printDatasets = false
@@ -68,131 +45,8 @@ class DcmSwiftTests: XCTestCase {
         super.tearDown()
     }
     
-    
-    /**
-     Override defaultTestSuite to ease generation of dynamic tests
-     and coustomized configuration using boolean attributes
-     */
-    override class var defaultTestSuite: XCTestSuite {
-        let suite = XCTestSuite(forTestCaseClass: DcmSwiftTests.self)
-        let paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
-                
-        if testDicomDateAndTime {
-            suite.addTest(DcmSwiftTests(selector: #selector(readDicomDate)))
-            suite.addTest(DcmSwiftTests(selector: #selector(writeDicomDate)))
-            suite.addTest(DcmSwiftTests(selector: #selector(dicomDateWrongLength)))
-            suite.addTest(DcmSwiftTests(selector: #selector(readDicomTimeMidnight)))
-            // TODO: fix it!?
-            //suite.addTest(DcmSwiftTests(selector: #selector(dicomTimeWrongLength)))
-            suite.addTest(DcmSwiftTests(selector: #selector(dicomTimeWeirdTime)))
-            suite.addTest(DcmSwiftTests(selector: #selector(readDicomTime)))
-            suite.addTest(DcmSwiftTests(selector: #selector(writeDicomTime)))
-            suite.addTest(DcmSwiftTests(selector: #selector(combineDateAndTime)))
-            suite.addTest(DcmSwiftTests(selector: #selector(readWriteDicomRange)))
-        }
-        
-
-        
-
-        
-        if testDicomFileRead {
-            paths.forEach { path in
-                let block: @convention(block) (DcmSwiftTests) -> Void = { t in
-                    _ = t.readFile(withPath: path)
-                }
-                
-                DcmSwiftTests.addFileTest(withName: "FileRead", inSuite: suite, withPath:path, block: block)
-            }
-        }
-        
-        
-        if testDicomFileWrite {
-            /**
-             This test suite performs a read/write on a set of DICOM files without
-             modifying them, them check the MD5 checksum to ensure the I/O features
-             of DcmSwift work properly.
-             */
-            paths.forEach { path in
-                let block: @convention(block) (DcmSwiftTests) -> Void = { t in
-                    t.readWriteTest()
-                }
-                
-                DcmSwiftTests.addFileTest(withName: "FileWrite", inSuite: suite, withPath:path, block: block)
-            }
-        }
-        
-        
-        
-        if testDicomDataSet {
-            paths.forEach { path in
-                let block: @convention(block) (DcmSwiftTests) -> Void = { t in
-                    t.readUpdateWriteTest()
-                }
-                
-                DcmSwiftTests.addFileTest(withName: "DataSet", inSuite: suite, withPath:path, block: block)
-            }
-        }
-        
-        if testDicomImage {
-            paths.forEach { path in
-                let block: @convention(block) (DcmSwiftTests) -> Void = { t in
-                    t.readImageTest()
-                }
-                
-                DcmSwiftTests.addFileTest(withName: "DicomImage", inSuite: suite, withPath:path, block: block)
-            }
-        }
-        
-        if testRT {
-            suite.addTest(DcmSwiftTests(selector: #selector(testIsValid)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImageWidth)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImageHeight)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testToPNG)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetUnscaledDose)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetDose)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImage)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetDoseImages)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetPatientItem)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetBeamItem)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetFractionGroupItem)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetToleranceTableItem)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetFrameOfReference)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetObservation)))
-            suite.addTest(DcmSwiftTests(selector: #selector(testGetObservationByROINumber)))
-        }
-        
-        return suite
-    }
-    
-    
-    private class func addFileTest(withName name: String, inSuite suite: XCTestSuite, withPath path:String, block: Any) {
-        var fileName = String((path as NSString).deletingPathExtension.split(separator: "/").last!)
-        fileName = (fileName as NSString).replacingOccurrences(of: "-", with: "_")
-                 
-        // with help of ObjC runtime we add new test method to class
-        let implementation = imp_implementationWithBlock(block)
-        let selectorName = "test_\(name)_\(fileName)"
-        let selector = NSSelectorFromString(selectorName)
-                        
-        class_addMethod(DcmSwiftTests.self, selector, implementation, "v@:")
-        
-        // Generate a test for our specific selector
-        let test = DcmSwiftTests(selector: selector)
-        
-        // Each test will take the size argument and use the instance variable in the test
-        test.filePath = path
-        
-        // Add it to the suite, and the defaults handle the rest
-        suite.addTest(test)
-    }
-    
-    
-    
-
-    
-    
     // MARK: -
-    public func readDicomDate() {
+    public func testReadDicomDate() {
         let ds1 = "20001201"
         let dd1 = Date(dicomDate: ds1)
 
@@ -210,7 +64,7 @@ class DcmSwiftTests: XCTestCase {
     }
     
     
-    public func writeDicomDate() {
+    public func testWriteDicomDate() {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy/MM/dd"
         
@@ -221,7 +75,7 @@ class DcmSwiftTests: XCTestCase {
         XCTAssert(dd1 == "20120124")
     }
 
-    public func dicomDateWrongLength() {
+    public func testDicomDateWrongLength() {
         // Must be 8 or 10 bytes
         var ds = ""
         for i in 0...11 {
@@ -238,7 +92,7 @@ class DcmSwiftTests: XCTestCase {
     }
     
     
-    public func readDicomTime() {
+    public func testReadDicomTime() {
         let df = DateFormatter()
         df.dateFormat = "yyyy/MM/dd HH:mm:ss"
         let expected_res = "2000/01/01 14:32:50"
@@ -258,7 +112,7 @@ class DcmSwiftTests: XCTestCase {
     }
 
 
-    public func readDicomTimeMidnight() {
+    public func testReadDicomTimeMidnight() {
         let ds1 = "240000"
         let dd1 = Date(dicomTime: ds1)
 
@@ -282,7 +136,7 @@ class DcmSwiftTests: XCTestCase {
 //        }
 //    }
 
-    public func dicomTimeWeirdTime() {
+    public func testDicomTimeWeirdTime() {
         let ds1 = "236000"
         let dd1 = Date(dicomTime: ds1)
 
@@ -299,7 +153,7 @@ class DcmSwiftTests: XCTestCase {
         XCTAssert(dd3 == nil)
     }
     
-    public func writeDicomTime() {
+    public func testWriteDicomTime() {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "HH:mm:ss"
         
@@ -311,7 +165,7 @@ class DcmSwiftTests: XCTestCase {
     }
 
     
-    public func combineDateAndTime() {
+    public func testCombineDateAndTime() {
         let df = DateFormatter()
         df.dateFormat = "yyyy/MM/dd HH:mm:ss"
         let expected_res = "2000/12/01 14:32:50"
@@ -327,7 +181,7 @@ class DcmSwiftTests: XCTestCase {
     
     
     
-    public func readWriteDicomRange() {
+    public func testReadWriteDicomRange() {
         let ds1 = "20001201"
         let ds2 = "20021201"
         
@@ -340,30 +194,31 @@ class DcmSwiftTests: XCTestCase {
     
     
 
-    public func readWriteTest() {
-        XCTAssert(self.readWriteFile(withPath: self.filePath))
+    public func testExternalDICOMCorpusReads() throws {
+        let paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
+        guard !paths.isEmpty else {
+            throw XCTSkip("Optional local DICOM interoperability corpus is not installed")
+        }
+        for path in paths {
+            XCTAssertTrue(readFile(withPath: path), path)
+        }
     }
-    
-    
-    
-    public func readTest() {
-        XCTAssert(self.readFile(withPath: self.filePath))
-    }
-    
-    
-    public func readUpdateWriteTest() {
-        XCTAssert(self.readUpdateWriteFile(withPath: self.filePath))
-    }
-    
-    
-    public func readImageTest() {
-        XCTAssert(self.readImageFile(withPath: self.filePath))
+
+    public func testExternalDICOMCorpusRoundTrips() throws {
+        let paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
+        guard !paths.isEmpty else {
+            throw XCTSkip("Optional local DICOM interoperability corpus is not installed")
+        }
+        for path in paths {
+            XCTAssertTrue(readWriteFile(withPath: path), path)
+        }
     }
     
     
     
     
     private func readImageFile(withPath path:String, checksum:Bool = true) -> Bool {
+#if os(macOS)
         let fileName = path.components(separatedBy: "/").last!.replacingOccurrences(of: ".dcm", with: "")
         var writePath = "\(self.finderTestDir)/\(fileName)-rwi-test.png"
         
@@ -419,13 +274,16 @@ class DcmSwiftTests: XCTestCase {
         }
         
         return true
+#else
+        return false
+#endif
     }
     
     
     
     /**
      This test reads a source DICOM file, updates its PatientName attribute, then writes a DICOM file copy.
-     Then it re-reads the just updated DICOM file to set back its original PatientName and then checks data integrity against the source DICOM file using MD5
+     Then it re-reads the just updated DICOM file to set back its original PatientName and checks byte-for-byte integrity against the source DICOM file.
      */
     private func readUpdateWriteFile(withPath path:String, checksum:Bool = true) -> Bool {
         let fileName = path.components(separatedBy: "/").last!.replacingOccurrences(of: ".dcm", with: "")
@@ -474,18 +332,11 @@ class DcmSwiftTests: XCTestCase {
                         return false
                     }
                     
-                    let originalSum = shell(launchPath: "/sbin/md5", arguments: ["-q", path]).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-                    let savedSum = shell(launchPath: "/sbin/md5", arguments: ["-q", writePath]).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-                    
-                    Logger.info("# Source file MD5 : \(originalSum)")
-                    Logger.info("# Dest. file MD5  : \(savedSum)")
-                    Logger.info("#")
-                    
-                    if originalSum == savedSum {
-                        Logger.info("# Checksum succeeded: \(originalSum) == \(savedSum)")
+                    if filesAreEqual(path, writePath) {
+                        Logger.info("# Byte-for-byte comparison succeeded")
                     }
                     else {
-                        Logger.info("# Error: wrong checksum: \(originalSum) != \(savedSum)")
+                        Logger.info("# Error: files differ after restoring PatientName")
                         Logger.info("#")
                         Logger.info("#########################################################")
                         return false
@@ -553,21 +404,14 @@ class DcmSwiftTests: XCTestCase {
                 Logger.info("# Calculating checksum...")
                 Logger.info("#")
                 
-                let originalSum = shell(launchPath: "/sbin/md5", arguments: ["-q", path]).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-                let savedSum = shell(launchPath: "/sbin/md5", arguments: ["-q", writePath]).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-                
-                Logger.info("# Source file MD5 : \(originalSum)")
-                Logger.info("# Dest. file MD5  : \(savedSum)")
-                Logger.info("#")
-                
-                if originalSum == savedSum {
-                    Logger.info("# Checksum succeeded: \(originalSum) == \(savedSum)")
+                if filesAreEqual(path, writePath) {
+                    Logger.info("# Byte-for-byte comparison succeeded")
                 }
                 else if onlyFileMetaInformationGroupLengthDiffers(sourcePath: path, destinationPath: writePath) {
                     Logger.info("# Source contained a non-conformant File Meta Information Group Length; normalized output accepted")
                 }
                 else {
-                    Logger.info("# Error: wrong checksum: \(originalSum) != \(savedSum)")
+                    Logger.info("# Error: files differ after round-trip")
                     Logger.info("#")
                     Logger.info("#########################################################")
                     return false
@@ -660,9 +504,7 @@ class DcmSwiftTests: XCTestCase {
     func fileSize(filePath:String) -> UInt64 {
         do {
             let attr = try FileManager.default.attributesOfItem(atPath: filePath)
-            let dict = attr as NSDictionary
-            
-            return dict.fileSize()
+            return (attr[.size] as? NSNumber)?.uint64Value ?? 0
         } catch {
             print("Error: \(error)")
             
@@ -672,19 +514,12 @@ class DcmSwiftTests: XCTestCase {
     
     
     
-    private func shell(launchPath: String, arguments: [String]) -> String {
-        let task = Process()
-        task.launchPath = launchPath
-        task.arguments = arguments
-        
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.launch()
-        
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        let output: String = String(data: data, encoding: String.Encoding.utf8)!
-        
-        return output
+    private func filesAreEqual(_ firstPath: String, _ secondPath: String) -> Bool {
+        guard let first = FileManager.default.contents(atPath: firstPath),
+              let second = FileManager.default.contents(atPath: secondPath) else {
+            return false
+        }
+        return first == second
     }
     
     
@@ -746,7 +581,8 @@ class DcmSwiftTests: XCTestCase {
         }
     }
     
-    public func testToPNG() {
+    public func testToPNG() throws {
+#if os(macOS) || os(iOS)
         // finderTestDir
         
         var paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
@@ -771,7 +607,10 @@ class DcmSwiftTests: XCTestCase {
                 }
             }
         }
-         */
+        */
+#else
+        throw XCTSkip("PNG export is only available on Apple platforms")
+#endif
     }
     
     public func testGetUnscaledDose() {

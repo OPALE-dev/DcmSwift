@@ -16,8 +16,17 @@ implemented.
 
 ## Requirements
 
-* macOS 10.15 or later
-* Swift 5.9 or later
+* macOS 10.15 or later, or Linux with a supported Swift toolchain
+* Swift 5.9 or later (GitLab CI currently qualifies the package with the
+  official Swift 6.1 Linux image)
+* system `zlib` development files (`zlib1g-dev` on Debian/Ubuntu, or `zlib`
+  through Homebrew on macOS)
+
+Linux is a required DcmSwift 2.0 platform, not a best-effort build target.
+Library code, command-line tools, and the platform-independent test suite must
+build and run on both Linux and Apple platforms. Image export APIs that require
+CoreGraphics/AppKit/UIKit remain conditionally available and are not part of
+the Linux API surface.
 
 ## Dependencies
 
@@ -28,6 +37,20 @@ implemented.
 * system `zlib` (raw Deflate for DICOM Deflated Explicit VR Little Endian)
 
 *Dependencies are managed by SPM.*
+
+## Build and test
+
+Run the same package-level checks on macOS or Linux:
+
+    swift build -c release
+    swift test
+
+The repository tracks synthetic fixtures required by the core regression
+suite. Larger DICOM, DICOMDIR, SR, and RT interoperability corpora may be kept
+locally under `Tests/DcmSwiftTests/Resources`; SwiftPM includes those ignored
+directories automatically when present. Corpus-dependent tests are reported as
+skipped in a clean checkout instead of preventing the portable synthetic suite
+from compiling and running.
 
 ## Disclaimer
 
