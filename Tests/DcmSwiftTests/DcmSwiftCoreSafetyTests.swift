@@ -632,4 +632,32 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
 
         XCTAssertThrowsError(try DicomOutputStream(url: outputURL).write(dataset: dataset))
     }
+
+    func testEncapsulatedPixelFragmentCanRemainFileBacked() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dcmswift-fragment-\(UUID().uuidString).dcm")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        var pixelData = Data([0xe0, 0x7f, 0x10, 0x00, 0x4f, 0x42, 0x00, 0x00])
+        pixelData.append(contentsOf: [0xff, 0xff, 0xff, 0xff])
+        // Empty Basic Offset Table.
+        pixelData.append(contentsOf: [0xfe, 0xff, 0x00, 0xe0, 0x00, 0x00, 0x00, 0x00])
+        let fragment = Data(repeating: 0x5a, count: 4096)
+        pixelData.append(contentsOf: [0xfe, 0xff, 0x00, 0xe0])
+        pixelData.append(uint32: UInt32(fragment.count))
+        pixelData.append(fragment)
+        pixelData.append(contentsOf: [0xfe, 0xff, 0xdd, 0xe0, 0x00, 0x00, 0x00, 0x00])
+        try pixelData.write(to: url)
+
+        let stream = DicomInputStream(url: url)
+        stream.bulkDataLoadingPolicy = .lazy(minimumLength: 1024)
+        let dataset = try XCTUnwrap(try stream.readDataset(enforceVR: false))
+        let sequence = try XCTUnwrap(dataset.allElements.first as? DataSequence)
+        XCTAssertEqual(sequence.items.count, 2)
+        let parsedFragment = sequence.items[1]
+        XCTAssertEqual(parsedFragment.dataOffset, parsedFragment.bulkDataReference?.offset)
+        XCTAssertFalse(parsedFragment.isDataLoaded)
+        XCTAssertEqual(try parsedFragment.loadData(range: 10..<18), Data(repeating: 0x5a, count: 8))
+        XCTAssertFalse(parsedFragment.isDataLoaded)
+    }
 }

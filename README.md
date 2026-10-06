@@ -67,8 +67,9 @@ defined-length `OB`, `OD`, `OF`, `OL`, `OV`, `OW`, and `UN` Value Fields above a
 configurable threshold. Deferred values expose their source URL, byte offset,
 and length through `bulkDataReference`; `loadData()` reports I/O errors, while
 the historical `.data` accessor materializes on first use. `loadData(range:)`
-can read a bounded subrange without materializing the whole value. Encapsulated
-Pixel Data fragments are not lazy yet.
+can read a bounded subrange without materializing the whole value. The same
+policy applies independently to encapsulated Pixel Data fragments; the Basic
+Offset Table and each fragment retain their own file ranges.
 
 The library also provides helpers for DICOM dates, times, UIDs, tags, VRs,
 endianness, pixel access, Structured Reports, and radiotherapy objects.
