@@ -105,9 +105,9 @@ enum DICOMDirectoryKeyType: Equatable {
 enum DICOMDirectoryRecordSchemas {
     typealias Requirements = [String:DICOMDirectoryKeyType]
 
-    /// Unconditional top-level keys from the PS3.3 2026d F.5 tables.
-    /// Conditional keys and included macro keys are intentionally validated
-    /// separately as their conditions are added.
+    /// Unconditional top-level keys from the PS3.3 2026d F.5 tables and their
+    /// included macros. Conditional keys are validated separately as their
+    /// conditions are added.
     static let requirements:[DICOMDirectoryRecordType:Requirements] = [
         .patient: ["PatientName": .type2, "PatientID": .type1],
         .study: [
@@ -135,7 +135,9 @@ enum DICOMDirectoryRecordSchemas {
         ],
         .presentation: [
             "PresentationCreationDate": .type1,
-            "PresentationCreationTime": .type1
+            "PresentationCreationTime": .type1,
+            "InstanceNumber": .type1, "ContentLabel": .type1,
+            "ContentDescription": .type2
         ],
         .waveform: [
             "InstanceNumber": .type1, "ContentDate": .type1,
@@ -160,8 +162,16 @@ enum DICOMDirectoryRecordSchemas {
             "ContentDate": .type1, "ContentTime": .type1,
             "InstanceNumber": .type2
         ],
-        .registration: ["ContentDate": .type1, "ContentTime": .type1],
-        .fiducial: ["ContentDate": .type1, "ContentTime": .type1],
+        .registration: [
+            "ContentDate": .type1, "ContentTime": .type1,
+            "InstanceNumber": .type1, "ContentLabel": .type1,
+            "ContentDescription": .type2
+        ],
+        .fiducial: [
+            "ContentDate": .type1, "ContentTime": .type1,
+            "InstanceNumber": .type1, "ContentLabel": .type1,
+            "ContentDescription": .type2
+        ],
         .hangingProtocol: [
             "HangingProtocolName": .type1,
             "HangingProtocolDescription": .type1,
@@ -178,7 +188,11 @@ enum DICOMDirectoryRecordSchemas {
             "ConceptNameCodeSequence": .type2,
             "MIMETypeOfEncapsulatedDocument": .type1
         ],
-        .valueMap: ["ContentDate": .type1, "ContentTime": .type1],
+        .valueMap: [
+            "ContentDate": .type1, "ContentTime": .type1,
+            "InstanceNumber": .type1, "ContentLabel": .type1,
+            "ContentDescription": .type2
+        ],
         .stereometric: [:],
         .palette: ["ContentLabel": .type1, "ContentDescription": .type2],
         .implant: [
@@ -194,10 +208,22 @@ enum DICOMDirectoryRecordSchemas {
             "ImplantTemplateGroupIssuer": .type1
         ],
         .plan: [:],
-        .measurement: ["ContentDate": .type1, "ContentTime": .type1],
-        .surface: ["ContentDate": .type1, "ContentTime": .type1],
+        .measurement: [
+            "ContentDate": .type1, "ContentTime": .type1,
+            "InstanceNumber": .type1, "ContentLabel": .type1,
+            "ContentDescription": .type2
+        ],
+        .surface: [
+            "ContentDate": .type1, "ContentTime": .type1,
+            "InstanceNumber": .type1, "ContentLabel": .type1,
+            "ContentDescription": .type2
+        ],
         .surfaceScan: ["ContentDate": .type1, "ContentTime": .type1],
-        .tract: ["ContentDate": .type1, "ContentTime": .type1],
+        .tract: [
+            "ContentDate": .type1, "ContentTime": .type1,
+            "InstanceNumber": .type1, "ContentLabel": .type1,
+            "ContentDescription": .type2
+        ],
         .assessment: [
             "InstanceNumber": .type1, "InstanceCreationDate": .type1,
             "InstanceCreationTime": .type2
@@ -206,16 +232,23 @@ enum DICOMDirectoryRecordSchemas {
             "InstanceNumber": .type1, "ContentDescription": .type2,
             "ContentCreatorName": .type2
         ],
-        .annotation: ["ContentDate": .type1, "ContentTime": .type1],
+        .annotation: [
+            "ContentDate": .type1, "ContentTime": .type1,
+            "InstanceNumber": .type1, "ContentLabel": .type1,
+            "ContentDescription": .type2
+        ],
         .inventory: [
             "ContentDate": .type1, "ContentTime": .type1,
             "InventoryPurpose": .type2, "InventoryLevel": .type1,
             "InventoryCompletionStatus": .type1,
-            "TotalNumberOfStudyRecords": .type1
+            "TotalNumberOfStudyRecords": .type1,
+            "ScopeOfInventorySequence": .type2
         ],
         .waveformPresentation: [
             "PresentationCreationDate": .type1,
-            "PresentationCreationTime": .type1
+            "PresentationCreationTime": .type1,
+            "InstanceNumber": .type1, "ContentLabel": .type1,
+            "ContentDescription": .type2
         ],
         .private: [:]
     ]
@@ -265,8 +298,8 @@ enum DICOMDirectoryRecordSchemas {
 }
 
 extension DICOMDirectoryRecordType {
-    /// Types whose unconditional top-level PS3.3 F.5 keys are represented by
-    /// the validator. Conditional keys and included macros remain separate.
+    /// Types whose unconditional top-level PS3.3 F.5 and included-macro keys
+    /// are represented by the validator. Conditional keys remain separate.
     public static var unconditionalKeyValidation2026d:Set<Self> {
         return Set(DICOMDirectoryRecordSchemas.requirements.keys)
     }

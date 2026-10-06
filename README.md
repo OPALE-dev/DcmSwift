@@ -220,25 +220,28 @@ The reader rejects dangling record pointers and resolves referenced files
 relative to the DICOMDIR. A generic public record view exposes every current
 2026d F.4-1 type without discarding unknown or private attributes.
 Unconditional top-level Type 1 and Type 2 keys are represented for every
-current F.5 record type. Common Type 1C rules validate PRIVATE record UIDs,
+current F.5 record type, including the Content Identification Macro and the
+top-level Scope of Inventory Sequence. Common Type 1C rules validate PRIVATE record UIDs,
 complete referenced-SOP identity tuples, and Specific Character Set when a
 record key uses an extended repertoire. Present Type 1C keys cannot be empty;
 self-contained conditions are enforced for verified SR documents and Hanging
 Protocol Definition Items. File-set integrity validation also checks selected
 Type 1C keys whose condition is determined by the referenced SOP Instance.
-Deeper IOD/module conditions, complete per-type writer qualification, included
-macro validation, and PS3.12 media application profiles remain outside the
-currently qualified scope.
+Deeper IOD/module conditions, complete per-type writer qualification,
+conditional and nested included-macro validation, and PS3.12 media application
+profiles remain outside the currently qualified scope.
 
 Synthetic round-trip coverage exercises all 35 current F.4-1 record types with
-their unconditional top-level Type 1/2 keys. This verifies generic construction,
-hierarchy offsets, serialization, and re-reading; it does not yet qualify every
-included macro or referenced-IOD condition for those types.
+their unconditional top-level Type 1/2 keys, including unconditional keys
+introduced by included macros. This verifies generic construction, hierarchy
+offsets, serialization, and re-reading; it does not yet qualify conditional or
+nested semantics of every included macro or referenced-IOD condition.
 
 Included Basic/Enhanced Coded Entry attributes are validated recursively for
 code sequences: exactly one code-value form, Code Meaning, Coding Scheme
 Designator when applicable, Context Group provenance, and private-extension
-provenance. Other included macros remain incremental work.
+provenance. Other included-macro conditions and nested semantics remain
+incremental work.
 
 For example, an RT Dose record definition can be added to a Series record's
 `children` array with:

@@ -57,8 +57,10 @@ conformance without that evidence.
   STUDY → SERIES → IMAGE. A typed generic record-tree writer can emit additional
   current types and nested Sequences through the same offset and validation
   path. All 35 current F.4-1 types round-trip synthetically with their
-  unconditional top-level Type 1/2 keys. Complete the included macros and
-  required/conditional semantics for every applicable type. Current
+  unconditional top-level Type 1/2 keys, including keys introduced by the
+  Content Identification Macro and the top-level Scope of Inventory Sequence.
+  Complete the conditional and nested included-macro semantics for every
+  applicable type. Current
   type names and F.4-1 parent/child relationships are validated, and all current
   F.5 tables have their unconditional top-level Type 1 and Type 2 keys
   represented. Common Type 1C rules cover PRIVATE record UIDs, referenced-SOP
@@ -67,7 +69,8 @@ conformance without that evidence.
   directly mirrored by a referenced SOP Instance are checked during file-set
   integrity validation. Deeper IOD/module-dependent conditions, complete
   included macro validation beyond the current recursive Basic/Enhanced Coded
-  Entry checks, and complete semantic per-type qualification remain unfinished.
+  Entry checks and unconditional top-level macro attributes, and complete
+  semantic per-type qualification remain unfinished.
 - Preserve and expose unknown Directory Record types without losing their
   attributes or breaking hierarchy traversal.
 - Decode File-set Descriptor content according to its declared character set;
