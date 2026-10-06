@@ -230,6 +230,11 @@ Deeper IOD/module conditions, complete per-type writer qualification, included
 macro validation, and PS3.12 media application profiles remain outside the
 currently qualified scope.
 
+Synthetic round-trip coverage exercises all 35 current F.4-1 record types with
+their unconditional top-level Type 1/2 keys. This verifies generic construction,
+hierarchy offsets, serialization, and re-reading; it does not yet qualify every
+included macro or referenced-IOD condition for those types.
+
 For example, an RT Dose record definition can be added to a Series record's
 `children` array with:
 

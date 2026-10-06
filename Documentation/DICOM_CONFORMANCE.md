@@ -58,7 +58,7 @@ PS3.10 one-to-eight component syntax. PRIVATE records require their defining
 UID and retired record types remain observable. Explicit
 file-set integrity validation checks unique contained targets and their SOP
 Class, SOP Instance, and Transfer Syntax identities. It does not yet claim
-complete write qualification for every Directory Record type, File-set update semantics,
+complete macro and conditional-key qualification for every Directory Record type, File-set update semantics,
 descriptor content decoding, remaining record-specific conditional F.5 keys
 or included macro content, or any specific media storage application profile.
 Unconditional top-level Type 1 and Type 2 keys are represented for every
@@ -72,6 +72,10 @@ optional File-set Descriptor File ID and
 character-set declaration are preserved, and the descriptor target can be
 checked for containment and
 existence.
+
+The generic writer has synthetic round-trip coverage for all 35 current F.4-1
+types populated with their unconditional top-level Type 1/2 keys. This is not a
+claim that every included macro or referenced-IOD condition is qualified.
 
 ## Network support
 

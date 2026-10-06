@@ -9,8 +9,9 @@ private enum DICOMDirectoryHierarchy {
         "IMAGE", "RT DOSE", "RT STRUCTURE SET", "RT PLAN", "RT TREAT RECORD",
         "PRESENTATION", "WAVEFORM", "SR DOCUMENT", "KEY OBJECT DOC",
         "SPECTROSCOPY", "RAW DATA", "REGISTRATION", "FIDUCIAL", "ENCAP DOC",
-        "VALUE MAP", "STEREOMETRIC", "PLAN", "MEASUREMENT", "SURFACE", "TRACT",
-        "ASSESSMENT", "RADIOTHERAPY", "ANNOTATION", "WF PRESENTATION", "PRIVATE"
+        "VALUE MAP", "STEREOMETRIC", "PLAN", "MEASUREMENT", "SURFACE",
+        "SURFACE SCAN", "TRACT", "ASSESSMENT", "RADIOTHERAPY", "ANNOTATION",
+        "WF PRESENTATION", "PRIVATE"
     ]
     static let allCurrent:Set<String> = Set(
         DICOMDirectoryRecordType.standard2026d.map(\.rawValue)

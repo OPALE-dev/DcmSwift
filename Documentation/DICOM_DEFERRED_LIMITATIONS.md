@@ -56,8 +56,9 @@ conformance without that evidence.
 - The legacy convenience writer emits the Basic Directory hierarchy PATIENT →
   STUDY → SERIES → IMAGE. A typed generic record-tree writer can emit additional
   current types and nested Sequences through the same offset and validation
-  path; RT DOSE and SR DOCUMENT have round-trip coverage. Qualify every
-  applicable Directory Record type and its required/conditional keys. Current
+  path. All 35 current F.4-1 types round-trip synthetically with their
+  unconditional top-level Type 1/2 keys. Complete the included macros and
+  required/conditional semantics for every applicable type. Current
   type names and F.4-1 parent/child relationships are validated, and all current
   F.5 tables have their unconditional top-level Type 1 and Type 2 keys
   represented. Common Type 1C rules cover PRIVATE record UIDs, referenced-SOP
@@ -65,7 +66,7 @@ conformance without that evidence.
   documents, and Hanging Protocol Definition Items. Conditional requirements
   directly mirrored by a referenced SOP Instance are checked during file-set
   integrity validation. Deeper IOD/module-dependent conditions, complete
-  included macro validation and complete per-type writer qualification remain
+  included macro validation and complete semantic per-type qualification remain
   unfinished.
 - Preserve and expose unknown Directory Record types without losing their
   attributes or breaking hierarchy traversal.
