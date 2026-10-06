@@ -61,13 +61,13 @@ conformance without that evidence.
 - Implement File-set Descriptor File handling and validate its character set.
 - Implement File-set update semantics, including consistency flag handling,
   inactive records, additions, deletions, and safe offset rewriting.
-- Validate File-set ID in addition to Referenced File ID.
-- Verify Referenced File ID uniqueness, containment within the File-set, actual
-  target existence, and agreement of referenced SOP Class, SOP Instance, and
-  Transfer Syntax UIDs with the referenced Part 10 file.
+- Decide and document whether file-set integrity validation must be mandatory
+  during writing. It is currently an explicit validation step so callers can
+  construct the DICOMDIR before copying all referenced files into place.
 - Qualify undefined-length and externally generated Directory Record Sequences,
-  non-preorder physical record layouts, inactive records, empty directories,
-  malformed cycles, duplicate offsets, and orphan records.
+  non-preorder physical record layouts, retired inactive records, empty
+  directories, symlink escapes, malformed cycles, and orphan records with a
+  retained external corpus.
 - Implement and qualify the applicable PS3.12 media formats and PS3.11 media
   storage application profiles. Current Basic DICOMDIR support is not a
   PS3.12 or application-profile conformance claim.

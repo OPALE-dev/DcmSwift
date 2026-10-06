@@ -62,8 +62,8 @@ Current progress in that order:
 - binary multi-valued VR/VM handling, lazy Bulk Data, and Deflated Explicit VR
   Little Endian are implemented with malformed-input regression tests;
 - Basic DICOMDIR PATIENT/STUDY/SERIES/IMAGE read/write now computes offsets
-  from the serialized layout and validates pointer targets and Referenced File
-  IDs;
+  from the serialized layout and validates the record graph, File-set/File IDs,
+  and referenced Part 10 identities;
 - broader Directory Record coverage and PS3.12 media-profile qualification are
   still required before starting the planned JSON and XML work.
 

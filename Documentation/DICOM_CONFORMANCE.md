@@ -38,7 +38,7 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Fixed-width numeric VR values | Scalar and multi-valued signed/unsigned integer and floating-point read/write with dictionary VM validation |
 | Lazy Bulk Data | Opt-in file-backed references and bounded reads for defined-length binary VRs and encapsulated Pixel Data Items |
 | DICOM JSON / Native DICOM Model XML | Existing convenience output is not PS3.18 conformant |
-| Basic DICOMDIR | PATIENT/STUDY/SERIES/IMAGE read/write; serialized Item offsets, pointer targets, and PS3.10 Referenced File IDs are validated |
+| Basic DICOMDIR | PATIENT/STUDY/SERIES/IMAGE read/write; serialized Item offsets, complete reachability, File-set/File IDs, consistency flag, and referenced Part 10 identities can be validated |
 | PS3.12 media profiles | Not qualified; no media-profile conformance claim |
 
 Known UIDs are not automatically supported. `TransferSyntaxCapability` is the
@@ -52,10 +52,12 @@ PS3.18 JSON and XML representations follow those binary-format milestones.
 
 The Basic DICOMDIR implementation uses Explicit VR Little Endian, defined
 length Directory Record Sequence Items, and offsets that reference Item Tags.
-It rejects dangling pointers and Referenced File IDs outside the PS3.10
-one-to-eight component syntax. It does not yet claim support for every
-Directory Record type, File-set update semantics, File-set Descriptor files,
-or any specific General Purpose media application profile.
+It rejects dangling, cyclic, duplicate, or orphan graph references and
+Referenced File IDs outside the PS3.10 one-to-eight component syntax. Explicit
+file-set integrity validation checks unique contained targets and their SOP
+Class, SOP Instance, and Transfer Syntax identities. It does not yet claim
+support for every Directory Record type, File-set update semantics, File-set
+Descriptor files, or any specific media storage application profile.
 
 ## Network support
 

@@ -21,6 +21,9 @@ public class DicomDir:DicomFile {
     private var offsetLast:Int = 0
     
     public var index:[String] = []
+    /// Optional human-readable PS3.10 File-set identifier (zero to sixteen
+    /// characters from the File ID repertoire).
+    public var fileSetID:String = ""
     
     public var patients:[String:String] = [:]
     public var patientsKeys:[String] = []
@@ -68,11 +71,8 @@ public class DicomDir:DicomFile {
         do {
             if let dataset = try inputStream.readDataset() {
                 
-                if dataset.hasElement(forTagName:"DirectoryRecordSequence") {
-                    return true
-                } else {
-                    return false
-                }
+                return dataset.string(forTag: "MediaStorageSOPClassUID") == "1.2.840.10008.1.3.10"
+                    || dataset.hasElement(forTagName:"DirectoryRecordSequence")
             }
         } catch _ {
             return false
@@ -224,8 +224,16 @@ public class DicomDir:DicomFile {
         Load all the properties of a DicomDir instance (patients, index etc)
      */
     private func load() -> Bool {
-        guard let dataSet = dataset,
-              let sequence = dataSet.element(forTagName: "DirectoryRecordSequence") as? DataSequence else {
+        guard let dataSet = dataset else {
+            return false
+        }
+
+        fileSetID = dataSet.string(forTag: "FileSetID") ?? ""
+
+        guard let sequence = dataSet.element(forTagName: "DirectoryRecordSequence") as? DataSequence else {
+            return dataSet.string(forTag: "MediaStorageSOPClassUID") == "1.2.840.10008.1.3.10"
+        }
+        if validateDirectoryStructure().contains(where: { $0.severity.rawValue >= ValidationResult.Severity.Error.rawValue }) {
             return false
         }
 

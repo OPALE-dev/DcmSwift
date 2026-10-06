@@ -89,7 +89,7 @@ endianness, pixel access, Structured Reports, and radiotherapy objects.
 | Character sets | Default repertoire, ISO_IR 100, and ISO_IR 192, with nested Data Set inheritance/override |
 | ISO 2022 code extensions | Not implemented; rejected rather than decoded as UTF-8 |
 | DICOM JSON and Native DICOM Model XML | Existing convenience output is not yet PS3.18 conformant |
-| DICOMDIR | Basic Directory read/write with computed record offsets, offset validation, and PS3.10 Referenced File ID validation |
+| DICOMDIR | Basic Directory read/write with computed record offsets, graph/File-set ID validation, and referenced Part 10 identity checks |
 | PS3.12 media profiles | Not yet qualified; Basic DICOMDIR support is not a media-profile conformance claim |
 | DICOM Upper Layer/DIMSE | Experimental; C-ECHO is the most complete path |
 | C-STORE and C-FIND | Partial building blocks |
@@ -185,6 +185,13 @@ VR Little Endian byte layout and rejects invalid PS3.10 Referenced File IDs.
 The reader rejects dangling record pointers and resolves referenced files
 relative to the DICOMDIR. Other Directory Record types and PS3.12 media
 application profiles remain outside the currently qualified scope.
+
+`validateDirectoryStructure()` checks the Basic Directory container, File-set
+ID, required pointer elements, consistency flag, cycles, root chain, and orphan
+records. `validateReferencedFiles()` additionally checks Referenced File ID
+uniqueness and containment, target existence, and agreement of the referenced
+SOP Class, SOP Instance, and Transfer Syntax UIDs. These checks do not imply
+conformance with a PS3.11 media storage application profile.
 
 Get all files indexed by a DICOMDIR file:
 

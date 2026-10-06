@@ -74,6 +74,11 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
 
         let directory = makeDirectory()
+        directory.fileSetID = "MEDIA_01"
+        let referencedURL = temporaryDirectory
+            .appendingPathComponent("PAT00001", isDirectory: true)
+            .appendingPathComponent("IMG00001")
+        try writeReferencedFile(to: referencedURL, sopInstanceUID: "1.2.3.4")
         XCTAssertTrue(directory.writeDicomDir(atPath: temporaryDirectory.path))
 
         let outputURL = temporaryDirectory.appendingPathComponent("DICOMDIR")
@@ -113,6 +118,9 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         }
 
         let reloaded = try XCTUnwrap(DicomDir(forPath: outputURL.path))
+        XCTAssertEqual(reloaded.fileSetID, "MEDIA_01")
+        XCTAssertTrue(reloaded.validateDirectoryStructure().isEmpty)
+        XCTAssertTrue(reloaded.validateReferencedFiles().isEmpty)
         XCTAssertEqual(reloaded.patientsKeys, ["P1", "P2"])
         XCTAssertEqual(reloaded.studies["1.2.3"]?["PatientID"] as? String, "P1")
         XCTAssertEqual(reloaded.series["1.2.3.1"]?["StudyInstanceUID"], "1.2.3")
@@ -130,6 +138,11 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         let malformedURL = temporaryDirectory.appendingPathComponent("BROKEN")
         try malformedBytes.write(to: malformedURL)
         XCTAssertNil(DicomDir(forPath: malformedURL.path))
+
+        try writeReferencedFile(to: referencedURL, sopInstanceUID: "1.2.3.999")
+        XCTAssertTrue(reloaded.validateReferencedFiles().contains {
+            $0.message.contains("ReferencedSOPInstanceUIDInFile does not match")
+        })
     }
 
     func testWriteDicomDirRejectsInvalidFileIDs() {
@@ -144,10 +157,66 @@ class DcmSwiftTestsDicomdir: XCTestCase {
             XCTAssertFalse(DicomDir.isValidFileID(value), value)
         }
         XCTAssertTrue(DicomDir.isValidFileID("PAT00001/IMG00001"))
+        XCTAssertTrue(DicomDir.isValidFileSetID("MEDIA_01"))
+        XCTAssertTrue(DicomDir.isValidFileSetID(""))
+        XCTAssertFalse(DicomDir.isValidFileSetID("lowercase"))
+        XCTAssertFalse(DicomDir.isValidFileSetID("12345678901234567"))
 
         let directory = makeDirectory()
         directory.images["1.2.3.4"]?["ReferencedFileID"] = "bad-name"
         XCTAssertFalse(directory.writeDicomDir(atPath: FileManager.default.temporaryDirectory.path))
+        directory.images["1.2.3.4"]?["ReferencedFileID"] = "PAT00001\\IMG00001"
+        directory.fileSetID = "INVALID-LABEL"
+        XCTAssertFalse(directory.writeDicomDir(atPath: FileManager.default.temporaryDirectory.path))
+    }
+
+    func testDirectoryStructureValidationRejectsSemanticGraphErrors() throws {
+        let temporaryDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+        let directory = makeDirectory()
+        XCTAssertTrue(directory.writeDicomDir(atPath: temporaryDirectory.path))
+        let outputURL = temporaryDirectory.appendingPathComponent("DICOMDIR")
+        let decoded = try XCTUnwrap(try DicomInputStream(filePath: outputURL.path).readDataset())
+        let sequence = try XCTUnwrap(decoded.element(forTagName: "DirectoryRecordSequence") as? DataSequence)
+        XCTAssertGreaterThan(sequence.items.count, 1)
+
+        XCTAssertTrue(decoded.element(forTagName: "OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity")?
+            .setValue(UInt32(sequence.items[1].startOffset)) == true)
+        XCTAssertTrue(decoded.element(forTagName: "FileSetConsistencyFlag")?.setValue(UInt16.max) == true)
+        XCTAssertTrue(sequence.items[0].element(withName: "OffsetOfTheNextDirectoryRecord")?
+            .setValue(UInt32(sequence.items[0].startOffset)) == true)
+        let invalid = DicomDir()
+        invalid.dataset = decoded
+        invalid.filepath = outputURL.path
+        let messages = invalid.validateDirectoryStructure().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("Last root Directory Record offset") })
+        XCTAssertTrue(messages.contains { $0.contains("FileSetConsistencyFlag must be 0000H") })
+        XCTAssertTrue(messages.contains { $0.contains("cycle or duplicate reference") })
+        XCTAssertTrue(messages.contains { $0.contains("unreachable or orphan") })
+    }
+
+    func testPrimitiveDICOMDIRWithoutDirectoryInformationIsAccepted() throws {
+        let temporaryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: temporaryURL) }
+        let dataSet = DataSet()
+        dataSet.hasPreamble = true
+        dataSet.transferSyntax = TransferSyntax(TransferSyntax.explicitVRLittleEndian)
+        _ = dataSet.set(value: Data([0x00, 0x01]), forTagName: "FileMetaInformationVersion")
+        _ = dataSet.set(value: "1.2.840.10008.1.3.10", forTagName: "MediaStorageSOPClassUID")
+        _ = dataSet.set(value: "2.25.123", forTagName: "MediaStorageSOPInstanceUID")
+        _ = dataSet.set(value: TransferSyntax.explicitVRLittleEndian, forTagName: "TransferSyntaxUID")
+        _ = dataSet.set(value: "2.25.22010055", forTagName: "ImplementationClassUID")
+        _ = dataSet.set(value: "PRIMITIVE", forTagName: "FileSetID")
+        let file = try XCTUnwrap(DicomFile(withDataset: dataSet, hasPreamble: true))
+        XCTAssertTrue(file.write(atPath: temporaryURL.path))
+        XCTAssertTrue(DicomDir.isDicomDir(forPath: temporaryURL.path))
+        let directory = try XCTUnwrap(DicomDir(forPath: temporaryURL.path))
+        XCTAssertEqual(directory.fileSetID, "PRIMITIVE")
+        XCTAssertTrue(directory.validateDirectoryStructure().isEmpty)
     }
 
     private func makeDirectory() -> DicomDir {
@@ -181,6 +250,26 @@ class DcmSwiftTestsDicomdir: XCTestCase {
 
     private func offset(named name:String, in item:DataItem) -> UInt32? {
         return item.element(withName: name)?.value as? UInt32
+    }
+
+    private func writeReferencedFile(to url:URL, sopInstanceUID:String) throws {
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        let dataSet = DataSet()
+        dataSet.hasPreamble = true
+        dataSet.transferSyntax = TransferSyntax(TransferSyntax.explicitVRLittleEndian)
+        let sopClassUID = "1.2.840.10008.5.1.4.1.1.2"
+        _ = dataSet.set(value: Data([0x00, 0x01]), forTagName: "FileMetaInformationVersion")
+        _ = dataSet.set(value: sopClassUID, forTagName: "MediaStorageSOPClassUID")
+        _ = dataSet.set(value: sopInstanceUID, forTagName: "MediaStorageSOPInstanceUID")
+        _ = dataSet.set(value: TransferSyntax.explicitVRLittleEndian, forTagName: "TransferSyntaxUID")
+        _ = dataSet.set(value: "2.25.22010055", forTagName: "ImplementationClassUID")
+        _ = dataSet.set(value: sopClassUID, forTagName: "SOPClassUID")
+        _ = dataSet.set(value: sopInstanceUID, forTagName: "SOPInstanceUID")
+        let file = try XCTUnwrap(DicomFile(withDataset: dataSet, hasPreamble: true))
+        XCTAssertTrue(file.write(atPath: url.path))
     }
 
 }
