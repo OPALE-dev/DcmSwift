@@ -21,22 +21,26 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Capability | Current status |
 | --- | --- |
 | Part 10 preamble and `DICM` prefix | Read and write |
-| File Meta Information | Read and write; group-length recalculation and cross-field validation pending |
+| File Meta Information | Read and write; group length recalculated and SOP/Transfer Syntax identity consistency validated |
 | Implicit VR Little Endian | Structural read and write |
 | Explicit VR Little Endian | Structural read and write |
 | Explicit VR Big Endian (retired) | Structural read and write for interoperability |
 | Deflated Explicit VR Little Endian | Known, not implemented |
 | Encapsulated Pixel Data | Fragment structure preservation only; no codec claim |
 | Native uncompressed Pixel Data | Byte access; full image interpretation is not yet claimed |
-| Unknown/private elements | Partial preservation; private creator resolution pending |
-| Defined/undefined-length sequences | Partial; malformed and deeply nested cases still being hardened |
-| Specific Character Set | Default repertoire, ISO_IR 100, and ISO_IR 192 are the first implementation target |
+| Unknown/private elements | Unknown implicit values preserved as UN; private creator blocks resolved within each Data Set scope |
+| Defined/undefined-length sequences | Read and write; Item tags, boundaries, delimiters, nesting depth, and resource limits validated |
+| Specific Character Set | Default repertoire, ISO_IR 100, and ISO_IR 192, including nested inheritance and local override |
 | DICOM JSON / Native DICOM Model XML | Existing convenience output is not PS3.18 conformant |
 | DICOMDIR and media profiles | Existing implementation is not yet claimed conformant |
 
 Known UIDs are not automatically supported. `TransferSyntaxCapability` is the
 authoritative programmatic statement for structural I/O, Pixel Data
 preservation, codec operations, and DIMSE negotiation.
+
+The next file-core priorities are multi-valued binary VR handling and VR/VM
+validation, lazy Bulk Data, Deflated Explicit VR Little Endian, and DICOMDIR.
+PS3.18 JSON and XML representations follow those binary-format milestones.
 
 ## Network support
 
@@ -56,7 +60,9 @@ DIMSE service is implemented.
 Text decoding must follow Specific Character Set (0008,0005). Unsupported
 repertoires and ISO 2022 code-extension combinations must remain observable as
 unsupported; they must not be silently decoded as UTF-8. Character-set support
-is qualified independently for reading and writing.
+is qualified independently for reading and writing. Nested Data Sets inherit
+the enclosing repertoire and may override it locally without affecting sibling
+Items. ISO 2022 code extensions remain unsupported.
 
 ## Security
 
