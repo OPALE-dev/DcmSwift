@@ -123,6 +123,10 @@ conformance without that evidence.
 - GitLab CI currently qualifies the official Swift 6.1 Linux image. Additional
   Linux distributions, architectures, Swift releases, and libc variants are
   not yet part of the tested platform matrix.
+- The package still uses Swift tools/language compatibility mode 5.9. Strict
+  Swift 6 concurrency checking currently reports NIO pipeline `Sendable`
+  diagnostics that would become errors in Swift 6 language mode; that migration
+  remains a separate release gate.
 - The large interoperability corpus is intentionally not versioned. Clean CI
   executes tracked synthetic tests and reports corpus-dependent coverage as
   skipped; passing CI alone is therefore not corpus interoperability evidence.
