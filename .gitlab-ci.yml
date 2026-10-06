@@ -4,6 +4,8 @@ stages:
 swift-package:
   stage: test
   image: swift:6.0
+  tags:
+    - deploy
   script:
     - swift --version
     - swift build -c release
