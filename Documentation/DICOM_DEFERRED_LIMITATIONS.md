@@ -61,8 +61,10 @@ conformance without that evidence.
   represented. Common Type 1C rules cover PRIVATE record UIDs, referenced-SOP
   identity tuples, extended character sets in record keys, verified SR
   documents, and Hanging Protocol Definition Items. Conditional requirements
-  that depend on the referenced SOP Instance, included macro content, and
-  writers for the additional record types remain unimplemented.
+  directly mirrored by a referenced SOP Instance are checked during file-set
+  integrity validation. Deeper IOD/module-dependent conditions, complete
+  included macro validation, and writers for the additional record types remain
+  unimplemented.
 - Preserve and expose unknown Directory Record types without losing their
   attributes or breaking hierarchy traversal.
 - Decode File-set Descriptor content according to its declared character set;

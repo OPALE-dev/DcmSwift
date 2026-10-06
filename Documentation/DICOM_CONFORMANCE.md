@@ -65,8 +65,10 @@ Unconditional top-level Type 1 and Type 2 keys are represented for every
 current F.5 record type. Common Type 1C validation covers PRIVATE record UIDs,
 referenced-SOP identity tuples, extended character sets in record keys, present
 non-empty conditional keys, verified SR documents, and Hanging Protocol
-Definition Items. Conditions that require inspecting the referenced SOP
-Instance remain deferred. The optional File-set Descriptor File ID and
+Definition Items. File-set integrity validation additionally enforces Related
+General SOP Class UID and selected F.5 conditions mirrored by the referenced
+SOP Instance. Deeper IOD/module-dependent conditions remain deferred. The
+optional File-set Descriptor File ID and
 character-set declaration are preserved, and the descriptor target can be
 checked for containment and
 existence.

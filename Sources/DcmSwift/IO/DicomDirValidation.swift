@@ -44,6 +44,7 @@ extension DicomDir {
         func error(_ object:Any, _ message:String) {
             results.append(ValidationResult(object, message: message, severity: .Error))
         }
+
         func warning(_ object:Any, _ message:String) {
             results.append(ValidationResult(object, message: message, severity: .Warning))
         }
@@ -230,6 +231,14 @@ extension DicomDir {
             results.append(ValidationResult(object, message: message, severity: .Error))
         }
 
+        func isEmpty(_ element:DataElement) -> Bool {
+            if let sequence = element as? DataSequence { return sequence.items.isEmpty }
+            if let value = element.value as? String {
+                return value.trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters)).isEmpty
+            }
+            return element.length == 0
+        }
+
         func resolvedURL(for fileID:String) -> URL {
             return fileID.split(separator: "\\").reduce(root) {
                 $0.appendingPathComponent(String($1))
@@ -291,6 +300,59 @@ extension DicomDir {
                 let actual = referencedDataSet.string(forTag: identity.file)
                 if actual != expected {
                     error(recordElement, "\(identity.record) does not match the referenced Part 10 file")
+                }
+            }
+
+
+            if let relatedGeneral = referencedDataSet.element(forTagName: "RelatedGeneralSOPClassUID") {
+                if let recordElement = item.element(withName: "ReferencedRelatedGeneralSOPClassUIDInFile"),
+                   !isEmpty(recordElement) {
+                    let expected = (recordElement.value as? String)?
+                        .trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters))
+                    let actual = (relatedGeneral.value as? String)?
+                        .trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters))
+                    if expected != actual {
+                        error(recordElement, "ReferencedRelatedGeneralSOPClassUIDInFile does not match the referenced Part 10 file")
+                    }
+                } else {
+                    error(item, "Referenced SOP Instance encodes RelatedGeneralSOPClassUID and requires ReferencedRelatedGeneralSOPClassUIDInFile")
+                }
+            }
+
+            let recordType = (item.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters))
+            if let recordType,
+               let conditionalKeys = DICOMDirectoryRecordSchemas.referencedInstanceConditionalKeys[
+                    DICOMDirectoryRecordType(rawValue: recordType)
+               ] {
+                for name in conditionalKeys where referencedDataSet.element(forTagName: name) != nil {
+                    guard let recordElement = item.element(withName: name), !isEmpty(recordElement) else {
+                        error(item, "Referenced SOP Instance contains \(name) and requires the Directory Record Type 1C key")
+                        continue
+                    }
+                    if !(recordElement is DataSequence),
+                       let expected = recordElement.value as? String,
+                       let actual = referencedDataSet.element(forTagName: name)?.value as? String,
+                       expected.trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters)) !=
+                        actual.trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters)) {
+                        error(recordElement, "Directory Record key \(name) does not match the referenced Part 10 file")
+                    }
+                }
+            }
+
+            if recordType == DICOMDirectoryRecordType.structuredReport.rawValue ||
+                recordType == DICOMDirectoryRecordType.keyObjectDocument.rawValue {
+                let hasRootConceptModifier = (referencedDataSet.element(forTagName: "ContentSequence") as? DataSequence)?
+                    .items.contains {
+                        let relationship = ($0.element(withName: "RelationshipType")?.value as? String)?
+                            .trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters))
+                        return relationship == "HAS CONCEPT MOD"
+                    } ?? false
+                if hasRootConceptModifier {
+                    guard let content = item.element(withName: "ContentSequence"), !isEmpty(content) else {
+                        error(item, "Referenced SR root has HAS CONCEPT MOD children and requires Directory Record ContentSequence")
+                        continue
+                    }
                 }
             }
         }
