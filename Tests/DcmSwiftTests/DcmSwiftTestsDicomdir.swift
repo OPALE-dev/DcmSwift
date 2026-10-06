@@ -136,6 +136,43 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         XCTAssertTrue(messages.contains { $0.contains("missing Type 1 key ContentDate") })
         XCTAssertTrue(messages.contains { $0.contains("missing Type 1 key ContentTime") })
     }
+
+    func testDirectoryRecordConditionalKeyValidation() throws {
+        let directory = makeDirectory()
+        let dataSet = DataSet()
+        let sequence = try XCTUnwrap(directory.createDirectoryRecordSequence())
+        dataSet.add(element: sequence)
+        directory.dataset = dataSet
+
+        let image = try XCTUnwrap(sequence.items.first {
+            ($0.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) == "IMAGE"
+        })
+        image.elements.removeAll { $0.name == "ReferencedSOPInstanceUIDInFile" }
+        var messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains {
+            $0.contains("requires Type 1C key ReferencedSOPInstanceUIDInFile")
+        })
+
+        append(value: "1.2.3.4", name: "ReferencedSOPInstanceUIDInFile", to: image, dataSet: dataSet)
+        XCTAssertTrue(image.element(withName: "DirectoryRecordType")?.setValue("PRIVATE") == true)
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("requires Type 1C key PrivateRecordUID") })
+        append(value: "1.2.826.0.1.3680043.10.999", name: "PrivateRecordUID", to: image, dataSet: dataSet)
+
+        let patient = try XCTUnwrap(sequence.items.first {
+            ($0.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) == "PATIENT"
+        })
+        let patientName = try XCTUnwrap(patient.element(withName: "PatientName"))
+        patientName.characterSet = .latin1
+        XCTAssertTrue(patientName.setValue("DUPONT^ÉLODIE"))
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("requires Type 1C key SpecificCharacterSet") })
+
+        append(value: "ISO_IR 100", name: "SpecificCharacterSet", to: patient, dataSet: dataSet)
+        XCTAssertTrue(directory.validateDirectoryRecordKeys().isEmpty)
+    }
     
     func testWriteDicomDir() throws {
         let temporaryDirectory = FileManager.default.temporaryDirectory

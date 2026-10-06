@@ -58,8 +58,10 @@ conformance without that evidence.
   Directory Record type and its required/conditional keys from PS3.3. Current
   type names and F.4-1 parent/child relationships are validated, and all current
   F.5 tables have their unconditional top-level Type 1 and Type 2 keys
-  represented. Conditional keys, included macro content, and writers for the
-  additional record types remain unimplemented.
+  represented. Common Type 1C rules cover PRIVATE record UIDs, referenced-SOP
+  identity tuples, and extended character sets in record keys. Remaining
+  record-specific conditional keys, included macro content, and writers for
+  the additional record types remain unimplemented.
 - Preserve and expose unknown Directory Record types without losing their
   attributes or breaking hierarchy traversal.
 - Decode File-set Descriptor content according to its declared character set;

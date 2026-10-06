@@ -38,7 +38,7 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Fixed-width numeric VR values | Scalar and multi-valued signed/unsigned integer and floating-point read/write with dictionary VM validation |
 | Lazy Bulk Data | Opt-in file-backed references and bounded reads for defined-length binary VRs and encapsulated Pixel Data Items |
 | DICOM JSON / Native DICOM Model XML | Existing convenience output is not PS3.18 conformant |
-| Basic DICOMDIR | PATIENT/STUDY/SERIES/IMAGE read/write; lossless generic view of all current F.4-1 types; serialized Item offsets, complete reachability, selected unconditional F.5 keys, File-set/File IDs, consistency flag, and referenced Part 10 identities can be validated |
+| Basic DICOMDIR | PATIENT/STUDY/SERIES/IMAGE read/write; lossless generic view of all current F.4-1 types; serialized Item offsets, complete reachability, all unconditional top-level F.5 keys, common Type 1C keys, File-set/File IDs, consistency flag, and referenced Part 10 identities can be validated |
 | PS3.12 media profiles | Not qualified; no media-profile conformance claim |
 
 Known UIDs are not automatically supported. `TransferSyntaxCapability` is the
@@ -59,9 +59,11 @@ UID and retired record types remain observable. Explicit
 file-set integrity validation checks unique contained targets and their SOP
 Class, SOP Instance, and Transfer Syntax identities. It does not yet claim
 support for writing every Directory Record type, File-set update semantics,
-descriptor content decoding, conditional F.5 keys or included macro content,
-or any specific media storage application profile. Unconditional top-level
-Type 1 and Type 2 keys are represented for every current F.5 record type. The
+descriptor content decoding, remaining record-specific conditional F.5 keys
+or included macro content, or any specific media storage application profile.
+Unconditional top-level Type 1 and Type 2 keys are represented for every
+current F.5 record type. Common Type 1C validation covers PRIVATE record UIDs,
+referenced-SOP identity tuples, and extended character sets in record keys. The
 optional File-set Descriptor File ID and character-set declaration are
 preserved, and the descriptor target can be checked for containment and
 existence.
