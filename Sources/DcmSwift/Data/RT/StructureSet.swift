@@ -10,7 +10,7 @@ import Foundation
 /**
  For a sequence, gives the id by which an item is identified
  */
-let SSEQUENCE_WITH_NUMBER: [String: String] = ["ReferencedFrameofReferenceSequence": "FrameofReferenceUID",
+let SSEQUENCE_WITH_NUMBER: [String: String] = ["ReferencedFrameOfReferenceSequence": "FrameOfReferenceUID",
                                                "StructureSetROISequence": "ROINumber",
                                                "ROIContourSequence": "ReferencedROINumber"]
 
@@ -28,12 +28,16 @@ let SSEQUENCE_WITH_NUMBER: [String: String] = ["ReferencedFrameofReferenceSequen
  ```
  */
 public class StructureSet {
+    private static func normalizedIdentifier(_ element: DataElement) -> String? {
+        return (element.value as? String)?
+            .trimmingCharacters(in: CharacterSet(charactersIn: " \0"))
+    }
     /**
      Gets a Data Item in a specific sequence, with the item having a specific number/ID
      
      ```
      StructureSet.getItemInSequenceForNumber(dicomRT: dicomRT,
-                                             forSequence: "ReferencedFrameofReferenceSequence",
+                                             forSequence: "ReferencedFrameOfReferenceSequence",
                                              withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.11")
      ```
      
@@ -43,7 +47,7 @@ public class StructureSet {
         - withNumber: the ID of the `DataItem` to get
      - Returns: the `DataItem` found, or nil if not found
      */
-    public static func getItemInSequenceForNumber(dicomRT: DicomRT, forSequence: String, withNumber: String) -> DataItem? {
+    public static func getItemInSequenceForNumber(dicomRT: DicomFile, forSequence: String, withNumber: String) -> DataItem? {
         if !SSEQUENCE_WITH_NUMBER.keys.contains(forSequence) {
             return nil
         }
@@ -53,7 +57,7 @@ public class StructureSet {
         for item in sequence.items {
             guard let number = item.element(withName: SSEQUENCE_WITH_NUMBER[forSequence] ?? "") else { continue }
             
-            if number.value as! String == withNumber {
+            if normalizedIdentifier(number) == withNumber {
                 return item
             }
         }
@@ -72,13 +76,13 @@ public class StructureSet {
         - observationNumber: the ID of the `DataItem` to get
      - Returns: the `DataItem` found, or `nil` if not found
      */
-    public static func getObservation(dicomRT: DicomRT, observationNumber: String) -> DataItem? {
+    public static func getObservation(dicomRT: DicomFile, observationNumber: String) -> DataItem? {
         guard let sequence = dicomRT.dataset.sequence(forTagName: "RTROIObservationsSequence") else { return nil }
         
         for item in sequence.items {
             guard let number = item.element(withName: "ObservationNumber") else { return nil }
             
-            if number.value as! String == observationNumber {
+            if normalizedIdentifier(number) == observationNumber {
                 return item
             }
         }
@@ -97,13 +101,13 @@ public class StructureSet {
         - roiNumber: the ID of the `DataItem` to get
      - Returns: the `DataItem` found, or `nil` if not found
      */
-    public static func getObservationByROINumber(dicomRT: DicomRT, roiNumber: String) -> DataItem? {
+    public static func getObservationByROINumber(dicomRT: DicomFile, roiNumber: String) -> DataItem? {
         guard let sequence = dicomRT.dataset.sequence(forTagName: "RTROIObservationsSequence") else { return nil }
         
         for item in sequence.items {
             guard let number = item.element(withName: "ReferencedROINumber") else { continue }
             
-            if number.value as! String == roiNumber {
+            if normalizedIdentifier(number) == roiNumber {
                 return item
             }
         }

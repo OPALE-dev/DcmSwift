@@ -22,6 +22,10 @@ let PSEQUENCE_WITH_NUMBER: [String: String] = ["PatientSetupSequence": "PatientS
  Helpers concerning RTPlan modality. Inspired from DCMTK: https://support.dcmtk.org/docs/classDRTPlan.html
  */
 public class Plan {
+    private static func normalizedIdentifier(_ element: DataElement) -> String? {
+        return (element.value as? String)?
+            .trimmingCharacters(in: CharacterSet(charactersIn: " \0"))
+    }
     
     /**
      Gets a Data Item in a specific sequence, with the item having a specific number/ID
@@ -39,7 +43,7 @@ public class Plan {
         - withNumber: the ID of the item to look for
      - Returns: the `DataItem` identified by `withNumber`, or `nil`
      */
-    public static func getItemInSequenceForNumber(dicomRT: DicomRT, forSequence: String, withNumber: String) -> DataItem? {
+    public static func getItemInSequenceForNumber(dicomRT: DicomFile, forSequence: String, withNumber: String) -> DataItem? {
         if !PSEQUENCE_WITH_NUMBER.keys.contains(forSequence) {
             return nil
         }
@@ -49,7 +53,7 @@ public class Plan {
         for item in sequence.items {
             guard let number = item.element(withName: PSEQUENCE_WITH_NUMBER[forSequence] ?? "") else { continue }
             
-            if number.value as! String == withNumber {
+            if normalizedIdentifier(number) == withNumber {
                 return item
             }
         }
@@ -62,7 +66,7 @@ public class Plan {
      
      - SeeAlso: `getItemInSequenceForNumber()`
      */
-    public static func getPatientSetup(dicomRT: DicomRT, withNumber: String) -> DataItem? {
+    public static func getPatientSetup(dicomRT: DicomFile, withNumber: String) -> DataItem? {
         guard let patientSetupSequence = dicomRT.dataset.sequence(forTagName: "PatientSetupSequence") else {
             return nil
         }
@@ -72,7 +76,7 @@ public class Plan {
                 continue
             }
             
-            if patientSetupNumber.value as! String == withNumber {
+            if normalizedIdentifier(patientSetupNumber) == withNumber {
                 return patientSetupSequenceItem
             }
         }

@@ -521,13 +521,20 @@ class DcmSwiftTests: XCTestCase {
         }
         return first == second
     }
+
+    private func requireDICOMResource(_ name: String) throws -> String {
+        guard let path = Bundle.module.path(forResource: name, ofType: "dcm") else {
+            throw XCTSkip("Optional DICOM interoperability fixture \(name).dcm is not installed")
+        }
+        return path
+    }
     
     
     // Poulpy
     
     // RTDose tests
     
-    public func testIsValid() {
+    public func testIsValid() throws {
 
         // TODO get files under RT folder, doesn't work atm; workaround, use filter to get "rt_" files
         var paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
@@ -539,45 +546,37 @@ class DcmSwiftTests: XCTestCase {
             }
         }
         
-        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
-        guard let p = path else {
-            return
-        }
+        let p = try requireDICOMResource("rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424")
         
         if let dicomRT = DicomRT.init(forPath: p) {
             XCTAssertTrue(Dose.isValid(dicomRT: dicomRT))
+        } else {
+            XCTFail("Unable to read RT Dose fixture")
         }
         
-        let path2 = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular", ofType: "dcm")
-        guard let p2 = path2 else {
-            return
-        }
+        let p2 = try requireDICOMResource("rt_RTXPLAN.20110509.1010_Irregular")
         
-        if let dicomRT2 = DicomRT.init(forPath: p2) {
-            XCTAssertFalse(Dose.isValid(dicomRT: dicomRT2))
-        }
+        XCTAssertNil(DicomRT.init(forPath: p2), "RT Plan is not a pixel-based RT Dose object")
     }
     
-    public func testGetDoseImageWidth() {
+    public func testGetDoseImageWidth() throws {
         
-        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
-        guard let p = path else {
-            return
-        }
+        let p = try requireDICOMResource("rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424")
         
         if let dicomRT = DicomRT.init(forPath: p) {
             XCTAssertEqual(Dose.getDoseImageWidth(dicomRT: dicomRT), 10)
+        } else {
+            XCTFail("Unable to read RT Dose fixture")
         }
     }
     
-    public func testGetDoseImageHeight() {
-        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
-        guard let p = path else {
-            return
-        }
+    public func testGetDoseImageHeight() throws {
+        let p = try requireDICOMResource("rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424")
         
         if let dicomRT = DicomRT.init(forPath: p) {
             XCTAssertEqual(Dose.getDoseImageHeight(dicomRT: dicomRT), 10)
+        } else {
+            XCTFail("Unable to read RT Dose fixture")
         }
     }
     
@@ -587,6 +586,9 @@ class DcmSwiftTests: XCTestCase {
         
         var paths = Bundle.module.paths(forResourcesOfType: "dcm", inDirectory: nil)
         paths = paths.filter { $0.contains("rt_") }
+        guard !paths.isEmpty else {
+            throw XCTSkip("Optional RT interoperability corpus is not installed")
+        }
         
         paths.forEach { path in
             if let dcmFile = DicomFile(forPath: path) {
@@ -613,11 +615,8 @@ class DcmSwiftTests: XCTestCase {
 #endif
     }
     
-    public func testGetUnscaledDose() {
-        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
-        guard let p = path else {
-            return
-        }
+    public func testGetUnscaledDose() throws {
+        let p = try requireDICOMResource("rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424")
         
         if let dicomRT = DicomRT.init(forPath: p) {
             // 0
@@ -635,14 +634,13 @@ class DcmSwiftTests: XCTestCase {
                 XCTAssertTrue(dose is UInt32)
                 XCTAssertEqual(dose as! UInt32, 137984544)
             }
+        } else {
+            XCTFail("Unable to read RT Dose fixture")
         }
     }
     
-    public func testGetDose() {
-        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
-        guard let p = path else {
-            return
-        }
+    public func testGetDose() throws {
+        let p = try requireDICOMResource("rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424")
         
         if let dicomRT = DicomRT.init(forPath: p) {
             // 0
@@ -656,30 +654,24 @@ class DcmSwiftTests: XCTestCase {
             XCTAssertEqual(dose2!, 1.4865626863296)
             
         } else {
-            Logger.error("no dicom file")
+            XCTFail("Unable to read RT Dose fixture")
         }
     }
     
-    public func testGetDoseImage() {
-        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
-        guard let p = path else {
-            return
-        }
+    public func testGetDoseImage() throws {
+        let p = try requireDICOMResource("rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424")
         
         if let dicomRT = DicomRT.init(forPath: p) {
             let r = Dose.getDoseImage(dicomRT: dicomRT, atFrame: 1)
             
             XCTAssert(!r.isEmpty)
         } else {
-            Logger.error("no dicom file")
+            XCTFail("Unable to read RT Dose fixture")
         }
     }
     
-    public func testGetDoseImages() {
-        let path = Bundle.module.path(forResource: "rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424", ofType: "dcm")
-        guard let p = path else {
-            return
-        }
+    public func testGetDoseImages() throws {
+        let p = try requireDICOMResource("rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424")
         
         if let dicomRT = DicomRT.init(forPath: p) {
             let r = Dose.getDoseImages(dicomRT: dicomRT)
@@ -687,21 +679,18 @@ class DcmSwiftTests: XCTestCase {
             XCTAssert(!r.isEmpty)
        
         } else {
-            Logger.error("no dicom file")
+            XCTFail("Unable to read RT Dose fixture")
         }
     }
     
     // test Plan
     
-    public func testGetToleranceTableItem() {
+    public func testGetToleranceTableItem() throws {
         // rt_RTXPLAN.20110509.1010_Irregular.dcm
         
-        let path = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular.dcm", ofType: "dcm")
-        guard let p = path else {
-            return
-        }
+        let p = try requireDICOMResource("rt_RTXPLAN.20110509.1010_Irregular")
         
-        if let dicomRT = DicomRT.init(forPath: p) {
+        if let dicomRT = DicomFile.init(forPath: p) {
             XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "1"))
             XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "2"))
             XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "3"))
@@ -709,19 +698,16 @@ class DcmSwiftTests: XCTestCase {
             XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ToleranceTableSequence", withNumber: "4"))
        
         } else {
-            Logger.error("no dicom file")
+            XCTFail("Unable to read RT Plan fixture")
         }
     }
     
-    public func testGetFractionGroupItem() {
+    public func testGetFractionGroupItem() throws {
         // rt_RTXPLAN.20110509.1010_Irregular.dcm
         
-        let path = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular.dcm", ofType: "dcm")
-        guard let p = path else {
-            return
-        }
+        let p = try requireDICOMResource("rt_RTXPLAN.20110509.1010_Irregular")
         
-        if let dicomRT = DicomRT.init(forPath: p) {
+        if let dicomRT = DicomFile.init(forPath: p) {
             XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "FractionGroupSequence", withNumber: "1"))
             
             XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "FractionGroupSequence", withNumber: "2"))
@@ -729,19 +715,16 @@ class DcmSwiftTests: XCTestCase {
             XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "FractionGroupSequence", withNumber: "4"))
        
         } else {
-            Logger.error("no dicom file")
+            XCTFail("Unable to read RT Plan fixture")
         }
     }
     
-    public func testGetBeamItem() {
+    public func testGetBeamItem() throws {
         // rt_RTXPLAN.20110509.1010_Irregular.dcm
         
-        let path = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular.dcm", ofType: "dcm")
-        guard let p = path else {
-            return
-        }
+        let p = try requireDICOMResource("rt_RTXPLAN.20110509.1010_Irregular")
         
-        if let dicomRT = DicomRT.init(forPath: p) {
+        if let dicomRT = DicomFile.init(forPath: p) {
             XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "BeamSequence", withNumber: "1"))
             XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "BeamSequence", withNumber: "2"))
             XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "BeamSequence", withNumber: "3"))
@@ -749,19 +732,16 @@ class DcmSwiftTests: XCTestCase {
             XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "BeamSequence", withNumber: "4"))
        
         } else {
-            Logger.error("no dicom file")
+            XCTFail("Unable to read RT Plan fixture")
         }
     }
     
-    public func testGetPatientItem() {
+    public func testGetPatientItem() throws {
         // rt_RTXPLAN.20110509.1010_Irregular.dcm
         
-        let path = Bundle.module.path(forResource: "rt_RTXPLAN.20110509.1010_Irregular.dcm", ofType: "dcm")
-        guard let p = path else {
-            return
-        }
+        let p = try requireDICOMResource("rt_RTXPLAN.20110509.1010_Irregular")
         
-        if let dicomRT = DicomRT.init(forPath: p) {
+        if let dicomRT = DicomFile.init(forPath: p) {
             XCTAssertNotNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "1"))
             
             XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "2"))
@@ -769,39 +749,35 @@ class DcmSwiftTests: XCTestCase {
             XCTAssertNil(Plan.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "4"))
        
         } else {
-            Logger.error("no dicom file")
+            XCTFail("Unable to read RT Plan fixture")
         }
     }
     
     
     // StructureSet
     
-    public func testGetFrameOfReference() {
+    public func testGetFrameOfReference() throws {
         // rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010
         
-        guard let path = Bundle.module.path(forResource: "rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010.dcm", ofType: "dcm") else {
-            return
-        }
+        let path = try requireDICOMResource("rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010")
         
-        if let dicomRT = DicomRT.init(forPath: path) {
-            XCTAssertNotNil(StructureSet.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ReferencedFrameofReferenceSequence", withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.11"))
+        if let dicomRT = DicomFile.init(forPath: path) {
+            XCTAssertNotNil(StructureSet.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "ReferencedFrameOfReferenceSequence", withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.11"))
             
             // replaced 1 by 0 at the end
             XCTAssertNil(StructureSet.getItemInSequenceForNumber(dicomRT: dicomRT, forSequence: "PatientSetupSequence", withNumber: "1.2.840.113619.2.55.3.3767434740.12488.1173961280.931.803.0.10"))
             
         } else {
-            Logger.error("no dicom file")
+            XCTFail("Unable to read RT Structure Set fixture")
         }
     }
     
-    public func testGetObservation() {
+    public func testGetObservation() throws {
         // rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010
         
-        guard let path = Bundle.module.path(forResource: "rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010.dcm", ofType: "dcm") else {
-            return
-        }
+        let path = try requireDICOMResource("rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010")
         
-        if let dicomRT = DicomRT.init(forPath: path) {
+        if let dicomRT = DicomFile.init(forPath: path) {
             XCTAssertNotNil(StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "1"))
             XCTAssertNotNil(StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "2"))
             XCTAssertNotNil(StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "3"))
@@ -809,18 +785,16 @@ class DcmSwiftTests: XCTestCase {
             XCTAssertNil(StructureSet.getObservation(dicomRT: dicomRT, observationNumber: "10"))
             
         } else {
-            Logger.error("no dicom file")
+            XCTFail("Unable to read RT Structure Set fixture")
         }
     }
     
-    public func testGetObservationByROINumber() {
+    public func testGetObservationByROINumber() throws {
         // rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010
         
-        guard let path = Bundle.module.path(forResource: "rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010.dcm", ofType: "dcm") else {
-            return
-        }
+        let path = try requireDICOMResource("rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010")
         
-        if let dicomRT = DicomRT.init(forPath: path) {
+        if let dicomRT = DicomFile.init(forPath: path) {
             XCTAssertNotNil(StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "1"))
             XCTAssertNotNil(StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "2"))
             XCTAssertNotNil(StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "3"))
@@ -828,7 +802,7 @@ class DcmSwiftTests: XCTestCase {
             XCTAssertNil(StructureSet.getObservationByROINumber(dicomRT: dicomRT, roiNumber: "10"))
             
         } else {
-            Logger.error("no dicom file")
+            XCTFail("Unable to read RT Structure Set fixture")
         }
     }
 }
