@@ -72,6 +72,8 @@ Current progress in that order:
   Macro and top-level Scope of Inventory Sequence;
 - parsed offset graphs expose a lossless public record tree and fail closed
   rather than returning a partial tree for malformed or orphaned graphs;
+- unknown, retired, and misplaced record types are reported without blocking
+  the load or hiding their lower-level records;
 - Basic and Enhanced Coded Entry macro rules are validated recursively in
   Directory Record code sequences;
 - SOP Instance Reference Macros in Referenced Image, Instance, and Waveform

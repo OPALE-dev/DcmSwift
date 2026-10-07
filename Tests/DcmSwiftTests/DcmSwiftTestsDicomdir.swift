@@ -950,6 +950,64 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         XCTAssertTrue(messages.contains { $0.contains("PRIVATE Directory Record requires PrivateRecordUID") })
     }
 
+    func testUnknownAndRetiredDirectoryRecordTypesRemainTraversable() throws {
+        let temporaryDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+        let outputURL = temporaryDirectory.appendingPathComponent("DICOMDIR")
+
+        func findNode(
+            _ type:DICOMDirectoryRecordType,
+            in nodes:[DICOMDirectoryRecordTreeNode]
+        ) -> DICOMDirectoryRecordTreeNode? {
+            for node in nodes {
+                if node.record.type == type { return node }
+                if let match = findNode(type, in: node.children) { return match }
+            }
+            return nil
+        }
+
+        // An unknown type is an error, but neither it nor its lower-level
+        // records are lost, and the file remains readable.
+        XCTAssertTrue(makeDirectory().writeDicomDir(atPath: temporaryDirectory.path))
+        try replaceDirectoryRecordType("SERIES", with: "VENDOR", inFileAt: outputURL)
+        let unknown = try XCTUnwrap(DicomDir(forPath: outputURL.path))
+        let vendorType = DICOMDirectoryRecordType(rawValue: "VENDOR")
+        let vendor = try XCTUnwrap(findNode(vendorType, in: unknown.directoryRecordTree))
+        XCTAssertEqual(vendor.children.map(\.record.type), [.image])
+        XCTAssertEqual(unknown.imagesKeys, ["1.2.3.4"])
+        XCTAssertTrue(unknown.seriesKeys.isEmpty)
+        XCTAssertEqual(unknown.index.count, 1)
+        let unknownMessages = unknown.validateDirectoryStructure().map(\.message)
+        XCTAssertTrue(unknownMessages.contains("Unknown Directory Record Type VENDOR"))
+        XCTAssertFalse(unknownMessages.contains { $0.contains("not permitted") })
+
+        // A retired type is only a warning and does not constrain its children.
+        XCTAssertTrue(makeDirectory().writeDicomDir(atPath: temporaryDirectory.path))
+        try replaceDirectoryRecordType("STUDY", with: "VISIT", inFileAt: outputURL)
+        let retired = try XCTUnwrap(DicomDir(forPath: outputURL.path))
+        let visit = try XCTUnwrap(findNode(DICOMDirectoryRecordType(rawValue: "VISIT"), in: retired.directoryRecordTree))
+        XCTAssertEqual(visit.children.map(\.record.type), [.series])
+        XCTAssertEqual(retired.seriesKeys, ["1.2.3.1"])
+        let retiredResults = retired.validateDirectoryStructure()
+        XCTAssertFalse(retiredResults.contains { $0.severity == .Error })
+        XCTAssertTrue(retiredResults.contains { $0.message == "Directory Record Type VISIT is retired" })
+
+        let decoded = try XCTUnwrap(try DicomInputStream(filePath: outputURL.path).readDataset())
+        let sequence = try XCTUnwrap(decoded.element(forTagName: "DirectoryRecordSequence") as? DataSequence)
+        let image = try XCTUnwrap(sequence.items.first {
+            ($0.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespaces) == "IMAGE"
+        })
+        XCTAssertTrue(image.element(withName: "DirectoryRecordType")?.setValue("HL7 STRUC DOC") == true)
+        let hl7 = DicomDir()
+        hl7.dataset = decoded
+        let hl7Messages = hl7.validateDirectoryStructure().map(\.message)
+        XCTAssertTrue(hl7Messages.contains("Directory Record Type HL7 STRUC DOC is retired"))
+        XCTAssertFalse(hl7Messages.contains { $0.contains("Unknown") })
+    }
+
     func testPrimitiveDICOMDIRWithoutDirectoryInformationIsAccepted() throws {
         let temporaryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
@@ -1005,6 +1063,32 @@ class DcmSwiftTestsDicomdir: XCTestCase {
             ]
         ]
         return directory
+    }
+
+    /// Rewrites one encoded Directory Record Type value in place. The padded
+    /// replacement must keep the value length so record offsets stay valid.
+    private func replaceDirectoryRecordType(
+        _ original:String,
+        with replacement:String,
+        inFileAt url:URL
+    ) throws {
+        func padded(_ value:String) -> [UInt8] {
+            let bytes = Array(value.utf8)
+            return bytes.count % 2 == 0 ? bytes : bytes + [0x20]
+        }
+        let originalValue = padded(original)
+        let replacementValue = padded(replacement)
+        XCTAssertEqual(originalValue.count, replacementValue.count)
+        // (0004,1430) CS with a 16-bit little-endian length.
+        let header:[UInt8] = [0x04, 0x00, 0x30, 0x14, 0x43, 0x53,
+                              UInt8(originalValue.count), 0x00]
+        var bytes = [UInt8](try Data(contentsOf: url))
+        let needle = header + originalValue
+        let start = try XCTUnwrap((0...(bytes.count - needle.count)).first {
+            Array(bytes[$0..<($0 + needle.count)]) == needle
+        })
+        bytes.replaceSubrange((start + header.count)..<(start + needle.count), with: replacementValue)
+        try Data(bytes).write(to: url)
     }
 
     private func offset(named name:String, in item:DataItem) -> UInt32? {

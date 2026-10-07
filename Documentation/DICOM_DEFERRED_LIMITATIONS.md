@@ -79,8 +79,11 @@ conformance without that evidence.
   native Pixel Data length, and palette attribute presence. It does not yet
   validate palette LUT descriptor/data consistency, displayed colors, or
   exchange with independent File-set readers.
-- Preserve and expose unknown Directory Record types without losing their
-  attributes or breaking hierarchy traversal.
+- Unknown and retired Directory Record types are preserved, traversed, and
+  reported without blocking the load. Placement rules for retired types are
+  not modeled from historical editions of Table F.4-1, and unknown types are
+  not round-tripped by the typed generic writer, which only emits current
+  F.4-1 types. Qualify the behavior against externally generated legacy media.
 - Decode File-set Descriptor content according to its declared character set;
   the ID, declaration, containment, and existence are currently preserved and
   validated without interpreting the non-DICOM text file.

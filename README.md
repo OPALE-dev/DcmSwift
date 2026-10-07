@@ -272,7 +272,10 @@ let dose = DICOMDirectoryRecordDefinition(
 ID, required pointer elements, consistency flag, cycles, root chain, and orphan
 records. It also checks current Directory Record types and parent/child
 relationships against PS3.3 Table F.4-1, requires a UID for PRIVATE records,
-and reports retired record types. `validateReferencedFiles()` additionally
+and reports retired record types, including HL7 STRUC DOC. Unknown, retired,
+and misplaced record types are diagnostics only: such a DICOMDIR still loads and
+`directoryRecordTree` keeps those records and their children, while offset-graph
+errors still reject the file. `validateReferencedFiles()` additionally
 checks Referenced File ID
 uniqueness and containment, target existence, and agreement of the referenced
 SOP Class, SOP Instance, and Transfer Syntax UIDs. These checks do not imply

@@ -243,7 +243,7 @@ public class DicomDir:DicomFile {
         guard let sequence = dataSet.element(forTagName: "DirectoryRecordSequence") as? DataSequence else {
             return dataSet.string(forTag: "MediaStorageSOPClassUID") == "1.2.840.10008.1.3.10"
         }
-        if validateDirectoryStructure().contains(where: { $0.severity.rawValue >= ValidationResult.Severity.Error.rawValue }) {
+        if directoryStructureDiagnostics().blocksTraversal {
             return false
         }
 
