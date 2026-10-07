@@ -1,4 +1,4 @@
-# Handoff Packet (updated 2026-10-07, after PN commit 16fb028)
+# Handoff Packet (updated 2026-10-07, after delivery pipeline 3559)
 
 Repo: /Users/nark/Development/Opale/Swift/DcmSwift, branch `codex/dcmswift-2.0`.
 JPEG XL is committed as `5371911`; structured Person Name and multi-valued text
@@ -15,8 +15,9 @@ by the user. The previous Codex → Claude handoff is archived in
 - iOS Simulator 26.2, iPhone 17 Pro: 198 tests, 4 skipped, 0 failures.
 - Xcode emits many non-fatal `-Wshorten-64-to-32` warnings from upstream
   libjxl. They are not hidden with unsafe flags.
-- Linux Swift 6.1 was not rerun locally because the Docker daemon was not
-  available. GitLab CI remains the release gate.
+- Linux Swift 6.1 was not runnable locally because the Docker daemon was not
+  available, but GitLab pipeline 3559 passed its `swift-package` gate at
+  `a68c8f8`. The same pipeline passed `macos-package` and `ios-package`.
 - Part 2 is not registered: DICOM component collections may span Frames and
   Fragments, which the independent-frame decoder API cannot model. OpenJPEG
   2.5.4 also rejects COD MCT type 2, and its dormant custom inverse path treats
