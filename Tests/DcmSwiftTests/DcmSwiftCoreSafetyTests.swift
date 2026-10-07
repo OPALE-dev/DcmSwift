@@ -16,10 +16,17 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertTrue(TransferSyntax(deflated)!.capability.canReadDataset)
         XCTAssertFalse(TransferSyntax(deflated)!.capability.canNegotiateForDIMSE)
 
+        // MPEG-4 AVC/H.264 is in the registry but has no decoder.
+        let mpeg4 = "1.2.840.10008.1.2.4.102"
+        XCTAssertTrue(DicomSpec.shared.isKnown(transferSyntax: mpeg4))
+        XCTAssertTrue(TransferSyntax(mpeg4)!.capability.canPreservePixelData)
+        XCTAssertFalse(TransferSyntax(mpeg4)!.capability.canDecodePixelData)
+        XCTAssertFalse(TransferSyntax(mpeg4)!.capability.canNegotiateForDIMSE)
+
+        // JPEG Baseline decodes, but is not negotiated for DIMSE.
         let jpegBaseline = TransferSyntax.JPEGLossy8bit
-        XCTAssertTrue(DicomSpec.shared.isKnown(transferSyntax: jpegBaseline))
-        XCTAssertTrue(TransferSyntax(jpegBaseline)!.capability.canPreservePixelData)
-        XCTAssertFalse(TransferSyntax(jpegBaseline)!.capability.canDecodePixelData)
+        XCTAssertTrue(TransferSyntax(jpegBaseline)!.capability.canDecodePixelData)
+        XCTAssertFalse(TransferSyntax(jpegBaseline)!.capability.canEncodePixelData)
         XCTAssertFalse(TransferSyntax(jpegBaseline)!.capability.canNegotiateForDIMSE)
     }
 
