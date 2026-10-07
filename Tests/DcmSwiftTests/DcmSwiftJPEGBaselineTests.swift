@@ -76,6 +76,20 @@ final class DcmSwiftJPEGBaselineTests: XCTestCase {
         XCTAssertEqual(Data(rendered.pixels), try resource(fixture.name, "ref"))
     }
 
+    func testRetiredProgressiveHuffmanSyntaxesRemainReadable() throws {
+        // Processes 6/8 (spectral selection) and 10/12 (full progression) are
+        // retired but still found in archives.
+        for uid in [DICOMJPEGBaselineCodec.spectralSelection, DICOMJPEGBaselineCodec.fullProgression] {
+            XCTAssertTrue(DicomSpec.shared.isKnown(transferSyntax: uid))
+            XCTAssertTrue(try XCTUnwrap(TransferSyntax(uid)).capability.canDecodePixelData, uid)
+            XCTAssertTrue(DICOMCodecRegistry.decoder(for: uid) is DICOMJPEGBaselineCodec, uid)
+        }
+        let fixture = try XCTUnwrap(try fixtures().first { $0.name == "progressive_gray" })
+        let decoder = try XCTUnwrap(DICOMCodecRegistry.decoder(for: DICOMJPEGBaselineCodec.fullProgression))
+        let decoded = try decoder.decode(try resource(fixture.name, "jpg"), description: description(fixture))
+        XCTAssertEqual(decoded.data, try resource(fixture.name, "ref"))
+    }
+
     func testInvalidStreamsAreRejected() throws {
         let fixture = try XCTUnwrap(try fixtures().first { $0.name == "gray_23x17_q50" })
         let stream = try resource(fixture.name, "jpg")

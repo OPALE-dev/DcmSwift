@@ -8,10 +8,18 @@ import Foundation
 /// Decoding reproduces the IJG reference algorithms (accurate integer IDCT,
 /// fancy upsampling, and fixed-point YCbCr conversion), so results match
 /// libjpeg-turbo, DCMTK, and GDCM exactly. Color frames are returned as RGB.
+/// The retired progressive Huffman syntaxes (Processes 6, 8, 10, and 12) use
+/// the same decoder so that older files remain readable.
 public struct DICOMJPEGBaselineCodec: DICOMPixelDataDecoder {
     public static let baseline = "1.2.840.10008.1.2.4.50"
     public static let extended = "1.2.840.10008.1.2.4.51"
-    public var transferSyntaxUIDs: Set<String> { [Self.baseline, Self.extended] }
+    /// Retired: Spectral Selection, Non-Hierarchical (Process 6 & 8).
+    public static let spectralSelection = "1.2.840.10008.1.2.4.53"
+    /// Retired: Full Progression, Non-Hierarchical (Process 10 & 12).
+    public static let fullProgression = "1.2.840.10008.1.2.4.55"
+    public var transferSyntaxUIDs: Set<String> {
+        [Self.baseline, Self.extended, Self.spectralSelection, Self.fullProgression]
+    }
 
     public init() {}
 

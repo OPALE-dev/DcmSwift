@@ -51,8 +51,10 @@ conformance without that evidence.
   Swift implementations as a later goal. RLE Lossless, Deflated Image Frame
   Compression, JPEG Lossless, and JPEG Baseline/Extended decoding are
   implemented. MPEG, AVC, and HEVC are outside the planned scope.
-- JPEG Baseline/Extended has no encoder, no arithmetic coding (SOF9-11, not
-  used by the current DICOM Transfer Syntaxes), and decodes at about 40
+- Retired JPEG Transfer Syntaxes must stay readable. The progressive Huffman
+  syntaxes (.53, .55) decode; arithmetic coding (.52, .54, .56, .58) and the
+  hierarchical processes (.59 to .66) are not decoded yet.
+- JPEG Baseline/Extended has no encoder yet, and decodes at about 40
   megapixels per second, well below SIMD libraries; entropy decoding and SIMD
   work remain. YCbCr frames are always converted to RGB.
 - JPEG Lossless decoding rejects subsampled components, restart intervals that
