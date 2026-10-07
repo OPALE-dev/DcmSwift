@@ -69,13 +69,23 @@ conformance without that evidence.
     and reversible JPEG recompression streams, but no external DICOM JPEG XL
     corpus is currently qualified.
 - JPEG 2000 limits:
-  - Part 2 multi-component transforms (.92, .93) and JPIP (.94, .95) are
-    preserved but not decoded;
-  - Part 2 component collections can span multiple DICOM Frames and Fragments,
-    so they require a volume/component-collection decoder rather than the
-    current independent-frame codec protocol; OpenJPEG 2.5.4 also rejects MCT
-    type 2 during header parsing and its dormant custom inverse path is not
-    safe enough to enable without further repair and qualification;
+  - JPIP (.94, .95) is preserved but not resolved;
+  - Part 2 (.92, .93) is decoded but not encoded;
+  - OpenJPEG 2.5.4 cannot decode Part 2 multiple component transformations,
+    so it decodes a rewritten codestream (Part 2 markers turned into COM,
+    codestream components declared signed and wider) and the Annex J inverse
+    runs in Swift; irreversible codestream components keep 8 fractional bits
+    but are still clamped to their nominal SIZ range;
+  - the samples of a Part 2 frame are taken from consecutive components (one
+    per frame for grayscale), an ordering PS3.5 does not spell out for color;
+  - multi-frame Part 2 images ignore offset tables: collections are found
+    from codestreams starting Fragments, and frames cannot be read encoded;
+  - Part 2 qualification uses the Kakadu 8.4.1 demonstration decoder, which
+    is not redistributable and not run in CI; its `kdu_compress` crashes on
+    dependency transforms and its decoder reads neither MCC series split
+    over several segments nor 16-bit component indices, so those fixtures
+    carry hand-built segments and one is checked against its source; no
+    external DICOM .92/.93 corpus is known;
   - subsampled components are rejected;
   - the pydicom JPEG 2000 and HTJ2K files (20 decodable files, including
     signed, 10 to 16-bit, YBR_RCT/YBR_ICT, and multi-frame images) were

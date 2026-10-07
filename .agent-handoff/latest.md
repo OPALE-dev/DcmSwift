@@ -1,9 +1,9 @@
-# Handoff Packet (updated 2026-10-07, after delivery pipeline 3559)
+# Handoff Packet (updated 2026-10-07, after JPEG 2000 Part 2)
 
 Repo: /Users/nark/Development/Opale/Swift/DcmSwift, branch `codex/dcmswift-2.0`.
 JPEG XL is committed as `5371911`; structured Person Name and multi-valued text
-as `16fb028`. JPEG 2000 Part 2 `.92/.93` is explicitly assigned back to Claude
-by the user. The previous Codex → Claude handoff is archived in
+as `16fb028`; JPEG 2000 Part 2 `.92/.93` decode (Claude) in the commit that
+updated this file. The previous Codex → Claude handoff is archived in
 `2026-10-07-codex-to-claude.md`.
 
 ## Latest observations and tests
@@ -18,10 +18,8 @@ by the user. The previous Codex → Claude handoff is archived in
 - Linux Swift 6.1 was not runnable locally because the Docker daemon was not
   available, but GitLab pipeline 3559 passed its `swift-package` gate at
   `a68c8f8`. The same pipeline passed `macos-package` and `ios-package`.
-- Part 2 is not registered: DICOM component collections may span Frames and
-  Fragments, which the independent-frame decoder API cannot model. OpenJPEG
-  2.5.4 also rejects COD MCT type 2, and its dormant custom inverse path treats
-  integer component buffers as float buffers and crashed in the scratch test.
+- Part 2 `.92/.93` is now decoded (see "Done: JPEG 2000 Part 2" below);
+  OpenJPEG's own Part 2 path is still unusable and is bypassed.
 - Person Name qualification after `16fb028`: `swift build -c release` passed;
   `swift test --parallel` passed 207 tests; iOS Simulator passed 204 tests with
   4 expected skips and no failures. The focused PN/charset/core group passed 73
@@ -77,18 +75,44 @@ by the user. The previous Codex → Claude handoff is archived in
 - Validation: OpenJPH decoder (imagecodecs), pylibjpeg-openjpeg, and our OpenJPEG decode agree exactly on lossless output. imagecodecs' `htj2k_decode` wraps lossy uint8 output at 0/255 (no clamp): not our bug.
 - Plan: new Phase 3 "Image rendering and presentation" (after network) in DICOM_2_0_IMPLEMENTATION_PLAN.md; Web/security became Phase 4. Oracle idea: DCMTK `dcmp2pgm`, IHE CPI test images.
 
-## Claude next: JPEG 2000 Part 2
-The user has assigned JPEG 2000 Part 2 `.92/.93` to Claude. JPEG XL is done in
-`5371911`; do not redo it.
-
-### A. JPEG 2000 Part 2 multi-component transform (.92 lossless, .93 lossy)
-- **Findings (Claude, last session):** OpenJPEG 2.5.4 *encodes* Part 2 (`opj_set_MCT` gives RSIZ 0x8100, MCT/MCC/MCO markers, COD MCT byte 2) but its *decoder* rejects it: `j2k.c` (`opj_j2k_read_SPCod_SPCoc`-area, "Invalid multiple component transformation") refuses SGcod MCT > 1. `tcd.c` does contain a `mct == 2` path (`opj_mct_decode_custom` with `m_mct_decoding_matrix`). Allowing `mct == 2` when RSIZ has `OPJ_PROFILE_PART2 | OPJ_EXTENSION_MCT` (tested on a scratch copy, not in the repo) gets past the header but then **segfaults** during decode, so the Part 2 decode path in OpenJPEG is incomplete/untested. Repro: a C program that encodes 32x24x3 8-bit with `opj_set_MCT` (float 3x3 matrix, `irreversible=1`, `numresolution=4`) then decodes it with the same library.
-- Options: (1) debug and fix OpenJPEG's Part 2 decode (patching vendored code: record the patch in `Sources/COpenJPEG/README.DcmSwift.md`, ideally upstream it); (2) implement the inverse array-based MCT in Swift after decoding components with MCT disabled (parse MCT/MCC/MCO from the main header, ISO/IEC 15444-2 Annex J); (3) try Grok (https://github.com/GrokImageCompression/grok, AGPL — license problem) — not recommended. Option 2 is likely the most robust.
-- Original plan (now known to be insufficient as is):
-  1. add `partTwoLossless = ".92"`, `partTwo = ".93"` to `DICOMJPEG2000Codec.transferSyntaxUIDs`; keep encode off unless done;
-  2. `usesMultipleComponentTransform` only checks the COD MCT byte; for Part 2 the transform comes from MCC/MCO; decoded output is already in the original component space, so photometric handling should follow PS3.5 A.4.5 (check the 2026d DocBook part05: Photometric for .92/.93);
-  3. test data: OpenJPEG can encode Part 2 via `opj_set_MCT(&parameters, matrix, dcShift, numComps)` (sets RSIZ Part 2); also look for Part 2 files in pydicom-data / GDCM test data. No independent oracle available locally (Kakadu absent): state that in DEFERRED_LIMITATIONS.
-  4. update `testCapabilitiesAndRegistry` in `Tests/DcmSwiftTests/DcmSwiftJPEG2000Tests.swift` (it currently asserts .92/.93 have no decoder).
+## Done: JPEG 2000 Part 2 `.92/.93` decode (Claude)
+- Normative text: ITU-T T.801 (06/2021) = ISO/IEC 15444-2, free PDF from
+  `https://www.itu.int/rec/dologin_pub.asp?lang=e&id=T-REC-T.801-202106-S!!PDF-E&type=items`
+  (Annex A.3.6-A.3.9 markers, Annex J); T.800 (06/2019) the same way
+  (`T-REC-T.800-201906-S`) for the Annex F 1-D wavelet. `pdftotext -layout`.
+- Design: OpenJPEG stays unchanged. `JPEG2000Codestream` parses main and
+  tile-part headers and rewrites the codestream in place (same lengths): Rsiz
+  0, COD MCT byte 0 when 2/4/6, CBD/MCT/MCC/MCO marker codes -> COM, and SIZ
+  components declared signed and wider (30 bits if 5-3 everywhere, else +8
+  bits: the 9-7 step sizes scale with Rb, so samples come out x256 = 8
+  fractional bits). `JPEG2000ComponentTransform` then inverts Annex J in
+  Double (exact for reversible). Without the widening OpenJPEG clamps the
+  LL band and lossless output was off by up to 7.
+- DICOM layout (PS3.5 A.4.4): `DICOMEncapsulatedPixelData` groups the
+  Fragments of a multi-frame .92/.93 image by codestream start (offset tables
+  ignored), decodes a collection with
+  `DICOMPixelDataCollectionDecoder.decodeCollection`, caches the last one;
+  frame f = components f*spp ..< (f+1)*spp. `encodedFrame` throws there.
+- Oracle: Kakadu 8.4.1 demo apps for macOS (non-commercial, never in the
+  repo/CI): `http://kakadusoftware.com/wp-content/uploads/KDU841_Demo_Apps_for_MacOS_231117.dmg_.zip`,
+  `pkgutil --expand-full` the pkg, copy `libkdu_v84R.dylib` beside the
+  binaries, `install_name_tool -change /usr/local/lib/libkdu_v84R.dylib
+  @executable_path/libkdu_v84R.dylib`, `codesign -s - -f`. `kdu_compress`
+  segfaults on DEP transforms and refuses differing Sprecision/Mprecision on
+  directly associated irreversible components; `kdu_expand` reads neither
+  split MCC series nor 16-bit indices. Dependency/multi-stage/tile-override
+  fixtures were built by injecting segments into Kakadu Part 1 codestreams
+  (generator scripts were scratch only; the approach is described in the
+  test file header).
+- Results: 14 fixtures, all reversible ones bit-exact with Kakadu, 9-7 DWT
+  exact, irreversible matrix/dependency within 1. 64x512x512 12-bit 5-3
+  volume: identical to Kakadu, 0.57 s release (Kakadu 0.35 s). OpenJPEG
+  decoding now uses `opj_codec_set_threads` (2.6 s -> 0.3 s on that volume).
+- Qualification: `swift build -c release`, `swift test --parallel` (213
+  tests), iOS Simulator 26.2 iPhone 17 Pro (210 tests, 4 expected skips, 0
+  failures), plus a scratch header fuzz (~6000 corrupted main headers, no
+  crash). Not yet run on GitLab CI.
+- Not done: Part 2 encode; no external DICOM .92/.93 corpus known.
 
 ### B. JPEG XL (.110 lossless, .111 JPEG recompression, .112 lossy) — done
 - `Sources/CJPEGXL` vendors the decoder sources from libjxl 0.12.0 commit
@@ -104,10 +128,8 @@ The user has assigned JPEG 2000 Part 2 `.92/.93` to Claude. JPEG XL is done in
 Docs as several short tables with HTML lists in cells (memory: feedback-docs-lists); never `rm` with wildcards; commit message style with trailer; before each commit run release build, `swift test --parallel`, iOS xcodebuild with a fresh derivedDataPath.
 
 ## Next
-- **Claude:** JPEG 2000 Part 2 `.92/.93`, starting with the collection-level
-  encapsulated-data architecture and an independent oracle/corpus;
-- **Done by Codex (`16fb028`):** structured Person Name component groups and
-  multi-valued text API;
+- JPEG 2000 Part 2 encode (optional: e.g. reversible 5-3 across frames via
+  OpenJPEG components + our forward transform, Kakadu as oracle);
 - then 6: fuzzing, DCMTK/pydicom cross-checks, PS3.18 JSON / PS3.19 XML, network rewrite (NIOAsyncChannel, swift-nio-ssl, transport-services);
 - then 7: rendering and presentation (plan Phase 3: PS3.4 Annex N, GSPS/CSPS, overlays, shutters, padding, Presentation LUT + GSDF, ICC, high bit depth, RWVM).
 
@@ -126,7 +148,7 @@ Docs as several short tables with HTML lists in cells (memory: feedback-docs-lis
   - `swift test --parallel` (that's how CI runs it);
   - for anything touching resources, iOS: `xcodebuild test -scheme DcmSwift-Package -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' -derivedDataPath <fresh dir>`.
 - **Commits:** imperative English, explanatory paragraphs, ending with the trailer `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` (adapt for Codex).
-- Current state: 197 XCTests green locally on macOS, 194 on iOS after 9a44772.
+- Current state: 213 XCTests green locally on macOS after JPEG 2000 Part 2.
 
 ## CI / GitLab
 - `http://gitlab.dev.opale.pro` (HTTP only), project `rw/dcmswift`. The API token is in `.env` (git-ignored); never print it or commit it.

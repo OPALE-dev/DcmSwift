@@ -162,7 +162,9 @@ representations are built on a stable, lossless Data Set model.
   - [x] JPEG 2000 and HTJ2K (vendored OpenJPEG and OpenJPH);
   - [x] JPEG XL decode (vendored libjxl, .110 to .112);
   - [ ] JPEG XL encode;
-  - [ ] JPEG 2000 Part 2 multi-component transforms (.92, .93);
+  - [x] JPEG 2000 Part 2 multi-component transforms (.92, .93) decode, by
+    component collection;
+  - [ ] JPEG 2000 Part 2 encode;
   - ~~MPEG, AVC, and HEVC~~ (out of scope).
 
 ### 1.4 Sequences, bulk data, and private data

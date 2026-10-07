@@ -6,19 +6,25 @@ import COpenJPH
 /// 15444-15) Image Compression through the vendored OpenJPEG 2.5.4 and
 /// OpenJPH 0.32.0.
 ///
-/// Decoding (OpenJPEG) covers the Part 1 syntaxes .90 and .91 and the HTJ2K
-/// syntaxes .201, .202, and .203, from raw codestreams or JP2 files. When the
-/// codestream applies the multiple-component transform (YBR_RCT or YBR_ICT),
-/// OpenJPEG inverts it and frames are returned as RGB. `encode` writes Part 1
+/// Decoding (OpenJPEG) covers the Part 1 syntaxes .90 and .91, the Part 2
+/// multi-component syntaxes .92 and .93, and the HTJ2K syntaxes .201, .202,
+/// and .203, from raw codestreams or JP2 files. When the codestream applies
+/// the multiple-component transform (YBR_RCT or YBR_ICT), OpenJPEG inverts it
+/// and frames are returned as RGB. Part 2 multiple component transformations
+/// (ISO/IEC 15444-2 Annex J) are inverted by `JPEG2000ComponentTransform`
+/// after OpenJPEG decoded the codestream components. `encode` writes Part 1
 /// codestreams (OpenJPEG) and `encodeHTJ2K` HTJ2K codestreams (OpenJPH).
-public struct DICOMJPEG2000Codec: DICOMPixelDataDecoder {
+public struct DICOMJPEG2000Codec: DICOMPixelDataCollectionDecoder {
     public static let lossless = "1.2.840.10008.1.2.4.90"
     public static let lossy = "1.2.840.10008.1.2.4.91"
+    public static let partTwoLossless = "1.2.840.10008.1.2.4.92"
+    public static let partTwo = "1.2.840.10008.1.2.4.93"
     public static let htj2kLossless = "1.2.840.10008.1.2.4.201"
     public static let htj2kLosslessRPCL = "1.2.840.10008.1.2.4.202"
     public static let htj2k = "1.2.840.10008.1.2.4.203"
     public var transferSyntaxUIDs: Set<String> {
-        [Self.lossless, Self.lossy, Self.htj2kLossless, Self.htj2kLosslessRPCL, Self.htj2k]
+        [Self.lossless, Self.lossy, Self.partTwoLossless, Self.partTwo,
+         Self.htj2kLossless, Self.htj2kLosslessRPCL, Self.htj2k]
     }
 
     /// The rate control of the encoder.
@@ -59,8 +65,20 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataDecoder {
 
     // MARK: Decoding
 
+    /// Decodes a codestream holding one frame.
     public func decode(_ encodedFrame: Data, description: DICOMPixelDescription) throws -> DICOMDecodedFrame {
-        let bytes = [UInt8](encodedFrame)
+        let frames = try decodeCollection(encodedFrame, description: description)
+        guard frames.count == 1 else {
+            throw DICOMCodecError.corruptedData("JPEG 2000 codestream holds \(frames.count) frames, 1 expected")
+        }
+        return frames[0]
+    }
+
+    /// Decodes a codestream that may hold several frames: a JPEG 2000 Part 2
+    /// component collection (PS3.5 A.4.4), whose reconstructed image
+    /// components are the samples of consecutive frames.
+    public func decodeCollection(_ encoded: Data, description: DICOMPixelDescription) throws -> [DICOMDecodedFrame] {
+        var bytes = [UInt8](encoded)
         let format: OPJ_CODEC_FORMAT
         if bytes.starts(with: [0xFF, 0x4F, 0xFF, 0x51]) {
             format = OPJ_CODEC_J2K
@@ -69,7 +87,163 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataDecoder {
         } else {
             throw DICOMCodecError.corruptedData("JPEG 2000 data starts with neither SOC nor a JP2 signature")
         }
+        let partOneTransform = Self.usesMultipleComponentTransform(bytes)
 
+        // A Part 2 codestream is decoded to its codestream components as a
+        // Part 1 one, then the multiple component transformation is inverted.
+        var codestream: JPEG2000Codestream?
+        if let start = Self.codestreamStart(bytes), start + 8 <= bytes.count,
+           bytes[start + 6] & 0x80 != 0 {
+            let parsed = try JPEG2000Codestream(Array(bytes[start...]))
+            let extensions = parsed.capabilities & ~(JPEG2000Codestream.partTwoCapability
+                | JPEG2000Codestream.multipleComponentCapability)
+            guard parsed.capabilities & 0x4000 == 0, extensions == 0 else {
+                throw DICOMCodecError.unsupportedImage(String(
+                    format: "JPEG 2000 Part 2 capabilities 0x%04X: DICOM allows only the multiple component "
+                        + "transformation (PS3.5 A.4.4)", parsed.capabilities))
+            }
+            guard parsed.imageEnd.x - parsed.imageOrigin.x == description.columns,
+                  parsed.imageEnd.y - parsed.imageOrigin.y == description.rows else {
+                throw DICOMCodecError.corruptedData(
+                    "JPEG 2000 image is \(parsed.imageEnd.x - parsed.imageOrigin.x)x"
+                        + "\(parsed.imageEnd.y - parsed.imageOrigin.y), image is \(description.columns)x\(description.rows)")
+            }
+            bytes.replaceSubrange(start..., with: parsed.partOneBytes)
+            codestream = parsed
+        }
+
+        let decoded = try Self.openJPEGDecode(bytes, format: format)
+        let image = decoded.image
+        let count = Int(image.pointee.numcomps)
+        guard count > 0, let components = image.pointee.comps else {
+            throw DICOMCodecError.corruptedData("JPEG 2000 image without components")
+        }
+        let width = description.columns, height = description.rows
+        for index in 0..<count {
+            let component = components[index]
+            guard Int(component.w) == width, Int(component.h) == height, component.data != nil else {
+                throw DICOMCodecError.corruptedData(
+                    "JPEG 2000 component \(index) is \(component.w)x\(component.h), image is \(width)x\(height)")
+            }
+            guard component.dx == 1, component.dy == 1 else {
+                throw DICOMCodecError.unsupportedImage("subsampled JPEG 2000 components")
+            }
+        }
+
+        if let codestream, codestream.usesMultipleComponentTransformCapability {
+            return try Self.inverseMultipleComponentTransform(
+                components: components, codestream: codestream, description: description)
+        }
+
+        var assembler = try FrameAssembler(components: count, description: description)
+        for index in 0..<count where Int(components[index].prec) > description.bitsAllocated {
+            throw DICOMCodecError.unsupportedImage(
+                "\(components[index].prec)-bit JPEG 2000 in \(description.bitsAllocated) bits allocated")
+        }
+        assembler.write { writer in
+            for index in 0..<count {
+                let data = components[index].data!
+                for pixel in 0..<(width * height) {
+                    writer.set(component: index, pixel: pixel, value: Int64(data[pixel]))
+                }
+            }
+        }
+        var photometric = description.photometricInterpretation
+        if count == 3, partOneTransform {
+            photometric = .rgb
+        }
+        return assembler.frames(photometric: photometric)
+    }
+
+    /// Inverts the JPEG 2000 Part 2 multiple component transformation
+    /// (ISO/IEC 15444-2 Annex J) tile by tile, from codestream components
+    /// that OpenJPEG decoded with the Part 2 markers neutralized.
+    private static func inverseMultipleComponentTransform(
+        components: UnsafeMutablePointer<opj_image_comp_t>, codestream: JPEG2000Codestream,
+        description: DICOMPixelDescription
+    ) throws -> [DICOMDecodedFrame] {
+        let inputs = codestream.components
+        guard let outputs = codestream.outputComponents else {
+            throw DICOMCodecError.corruptedData("JPEG 2000 Part 2 codestream without a CBD segment (A.3.6)")
+        }
+        guard let widest = outputs.map(\.precision).max(), widest <= description.bitsAllocated else {
+            throw DICOMCodecError.unsupportedImage(
+                "JPEG 2000 Part 2 output components exceed \(description.bitsAllocated) bits allocated")
+        }
+        var assembler = try FrameAssembler(components: outputs.count, description: description)
+        let width = description.columns
+        let data = (0..<inputs.count).map { components[$0].data! }
+        // Annex J applies no DC level shift, except in tiles without stages.
+        let shifts = inputs.map { $0.isSigned ? 0.0 : Double(1 << ($0.precision - 1)) }
+        let ranges = outputs.map { component -> ClosedRange<Double> in
+            component.isSigned
+                ? -Double(1 << (component.precision - 1))...Double((1 << (component.precision - 1)) - 1)
+                : 0...Double((1 << component.precision) - 1)
+        }
+
+        // The transform of each tile (J.2.1: none where Nmco = 0 or where
+        // COD does not signal a Part 2 transform).
+        let main = try JPEG2000ComponentTransform.make(
+            tile: nil, main: codestream.main, codestreamComponents: inputs.count, outputComponents: outputs.count)
+        let tiles = try (0..<(codestream.tileColumns * codestream.tileRows)).map { tile in
+            let segments = codestream.tiles[tile]
+            guard (segments?.transformType ?? codestream.main.transformType ?? 0) & 0x06 != 0 else {
+                return (tile: tile, transform: JPEG2000ComponentTransform?.none)
+            }
+            guard let segments, segments.definesTransform else { return (tile, main) }
+            return (tile, try JPEG2000ComponentTransform.make(
+                tile: segments, main: codestream.main,
+                codestreamComponents: inputs.count, outputComponents: outputs.count))
+        }
+
+        assembler.write { writer in
+            for (tile, transform) in tiles {
+                let area = codestream.tileArea(tile)
+                let scales = inputs.indices.map { 1 / codestream.decodedScale(tile: tile, component: $0) }
+                func write(_ index: Int, _ pixel: Int, _ value: Double) {
+                    // Irreversible arrays may hold NaN, which clamps to the minimum.
+                    let rounded = value.isNaN ? ranges[index].lowerBound : value.rounded()
+                    let clamped = min(max(rounded, ranges[index].lowerBound), ranges[index].upperBound)
+                    writer.set(component: index, pixel: pixel, value: Int64(clamped))
+                }
+                // Rows are independent: each worker has its own evaluator.
+                DispatchQueue.concurrentPerform(iterations: area.y.count) { row in
+                    let y = area.y.lowerBound + row
+                    guard let transform else {
+                        // Level shifted codestream components (J.2.1).
+                        for x in area.x {
+                            let pixel = y * width + x
+                            for index in outputs.indices {
+                                let value = index < inputs.count
+                                    ? Double(data[index][pixel]) * scales[index] + shifts[index] : 0
+                                write(index, pixel, value)
+                            }
+                        }
+                        return
+                    }
+                    let evaluator = JPEG2000ComponentTransform.Evaluator(transform)
+                    for x in area.x {
+                        let pixel = y * width + x
+                        for index in inputs.indices {
+                            evaluator.setInput(index, Double(data[index][pixel]) * scales[index])
+                        }
+                        evaluator.run()
+                        let result = evaluator.output
+                        for index in outputs.indices { write(index, pixel, result[index]) }
+                    }
+                }
+            }
+        }
+
+        var photometric = description.photometricInterpretation
+        if photometric == .ybrRCT || photometric == .ybrICT {
+            photometric = .rgb
+        }
+        return assembler.frames(photometric: photometric)
+    }
+
+    /// Decodes with OpenJPEG; the image is destroyed with the result.
+    private static func openJPEGDecode(_ bytes: [UInt8], format: OPJ_CODEC_FORMAT) throws -> OpenJPEGImage {
         let messages = OpenJPEGMessages()
         let source = OpenJPEGBuffer(bytes)
         // OpenJPEG holds unretained pointers to both until the codec and
@@ -86,66 +260,26 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataDecoder {
             throw messages.error("cannot set up the decoder")
         }
         defer { opj_stream_destroy(stream) }
+        // Code-blocks are decoded in parallel; the result does not depend on
+        // the number of threads.
+        if opj_has_thread_support() != 0 {
+            _ = opj_codec_set_threads(codec, Int32(min(ProcessInfo.processInfo.activeProcessorCount, 16)))
+        }
 
         var imagePointer: UnsafeMutablePointer<opj_image_t>?
         guard opj_read_header(stream, codec, &imagePointer) != 0, let image = imagePointer else {
             throw messages.error("cannot read the codestream header")
         }
-        defer { opj_image_destroy(image) }
+        let decoded = OpenJPEGImage(image)
         guard opj_decode(codec, stream, image) != 0, opj_end_decompress(codec, stream) != 0 else {
             throw messages.error("cannot decode the codestream")
         }
-
-        let count = Int(image.pointee.numcomps)
-        guard count == description.samplesPerPixel, let components = image.pointee.comps else {
-            throw DICOMCodecError.corruptedData(
-                "JPEG 2000 frame has \(count) components, image has \(description.samplesPerPixel)")
-        }
-        let cellBytes = description.bitsAllocated / 8
-        guard cellBytes == 1 || cellBytes == 2 else {
-            throw DICOMCodecError.unsupportedImage("JPEG 2000 in \(description.bitsAllocated) bits allocated")
-        }
-        let width = description.columns, height = description.rows
-        for index in 0..<count {
-            let component = components[index]
-            guard Int(component.w) == width, Int(component.h) == height, component.data != nil else {
-                throw DICOMCodecError.corruptedData(
-                    "JPEG 2000 component \(index) is \(component.w)x\(component.h), image is \(width)x\(height)")
-            }
-            guard component.dx == 1, component.dy == 1 else {
-                throw DICOMCodecError.unsupportedImage("subsampled JPEG 2000 components")
-            }
-            guard Int(component.prec) <= description.bitsAllocated else {
-                throw DICOMCodecError.unsupportedImage(
-                    "\(component.prec)-bit JPEG 2000 in \(description.bitsAllocated) bits allocated")
-            }
-        }
-
-        let pixels = width * height
-        var output = [UInt8](repeating: 0, count: pixels * count * cellBytes)
-        output.withUnsafeMutableBufferPointer { out in
-            for index in 0..<count {
-                let data = components[index].data!
-                for pixel in 0..<pixels {
-                    let value = data[pixel]
-                    let offset = (pixel * count + index) * cellBytes
-                    out[offset] = UInt8(truncatingIfNeeded: value)
-                    if cellBytes == 2 { out[offset + 1] = UInt8(truncatingIfNeeded: value >> 8) }
-                }
-            }
-        }
-
-        var photometric = description.photometricInterpretation
-        if count == 3, Self.usesMultipleComponentTransform(bytes) {
-            photometric = .rgb
-        }
-        return DICOMDecodedFrame(
-            description: description.decodedFrame(photometricInterpretation: photometric, planarConfiguration: 0),
-            data: Data(output))
+        return decoded
     }
 
-    /// Whether the main header's COD segment enables the multiple-component
-    /// transform (ISO/IEC 15444-1 A.6.1), which OpenJPEG inverts.
+    /// Whether the main header's COD segment enables the Part 1
+    /// multiple-component transform (ISO/IEC 15444-1 A.6.1), which OpenJPEG
+    /// inverts.
     static func usesMultipleComponentTransform(_ bytes: [UInt8]) -> Bool {
         guard let start = codestreamStart(bytes) else { return false }
         var position = start + 2
@@ -156,7 +290,7 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataDecoder {
             if marker == 0x52 {
                 // Lcod (2), Scod (1), progression order (1), layers (2), then
                 // the multiple component transformation byte.
-                return position + 8 < bytes.count && bytes[position + 8] != 0
+                return position + 8 < bytes.count && bytes[position + 8] == 1
             }
             guard length >= 2 else { return false }
             position += 2 + length
@@ -371,6 +505,72 @@ extension DICOMJPEG2000Codec {
             ? (reversible ? .ybrRCT : .ybrICT)
             : description.photometricInterpretation
         return (Data(bytes), photometric)
+    }
+}
+
+/// Interleaves decoded components into frames of `samplesPerPixel`
+/// consecutive components, as native little endian samples.
+private struct FrameAssembler {
+    let description: DICOMPixelDescription
+    let cellBytes: Int
+    let frameBytes: Int
+    var storage: [UInt8]
+
+    init(components: Int, description: DICOMPixelDescription) throws {
+        let samples = description.samplesPerPixel
+        guard components % samples == 0 else {
+            throw DICOMCodecError.corruptedData(
+                "JPEG 2000 image has \(components) components, frames have \(samples) samples")
+        }
+        cellBytes = description.bitsAllocated / 8
+        guard cellBytes == 1 || cellBytes == 2 else {
+            throw DICOMCodecError.unsupportedImage("JPEG 2000 in \(description.bitsAllocated) bits allocated")
+        }
+        self.description = description
+        frameBytes = description.rows * description.columns * samples * cellBytes
+        storage = [UInt8](repeating: 0, count: frameBytes * (components / samples))
+    }
+
+    /// Writes samples through `Writer`, which threads may share to write
+    /// distinct samples.
+    mutating func write(_ body: (Writer) throws -> Void) rethrows {
+        let (samples, cellBytes, frameBytes) = (description.samplesPerPixel, cellBytes, frameBytes)
+        try storage.withUnsafeMutableBufferPointer { buffer in
+            try body(Writer(base: buffer.baseAddress!, samples: samples, cellBytes: cellBytes, frameBytes: frameBytes))
+        }
+    }
+
+    struct Writer {
+        let base: UnsafeMutablePointer<UInt8>
+        let samples: Int
+        let cellBytes: Int
+        let frameBytes: Int
+
+        func set(component: Int, pixel: Int, value: Int64) {
+            let offset = component / samples * frameBytes + (pixel * samples + component % samples) * cellBytes
+            base[offset] = UInt8(truncatingIfNeeded: value)
+            if cellBytes == 2 { base[offset + 1] = UInt8(truncatingIfNeeded: value >> 8) }
+        }
+    }
+
+    func frames(photometric: DICOMPhotometricInterpretation) -> [DICOMDecodedFrame] {
+        let frameDescription = description.decodedFrame(photometricInterpretation: photometric, planarConfiguration: 0)
+        return stride(from: 0, to: storage.count, by: frameBytes).map { start in
+            DICOMDecodedFrame(description: frameDescription, data: Data(storage[start..<(start + frameBytes)]))
+        }
+    }
+}
+
+/// An image decoded by OpenJPEG, destroyed with the instance.
+private final class OpenJPEGImage {
+    let image: UnsafeMutablePointer<opj_image_t>
+
+    init(_ image: UnsafeMutablePointer<opj_image_t>) {
+        self.image = image
+    }
+
+    deinit {
+        opj_image_destroy(image)
     }
 }
 

@@ -3,7 +3,17 @@ import Foundation
 /// Encapsulated Pixel Data (PS3.5 A.4): the Fragments of each frame located
 /// through the Extended Offset Table, the Basic Offset Table, or the
 /// Fragment layout, and decoded by the registered codec.
+///
+/// Under the JPEG 2000 Part 2 Transfer Syntaxes, the frames of a multi-frame
+/// image are components of one or more component collections, each encoded
+/// as a codestream whose Fragments hold no other collection (PS3.5 A.4.4).
+/// Frames are then decoded a collection at a time and cannot be read encoded.
 public struct DICOMEncapsulatedPixelData {
+    /// Transfer Syntaxes whose multi-frame images are component collections.
+    public static let collectionTransferSyntaxUIDs: Set<String> = [
+        DICOMJPEG2000Codec.partTwoLossless, DICOMJPEG2000Codec.partTwo,
+    ]
+
     public let description: DICOMPixelDescription
     public let transferSyntaxUID: String
     private let fragments: [DataItem]
@@ -12,6 +22,10 @@ public struct DICOMEncapsulatedPixelData {
     /// Byte length of each frame's single Fragment, from Extended Offset
     /// Table Lengths (7FE0,0002); the Fragment may carry trailing padding.
     private let frameLengths: [Int]?
+    /// The Fragment indices of each component collection, for a multi-frame
+    /// image under a collection Transfer Syntax.
+    private let collectionFragments: [Range<Int>]?
+    private let collections = CollectionCache()
 
     public init(dataset: DataSet) throws {
         let description = try DICOMPixelDescription(dataset: dataset)
@@ -39,10 +53,19 @@ public struct DICOMEncapsulatedPixelData {
         let frames = description.numberOfFrames
 
         var frameLengths: [Int]?
-        let frameFragments: [Range<Int>]
+        var frameFragments: [Range<Int>] = []
+        var collectionFragments: [Range<Int>]?
         let basicOffsets = Self.unsigned(offsetTable, width: 4)
 
-        if let extended = scope.element("ExtendedOffsetTable") {
+        if frames > 1, Self.collectionTransferSyntaxUIDs.contains(uid) {
+            // Offset tables locate frames, which a collection does not
+            // separate: codestreams start Fragments instead.
+            guard let starts = Self.codestreamStarts(in: fragments, transferSyntaxUID: uid) else {
+                throw DICOMPixelDataError.invalidAttribute(
+                    "PixelData", "the first Fragment does not start a JPEG 2000 codestream")
+            }
+            collectionFragments = zip(starts, starts.dropFirst().map { $0 } + [fragments.count]).map { $0..<$1 }
+        } else if let extended = scope.element("ExtendedOffsetTable") {
             // PS3.3 C.7.6.3.1.8: one Fragment per frame, empty Basic Offset Table.
             guard basicOffsets.isEmpty else {
                 throw DICOMPixelDataError.invalidAttribute(
@@ -92,10 +115,15 @@ public struct DICOMEncapsulatedPixelData {
         self.fragments = fragments
         self.frameFragments = frameFragments
         self.frameLengths = frameLengths
+        self.collectionFragments = collectionFragments
     }
 
     /// The encoded bytes of a frame: its Fragments concatenated.
     public func encodedFrame(_ frame: Int) throws -> Data {
+        if collectionFragments != nil {
+            throw DICOMPixelDataError.invalidAttribute(
+                "PixelData", "frame \(frame) is a component of a JPEG 2000 Part 2 component collection")
+        }
         guard frameFragments.indices.contains(frame) else {
             throw DICOMPixelDataError.frameOutOfRange(frame, numberOfFrames: frameFragments.count)
         }
@@ -114,8 +142,35 @@ public struct DICOMEncapsulatedPixelData {
         guard let decoder = DICOMCodecRegistry.decoder(for: transferSyntaxUID) else {
             throw DICOMPixelDataError.encapsulatedPixelData(transferSyntax: transferSyntaxUID)
         }
+        if let collectionFragments {
+            return try decodedCollectionFrame(frame, units: collectionFragments, decoder: decoder)
+        }
         let encoded = try encodedFrame(frame)
         return try decoder.decode(encoded, description: description.decodedFrame())
+    }
+
+    /// Decodes the component collection holding a frame; the collection
+    /// decoded last is kept for the following frames.
+    private func decodedCollectionFrame(
+        _ frame: Int, units: [Range<Int>], decoder: any DICOMPixelDataDecoder
+    ) throws -> DICOMDecodedFrame {
+        guard (0..<description.numberOfFrames).contains(frame) else {
+            throw DICOMPixelDataError.frameOutOfRange(frame, numberOfFrames: description.numberOfFrames)
+        }
+        guard let decoder = decoder as? any DICOMPixelDataCollectionDecoder else {
+            throw DICOMPixelDataError.encapsulatedPixelData(transferSyntax: transferSyntaxUID)
+        }
+        return try collections.frame(frame, units: units.count) { unit in
+            var data = Data()
+            for index in units[unit] {
+                data.append(try fragments[index].loadData())
+            }
+            let frames = try decoder.decodeCollection(data, description: description.decodedFrame())
+            guard !frames.isEmpty else {
+                throw DICOMPixelDataError.invalidAttribute("PixelData", "component collection \(unit) has no frame")
+            }
+            return frames
+        }
     }
 
     /// Fragments that begin a codestream, used when an empty Basic Offset
@@ -144,5 +199,41 @@ public struct DICOMEncapsulatedPixelData {
         return stride(from: 0, to: bytes.count - width + 1, by: width).map { start in
             (0..<width).reversed().reduce(0) { $0 << 8 | Int(bytes[start + $1]) }
         }
+    }
+}
+
+/// The frames of the component collection decoded last, and the number of
+/// frames of each collection decoded so far.
+private final class CollectionCache: @unchecked Sendable {
+    private let lock = NSLock()
+    private var counts: [Int: Int] = [:]
+    private var last: (unit: Int, frames: [DICOMDecodedFrame])?
+
+    func frame(
+        _ frame: Int, units: Int, decode: (Int) throws -> [DICOMDecodedFrame]
+    ) throws -> DICOMDecodedFrame {
+        lock.lock()
+        defer { lock.unlock() }
+        var first = 0
+        for unit in 0..<units {
+            // Collections before the frame's own are decoded once, to count
+            // their frames.
+            if let count = counts[unit], frame >= first + count {
+                first += count
+                continue
+            }
+            let frames: [DICOMDecodedFrame]
+            if let last, last.unit == unit {
+                frames = last.frames
+            } else {
+                frames = try decode(unit)
+                last = (unit, frames)
+                counts[unit] = frames.count
+            }
+            if frame < first + frames.count { return frames[frame - first] }
+            first += frames.count
+        }
+        throw DICOMPixelDataError.invalidAttribute(
+            "PixelData", "the component collections hold \(first) frames, frame \(frame) requested")
     }
 }
