@@ -87,12 +87,17 @@ public class DataSequence: DataElement {
         }
         
         
+        // Items are serialized first: defined lengths must describe the
+        // target encoding, which may differ from the one the sequence was
+        // read from (e.g. Implicit to Explicit VR changes header sizes).
+        let itemsData = encodedItems(vrMethod: inVrMethod, byteOrder: inByteOrder)
+
         // write length
         if self.vr == .SQ {
             if self.length == -1 {
                 data.append(byte: 0xff, count: 4)
             } else {
-                data.append(uint32: UInt32(self.length), bigEndian: inByteOrder == .BigEndian)
+                data.append(uint32: UInt32(itemsData.count), bigEndian: inByteOrder == .BigEndian)
             }
         }
         else if self.vr == .OB ||
@@ -138,31 +143,8 @@ public class DataSequence: DataElement {
             }
         }
         
-        
-        for item in self.items {
-            // write item tag
-            data.append(item.tag.data(withByteOrder: inByteOrder))
-            
-            // write item length
-            if item.length != -1 {
-                data.append(uint32: UInt32(item.length), bigEndian: inByteOrder == .BigEndian)
-            } else {
-                data.append(byte: 0xff, count: 4)
-            }
-            
-            // write item sub-elements
-            for element in item.elements {
-                data.append(element.toData(vrMethod: inVrMethod, byteOrder: inByteOrder))
-            }
-            
-            // write item delimiter
-            if item.length == -1 {
-                let tag = DataTag(withGroup: "fffe", element: "e00d", byteOrder: inByteOrder)
-                data.append(tag.data(withByteOrder: inByteOrder))
-                data.append(byte: 0x00, count: 4)
-            }
-        }
-        
+        data.append(itemsData)
+
         // write sequence delimiter
         if length == -1 {
             let tag = DataTag(withGroup: "fffe", element: "e0dd", byteOrder: inByteOrder)
@@ -170,6 +152,30 @@ public class DataSequence: DataElement {
             data.append(byte: 0x00, count: 4)
         }
         
+        return data
+    }
+
+    /// The encoded Items, each with its length measured in the target
+    /// encoding, or undefined with an Item Delimitation Item.
+    private func encodedItems(vrMethod: VRMethod, byteOrder: ByteOrder) -> Data {
+        var data = Data()
+        for item in items {
+            var content = Data()
+            for element in item.elements {
+                content.append(element.toData(vrMethod: vrMethod, byteOrder: byteOrder))
+            }
+            data.append(item.tag.data(withByteOrder: byteOrder))
+            if item.length == -1 {
+                data.append(byte: 0xff, count: 4)
+                data.append(content)
+                let tag = DataTag(withGroup: "fffe", element: "e00d", byteOrder: byteOrder)
+                data.append(tag.data(withByteOrder: byteOrder))
+                data.append(byte: 0x00, count: 4)
+            } else {
+                data.append(uint32: UInt32(content.count), bigEndian: byteOrder == .BigEndian)
+                data.append(content)
+            }
+        }
         return data
     }
 }

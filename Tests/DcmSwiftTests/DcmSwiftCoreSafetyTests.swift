@@ -373,6 +373,53 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertThrowsError(try rejected.readDataset(enforceVR: false))
     }
 
+    func testDefinedSequenceLengthsAreRecomputedWhenTheEncodingChanges() throws {
+        // Nested SQ headers are 8 bytes in Implicit VR but 12 in Explicit
+        // VR, so lengths read from one encoding cannot be reused in another.
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("dcmswift-\(UUID().uuidString).dcm")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        func sequence(_ name: String, in dataset: DataSet, parent: DataElement? = nil) throws -> (DataSequence, DataItem) {
+            let sequence = DataSequence(withTag: try XCTUnwrap(DicomSpec.shared.dataTag(forName: name)), parent: parent)
+            sequence.vr = .SQ
+            sequence.length = 0  // any defined length
+            let item = DataItem(withTag: DataTag(withGroup: "fffe", element: "e000"), parent: sequence)
+            item.length = 0
+            sequence.items.append(item)
+            return (sequence, item)
+        }
+        func add(_ name: String, _ value: String, to item: DataItem, in dataset: DataSet) throws {
+            let element = try XCTUnwrap(DataElement(withTagName: name, dataset: dataset, parent: item))
+            XCTAssertTrue(element.setValue(value))
+            item.elements.append(element)
+        }
+
+        let source = DataSet()
+        source.hasPreamble = true
+        source.transferSyntax = try XCTUnwrap(TransferSyntax(TransferSyntax.implicitVRLittleEndian))
+        _ = source.set(value: "1.2.826.0.1.3680043.10.999", forTagName: "ImplementationClassUID")
+        let (outer, outerItem) = try sequence("ReferencedSeriesSequence", in: source)
+        try add("SeriesInstanceUID", "1.2.3", to: outerItem, in: source)
+        let (inner, innerItem) = try sequence("ReferencedInstanceSequence", in: source, parent: outerItem)
+        try add("ReferencedSOPInstanceUID", "1.2.3.4", to: innerItem, in: source)
+        outerItem.elements.append(inner)
+        source.add(element: outer)
+        _ = source.set(value: "AFTER-SEQUENCE", forTagName: "PatientID")
+
+        XCTAssertTrue(try DicomOutputStream(url: url).write(dataset: source))
+        let implicit = try XCTUnwrap(try DicomInputStream(url: url).readDataset())
+        let readOuter = try XCTUnwrap(implicit.element(forTagName: "ReferencedSeriesSequence") as? DataSequence)
+        XCTAssertNotEqual(readOuter.length, -1)
+
+        implicit.transferSyntax = try XCTUnwrap(TransferSyntax(TransferSyntax.explicitVRLittleEndian))
+        XCTAssertTrue(try DicomOutputStream(url: url).write(dataset: implicit))
+        let explicit = try XCTUnwrap(try DicomInputStream(url: url).readDataset())
+        XCTAssertEqual(explicit.string(forTag: "PatientID"), "AFTER-SEQUENCE")
+        let nested = try XCTUnwrap((explicit.element(forTagName: "ReferencedSeriesSequence") as? DataSequence)?
+            .items.first?.element(withName: "ReferencedInstanceSequence") as? DataSequence)
+        XCTAssertEqual(nested.items.first?.element(withName: "ReferencedSOPInstanceUID")?.value as? String, "1.2.3.4")
+    }
+
     func testUndefinedSequenceRequiresZeroLengthDelimiter() {
         var sequence = Data([0x08, 0x00, 0x11, 0x11, 0x53, 0x51, 0x00, 0x00])
         sequence.append(contentsOf: [0xff, 0xff, 0xff, 0xff])
