@@ -34,32 +34,43 @@ variables:
         rm corpus.tar.gz
       fi
       export DCMSWIFT_INTEROP_CORPUS="$CORPUS_ROOT"
+      rm -rf .reports && mkdir -p .reports
+
+# JUnit reports shown in the pipeline Tests tab, uploaded even on failure.
+.junit-reports:
+  artifacts:
+    when: always
+    expire_in: 30 days
+    reports:
+      junit: .reports/*.xml
 
 swift-package:
   stage: test
-  extends: .interop-corpus
+  extends: [.interop-corpus, .junit-reports]
   image: swift:6.1
   tags:
     - deploy
   script:
     - swift --version
     - swift build -c release
-    - swift test
+    # SwiftPM writes the XCTest xUnit report only in parallel mode.
+    - swift test --parallel --xunit-output .reports/xunit.xml
 
 macos-package:
   stage: test
-  extends: .interop-corpus
+  extends: [.interop-corpus, .junit-reports]
   tags:
     - swift
   script:
     - xcodebuild -version
     - swift --version
     - swift build -c release
-    - swift test
+    # SwiftPM writes the XCTest xUnit report only in parallel mode.
+    - swift test --parallel --xunit-output .reports/xunit.xml
 
 ios-package:
   stage: test
-  extends: .interop-corpus
+  extends: [.interop-corpus, .junit-reports]
   tags:
     - swift
   script:
@@ -76,3 +87,7 @@ ios-package:
       TEST_RUNNER_DCMSWIFT_REQUIRE_INTEROP_CORPUS="$DCMSWIFT_REQUIRE_INTEROP_CORPUS"
       xcodebuild test -scheme DcmSwift-Package
       -destination "platform=iOS Simulator,id=$SIMULATOR_ID"
+      -resultBundlePath .reports/ios.xcresult
+  after_script:
+    # Runs even when the tests fail, so failures reach the Tests tab.
+    - test -d .reports/ios.xcresult && xcrun python3 Scripts/xcresult-junit.py .reports/ios.xcresult .reports/ios-junit.xml

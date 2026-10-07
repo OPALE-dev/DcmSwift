@@ -74,7 +74,10 @@ GitLab CI always runs this suite on Linux, macOS, and the iOS Simulator. Each
 job downloads the confidential corpus from the project's private Generic
 Package Registry (`dcmswift-dicom-corpus`, version `DCM_CORPUS_VERSION`),
 verifies it against `DCM_CORPUS_SHA256`, and caches it per version. The iOS job
-forwards the variables to the simulator with the `TEST_RUNNER_` prefix. To
+forwards the variables to the simulator with the `TEST_RUNNER_` prefix. Every
+job publishes JUnit reports to the pipeline Tests tab: SwiftPM writes them with
+`swift test --parallel --xunit-output`, and `Scripts/xcresult-junit.py` converts
+the iOS result bundle. To
 publish a new corpus version, upload the archive with a token that has the
 `api` scope, then update both variables in `.gitlab-ci.yml`:
 
