@@ -5,7 +5,7 @@ variables:
   # Confidential interoperability corpus published in this project's Generic
   # Package Registry. Bump both values together when the corpus changes.
   DCM_CORPUS_VERSION: "2026.10.07"
-  DCM_CORPUS_SHA256: ""
+  DCM_CORPUS_SHA256: "58faeb873998b4ffbc8a8fea72f83d5407134c6aebd2804266a6667601410616"
   # Fail, rather than skip, the corpus tests when the corpus is unavailable.
   DCMSWIFT_REQUIRE_INTEROP_CORPUS: "1"
 
