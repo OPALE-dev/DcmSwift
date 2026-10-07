@@ -77,7 +77,9 @@ ios-package:
     - swift
   script:
     - xcodebuild -version
-    - xcodebuild build -scheme DcmSwift -destination 'generic/platform=iOS' -quiet
+    # A per-job DerivedData keeps xcodebuild from reusing stale resource
+    # bundles embedded in the test bundle by earlier pipelines on the runner.
+    - xcodebuild build -scheme DcmSwift -destination 'generic/platform=iOS' -derivedDataPath .derived-data -quiet
     # Use an iPhone simulator from the newest installed iOS runtime so the job
     # does not depend on device names that change between Xcode releases.
     - IOS_RUNTIME=$(xcrun simctl list runtimes available | awk '/^iOS / {version=$2} END {print version}')
@@ -89,6 +91,7 @@ ios-package:
       TEST_RUNNER_DCMSWIFT_REQUIRE_INTEROP_CORPUS="$DCMSWIFT_REQUIRE_INTEROP_CORPUS"
       xcodebuild test -scheme DcmSwift-Package
       -destination "platform=iOS Simulator,id=$SIMULATOR_ID"
+      -derivedDataPath .derived-data
       -resultBundlePath .reports/ios.xcresult
   after_script:
     # Runs even when the tests fail, so failures reach the Tests tab.
