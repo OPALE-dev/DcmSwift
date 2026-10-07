@@ -70,6 +70,8 @@ Current progress in that order:
   all-types file additionally round-trips every current F.4-1 type with its
   unconditional top-level Type 1/2 keys, including the Content Identification
   Macro and top-level Scope of Inventory Sequence;
+- parsed offset graphs expose a lossless public record tree and fail closed
+  rather than returning a partial tree for malformed or orphaned graphs;
 - Basic and Enhanced Coded Entry macro rules are validated recursively in
   Directory Record code sequences;
 - SOP Instance Reference Macros in Referenced Image, Instance, and Waveform

@@ -522,6 +522,19 @@ class DcmSwiftTestsDicomdir: XCTestCase {
             reloaded.directoryRecords.compactMap(\.type),
             [.patient, .study, .series, .rtDose, .structuredReport]
         )
+        XCTAssertEqual(reloaded.directoryRecordTree.count, 1)
+        XCTAssertEqual(reloaded.directoryRecordTree[0].record.type, .patient)
+        XCTAssertEqual(reloaded.directoryRecordTree[0].children.first?.record.type, .study)
+        XCTAssertEqual(
+            reloaded.directoryRecordTree[0].children.first?.children.first?.record.type,
+            .series
+        )
+        XCTAssertEqual(
+            reloaded.directoryRecordTree[0].children.first?.children.first?.children.map {
+                $0.record.type
+            },
+            [.rtDose, .structuredReport]
+        )
         let sr = try XCTUnwrap(reloaded.directoryRecords.first { $0.type == .structuredReport })
         let sequence = try XCTUnwrap(
             sr.item.element(withName: "ConceptNameCodeSequence") as? DataSequence
@@ -928,6 +941,7 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         let invalid = DicomDir()
         invalid.dataset = decoded
         invalid.filepath = outputURL.path
+        XCTAssertTrue(invalid.directoryRecordTree.isEmpty)
         let messages = invalid.validateDirectoryStructure().map(\.message)
         XCTAssertTrue(messages.contains { $0.contains("Last root Directory Record offset") })
         XCTAssertTrue(messages.contains { $0.contains("FileSetConsistencyFlag must be 0000H") })
