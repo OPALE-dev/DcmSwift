@@ -173,7 +173,7 @@ public class DataElement : DicomObject {
         if let string = val as? String {
             let encoded: Data?
             if usesSpecificCharacterSet {
-                encoded = effectiveCharacterSet.encode(string)
+                encoded = effectiveCharacterSet.encode(string, vr: self.vr)
             } else {
                 encoded = string.data(using: .ascii)
             }
@@ -387,7 +387,7 @@ public class DataElement : DicomObject {
             return DICOMCharacterSet.defaultRepertoire.decode(self.data) ?? self.data as Any
         }
         else if usesSpecificCharacterSet {
-            return effectiveCharacterSet.decode(self.data) ?? self.data as Any
+            return effectiveCharacterSet.decode(self.data, vr: self.vr) ?? self.data as Any
         }
         else if self.vr == .AT ||
                 self.vr == .OB ||

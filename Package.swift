@@ -47,7 +47,8 @@ let package = Package(
                 .product(name: "Html", package: "swift-html")
             ],
             resources: [
-                .process("Resources/dicom-dictionary-2026d.json")
+                .process("Resources/dicom-dictionary-2026d.json"),
+                .copy("Resources/CharacterSets")
             ]),
         .executableTarget(
             name: "DcmAnonymize",

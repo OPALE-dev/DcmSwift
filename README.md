@@ -147,8 +147,8 @@ endianness, pixel access, Structured Reports, and radiotherapy objects.
 | Explicit VR Big Endian | Structural read and write for interoperability; retired by DICOM |
 | Encapsulated JPEG/RLE transfer syntaxes | Fragment preservation only; no codec claim |
 | Deflated Explicit VR Little Endian | Part 10 read/write with raw RFC 1951 streams and bounded inflation; not negotiated for DIMSE |
-| Character sets | Default repertoire, ISO_IR 100, and ISO_IR 192, with nested Data Set inheritance/override |
-| ISO 2022 code extensions | Not implemented; rejected rather than decoded as UTF-8 |
+| Character sets | Every PS3.3 2026d Specific Character Set Defined Term: 13 single-byte repertoires, ISO 2022 Code Extensions (JIS X 0208/0212, KS X 1001, GB 2312, single-byte G1 sets), UTF-8, GB18030-2022, and GBK; read/write with nested Data Set inheritance/override, using bundled tables identical on every platform |
+| Unknown or invalid character set declarations | Rejected rather than decoded as UTF-8 |
 | DICOM JSON and Native DICOM Model XML | Existing convenience output is not yet PS3.18 conformant |
 | DICOMDIR | Legacy Basic hierarchy plus generic record-tree read/write; all current F.4-1 types have a lossless view; computed offsets, graph, selected F.5 keys, File-set IDs, and referenced Part 10 identities are validated |
 | PS3.12 media profiles | Not yet qualified; Basic DICOMDIR support is not a media-profile conformance claim |
