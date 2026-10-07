@@ -701,6 +701,93 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         messages = directory.validateDirectoryRecordKeys().map(\.message)
         XCTAssertFalse(messages.contains { $0.contains("ReferencedImageSequence") })
     }
+
+    func testIconImageKeyValidation() throws {
+        let directory = makeDirectory()
+        let dataSet = DataSet()
+        let records = try XCTUnwrap(directory.createDirectoryRecordSequence())
+        dataSet.add(element: records)
+        directory.dataset = dataSet
+        let image = try XCTUnwrap(records.items.first {
+            ($0.element(withName: "DirectoryRecordType")?.value as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) == "IMAGE"
+        })
+        let icons = appendSequence(named: "IconImageSequence", to: image, dataSet: dataSet)
+
+        var messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("Icon Image Sequence requires exactly one Item") })
+
+        let icon = DataItem(withTag: DataTag(withGroup: "fffe", element: "e000"), parent: icons)
+        let extra = DataItem(withTag: DataTag(withGroup: "fffe", element: "e000"), parent: icons)
+        icons.items = [icon, extra]
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("Icon Image Sequence requires exactly one Item") })
+
+        icons.items = [icon]
+        append(value: UInt16(2), name: "SamplesPerPixel", to: icon, dataSet: dataSet)
+        append(value: "RGB", name: "PhotometricInterpretation", to: icon, dataSet: dataSet)
+        append(value: UInt16(1), name: "Rows", to: icon, dataSet: dataSet)
+        append(value: UInt16(1), name: "Columns", to: icon, dataSet: dataSet)
+        append(value: UInt16(16), name: "BitsAllocated", to: icon, dataSet: dataSet)
+        append(value: UInt16(12), name: "BitsStored", to: icon, dataSet: dataSet)
+        append(value: UInt16(10), name: "HighBit", to: icon, dataSet: dataSet)
+        append(value: UInt16(1), name: "PixelRepresentation", to: icon, dataSet: dataSet)
+        append(value: UInt16(0), name: "PlanarConfiguration", to: icon, dataSet: dataSet)
+        append(value: "2\\1", name: "PixelAspectRatio", to: icon, dataSet: dataSet)
+        append(value: Data([0, 0]), name: "PixelData", to: icon, dataSet: dataSet)
+
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        for expected in [
+            "SamplesPerPixel shall be 1",
+            "PhotometricInterpretation shall be",
+            "BitsAllocated shall be 1 or 8",
+            "BitsStored shall be 1 or 8",
+            "HighBit shall equal BitsStored minus one",
+            "PixelRepresentation shall be unsigned",
+            "PlanarConfiguration shall not be present",
+            "PixelAspectRatio shall be 1\\1"
+        ] {
+            XCTAssertTrue(messages.contains { $0.contains(expected) }, expected)
+        }
+
+        XCTAssertTrue(icon.element(withName: "SamplesPerPixel")?.setValue(UInt16(1)) == true)
+        XCTAssertTrue(icon.element(withName: "PhotometricInterpretation")?.setValue("MONOCHROME2") == true)
+        XCTAssertTrue(icon.element(withName: "BitsAllocated")?.setValue(UInt16(8)) == true)
+        XCTAssertTrue(icon.element(withName: "BitsStored")?.setValue(UInt16(8)) == true)
+        XCTAssertTrue(icon.element(withName: "HighBit")?.setValue(UInt16(7)) == true)
+        XCTAssertTrue(icon.element(withName: "PixelRepresentation")?.setValue(UInt16(0)) == true)
+        XCTAssertTrue(icon.element(withName: "PixelAspectRatio")?.setValue("1\\1") == true)
+        icon.elements.removeAll { $0.name == "PlanarConfiguration" }
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertFalse(messages.contains { $0.contains("Icon Image") })
+
+        XCTAssertTrue(icon.element(withName: "PixelData")?.setValue(Data([0, 0, 0, 0])) == true)
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("does not match the expected 2 bytes") })
+        XCTAssertTrue(icon.element(withName: "PixelData")?.setValue(Data([0, 0])) == true)
+
+        XCTAssertTrue(icon.element(withName: "PhotometricInterpretation")?.setValue("PALETTE COLOR") == true)
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertTrue(messages.contains { $0.contains("requires RedPaletteColorLookupTableDescriptor") })
+        XCTAssertTrue(messages.contains { $0.contains("requires BluePaletteColorLookupTableData") })
+        for name in [
+            "RedPaletteColorLookupTableDescriptor",
+            "GreenPaletteColorLookupTableDescriptor",
+            "BluePaletteColorLookupTableDescriptor"
+        ] {
+            append(value: [UInt16(2), UInt16(0), UInt16(8)], name: name, to: icon, dataSet: dataSet)
+        }
+        for name in [
+            "RedPaletteColorLookupTableData",
+            "GreenPaletteColorLookupTableData",
+            "BluePaletteColorLookupTableData"
+        ] {
+            append(value: Data([0, 255]), name: name, to: icon, dataSet: dataSet)
+        }
+        messages = directory.validateDirectoryRecordKeys().map(\.message)
+        XCTAssertFalse(messages.contains { $0.contains("Icon Image") })
+        XCTAssertFalse(messages.contains { $0.contains("PALETTE COLOR Icon") })
+    }
     
     func testWriteDicomDir() throws {
         let temporaryDirectory = FileManager.default.temporaryDirectory

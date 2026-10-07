@@ -75,6 +75,10 @@ conformance without that evidence.
   Scope of Inventory cannot infer whether range, UID-list, empty-value, general,
   or other matching was applied when the corresponding Sequence is absent.
   Complete semantic per-type qualification also remains unfinished.
+- Icon Image validation covers F.7 structure and restricted pixel metadata,
+  native Pixel Data length, and palette attribute presence. It does not yet
+  validate palette LUT descriptor/data consistency, displayed colors, or
+  exchange with independent File-set readers.
 - Preserve and expose unknown Directory Record types without losing their
   attributes or breaking hierarchy traversal.
 - Decode File-set Descriptor content according to its declared character set;
