@@ -52,8 +52,9 @@ conformance without that evidence.
   Compression, JPEG Lossless, and JPEG Baseline/Extended decoding and encoding
   are implemented. MPEG, AVC, and HEVC are outside the planned scope.
 - Retired JPEG Transfer Syntaxes must stay readable. The progressive Huffman
-  syntaxes (.53, .55) decode; arithmetic coding (.52, .54, .56, .58) and the
-  hierarchical processes (.59 to .66) are not decoded yet.
+  syntaxes (.53, .55) and non-hierarchical arithmetic syntaxes
+  (.52, .54, .56, .58) decode; the hierarchical processes (.59 to .66) are
+  not decoded yet.
 - JPEG Baseline/Extended encoding currently accepts unsigned MONOCHROME1/2 and
   RGB frames only. Encoding and decoding remain below SIMD-library throughput;
   streaming coefficient storage, entropy acceleration, and SIMD work remain.
@@ -64,6 +65,9 @@ conformance without that evidence.
   pylibjpeg-libjpeg decodes point-transformed streams differently from T.81
   H.1.2.1 (it predicts the first sample from 2^(P-1) instead of 2^(P-Pt-1)), so
   point transforms may not interoperate with readers built on it.
+- JPEG arithmetic decoding is implemented in Swift from T.81 Annex D/F/G/H.
+  SOF9/SOF10 have fixed and live libjpeg-turbo oracles; SOF11 has an independent
+  encoder vector because libjpeg-turbo deliberately omits that combination.
 - There is no Data Set level transcoding API yet: frames are encoded with
   the codec types directly.
 

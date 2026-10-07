@@ -122,7 +122,7 @@ final class DcmSwiftJPEGLosslessTests: XCTestCase {
         let baseline = Data([0xFF, 0xD8, 0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x05, 0x00, 0x06, 0x01, 0x01, 0x11, 0x00,
                              0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00, 0xFF, 0xD9])
         XCTAssertThrowsError(try codec.decode(baseline, description: description)) {
-            XCTAssertEqual($0 as? DICOMCodecError, .unsupportedImage("SOF0 is not JPEG Lossless with Huffman coding"))
+            XCTAssertEqual($0 as? DICOMCodecError, .unsupportedImage("SOF0 is not a supported JPEG Lossless process"))
         }
 
         // Truncating the first vector's entropy-coded data must fail or
@@ -139,6 +139,65 @@ final class DcmSwiftJPEGLosslessTests: XCTestCase {
         for length in stride(from: 4, to: stream.count, by: 7) {
             _ = try? codec.decode(stream.prefix(length), description: description)
         }
+    }
+
+    func testArithmeticLosslessIndependentSOF11Vector() throws {
+        let width = 19, height = 11
+        var pixels = [UInt8]()
+        for index in 0..<(width * height) {
+            pixels.append(UInt8((index * 53 + (index / width) * 17) & 255))
+        }
+        // Encoded independently by oxideav-mjpeg's T.81 H.1.2.3 encoder.
+        let jpeg = try XCTUnwrap(Data(base64Encoded:
+            "/9j/4AAQSkZJRgABAQAAAQABAAD/ywALCAALABMBAREA/9oACAEBAAEAAP8Av6h6I6zSmmWyP0yiiRm8WEQZ" +
+            "ZsWAlxAfkgVsjYxM82PxcjJpSILjTejDYRrS2ecl40GB84kKMBEkrvyB8YY7Wpf94baam2UJ+ntP475XnZP" +
+            "romtTPIlAZHJqhLdpnm2kp9Ofammd/RcMYc5x70RbXMFf8fUvruVBRZ09+eDEGGdIDi2m0ohLjUjYzwnJeQ" +
+            "PuC/BVn3IKgHmkNi91jCosvdlp/cL3cHrcD24Ye8Y8dBJ7yEytSnvKGP/Z"))
+        let description = DICOMPixelDescription(
+            rows: height, columns: width, samplesPerPixel: 1, photometricInterpretation: .monochrome2,
+            bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: false,
+            planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
+        let decoded = try DICOMJPEGLosslessCodec().decode(jpeg, description: description)
+        XCTAssertEqual(decoded.data, Data(pixels))
+
+        let restarted = try XCTUnwrap(Data(base64Encoded:
+            "/9j/4AAQSkZJRgABAQAAAQABAAD/ywALCAALABMBAREA/90ABAAT/9oACAEBAAQAAP8Av6h6I6zSmmWyP0yiiRm8WEQZ" +
+            "ZsWAl//Q/wC/qHojrNKaZbI/TKKJGbxYRBlmxYCX/9H/AL+oeiOs0pplsj9MookZvFhEGWbFgJf/0v8Av6h6I6zSmmWyP0" +
+            "yiiRm8WEQZZsWAl//T/wC/qHojrNKaZbI/TKKJGbxYRBlmxYCX/9T/AL+oeiOs0pplsj9MookZvFhEGWbFgJf/1f8Av6h6" +
+            "I6zSmmWyP0yiiRm8WEQZZsWAl//W/wC/qHojrNKaZbI/TKKJGbxYRBlmxYCX/9f/AL+oeiOs0pplsj9MookZvFhEGWbFgJf" +
+            "/0P8Av6h6I6zSmmWyP0yiiRm8WEQZZsWAl//R/wC/qHojrNKaZbI/TKKJGbxYRBlmxYCX/9k="))
+        XCTAssertEqual(try DICOMJPEGLosslessCodec().decode(restarted, description: description).data, Data(pixels))
+
+        let twelveBit = try XCTUnwrap(Data(base64Encoded:
+            "/9j/4AAQSkZJRgABAQAAAQABAAD/ywALDAAGAAgBAREA/9oACAEBAAcAAP8A/BuoCrwwsa9VSY/mREMoyj1Ufg58ZG+M4VUv" +
+            "+yVOxxzxNgOeuGEXNcZV+hIIVdSL4QtqSOPESu3bHTXrYhy1xPcxMQI752lSJwo9fiQRuP/Z"))
+        var expected12 = [UInt8]()
+        for index in 0..<(8 * 6) {
+            let value = UInt16((index * 173 + (index / 8) * 97) & 4095)
+            expected12 += [UInt8(value & 0xFF), UInt8(value >> 8)]
+        }
+        let description12 = DICOMPixelDescription(
+            rows: 6, columns: 8, samplesPerPixel: 1, photometricInterpretation: .monochrome2,
+            bitsAllocated: 16, bitsStored: 12, highBit: 11, isSigned: false,
+            planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
+        XCTAssertEqual(try DICOMJPEGLosslessCodec().decode(twelveBit, description: description12).data,
+                       Data(expected12))
+
+        let rgb = try XCTUnwrap(Data(base64Encoded:
+            "/9j/7gAOQWRvYmUAZAAAAAAA/8sAEQgABQAHA1IRAEcRAEIRAP/dAAQAB//aAAwDUgBHAEIABgAA/wDJj/eB4qhfcrjgza49" +
+            "2u8P2ii/q6aU/9DSqZIHKzpO8pWutoAU7COEPnnpz4sypbVyZP/R0oS4wp7hLamfQs3ntE9igiC7dXB4K0I3Mv7/0tG6Fw9" +
+            "tD0OAUI+gSiTcYMRMCKEpaHH5/9P+7bT8Ycf3793MZitgPqREAfOVxhrztij/2Q=="))
+        var expectedRGB = [UInt8]()
+        for index in 0..<(7 * 5) {
+            expectedRGB += [UInt8((index * 31 + 7) & 255), UInt8((index * 17 + 43) & 255),
+                            UInt8((index * 47 + 91) & 255)]
+        }
+        let rgbDescription = DICOMPixelDescription(
+            rows: 5, columns: 7, samplesPerPixel: 3, photometricInterpretation: .rgb,
+            bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: false,
+            planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
+        XCTAssertEqual(try DICOMJPEGLosslessCodec().decode(rgb, description: rgbDescription).data,
+                       Data(expectedRGB))
     }
 
     // MARK: Encoder

@@ -90,6 +90,54 @@ final class DcmSwiftJPEGBaselineTests: XCTestCase {
         XCTAssertEqual(decoded.data, try resource(fixture.name, "ref"))
     }
 
+    func testArithmeticSequentialAndProgressiveFixtures() throws {
+        for uid in [DICOMJPEGBaselineCodec.arithmeticExtended,
+                    DICOMJPEGBaselineCodec.arithmeticSpectralSelection,
+                    DICOMJPEGBaselineCodec.arithmeticFullProgression,
+                    DICOMJPEGLosslessCodec.processFifteen] {
+            XCTAssertTrue(DicomSpec.shared.isKnown(transferSyntax: uid), uid)
+            XCTAssertTrue(try XCTUnwrap(TransferSyntax(uid)).capability.canDecodePixelData, uid)
+            XCTAssertNotNil(DICOMCodecRegistry.decoder(for: uid), uid)
+        }
+        let sequential =
+            "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcp" +
+            "LDAxNDQ0Hyc5PTgyPC4zNDL/yQALCAARABcBAREA/8wABgAQEAX/2gAIAQEAAD8A7XVi/NMylUJ4hRJnmkSqs6iiq0xBx4YV" +
+            "GoW/SkIhsDXeOxMrg4xdP5nDcX9Wg5+1bt5cdfwViguX7RI1WpuD4skL32ht8r1mTrjNQ39J1nsk1zs7CUtVg3bibHNLbYTb" +
+            "NQq0WTxakmjtUfMFRo/VpTfRuB+uXhmtuo5kekNCAhqtWKMKGc3wyc1VcTZpwwPlVfE6jB7a46vvXlF4LHK270LaHyfGdQ15" +
+            "s0mzxsCVkH4BUKImCC/6Ocz3sR1vcJQNkypOCBeBK6+pLyQkNs3FNllIx0U44Nru+nj1pq2Z/wDNFja3O7T7ETaU3A8kPnfd" +
+            "oDJNIaxokzGK3GlKDP/Z"
+        let progressive =
+            "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcp" +
+            "LDAxNDQ0Hyc5PTgyPC4zNDL/ygALCAARABcBAREA/8wABAAQ/9oACAEBAAAAAeG1eo7/zAAEEAX/2gAIAQEAAQUCKeSHRCcI" +
+            "Xd6erwzDH+dBY3YUC5D/zAAEEAX/2gAIAQEABj8CS6f5Ny2qFxw/RDdpilmSHgcjJeuY0L6niQTav68mnFmZI3yv4UoCC1Y2" +
+            "ugDt4AgRCs0m1b4ar+/l69m84pRSsCMRJGRyeTxPKzyqpP/MAAQQBf/aAAgBAQABPyFoj3xOGArSaNFJOAmf4JAFpiyAWSRR" +
+            "IyxjjON/2QHSZ+eWU9pX5oTsRqDEkZsXDUt9Zk3VLpcn+U4sKL8mWnWs0f/aAAgBAQAAABA2/8wABBAF/9oACAEBAAE/EHGB" +
+            "9ZX1wMZ+UjIu5rrxHynW+lQ0YDRkLhcqdaVjOPoG7hHPjwAzqph2Bbvp4GtsPyaDvpjjqHDdfsThtQWCzDaqZ28Q44B3EwAP" +
+            "HYbbhrb/2Q=="
+        let expected = try XCTUnwrap(Data(base64Encoded:
+            "ACpFbo7A2wMmU22VvssDLU19nKv0BCV2brzc9SM3b4e02volWYWKsdcBMj2BkL3/BylkirLK/wZPaHmrv/giRVaSssj/KmiU" +
+            "mMriBD1RhKLF/xc9ZHqr4uEaN12UtdMJK1R4nMDuCjdCg4jL3x8bVoyYxf0iSXGbud4AK0tzhcrpAClWbJvK4goncICn49oeQ" +
+            "HGaotf/Ezd6irfX/xU1iYvC9BkybYKiyO8YP16Cs9D6D0pWna3H/zdUe53G5g4xWIycwugVNmCTlM/tBlRQhM3bBTBUcZ3A" +
+            "0A40VHuSvtQYMFuGk8P9FlBui7Hg+CFVaJG20gksVmmSzMsLNWl9qsv/F0dniKzW/R0tc4Ot0f0aSWeD2OcSPUuCks/yDjRu" +
+            "fq/a7BVTZIyuy/8kW3SL3PAgKV2Bo7H9CBtafpa95Bo6WJe71xcfMmWdrdgXGk9vs7/eGS5Pf5S6/xlMZorN2/8tRGWds9cE" +
+            "H01skr7VDS9ihavR8R09Yois1PgcQGiMsdL9HUdpjA=="))
+        let description = DICOMPixelDescription(
+            rows: 17, columns: 23, samplesPerPixel: 1, photometricInterpretation: .monochrome2,
+            bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: false,
+            planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
+        for encoded in [sequential, progressive] {
+            let decoded = try DICOMJPEGBaselineCodec().decode(
+                try XCTUnwrap(Data(base64Encoded: encoded)), description: description)
+            XCTAssertEqual(decoded.data, expected)
+        }
+        var malformedDAC = [UInt8](try XCTUnwrap(Data(base64Encoded: sequential)))
+        let dac = try XCTUnwrap(malformedDAC.indices.dropLast().first {
+            malformedDAC[$0] == 0xFF && malformedDAC[$0 + 1] == 0xCC
+        })
+        malformedDAC[dac + 5] = 0x01 // L=1, U=0 is forbidden.
+        XCTAssertThrowsError(try JPEGStream(malformedDAC))
+    }
+
     func testEncoderRoundTripsSamplingModesAndRestartMarkers() throws {
         let width = 17, height = 13
         let pixels = (0..<(width * height)).flatMap { pixel -> [UInt8] in
@@ -125,6 +173,129 @@ final class DcmSwiftJPEGBaselineTests: XCTestCase {
     }
 
     #if os(macOS) || os(Linux)
+    func testArithmeticDCTMatchesLibjpegTurboWhenAvailable() throws {
+        let cjpegCandidates = ["/opt/homebrew/bin/cjpeg", "/usr/local/bin/cjpeg", "/usr/bin/cjpeg"]
+        let djpegCandidates = ["/opt/homebrew/bin/djpeg", "/usr/local/bin/djpeg", "/usr/bin/djpeg"]
+        guard let cjpeg = cjpegCandidates.first(where: FileManager.default.isExecutableFile(atPath:)),
+              let djpeg = djpegCandidates.first(where: FileManager.default.isExecutableFile(atPath:)) else {
+            throw XCTSkip("cjpeg and djpeg are not installed")
+        }
+        let width = 23, height = 17
+        var pixels = [UInt8]()
+        for index in 0..<(width * height) {
+            pixels.append(UInt8((index * 37 + (index / width) * 19) & 255))
+        }
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dcmswift-arithmetic-\(UUID())")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let input = directory.appendingPathComponent("input.pgm")
+        try Data("P5\n\(width) \(height)\n255\n".utf8 + pixels).write(to: input)
+        let scans = directory.appendingPathComponent("spectral.scans")
+        try Data("0: 0 0 0 0; 0: 1 5 0 0; 0: 6 20 0 0; 0: 21 63 0 0;\n".utf8).write(to: scans)
+        let description = DICOMPixelDescription(
+            rows: height, columns: width, samplesPerPixel: 1, photometricInterpretation: .monochrome2,
+            bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: false,
+            planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
+
+        for (name, modeArguments) in [("sequential", [String]()),
+                                      ("spectral", ["-scans", scans.path]),
+                                      ("full", ["-progressive"])] {
+            let jpeg = directory.appendingPathComponent("\(name).jpg")
+            let reference = directory.appendingPathComponent("\(name).pgm")
+            let encoder = Process()
+            encoder.executableURL = URL(fileURLWithPath: cjpeg)
+            encoder.arguments = ["-arithmetic", "-restart", "2B"] + modeArguments
+                + ["-outfile", jpeg.path, input.path]
+            try encoder.run(); encoder.waitUntilExit()
+            XCTAssertEqual(encoder.terminationStatus, 0)
+            let decoder = Process()
+            decoder.executableURL = URL(fileURLWithPath: djpeg)
+            decoder.arguments = ["-grayscale", "-outfile", reference.path, jpeg.path]
+            try decoder.run(); decoder.waitUntilExit()
+            XCTAssertEqual(decoder.terminationStatus, 0)
+            let referenceBytes = try Data(contentsOf: reference)
+            let headerEnd = try XCTUnwrap(referenceBytes.range(of: Data("\n255\n".utf8))).upperBound
+            let decoded = try DICOMJPEGBaselineCodec().decode(Data(contentsOf: jpeg), description: description)
+            let expected = Data(referenceBytes.suffix(from: headerEnd))
+            if decoded.data != expected {
+                let actualValues = [UInt8](decoded.data), expectedValues = [UInt8](expected)
+                let mismatch = zip(actualValues, expectedValues).enumerated().first { $0.element.0 != $0.element.1 }
+                XCTFail("\(name) first mismatch \(String(describing: mismatch)) actual \(actualValues.prefix(16)) expected \(expectedValues.prefix(16))")
+            }
+        }
+    }
+
+    func testArithmeticDCTColorAndTwelveBitWhenAvailable() throws {
+        let cjpegCandidates = ["/opt/homebrew/bin/cjpeg", "/usr/local/bin/cjpeg", "/usr/bin/cjpeg"]
+        let djpegCandidates = ["/opt/homebrew/bin/djpeg", "/usr/local/bin/djpeg", "/usr/bin/djpeg"]
+        guard let cjpeg = cjpegCandidates.first(where: FileManager.default.isExecutableFile(atPath:)),
+              let djpeg = djpegCandidates.first(where: FileManager.default.isExecutableFile(atPath:)) else {
+            throw XCTSkip("cjpeg and djpeg are not installed")
+        }
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dcmswift-arithmetic-wide-\(UUID())")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        func run(_ executable: String, _ arguments: [String]) throws {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: executable)
+            process.arguments = arguments
+            try process.run(); process.waitUntilExit()
+            XCTAssertEqual(process.terminationStatus, 0, arguments.joined(separator: " "))
+        }
+
+        let colorWidth = 17, colorHeight = 13
+        var color = [UInt8]()
+        for index in 0..<(colorWidth * colorHeight) {
+            let x = index % colorWidth, y = index / colorWidth
+            color += [UInt8((x * 17 + y * 5) & 255), UInt8((x * 7 + y * 23) & 255),
+                      UInt8((x * 29 + y * 3) & 255)]
+        }
+        let ppm = directory.appendingPathComponent("color.ppm")
+        let colorJPEG = directory.appendingPathComponent("color.jpg")
+        let colorReference = directory.appendingPathComponent("color-reference.ppm")
+        try Data("P6\n\(colorWidth) \(colorHeight)\n255\n".utf8 + color).write(to: ppm)
+        try run(cjpeg, ["-arithmetic", "-sample", "2x2,1x1,1x1", "-restart", "1B",
+                         "-outfile", colorJPEG.path, ppm.path])
+        try run(djpeg, ["-rgb", "-outfile", colorReference.path, colorJPEG.path])
+        let colorPNM = try Data(contentsOf: colorReference)
+        let colorHeader = try XCTUnwrap(colorPNM.range(of: Data("\n255\n".utf8))).upperBound
+        let colorDescription = DICOMPixelDescription(
+            rows: colorHeight, columns: colorWidth, samplesPerPixel: 3,
+            photometricInterpretation: .ybrFull422, bitsAllocated: 8, bitsStored: 8, highBit: 7,
+            isSigned: false, planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
+        XCTAssertEqual(try DICOMJPEGBaselineCodec().decode(
+            Data(contentsOf: colorJPEG), description: colorDescription).data,
+                       Data(colorPNM.suffix(from: colorHeader)))
+
+        let wideWidth = 19, wideHeight = 11
+        var widePNM = [UInt8]()
+        for index in 0..<(wideWidth * wideHeight) {
+            let value = (index * 173 + (index / wideWidth) * 97) & 4095
+            widePNM += [UInt8(value >> 8), UInt8(value & 0xFF)]
+        }
+        let pgm = directory.appendingPathComponent("wide.pgm")
+        let wideJPEG = directory.appendingPathComponent("wide.jpg")
+        let wideReference = directory.appendingPathComponent("wide-reference.pgm")
+        try Data("P5\n\(wideWidth) \(wideHeight)\n4095\n".utf8 + widePNM).write(to: pgm)
+        try run(cjpeg, ["-precision", "12", "-arithmetic", "-restart", "2B",
+                         "-outfile", wideJPEG.path, pgm.path])
+        try run(djpeg, ["-outfile", wideReference.path, wideJPEG.path])
+        let referencePNM = try Data(contentsOf: wideReference)
+        let wideHeader = try XCTUnwrap(referencePNM.range(of: Data("\n4095\n".utf8))).upperBound
+        let referenceBigEndian = [UInt8](referencePNM.suffix(from: wideHeader))
+        var referenceLittleEndian = [UInt8]()
+        for offset in stride(from: 0, to: referenceBigEndian.count, by: 2) {
+            referenceLittleEndian += [referenceBigEndian[offset + 1], referenceBigEndian[offset]]
+        }
+        let wideDescription = DICOMPixelDescription(
+            rows: wideHeight, columns: wideWidth, samplesPerPixel: 1,
+            photometricInterpretation: .monochrome2, bitsAllocated: 16, bitsStored: 12, highBit: 11,
+            isSigned: false, planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
+        XCTAssertEqual(try DICOMJPEGBaselineCodec().decode(
+            Data(contentsOf: wideJPEG), description: wideDescription).data, Data(referenceLittleEndian))
+    }
+
     func testEncoderMatchesLibjpegTurboIntegerPipelineWhenAvailable() throws {
         let candidates = ["/opt/homebrew/bin/cjpeg", "/usr/local/bin/cjpeg", "/usr/bin/cjpeg"]
         guard let cjpeg = candidates.first(where: FileManager.default.isExecutableFile(atPath:)) else {
@@ -236,7 +407,7 @@ final class DcmSwiftJPEGBaselineTests: XCTestCase {
             bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: false, planarConfiguration: 0, numberOfFrames: 1)
         let sof3 = try DICOMJPEGLosslessCodec().encode(Data([1, 2, 3, 4]), description: lossless)
         XCTAssertThrowsError(try codec.decode(sof3, description: lossless)) {
-            XCTAssertEqual($0 as? DICOMCodecError, .unsupportedImage("SOF3 is not a DCT-based Huffman JPEG process"))
+            XCTAssertEqual($0 as? DICOMCodecError, .unsupportedImage("SOF3 is not a supported DCT-based JPEG process"))
         }
 
         // Truncations and corrupted bytes fail or decode, but never crash.

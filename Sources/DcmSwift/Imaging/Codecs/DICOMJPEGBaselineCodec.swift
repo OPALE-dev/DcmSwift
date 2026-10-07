@@ -1,9 +1,8 @@
 import Foundation
 
-/// JPEG Baseline (Process 1, 1.2.840.10008.1.2.4.50) and Extended (Process 2
-/// and 4, 1.2.840.10008.1.2.4.51), DCT-based with Huffman coding (ITU-T T.81
-/// Annexes F and G). Progressive (SOF2) streams are also decoded, as
-/// recommended for receivers.
+/// JPEG Baseline and Extended DCT frames with Huffman or arithmetic coding
+/// (ITU-T T.81 Annexes D, F, and G). Sequential and progressive SOF0/1/2/9/10
+/// streams are decoded; encoding emits sequential Huffman SOF0/1.
 ///
 /// Decoding reproduces the IJG reference algorithms (accurate integer IDCT,
 /// fancy upsampling, and fixed-point YCbCr conversion), so results match
@@ -24,8 +23,15 @@ public struct DICOMJPEGBaselineCodec: DICOMPixelDataDecoder {
     public static let spectralSelection = "1.2.840.10008.1.2.4.53"
     /// Retired: Full Progression, Non-Hierarchical (Process 10 & 12).
     public static let fullProgression = "1.2.840.10008.1.2.4.55"
+    /// Retired: Extended, arithmetic coding (Process 3 & 5).
+    public static let arithmeticExtended = "1.2.840.10008.1.2.4.52"
+    /// Retired: Spectral Selection, arithmetic coding (Process 7 & 9).
+    public static let arithmeticSpectralSelection = "1.2.840.10008.1.2.4.54"
+    /// Retired: Full Progression, arithmetic coding (Process 11 & 13).
+    public static let arithmeticFullProgression = "1.2.840.10008.1.2.4.56"
     public var transferSyntaxUIDs: Set<String> {
-        [Self.baseline, Self.extended, Self.spectralSelection, Self.fullProgression]
+        [Self.baseline, Self.extended, Self.spectralSelection, Self.fullProgression,
+         Self.arithmeticExtended, Self.arithmeticSpectralSelection, Self.arithmeticFullProgression]
     }
 
     public init() {}
@@ -48,8 +54,8 @@ public struct DICOMJPEGBaselineCodec: DICOMPixelDataDecoder {
         let bytes = [UInt8](encodedFrame)
         let stream = try JPEGStream(bytes)
         let frame = stream.frame
-        guard frame.process <= 2 else {
-            throw DICOMCodecError.unsupportedImage("SOF\(frame.process) is not a DCT-based Huffman JPEG process")
+        guard frame.process <= 2 || frame.process == 9 || frame.process == 10 else {
+            throw DICOMCodecError.unsupportedImage("SOF\(frame.process) is not a supported DCT-based JPEG process")
         }
         guard frame.precision == 8 || frame.precision == 12 else {
             throw DICOMCodecError.corruptedData("JPEG precision \(frame.precision)")
@@ -69,7 +75,11 @@ public struct DICOMJPEGBaselineCodec: DICOMPixelDataDecoder {
 
         var decoder = try JPEGDCTDecoder(frame: frame)
         for scan in stream.scans {
-            try decoder.decode(scan, progressive: frame.process == 2)
+            if frame.process >= 9 {
+                try decoder.decodeArithmetic(scan, progressive: frame.process == 10)
+            } else {
+                try decoder.decode(scan, progressive: frame.process == 2)
+            }
         }
         let planes = try decoder.samplePlanes(quantization: stream.scans.last!.quantizationTables)
 
@@ -183,16 +193,16 @@ struct JPEGSamplePlane {
 
 /// Coefficient decoding for sequential and progressive DCT scans.
 struct JPEGDCTDecoder {
-    private let frame: JPEGStream.Frame
-    private let maxHorizontal: Int
-    private let maxVertical: Int
-    private let mcusPerLine: Int
-    private let mcuRows: Int
+    let frame: JPEGStream.Frame
+    let maxHorizontal: Int
+    let maxVertical: Int
+    let mcusPerLine: Int
+    let mcuRows: Int
     /// Coefficients (natural order) of every block, per component.
-    private var coefficients: [[Int32]]
-    private var blocksPerLine: [Int]
+    var coefficients: [[Int32]]
+    var blocksPerLine: [Int]
     /// Blocks covering the component itself (non-interleaved scans).
-    private var componentBlocks: [(columns: Int, rows: Int)]
+    var componentBlocks: [(columns: Int, rows: Int)]
 
     init(frame: JPEGStream.Frame) throws {
         self.frame = frame
