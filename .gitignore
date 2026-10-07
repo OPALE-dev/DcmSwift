@@ -8,3 +8,4 @@ Tests/DcmSwiftTests/Resources/
 __MACOSX/
 .env
 .corpus/
+.reports/
