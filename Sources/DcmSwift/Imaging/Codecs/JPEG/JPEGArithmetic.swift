@@ -212,6 +212,11 @@ extension JPEGDCTDecoder {
                 }
                 value += 1
                 if sign != 0 { value = -value }
+                // Differential frames do not predict the DC (T.81 J.2.2).
+                if differential {
+                    dcStatistics[table] = statistics
+                    return value & 0xFFFF
+                }
                 predictions[scanIndex] = (predictions[scanIndex] + value) & 0xFFFF
             }
             dcStatistics[table] = statistics
@@ -357,11 +362,12 @@ extension DICOMJPEGLosslessCodec {
     /// defined by F.1.4.4.1 and the neighbouring prediction residuals.
     func decodeArithmeticScan(
         _ scan: JPEGStream.Scan, precision: Int, width: Int, height: Int,
-        planes: inout [[Int]]
+        planes: inout [[Int]], differential: Bool = false
     ) throws {
         let predictor = scan.spectralStart
         let pointTransform = scan.approximationLow
-        guard (1...7).contains(predictor) else {
+        // Differential frames (SOF15) code differences without prediction.
+        guard differential || (1...7).contains(predictor) else {
             throw DICOMCodecError.unsupportedImage("JPEG Lossless predictor \(predictor)")
         }
         guard pointTransform < precision, scan.spectralEnd == 0, scan.approximationHigh == 0 else {
@@ -391,6 +397,7 @@ extension DICOMJPEGLosslessCodec {
         }
 
         func prediction(_ plane: [Int], _ index: Int, _ x: Int, _ y: Int) -> Int {
+            if differential { return 0 }
             if y == restartOrigin.y {
                 return x == restartOrigin.x ? initial : plane[index - 1]
             }

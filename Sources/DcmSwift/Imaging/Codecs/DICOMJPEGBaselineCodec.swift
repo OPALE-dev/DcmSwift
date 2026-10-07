@@ -200,6 +200,9 @@ struct JPEGDCTDecoder {
     let mcuRows: Int
     /// Coefficients (natural order) of every block, per component.
     var coefficients: [[Int32]]
+    /// Differential frames of hierarchical streams (SOF5/6, SOF13/14) code
+    /// each DC difference without DPCM prediction (T.81 J.2.2).
+    var differential = false
     var blocksPerLine: [Int]
     /// Blocks covering the component itself (non-interleaved scans).
     var componentBlocks: [(columns: Int, rows: Int)]
@@ -263,8 +266,9 @@ struct JPEGDCTDecoder {
             if !progressive {
                 let category = try dcTables[scanIndex]!.decode(&reader)
                 guard category <= 15 else { throw DICOMCodecError.corruptedData("JPEG DC category \(category)") }
-                predictions[component] += reader.receiveExtend(category)
-                coefficients[component][base] = Int32(truncatingIfNeeded: predictions[component])
+                let difference = reader.receiveExtend(category)
+                if !differential { predictions[component] += difference }
+                coefficients[component][base] = Int32(truncatingIfNeeded: differential ? difference : predictions[component])
                 var k = 1
                 while k < 64 {
                     let symbol = try acTables[scanIndex]!.decode(&reader)
@@ -286,8 +290,10 @@ struct JPEGDCTDecoder {
                 if scan.approximationHigh == 0 {
                     let category = try dcTables[scanIndex]!.decode(&reader)
                     guard category <= 15 else { throw DICOMCodecError.corruptedData("JPEG DC category \(category)") }
-                    predictions[component] += reader.receiveExtend(category)
-                    coefficients[component][base] = Int32(truncatingIfNeeded: predictions[component] << low)
+                    let difference = reader.receiveExtend(category)
+                    if !differential { predictions[component] += difference }
+                    let dc = differential ? difference : predictions[component]
+                    coefficients[component][base] = Int32(truncatingIfNeeded: dc << low)
                 } else if reader.bits(1) == 1 {
                     coefficients[component][base] |= Int32(1 << low)
                 }

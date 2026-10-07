@@ -217,12 +217,14 @@ public struct DICOMJPEGLosslessCodec: DICOMPixelDataDecoder {
 
     /// Decodes one scan (T.81 H.1.2): prediction from the reconstructed
     /// neighbours Ra (left), Rb (above), and Rc (above left), modulo 2^16.
-    private func decodeScan(
-        _ scan: JPEGStream.Scan, precision: Int, width: Int, height: Int, planes: inout [[Int]]
+    func decodeScan(
+        _ scan: JPEGStream.Scan, precision: Int, width: Int, height: Int, planes: inout [[Int]],
+        differential: Bool = false
     ) throws {
         let predictor = scan.spectralStart
         let pointTransform = scan.approximationLow
-        guard (1...7).contains(predictor) else {
+        // Differential frames (SOF7) code differences without prediction.
+        guard differential || (1...7).contains(predictor) else {
             throw DICOMCodecError.unsupportedImage("JPEG Lossless predictor \(predictor)")
         }
         guard pointTransform < precision else {
@@ -258,7 +260,9 @@ public struct DICOMJPEGLosslessCodec: DICOMPixelDataDecoder {
                 for (scanIndex, component) in scan.components.enumerated() {
                     let prediction: Int
                     let plane = component.componentIndex
-                    if y == firstLine {
+                    if differential {
+                        prediction = 0
+                    } else if y == firstLine {
                         prediction = x == 0 ? initial : planes[plane][index - 1]
                     } else if x == 0 {
                         prediction = planes[plane][index - width]
