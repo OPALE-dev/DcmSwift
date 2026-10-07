@@ -1,0 +1,72 @@
+[
+ {
+  "name": "gray_sof1_sof5",
+  "transferSyntax": "1.2.840.10008.1.2.4.59",
+  "comps": 1,
+  "maxError": 2,
+  "meanError": 0.5
+ },
+ {
+  "name": "color420_sof1_sof5",
+  "transferSyntax": "1.2.840.10008.1.2.4.59",
+  "comps": 3,
+  "maxError": 5,
+  "meanError": 1.0
+ },
+ {
+  "name": "gray_sof9_sof13_restart",
+  "transferSyntax": "1.2.840.10008.1.2.4.60",
+  "comps": 1,
+  "maxError": 2,
+  "meanError": 0.5
+ },
+ {
+  "name": "color_sof2_sof6",
+  "transferSyntax": "1.2.840.10008.1.2.4.63",
+  "comps": 3,
+  "maxError": 5,
+  "meanError": 1.0
+ },
+ {
+  "name": "gray_sof10_sof14x2",
+  "transferSyntax": "1.2.840.10008.1.2.4.64",
+  "comps": 1,
+  "maxError": 2,
+  "meanError": 0.7
+ },
+ {
+  "name": "color_sof10_sof14x2",
+  "transferSyntax": "1.2.840.10008.1.2.4.64",
+  "comps": 3,
+  "maxError": 5,
+  "meanError": 1.3
+ },
+ {
+  "name": "gray_sof9_sof15",
+  "transferSyntax": "1.2.840.10008.1.2.4.60",
+  "comps": 1,
+  "maxError": 1,
+  "meanError": 0.4
+ },
+ {
+  "name": "color_sof1_sof7",
+  "transferSyntax": "1.2.840.10008.1.2.4.59",
+  "comps": 3,
+  "maxError": 1,
+  "meanError": 0.6
+ },
+ {
+  "name": "color_sof3_sof7",
+  "transferSyntax": "1.2.840.10008.1.2.4.65",
+  "comps": 3,
+  "maxError": 1,
+  "meanError": 0.1
+ },
+ {
+  "name": "gray_sof11_sof15",
+  "transferSyntax": "1.2.840.10008.1.2.4.66",
+  "comps": 1,
+  "maxError": 1,
+  "meanError": 0.1
+ }
+]

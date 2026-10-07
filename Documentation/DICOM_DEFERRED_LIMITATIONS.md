@@ -52,9 +52,17 @@ conformance without that evidence.
   Compression, JPEG Lossless, and JPEG Baseline/Extended decoding and encoding
   are implemented. MPEG, AVC, and HEVC are outside the planned scope.
 - Retired JPEG Transfer Syntaxes must stay readable. The progressive Huffman
-  syntaxes (.53, .55) and non-hierarchical arithmetic syntaxes
-  (.52, .54, .56, .58) decode; the hierarchical processes (.59 to .66) are
-  not decoded yet.
+  syntaxes (.53, .55), the non-hierarchical arithmetic syntaxes
+  (.52, .54, .56, .58), and the hierarchical syntaxes (.59 to .66) decode.
+- Hierarchical JPEG is qualified against the ISO reference (Thomas Richter's
+  libjpeg) within a stated tolerance, not bit-exactly: the reference computes
+  in fixed point with extra fraction bits, so its IDCT, color conversion, and
+  two-dimensional upsampling differ by a few levels from the IJG algorithms
+  and from the two successive truncations of T.81 J.1.1.2, which DcmSwift
+  follows. A DCT first frame followed by a lossless differential frame is
+  lossless only with the encoder's own IDCT, which T.81 does not specify
+  (A.3.3); such streams decode within one level of the original. Lossless
+  hierarchical frames with subsampled components are rejected.
 - JPEG Baseline/Extended encoding currently accepts unsigned MONOCHROME1/2 and
   RGB frames only. Encoding and decoding remain below SIMD-library throughput;
   streaming coefficient storage, entropy acceleration, and SIMD work remain.
@@ -66,8 +74,10 @@ conformance without that evidence.
   H.1.2.1 (it predicts the first sample from 2^(P-1) instead of 2^(P-Pt-1)), so
   point transforms may not interoperate with readers built on it.
 - JPEG arithmetic decoding is implemented in Swift from T.81 Annex D/F/G/H.
-  SOF9/SOF10 have fixed and live libjpeg-turbo oracles; SOF11 has an independent
-  encoder vector because libjpeg-turbo deliberately omits that combination.
+  SOF9/SOF10 have fixed and live libjpeg-turbo oracles; SOF11 is checked
+  against streams from the ISO reference encoder, since libjpeg-turbo omits
+  that combination. As T.81 B.2.3 requires, components that share a DC table
+  share its statistics area.
 - There is no Data Set level transcoding API yet: frames are encoded with
   the codec types directly.
 

@@ -15,7 +15,11 @@ public struct DICOMJPEGLosslessCodec: DICOMPixelDataDecoder {
     public init() {}
 
     public func decode(_ encodedFrame: Data, description: DICOMPixelDescription) throws -> DICOMDecodedFrame {
-        let stream = try JPEGStream([UInt8](encodedFrame))
+        let bytes = [UInt8](encodedFrame)
+        let stream = try JPEGStream(bytes)
+        if stream.hierarchy != nil {
+            return try DICOMJPEGHierarchicalCodec().decode(stream, bytes: bytes, description: description)
+        }
         let frame = stream.frame
         guard frame.process == 3 || frame.process == 11 else {
             throw DICOMCodecError.unsupportedImage("SOF\(frame.process) is not a supported JPEG Lossless process")

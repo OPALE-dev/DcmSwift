@@ -182,22 +182,22 @@ final class DcmSwiftJPEGLosslessTests: XCTestCase {
             planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
         XCTAssertEqual(try DICOMJPEGLosslessCodec().decode(twelveBit, description: description12).data,
                        Data(expected12))
+    }
 
-        let rgb = try XCTUnwrap(Data(base64Encoded:
-            "/9j/7gAOQWRvYmUAZAAAAAAA/8sAEQgABQAHA1IRAEcRAEIRAP/dAAQAB//aAAwDUgBHAEIABgAA/wDJj/eB4qhfcrjgza49" +
-            "2u8P2ii/q6aU/9DSqZIHKzpO8pWutoAU7COEPnnpz4sypbVyZP/R0oS4wp7hLamfQs3ntE9igiC7dXB4K0I3Mv7/0tG6Fw9" +
-            "tD0OAUI+gSiTcYMRMCKEpaHH5/9P+7bT8Ycf3793MZitgPqREAfOVxhrztij/2Q=="))
-        var expectedRGB = [UInt8]()
-        for index in 0..<(7 * 5) {
-            expectedRGB += [UInt8((index * 31 + 7) & 255), UInt8((index * 17 + 43) & 255),
-                            UInt8((index * 47 + 91) & 255)]
+    func testArithmeticLosslessComponentsShareStatisticsByTable() throws {
+        // T.81 B.2.3: the table selector names the statistics area, so the
+        // three components of this RGB scan, all on table 0, share one.
+        // Encoded by the ISO reference (Thomas Richter's libjpeg, -p -a -c);
+        // the reference holds the original lossless samples.
+        func resource(_ ext: String) throws -> Data {
+            try Data(contentsOf: XCTUnwrap(Bundle.module.url(forResource: "jpeg-sof11-rgb", withExtension: ext)))
         }
-        let rgbDescription = DICOMPixelDescription(
-            rows: 5, columns: 7, samplesPerPixel: 3, photometricInterpretation: .rgb,
+        let description = DICOMPixelDescription(
+            rows: 37, columns: 45, samplesPerPixel: 3, photometricInterpretation: .rgb,
             bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: false,
             planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
-        XCTAssertEqual(try DICOMJPEGLosslessCodec().decode(rgb, description: rgbDescription).data,
-                       Data(expectedRGB))
+        XCTAssertEqual(try DICOMJPEGLosslessCodec().decode(resource("jpg"), description: description).data,
+                       try resource("ref"))
     }
 
     // MARK: Encoder

@@ -53,6 +53,9 @@ public struct DICOMJPEGBaselineCodec: DICOMPixelDataDecoder {
     public func decode(_ encodedFrame: Data, description: DICOMPixelDescription) throws -> DICOMDecodedFrame {
         let bytes = [UInt8](encodedFrame)
         let stream = try JPEGStream(bytes)
+        if stream.hierarchy != nil {
+            return try DICOMJPEGHierarchicalCodec().decode(stream, bytes: bytes, description: description)
+        }
         let frame = stream.frame
         guard frame.process <= 2 || frame.process == 9 || frame.process == 10 else {
             throw DICOMCodecError.unsupportedImage("SOF\(frame.process) is not a supported DCT-based JPEG process")
