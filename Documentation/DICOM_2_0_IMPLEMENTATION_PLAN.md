@@ -61,6 +61,9 @@ Current progress in that order:
   DICOMDIR milestone;
 - binary multi-valued VR/VM handling, lazy Bulk Data, and Deflated Explicit VR
   Little Endian are implemented with malformed-input regression tests;
+- every Specific Character Set Defined Term, including ISO 2022 Code
+  Extensions, GB18030-2022, and GBK, reads and writes with platform-independent
+  tables and PS3.5 Annex H-K vectors;
 - Basic DICOMDIR PATIENT/STUDY/SERIES/IMAGE read/write now computes offsets
   from the serialized layout and validates the record graph, File-set/File IDs,
   and referenced Part 10 identities;
@@ -111,7 +114,8 @@ representations are built on a stable, lossless Data Set model.
   never implicit UTF-8 fallbacks;
 - propagate Specific Character Set into nested Data Sets;
 - cover Person Name component groups and multi-valued text;
-- add ISO 2022 repertoires incrementally with conformance vectors.
+- add ISO 2022 repertoires incrementally with conformance vectors (done for
+  every PS3.3 2026d Defined Term, with PS3.5 Annex H-K and DCMTK vectors).
 
 ### 1.3 File Meta Information and transfer syntaxes
 

@@ -64,6 +64,8 @@ macos-package:
   script:
     - xcodebuild -version
     - swift --version
+    # The bundled character set tables must match their generator (macOS ICU).
+    - xcrun python3 Scripts/generate-character-set-tables.py --check
     - swift build -c release
     # SwiftPM writes the XCTest xUnit report only in parallel mode.
     - swift test --parallel --xunit-output .reports/xunit.xml

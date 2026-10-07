@@ -17,9 +17,13 @@ conformance without that evidence.
 - Complete context-dependent VR resolution beyond the currently covered cases.
 - Model Person Name component groups and representations rather than exposing
   PN only as a flat string.
-- Add ISO 2022 code extensions and the remaining Specific Character Set
-  repertoires with normative vectors. Unsupported declarations are currently
-  rejected instead of silently decoded.
+- Specific Character Set: undecodable bytes make the whole value unavailable
+  as text; the PS3.5 6.1.2.3 `\nnn` display substitution is not offered. Text
+  encoders do not yet validate per-VR repertoires (for example CS and AE).
+  GB18030 four-byte codes that the 2022 edition remapped decode one-way to the
+  new two-byte characters, so their former private-use characters are not
+  encodable. Exchange of DcmSwift-encoded ISO 2022 text with DCMTK or devices
+  has not been qualified beyond decoding their sample files.
 - Validate Extended Offset Table and Extended Offset Table Lengths and their
   relationship to encapsulated Pixel Data fragments.
 - Add byte-preserving editing guarantees for values whose semantics are not
