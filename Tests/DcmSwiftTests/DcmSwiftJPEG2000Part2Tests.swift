@@ -10,9 +10,13 @@ import XCTest
 /// `kdu_compress`; the dependency, multi-stage, extra-output, and
 /// tile-override cases (which `kdu_compress` cannot write) carry hand-built
 /// Annex J segments injected into Kakadu Part 1 codestreams.
-/// `dep-rev-split` splits its MCT and MCC series over several segments with
-/// 16-bit component indices, which Kakadu does not read: its reference is
-/// the source volume, losslessly reconstructed.
+/// `dep-rev-split` splits its MCT and MCC series over several segments
+/// (which Kakadu does not read) with 16-bit component indices: its reference
+/// is the source volume, losslessly reconstructed.
+///
+/// The encoder is checked here by round trips; Kakadu 8.4.1 also decoded
+/// its lossless codestreams (up to 300 frames and 64 frames of 512x512) to
+/// the source and its lossy ones to within one level of this decoder.
 final class DcmSwiftJPEG2000Part2Tests: XCTestCase {
 
     private struct Fixture: Decodable {
@@ -163,7 +167,7 @@ final class DcmSwiftJPEG2000Part2Tests: XCTestCase {
             XCTAssertTrue(DICOMCodecRegistry.decoder(for: uid) is DICOMJPEG2000Codec, uid)
             let capability = try XCTUnwrap(TransferSyntax(uid)).capability
             XCTAssertTrue(capability.canDecodePixelData, uid)
-            XCTAssertFalse(capability.canEncodePixelData, uid)
+            XCTAssertTrue(capability.canEncodePixelData, uid)
         }
         XCTAssertEqual(DICOMEncapsulatedPixelData.collectionTransferSyntaxUIDs,
                        [DICOMJPEG2000Codec.partTwoLossless, DICOMJPEG2000Codec.partTwo])
@@ -237,6 +241,138 @@ final class DcmSwiftJPEG2000Part2Tests: XCTestCase {
             _ = try? codec.decodeCollection(Data(bytes), description: description(fixture))
             bytes[index] = original
         }
+    }
+
+    // MARK: Encoding
+
+    /// A smooth volume with noise, as native little endian frames.
+    private func volume(
+        frames: Int, rows: Int, columns: Int, bits: Int, signed: Bool, seed: UInt64 = 7
+    ) -> (data: Data, values: [Int], description: DICOMPixelDescription) {
+        var state = seed
+        func noise() -> Int {
+            state = state &* 6364136223846793005 &+ 1442695040888963407
+            return Int(state >> 59) - 16
+        }
+        let top = (1 << bits) - 1
+        var values: [Int] = []
+        for frame in 0..<frames {
+            for y in 0..<rows {
+                for x in 0..<columns {
+                    let phase = Double(frame)
+                    let wave: Double = sin(Double(x) / 5 + phase * 0.3) + cos(Double(y) / 4 - phase * 0.2)
+                    let smooth = Int((wave * 0.22 + 0.5) * Double(top))
+                    var value = smooth + noise() * max(1, top >> 10)
+                    value = min(max(value, 0), top)
+                    values.append(signed ? value - (1 << (bits - 1)) : value)
+                }
+            }
+        }
+        let bytes = values.flatMap { value -> [UInt8] in
+            bits > 8 ? [UInt8(truncatingIfNeeded: value), UInt8(truncatingIfNeeded: value >> 8)]
+                : [UInt8(truncatingIfNeeded: value)]
+        }
+        let description = DICOMPixelDescription(
+            rows: rows, columns: columns, samplesPerPixel: 1, photometricInterpretation: .monochrome2,
+            bitsAllocated: bits > 8 ? 16 : 8, bitsStored: bits, highBit: bits - 1, isSigned: signed,
+            planarConfiguration: 0, numberOfFrames: frames)
+        return (Data(bytes), values, description)
+    }
+
+    private func decodeAll(_ encoding: DICOMJPEG2000Codec.PartTwoEncoding, _ description: DICOMPixelDescription,
+                           bits: Int, signed: Bool) throws -> [Int] {
+        try encoding.codestreams.flatMap { codestream in
+            try DICOMJPEG2000Codec().decodeCollection(codestream, description: description.decodedFrame())
+        }.flatMap { values($0.data, bits: bits, signed: signed) }
+    }
+
+    func testEncoderRoundTripsLosslessVolumes() throws {
+        let codec = DICOMJPEG2000Codec()
+        // (frames, rows, columns, bits, signed, levels, frames per collection)
+        let layouts: [(Int, Int, Int, Int, Bool, Int?, Int?)] = [
+            (9, 13, 11, 12, false, nil, nil), (9, 13, 11, 12, false, 2, 4), (6, 7, 9, 16, true, nil, nil),
+            (5, 8, 8, 8, false, 0, nil), (3, 5, 4, 16, false, 1, 2), (1, 6, 6, 10, false, nil, nil),
+            // More than 256 frames: 16-bit component indices.
+            (300, 2, 3, 12, false, nil, nil),
+        ]
+        for (frames, rows, columns, bits, signed, levels, perCollection) in layouts {
+            let name = "\(frames)x\(rows)x\(columns) \(bits)-bit \(signed) \(String(describing: levels))"
+            let source = volume(frames: frames, rows: rows, columns: columns, bits: bits, signed: signed)
+            let encoding = try codec.encodePartTwo(
+                source.data, description: source.description, decompositionLevels: levels,
+                framesPerCollection: perCollection)
+            XCTAssertEqual(encoding.transferSyntaxUID, DICOMJPEG2000Codec.partTwoLossless, name)
+            XCTAssertEqual(encoding.codestreams.count, (frames + (perCollection ?? frames) - 1) / (perCollection ?? frames), name)
+            for codestream in encoding.codestreams {
+                let bytes = [UInt8](codestream)
+                XCTAssertEqual(bytes.count % 2, 0, name)
+                XCTAssertEqual(Array(bytes[6...7]), [0x81, 0x00], name)
+                let segments = mainHeaderSegments(bytes)
+                XCTAssertNotNil(segments[0x78], name)
+                XCTAssertNotNil(segments[0x75], name)
+                XCTAssertNotNil(segments[0x77], name)
+                XCTAssertEqual(segments[0x74] != nil, !signed, name)
+                XCTAssertEqual(bytes[try XCTUnwrap(segments[0x52]?.first) + 8], 0x04, name)
+            }
+            XCTAssertEqual(try decodeAll(encoding, source.description, bits: bits, signed: signed), source.values, name)
+        }
+    }
+
+    func testIrreversibleEncodingHonorsRateControl() throws {
+        let source = volume(frames: 8, rows: 32, columns: 32, bits: 12, signed: false)
+        let lossless = try DICOMJPEG2000Codec().encodePartTwo(source.data, description: source.description)
+        for quality in [DICOMJPEG2000Codec.Quality.compressionRatio(10), .peakSignalToNoiseRatio(45)] {
+            let encoding = try DICOMJPEG2000Codec().encodePartTwo(
+                source.data, description: source.description, quality: quality)
+            XCTAssertEqual(encoding.transferSyntaxUID, DICOMJPEG2000Codec.partTwo)
+            XCTAssertLessThan(encoding.codestreams[0].count, lossless.codestreams[0].count, "\(quality)")
+            let decoded = try decodeAll(encoding, source.description, bits: 12, signed: false)
+            let squares = zip(decoded, source.values).map { pair -> Double in
+                let difference = Double(pair.0 - pair.1)
+                return difference * difference
+            }
+            let mse = squares.reduce(0, +) / Double(decoded.count)
+            let psnr = 10 * log10(4095.0 * 4095.0 / max(mse, 1e-9))
+            XCTAssertGreaterThan(psnr, 35, "\(quality)")
+        }
+        // A 10:1 target relative to 12-bit samples.
+        let ratio = try DICOMJPEG2000Codec().encodePartTwo(
+            source.data, description: source.description, quality: .compressionRatio(10))
+        XCTAssertLessThanOrEqual(ratio.codestreams[0].count, 8 * 32 * 32 * 12 / 8 / 10 + 512)
+    }
+
+    func testEncodedCollectionsDecodeThroughPixelData() throws {
+        let source = volume(frames: 7, rows: 9, columns: 10, bits: 12, signed: false)
+        let encoding = try DICOMJPEG2000Codec().encodePartTwo(
+            source.data, description: source.description, framesPerCollection: 3)
+        // The first collection spans two Fragments.
+        let first = encoding.codestreams[0]
+        let half = (first.count / 2) & ~1
+        let fragments = [first.prefix(half), first.suffix(from: half)] + encoding.codestreams.dropFirst()
+        let dataset = encapsulatedImage(
+            frames: 7, rows: 9, columns: 10, fragments: fragments.map { Data($0) },
+            transferSyntax: encoding.transferSyntaxUID)
+        let pixels = try DICOMEncapsulatedPixelData(dataset: dataset)
+        for frame in [6, 0, 3, 2, 5, 1, 4] {
+            XCTAssertEqual(values(try pixels.decodedFrame(frame).data, bits: 12, signed: false),
+                           Array(source.values[(frame * 90)..<((frame + 1) * 90)]), "\(frame)")
+        }
+    }
+
+    func testEncoderRejectsUnsupportedInputs() throws {
+        let codec = DICOMJPEG2000Codec()
+        let source = volume(frames: 4, rows: 4, columns: 4, bits: 12, signed: false)
+        XCTAssertThrowsError(try codec.encodePartTwo(source.data, description: source.description, decompositionLevels: 33))
+        XCTAssertThrowsError(try codec.encodePartTwo(source.data, description: source.description, framesPerCollection: 0))
+        XCTAssertThrowsError(try codec.encodePartTwo(source.data.prefix(10), description: source.description))
+        let rgb = DICOMPixelDescription(
+            rows: 4, columns: 4, samplesPerPixel: 3, photometricInterpretation: .rgb, bitsAllocated: 8,
+            bitsStored: 8, highBit: 7, isSigned: false, planarConfiguration: 0, numberOfFrames: 2)
+        XCTAssertThrowsError(try codec.encodePartTwo(Data(count: 96), description: rgb))
+        let wide = DICOMPixelDescription(
+            rows: 2, columns: 2, samplesPerPixel: 1, photometricInterpretation: .monochrome2, bitsAllocated: 32,
+            bitsStored: 32, highBit: 31, isSigned: false, planarConfiguration: 0, numberOfFrames: 2)
+        XCTAssertThrowsError(try codec.encodePartTwo(Data(count: 32), description: wide))
     }
 
     private func encapsulatedImage(

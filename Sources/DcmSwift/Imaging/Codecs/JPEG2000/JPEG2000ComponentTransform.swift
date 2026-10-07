@@ -292,6 +292,45 @@ struct WaveletBuffers {
         result.append(contentsOf: low)
     }
 
+    /// The forward transform (J.3.2.2): the samples of NL LL, then NL HL
+    /// down to 1 HL.
+    mutating func forward(_ w: [Double], levels: Int, reversible: Bool, origin: Int, into result: inout [Double]) {
+        var start = origin
+        signal = w
+        var highs: [[Double]] = []
+        for _ in 0..<levels {
+            analyze(from: start, reversible: reversible)
+            // Even indices form the low band, odd ones the high band.
+            var lows: [Double] = [], high: [Double] = []
+            for (k, value) in signal.enumerated() {
+                if (start + k) & 1 == 0 { lows.append(value) } else { high.append(value) }
+            }
+            highs.append(high)
+            signal = lows
+            start = Self.ceilDiv(start, 2)
+        }
+        result.append(contentsOf: signal)
+        for high in highs.reversed() { result.append(contentsOf: high) }
+    }
+
+    /// Periodic symmetric extension of `signal` by four samples on each side
+    /// (F.3.7, F.4.7); the first sample of `signal` has index i0.
+    private mutating func extend() {
+        let count = signal.count
+        let period = 2 * (count - 1)
+        extended.removeAll(keepingCapacity: true)
+        for k in -Self.margin..<(count + Self.margin) {
+            var m = k % period
+            if m < 0 { m += period }
+            extended.append(signal[min(m, period - m)])
+        }
+    }
+
+    private static let margin = 4
+    private static let alpha = -1.586134342059924, beta = -0.052980118572961
+    private static let gamma = 0.882911075530934, delta = 0.443506852043971
+    private static let k = 1.230174104914001
+
     /// 1D_SR (F.3.6) of `signal`, whose first sample has index i0.
     private mutating func reconstruct(from i0: Int, reversible: Bool) {
         let count = signal.count
@@ -299,17 +338,9 @@ struct WaveletBuffers {
             if count == 1, i0 % 2 != 0 { signal[0] /= 2 }
             return
         }
-        // Periodic symmetric extension by four samples on each side (F.3.7).
-        let margin = 4
-        let period = 2 * (count - 1)
-        extended.removeAll(keepingCapacity: true)
-        for k in -margin..<(count + margin) {
-            var m = k % period
-            if m < 0 { m += period }
-            extended.append(signal[min(m, period - m)])
-        }
+        extend()
         // Absolute index of extended[j] is i0 - margin + j.
-        let base = i0 - margin
+        let base = i0 - Self.margin
         func isEven(_ j: Int) -> Bool { (base + j) & 1 == 0 }
         let last = extended.count - 1
         if reversible {
@@ -322,17 +353,45 @@ struct WaveletBuffers {
             }
         } else {
             // Equation F-7 and Table F.4.
-            let alpha = -1.586134342059924, beta = -0.052980118572961
-            let gamma = 0.882911075530934, delta = 0.443506852043971
-            let k = 1.230174104914001
-            for j in 0...last { extended[j] *= isEven(j) ? k : 1 / k }
-            for (even, factor) in [(true, delta), (false, gamma), (true, beta), (false, alpha)] {
+            for j in 0...last { extended[j] *= isEven(j) ? Self.k : 1 / Self.k }
+            for (even, factor) in [(true, Self.delta), (false, Self.gamma), (true, Self.beta), (false, Self.alpha)] {
                 for j in 1..<last where isEven(j) == even {
                     extended[j] -= factor * (extended[j - 1] + extended[j + 1])
                 }
             }
         }
-        for k in 0..<count { signal[k] = extended[margin + k] }
+        for k in 0..<count { signal[k] = extended[Self.margin + k] }
+    }
+
+    /// 1D_SD (F.4.6) of `signal`, whose first sample has index i0.
+    private mutating func analyze(from i0: Int, reversible: Bool) {
+        let count = signal.count
+        guard count > 1 else {
+            if count == 1, i0 % 2 != 0 { signal[0] *= 2 }
+            return
+        }
+        extend()
+        let base = i0 - Self.margin
+        func isEven(_ j: Int) -> Bool { (base + j) & 1 == 0 }
+        let last = extended.count - 1
+        if reversible {
+            // Equations F-9 and F-10.
+            for j in 1..<last where !isEven(j) {
+                extended[j] -= ((extended[j - 1] + extended[j + 1]) / 2).rounded(.down)
+            }
+            for j in 1..<last where isEven(j) {
+                extended[j] += ((extended[j - 1] + extended[j + 1] + 2) / 4).rounded(.down)
+            }
+        } else {
+            // Equation F-11.
+            for (even, factor) in [(false, Self.alpha), (true, Self.beta), (false, Self.gamma), (true, Self.delta)] {
+                for j in 1..<last where isEven(j) == even {
+                    extended[j] += factor * (extended[j - 1] + extended[j + 1])
+                }
+            }
+            for j in 0...last { extended[j] *= isEven(j) ? 1 / Self.k : Self.k }
+        }
+        for k in 0..<count { signal[k] = extended[Self.margin + k] }
     }
 }
 
