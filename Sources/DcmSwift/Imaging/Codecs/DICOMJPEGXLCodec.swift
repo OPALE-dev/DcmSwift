@@ -1,11 +1,13 @@
 import Foundation
 import CJPEGXL
 
-/// JPEG XL (ISO/IEC 18181-1) decoding through the vendored libjxl 0.12.0.
+/// JPEG XL (ISO/IEC 18181-1) through the vendored libjxl 0.12.0.
 ///
 /// DICOM defines lossless, reversible JPEG recompression, and general JPEG XL
-/// Transfer Syntaxes. All three yield native interleaved pixels here; JPEG
-/// reconstruction metadata is deliberately not exposed by this pixel codec.
+/// Transfer Syntaxes. All three decode to native interleaved pixels;
+/// `reconstructJPEG` also recovers the original JPEG bitstream of a JPEG
+/// recompression frame. `encode` and `recompressJPEG` write the three
+/// syntaxes.
 public struct DICOMJPEGXLCodec: DICOMPixelDataDecoder {
     public static let lossless = "1.2.840.10008.1.2.4.110"
     public static let jpegRecompression = "1.2.840.10008.1.2.4.111"
@@ -126,6 +128,66 @@ public struct DICOMJPEGXLCodec: DICOMPixelDataDecoder {
                 case JXL_DEC_ERROR:
                     throw DICOMCodecError.corruptedData("libjxl failed to decode the frame")
 
+                default:
+                    continue
+                }
+            }
+        }
+    }
+
+    /// The original JPEG bitstream of a JPEG XL JPEG Recompression frame
+    /// (1.2.840.10008.1.2.4.111), bit for bit, from its reconstruction data.
+    public func reconstructJPEG(_ encodedFrame: Data) throws -> Data {
+        guard let decoder = JxlDecoderCreate(nil) else {
+            throw DICOMCodecError.unsupportedImage("libjxl cannot allocate a decoder")
+        }
+        defer { JxlDecoderDestroy(decoder) }
+        guard JxlDecoderSubscribeEvents(
+            decoder, Int32(JXL_DEC_JPEG_RECONSTRUCTION.rawValue | JXL_DEC_FULL_IMAGE.rawValue)) == JXL_DEC_SUCCESS else {
+            throw DICOMCodecError.unsupportedImage("libjxl cannot configure the decoder")
+        }
+        var capacity = max(encodedFrame.count * 2, 1 << 16)
+        var buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: capacity)
+        defer { buffer.deallocate() }
+        var reconstructing = false
+
+        return try encodedFrame.withUnsafeBytes { input in
+            guard let address = input.bindMemory(to: UInt8.self).baseAddress,
+                  JxlDecoderSetInput(decoder, address, input.count) == JXL_DEC_SUCCESS else {
+                throw DICOMCodecError.corruptedData("libjxl rejected the input buffer")
+            }
+            JxlDecoderCloseInput(decoder)
+            while true {
+                switch JxlDecoderProcessInput(decoder) {
+                case JXL_DEC_JPEG_RECONSTRUCTION:
+                    reconstructing = true
+                    guard JxlDecoderSetJPEGBuffer(decoder, buffer, capacity) == JXL_DEC_SUCCESS else {
+                        throw DICOMCodecError.corruptedData("libjxl rejected the JPEG buffer")
+                    }
+                case JXL_DEC_JPEG_NEED_MORE_OUTPUT:
+                    let used = capacity - JxlDecoderReleaseJPEGBuffer(decoder)
+                    let larger = UnsafeMutablePointer<UInt8>.allocate(capacity: capacity * 2)
+                    larger.update(from: buffer, count: used)
+                    buffer.deallocate()
+                    buffer = larger
+                    capacity *= 2
+                    guard JxlDecoderSetJPEGBuffer(decoder, buffer + used, capacity - used) == JXL_DEC_SUCCESS else {
+                        throw DICOMCodecError.corruptedData("libjxl rejected the JPEG buffer")
+                    }
+                case JXL_DEC_FULL_IMAGE:
+                    guard reconstructing else {
+                        throw DICOMCodecError.unsupportedImage("JPEG XL frame without JPEG reconstruction data")
+                    }
+                    let used = capacity - JxlDecoderReleaseJPEGBuffer(decoder)
+                    return Data(bytes: buffer, count: used)
+                case JXL_DEC_SUCCESS:
+                    throw DICOMCodecError.unsupportedImage("JPEG XL frame without JPEG reconstruction data")
+                case JXL_DEC_NEED_IMAGE_OUT_BUFFER:
+                    throw DICOMCodecError.unsupportedImage("JPEG XL frame without JPEG reconstruction data")
+                case JXL_DEC_NEED_MORE_INPUT:
+                    throw DICOMCodecError.corruptedData("truncated JPEG XL frame")
+                case JXL_DEC_ERROR:
+                    throw DICOMCodecError.corruptedData("libjxl failed to reconstruct the JPEG bitstream")
                 default:
                     continue
                 }

@@ -68,20 +68,35 @@ let package = Package(
             linkerSettings: [
                 .linkedLibrary("m", .when(platforms: [.linux]))
             ]),
-        // libjxl 0.12.0 decoder and its pinned Highway runtime, vendored as
-        // source (see Sources/CJPEGXL/README.DcmSwift.md).
+        // libjxl 0.12.0 decoder and encoder with the Highway runtime, Brotli
+        // encoder, and skcms they pin, vendored as source (see
+        // Sources/CJPEGXL/README.DcmSwift.md).
         .target(
             name: "CJPEGXL",
-            exclude: ["LICENSE", "README.DcmSwift.md"],
+            exclude: [
+                "LICENSE", "README.DcmSwift.md", "third_party/brotli/LICENSE", "third_party/highway/LICENSE",
+                "third_party/skcms/LICENSE"
+            ],
+            cSettings: [
+                .headerSearchPath("third_party/brotli/c/include")
+            ],
             cxxSettings: [
                 .define("JXL_INTERNAL_LIBRARY_BUILD"),
                 .define("JXL_STATIC_DEFINE"),
-                .define("JPEGXL_ENABLE_TRANSCODE_JPEG", to: "0"),
+                // JPEG recompression (.111) in both directions.
+                .define("JPEGXL_ENABLE_TRANSCODE_JPEG", to: "1"),
                 .define("JPEGXL_ENABLE_BOXES", to: "0"),
+                // skcms as the color management system, without the AVX2 and
+                // AVX-512 paths, which need per-file compiler flags.
+                .define("JPEGXL_ENABLE_SKCMS", to: "1"),
+                .define("SKCMS_DISABLE_HSW"),
+                .define("SKCMS_DISABLE_SKX"),
                 .headerSearchPath("."),
                 .headerSearchPath("lib"),
                 .headerSearchPath("lib/include"),
-                .headerSearchPath("third_party/highway")
+                .headerSearchPath("third_party/highway"),
+                .headerSearchPath("third_party/brotli/c/include"),
+                .headerSearchPath("third_party/skcms")
             ],
             linkerSettings: [
                 .linkedLibrary("m", .when(platforms: [.linux])),
