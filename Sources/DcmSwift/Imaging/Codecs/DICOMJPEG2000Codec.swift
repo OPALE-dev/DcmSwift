@@ -1,14 +1,16 @@
 import Foundation
 import COpenJPEG
+import COpenJPH
 
 /// JPEG 2000 (ISO/IEC 15444-1) and High-Throughput JPEG 2000 (ISO/IEC
-/// 15444-15) Image Compression through the vendored OpenJPEG 2.5.4.
+/// 15444-15) Image Compression through the vendored OpenJPEG 2.5.4 and
+/// OpenJPH 0.32.0.
 ///
-/// Decoding covers the Part 1 syntaxes .90 and .91 and the HTJ2K syntaxes
-/// .201, .202, and .203, from raw codestreams or JP2 files. When the
+/// Decoding (OpenJPEG) covers the Part 1 syntaxes .90 and .91 and the HTJ2K
+/// syntaxes .201, .202, and .203, from raw codestreams or JP2 files. When the
 /// codestream applies the multiple-component transform (YBR_RCT or YBR_ICT),
-/// OpenJPEG inverts it and frames are returned as RGB. Encoding writes Part 1
-/// codestreams, reversible or irreversible.
+/// OpenJPEG inverts it and frames are returned as RGB. `encode` writes Part 1
+/// codestreams (OpenJPEG) and `encodeHTJ2K` HTJ2K codestreams (OpenJPH).
 public struct DICOMJPEG2000Codec: DICOMPixelDataDecoder {
     public static let lossless = "1.2.840.10008.1.2.4.90"
     public static let lossy = "1.2.840.10008.1.2.4.91"
@@ -29,6 +31,28 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataDecoder {
         /// Irreversible 9/7 wavelet targeting a peak signal-to-noise ratio in
         /// decibels: 1.2.840.10008.1.2.4.91.
         case peakSignalToNoiseRatio(Double)
+    }
+
+    /// The HTJ2K Transfer Syntax to encode for (PS3.5 A.4.4).
+    public enum HTJ2KMode: Sendable, Equatable {
+        /// Reversible: 1.2.840.10008.1.2.4.201.
+        case lossless
+        /// Reversible, RPCL progression, TLM markers, and enough
+        /// decompositions for a base resolution of at most 64:
+        /// 1.2.840.10008.1.2.4.202.
+        case losslessRPCL
+        /// Irreversible with the given base quantization step (smaller is
+        /// better, 0.005 is visually lossless for most images):
+        /// 1.2.840.10008.1.2.4.203.
+        case irreversible(quantizationStep: Float)
+
+        public var transferSyntaxUID: String {
+            switch self {
+            case .lossless: return DICOMJPEG2000Codec.htj2kLossless
+            case .losslessRPCL: return DICOMJPEG2000Codec.htj2kLosslessRPCL
+            case .irreversible: return DICOMJPEG2000Codec.htj2k
+            }
+        }
     }
 
     public init() {}
@@ -266,6 +290,87 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataDecoder {
             ? (quality == .lossless ? .ybrRCT : .ybrICT)
             : description.photometricInterpretation
         return (Data(output), photometric)
+    }
+}
+
+extension DICOMJPEG2000Codec {
+    /// Encodes one native little endian frame (as described) to an HTJ2K
+    /// codestream with OpenJPH. Three-component frames use the
+    /// multiple-component transform; the returned photometric interpretation
+    /// is then YBR_RCT (reversible) or YBR_ICT (irreversible).
+    public func encodeHTJ2K(
+        _ frame: Data, description: DICOMPixelDescription, mode: HTJ2KMode = .lossless,
+        multipleComponentTransform: Bool = true
+    ) throws -> (data: Data, photometric: DICOMPhotometricInterpretation) {
+        let precision = description.bitsStored
+        let samples = description.samplesPerPixel
+        guard description.sampleFormat == .integer, (1...16).contains(precision),
+              description.bitsAllocated == 8 || description.bitsAllocated == 16,
+              samples == 1 || samples == 3,
+              description.photometricInterpretation != .ybrFull422 else {
+            throw DICOMCodecError.unsupportedImage(
+                "HTJ2K encoding needs 1 to 16-bit integer samples in 8 or 16 bits, one or three per pixel")
+        }
+        let width = description.columns, height = description.rows
+        let transform = samples == 3 && multipleComponentTransform
+        let reversible: Bool
+        var step: Float = 0
+        switch mode {
+        case .lossless, .losslessRPCL:
+            reversible = true
+        case .irreversible(let quantizationStep):
+            guard quantizationStep > 0, quantizationStep.isFinite else {
+                throw DICOMCodecError.unsupportedImage("quantization step \(quantizationStep)")
+            }
+            reversible = false
+            step = quantizationStep
+        }
+        // Five decompositions, or more until the base resolution is at most
+        // 64 samples wide and high (required for .202).
+        var decompositions = 5
+        while decompositions < 32, (max(width, height) + (1 << decompositions) - 1) >> decompositions > 64 {
+            decompositions += 1
+        }
+
+        let stored = try DICOMNativePixelData(description: description.decodedFrame(), decodedFrames: frame)
+            .storedValues(frame: 0)
+        let mask = (Int64(1) << precision) - 1
+        let signBit = Int64(1) << (precision - 1)
+        let pixels = width * height
+        var planes = [Int32](repeating: 0, count: pixels * samples)
+        for component in 0..<samples {
+            for pixel in 0..<pixels {
+                var value = stored[pixel * samples + component] & mask
+                if description.isSigned, value & signBit != 0 { value -= mask + 1 }
+                planes[component * pixels + pixel] = Int32(value)
+            }
+        }
+
+        var output: UnsafeMutablePointer<UInt8>?
+        var size = 0
+        var message = [CChar](repeating: 0, count: 512)
+        let status = "RPCL".withCString { order -> Int32 in
+            var parameters = copenjph_parameters(
+                width: UInt32(width), height: UInt32(height), components: UInt32(samples),
+                bit_depth: UInt32(precision), is_signed: description.isSigned ? 1 : 0,
+                reversible: reversible ? 1 : 0, quantization_step: step,
+                color_transform: transform ? 1 : 0, decompositions: UInt32(decompositions),
+                progression_order: order, tlm_markers: mode == .losslessRPCL ? 1 : 0)
+            return planes.withUnsafeBufferPointer { buffer in
+                copenjph_encode(buffer.baseAddress, &parameters, &output, &size, &message, message.count)
+            }
+        }
+        guard status == 0, let output else {
+            throw DICOMCodecError.unsupportedImage(String(cString: message))
+        }
+        defer { copenjph_free(output) }
+        var bytes = [UInt8](UnsafeBufferPointer(start: output, count: size))
+        // Fragments have an even length (PS3.5 A.4).
+        if bytes.count % 2 == 1 { bytes.append(0) }
+        let photometric: DICOMPhotometricInterpretation = transform
+            ? (reversible ? .ybrRCT : .ybrICT)
+            : description.photometricInterpretation
+        return (Data(bytes), photometric)
     }
 }
 

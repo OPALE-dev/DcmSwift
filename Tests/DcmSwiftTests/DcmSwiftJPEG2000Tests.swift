@@ -127,13 +127,73 @@ final class DcmSwiftJPEG2000Tests: XCTestCase {
         XCTAssertLessThan(quality.count, frame.count)
     }
 
+    func testHTJ2KEncoderRoundTripsAndFollowsTheTransferSyntaxRules() throws {
+        let codec = DICOMJPEG2000Codec()
+        for (rows, columns, samples, bits, signed, mode) in [
+            (29, 37, 1, 8, false, DICOMJPEG2000Codec.HTJ2KMode.lossless), (65, 33, 1, 16, true, .lossless),
+            (17, 31, 1, 13, true, .lossless), (1, 1, 1, 8, false, .lossless), (30, 50, 3, 8, false, .lossless),
+            (140, 300, 1, 12, false, .losslessRPCL), (70, 130, 3, 8, false, .losslessRPCL),
+        ] {
+            let native = description(rows: rows, columns: columns, samples: samples, bits: bits, signed: signed,
+                                     encapsulated: false)
+            var frame = [UInt8]()
+            for index in 0..<(rows * columns * samples) {
+                let x = index / samples % columns, y = index / samples / columns
+                let value = (((x * 5 + y * 3 + index % samples * 20) << max(0, bits - 8)) + index % 7) & ((1 << bits) - 1)
+                frame.append(UInt8(value & 0xFF))
+                if bits > 8 { frame.append(UInt8(value >> 8)) }
+            }
+            let (data, photometric) = try codec.encodeHTJ2K(Data(frame), description: native, mode: mode)
+            XCTAssertEqual(photometric, samples == 3 ? .ybrRCT : .monochrome2)
+            let label = "\(columns)x\(rows)x\(samples), \(bits) bits, \(mode)"
+            let markers = mainHeaderMarkers([UInt8](data))
+            XCTAssertNotNil(markers[0x50], "CAP: \(label)")
+            let cod = try XCTUnwrap(markers[0x52], label)
+            XCTAssertEqual(cod[1], 2, "RPCL: \(label)")
+            if mode == .losslessRPCL {
+                XCTAssertNotNil(markers[0x55], "TLM: \(label)")
+                let levels = Int(cod[5])
+                XCTAssertLessThanOrEqual((max(rows, columns) + (1 << levels) - 1) >> levels, 64, label)
+            }
+            let decoded = try codec.decode(data, description: description(
+                rows: rows, columns: columns, samples: samples, bits: bits, signed: signed, photometric: photometric))
+            XCTAssertEqual(values(decoded.data, bits: bits, signed: signed),
+                           values(Data(frame), bits: bits, signed: signed), label)
+        }
+
+        let native = description(rows: 64, columns: 64, samples: 1, bits: 12, signed: false, encapsulated: false)
+        var frame = [UInt8]()
+        for index in 0..<(64 * 64) {
+            let value = (index % 64) * 40 + index / 64 * 20
+            frame += [UInt8(value & 0xFF), UInt8(value >> 8)]
+        }
+        let (data, _) = try codec.encodeHTJ2K(Data(frame), description: native, mode: .irreversible(quantizationStep: 0.005))
+        XCTAssertLessThan(data.count, frame.count / 2)
+        let decoded = try codec.decode(data, description: description(rows: 64, columns: 64, samples: 1, bits: 12, signed: false))
+        let error = zip(values(decoded.data, bits: 12, signed: false), values(Data(frame), bits: 12, signed: false))
+            .map { abs($0 - $1) }
+        XCTAssertLessThan(error.max() ?? 0, 64)
+        XCTAssertThrowsError(try codec.encodeHTJ2K(Data(frame), description: native, mode: .irreversible(quantizationStep: 0)))
+    }
+
+    /// The main header marker segments, by marker code, without their length.
+    private func mainHeaderMarkers(_ bytes: [UInt8]) -> [UInt8: [UInt8]] {
+        var markers: [UInt8: [UInt8]] = [:]
+        var position = 2
+        while position + 4 <= bytes.count, bytes[position] == 0xFF, bytes[position + 1] != 0x90 {
+            let length = Int(bytes[position + 2]) << 8 | Int(bytes[position + 3])
+            markers[bytes[position + 1]] = Array(bytes[(position + 4)..<min(bytes.count, position + 2 + length)])
+            position += 2 + length
+        }
+        return markers
+    }
+
     func testCapabilitiesAndRegistry() throws {
         for uid in [DICOMJPEG2000Codec.lossless, DICOMJPEG2000Codec.lossy, DICOMJPEG2000Codec.htj2kLossless,
                     DICOMJPEG2000Codec.htj2kLosslessRPCL, DICOMJPEG2000Codec.htj2k] {
             let capability = try XCTUnwrap(TransferSyntax(uid)).capability
             XCTAssertTrue(capability.canDecodePixelData, uid)
-            XCTAssertEqual(capability.canEncodePixelData,
-                           uid == DICOMJPEG2000Codec.lossless || uid == DICOMJPEG2000Codec.lossy, uid)
+            XCTAssertTrue(capability.canEncodePixelData, uid)
         }
         // Part 2 multi-component and JPIP syntaxes are preserved only.
         for uid in ["1.2.840.10008.1.2.4.92", "1.2.840.10008.1.2.4.93", "1.2.840.10008.1.2.4.94"] {
