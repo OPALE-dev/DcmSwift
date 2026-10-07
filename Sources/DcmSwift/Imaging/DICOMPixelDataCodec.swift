@@ -43,7 +43,7 @@ public enum DICOMCodecError: Error, Equatable, CustomStringConvertible {
 public enum DICOMCodecRegistry {
     private static let lock = NSLock()
     private static var registered: [any DICOMPixelDataDecoder] = []
-    private static let builtIn: [any DICOMPixelDataDecoder] = [DICOMRLECodec(), DICOMDeflatedFrameCodec()]
+    private static let builtIn: [any DICOMPixelDataDecoder] = [DICOMRLECodec(), DICOMDeflatedFrameCodec(), DICOMJPEGLosslessCodec()]
 
     public static func register(_ decoder: any DICOMPixelDataDecoder) {
         lock.lock()
