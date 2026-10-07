@@ -164,7 +164,7 @@ representations are built on a stable, lossless Data Set model.
   - [ ] JPEG XL encode;
   - [x] JPEG 2000 Part 2 multi-component transforms (.92, .93) decode, by
     component collection;
-  - [ ] JPEG 2000 Part 2 encode;
+  - [x] JPEG 2000 Part 2 encode (grayscale, wavelet across frames);
   - ~~MPEG, AVC, and HEVC~~ (out of scope).
 
 ### 1.4 Sequences, bulk data, and private data

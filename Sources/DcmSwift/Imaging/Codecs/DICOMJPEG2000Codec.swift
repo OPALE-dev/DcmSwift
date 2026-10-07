@@ -341,10 +341,40 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataCollectionDecoder {
         let width = description.columns, height = description.rows
         let transform = samples == 3 && multipleComponentTransform
 
+        let stored = try DICOMNativePixelData(description: description.decodedFrame(), decodedFrames: frame)
+            .storedValues(frame: 0)
+        let mask = (Int64(1) << precision) - 1
+        let signBit = Int64(1) << (precision - 1)
+        let planes = (0..<(samples * width * height)).map { index -> Int32 in
+            let component = index / (width * height), pixel = index % (width * height)
+            var value = stored[pixel * samples + component] & mask
+            if description.isSigned, value & signBit != 0 { value -= mask + 1 }
+            return Int32(value)
+        }
+        var output = try Self.openJPEGEncode(
+            planes, width: width, height: height,
+            components: Array(repeating: (precision, description.isSigned), count: samples),
+            quality: quality, multipleComponentTransform: transform)
+        // Fragments have an even length (PS3.5 A.4).
+        if output.count % 2 == 1 { output.append(0) }
+        let photometric: DICOMPhotometricInterpretation = transform
+            ? (quality == .lossless ? .ybrRCT : .ybrICT)
+            : description.photometricInterpretation
+        return (Data(output), photometric)
+    }
+}
+
+extension DICOMJPEG2000Codec {
+    /// Encodes component planes (one after the other, row by row) to a JPEG
+    /// 2000 codestream with OpenJPEG; the codestream is not padded.
+    static func openJPEGEncode(
+        _ planes: [Int32], width: Int, height: Int, components: [(precision: Int, isSigned: Bool)],
+        quality: Quality, multipleComponentTransform: Bool
+    ) throws -> [UInt8] {
         var parameters = opj_cparameters_t()
         opj_set_default_encoder_parameters(&parameters)
         parameters.tcp_numlayers = 1
-        parameters.tcp_mct = transform ? 1 : 0
+        parameters.tcp_mct = multipleComponentTransform ? 1 : 0
         var resolutions = 1
         while resolutions < 6, (1 << resolutions) <= min(width, height) { resolutions += 1 }
         parameters.numresolution = Int32(resolutions)
@@ -365,23 +395,19 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataCollectionDecoder {
             parameters.tcp_distoratio.0 = Float(psnr)
         }
 
-        let stored = try DICOMNativePixelData(description: description.decodedFrame(), decodedFrames: frame)
-            .storedValues(frame: 0)
-        let mask = (Int64(1) << precision) - 1
-        let signBit = Int64(1) << (precision - 1)
-
-        var componentParameters = (0..<samples).map { _ -> opj_image_cmptparm_t in
-            var component = opj_image_cmptparm_t()
-            component.dx = 1
-            component.dy = 1
-            component.w = OPJ_UINT32(width)
-            component.h = OPJ_UINT32(height)
-            component.prec = OPJ_UINT32(precision)
-            component.sgnd = description.isSigned ? 1 : 0
-            return component
+        var componentParameters = components.map { component -> opj_image_cmptparm_t in
+            var parameters = opj_image_cmptparm_t()
+            parameters.dx = 1
+            parameters.dy = 1
+            parameters.w = OPJ_UINT32(width)
+            parameters.h = OPJ_UINT32(height)
+            parameters.prec = OPJ_UINT32(component.precision)
+            parameters.sgnd = component.isSigned ? 1 : 0
+            return parameters
         }
         guard let image = opj_image_create(
-            OPJ_UINT32(samples), &componentParameters, samples == 3 ? OPJ_CLRSPC_SRGB : OPJ_CLRSPC_GRAY) else {
+            OPJ_UINT32(components.count), &componentParameters,
+            components.count == 3 ? OPJ_CLRSPC_SRGB : OPJ_CLRSPC_GRAY) else {
             throw DICOMCodecError.unsupportedImage("OpenJPEG cannot allocate the image")
         }
         defer { opj_image_destroy(image) }
@@ -389,12 +415,10 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataCollectionDecoder {
         image.pointee.y0 = 0
         image.pointee.x1 = OPJ_UINT32(width)
         image.pointee.y1 = OPJ_UINT32(height)
-        for component in 0..<samples {
-            let data = image.pointee.comps[component].data!
-            for pixel in 0..<(width * height) {
-                var value = stored[pixel * samples + component] & mask
-                if description.isSigned, value & signBit != 0 { value -= mask + 1 }
-                data[pixel] = OPJ_INT32(value)
+        planes.withUnsafeBufferPointer { source in
+            for index in components.indices {
+                image.pointee.comps[index].data!.update(
+                    from: source.baseAddress! + index * width * height, count: width * height)
             }
         }
 
@@ -409,6 +433,9 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataCollectionDecoder {
         guard opj_setup_encoder(codec, &parameters, image) != 0 else {
             throw messages.error("cannot set up the encoder")
         }
+        if opj_has_thread_support() != 0 {
+            _ = opj_codec_set_threads(codec, Int32(min(ProcessInfo.processInfo.activeProcessorCount, 16)))
+        }
         guard let stream = destination.makeOutputStream() else {
             throw DICOMCodecError.unsupportedImage("OpenJPEG cannot create an output stream")
         }
@@ -417,13 +444,7 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataCollectionDecoder {
               opj_end_compress(codec, stream) != 0 else {
             throw messages.error("cannot encode the frame")
         }
-        var output = destination.bytes
-        // Fragments have an even length (PS3.5 A.4).
-        if output.count % 2 == 1 { output.append(0) }
-        let photometric: DICOMPhotometricInterpretation = transform
-            ? (quality == .lossless ? .ybrRCT : .ybrICT)
-            : description.photometricInterpretation
-        return (Data(output), photometric)
+        return destination.bytes
     }
 }
 

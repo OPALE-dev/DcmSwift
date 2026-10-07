@@ -99,8 +99,8 @@ updated this file. The previous Codex → Claude handoff is archived in
   binaries, `install_name_tool -change /usr/local/lib/libkdu_v84R.dylib
   @executable_path/libkdu_v84R.dylib`, `codesign -s - -f`. `kdu_compress`
   segfaults on DEP transforms and refuses differing Sprecision/Mprecision on
-  directly associated irreversible components; `kdu_expand` reads neither
-  split MCC series nor 16-bit indices. Dependency/multi-stage/tile-override
+  directly associated irreversible components; `kdu_expand` does not read
+  split MCC series (16-bit indices are fine). Dependency/multi-stage/tile-override
   fixtures were built by injecting segments into Kakadu Part 1 codestreams
   (generator scripts were scratch only; the approach is described in the
   test file header).
@@ -111,8 +111,16 @@ updated this file. The previous Codex → Claude handoff is archived in
 - Qualification: `swift build -c release`, `swift test --parallel` (213
   tests), iOS Simulator 26.2 iPhone 17 Pro (210 tests, 4 expected skips, 0
   failures), plus a scratch header fuzz (~6000 corrupted main headers, no
-  crash). Not yet run on GitLab CI.
-- Not done: Part 2 encode; no external DICOM .92/.93 corpus known.
+  crash). Encoder commit: 217 macOS tests, iOS 214 (4 skipped). Not yet run
+  on GitLab CI.
+- Encoder (second commit): `encodePartTwo` forward-transforms grayscale
+  frames per collection with the J.3.2.2 wavelet (5-3 lossless, 9-7 lossy;
+  `WaveletBuffers.forward`), OpenJPEG encodes the signed, wider codestream
+  components as Part 1, then `addMultipleComponentTransform` sets Rsiz/COD
+  and inserts CBD/MCT/MCC/MCO. Kakadu decoded every lossless output to the
+  source (9 to 300 frames, 64x512x512 in 0.6 s, 18.49 MB vs Kakadu 18.47 MB)
+  and lossy ones within 1 of ours. OpenJPEG encoding also runs threaded.
+- No external DICOM .92/.93 corpus known.
 
 ### B. JPEG XL (.110 lossless, .111 JPEG recompression, .112 lossy) — done
 - `Sources/CJPEGXL` vendors the decoder sources from libjxl 0.12.0 commit
@@ -128,8 +136,10 @@ updated this file. The previous Codex → Claude handoff is archived in
 Docs as several short tables with HTML lists in cells (memory: feedback-docs-lists); never `rm` with wildcards; commit message style with trailer; before each commit run release build, `swift test --parallel`, iOS xcodebuild with a fresh derivedDataPath.
 
 ## Next
-- JPEG 2000 Part 2 encode (optional: e.g. reversible 5-3 across frames via
-  OpenJPEG components + our forward transform, Kakadu as oracle);
+- JPEG XL encode (user request 2026-10-07, separate commit);
+- then the network (user request 2026-10-07): rework the architecture on
+  SwiftNIO, DIMSE, and the services, with a TLS layer planned; server code
+  must be robust, leak-free, and resilient to errors;
 - then 6: fuzzing, DCMTK/pydicom cross-checks, PS3.18 JSON / PS3.19 XML, network rewrite (NIOAsyncChannel, swift-nio-ssl, transport-services);
 - then 7: rendering and presentation (plan Phase 3: PS3.4 Annex N, GSPS/CSPS, overlays, shutters, padding, Presentation LUT + GSDF, ICC, high bit depth, RWVM).
 

@@ -70,7 +70,9 @@ conformance without that evidence.
     corpus is currently qualified.
 - JPEG 2000 limits:
   - JPIP (.94, .95) is preserved but not resolved;
-  - Part 2 (.92, .93) is decoded but not encoded;
+  - the Part 2 encoder handles grayscale frames only and writes one wavelet
+    collection per codestream (no array-based transforms); its PSNR target
+    applies to the codestream components and is approximate;
   - OpenJPEG 2.5.4 cannot decode Part 2 multiple component transformations,
     so it decodes a rewritten codestream (Part 2 markers turned into COM,
     codestream components declared signed and wider) and the Annex J inverse
@@ -82,9 +84,9 @@ conformance without that evidence.
     from codestreams starting Fragments, and frames cannot be read encoded;
   - Part 2 qualification uses the Kakadu 8.4.1 demonstration decoder, which
     is not redistributable and not run in CI; its `kdu_compress` crashes on
-    dependency transforms and its decoder reads neither MCC series split
-    over several segments nor 16-bit component indices, so those fixtures
-    carry hand-built segments and one is checked against its source; no
+    dependency transforms and its decoder does not read MCC series split
+    over several segments, so those fixtures carry hand-built segments and
+    one is checked against its source; no
     external DICOM .92/.93 corpus is known;
   - subsampled components are rejected;
   - the pydicom JPEG 2000 and HTJ2K files (20 decodable files, including
