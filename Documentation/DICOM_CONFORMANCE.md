@@ -55,7 +55,9 @@ length Directory Record Sequence Items, and offsets that reference Item Tags.
 It rejects dangling, cyclic, duplicate, or orphan graph references, invalid
 PS3.3 Table F.4-1 record relationships, and Referenced File IDs outside the
 PS3.10 one-to-eight component syntax. PRIVATE records require their defining
-UID and retired record types remain observable. Explicit
+UID and retired record types remain observable. A public read-only tree view
+reconstructs reachable records from the encoded offsets and returns no partial
+tree for malformed or orphaned graphs. Explicit
 file-set integrity validation checks unique contained targets and their SOP
 Class, SOP Instance, and Transfer Syntax identities. It does not yet claim
 complete conditional and nested macro qualification for every Directory Record

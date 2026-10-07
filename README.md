@@ -218,7 +218,10 @@ Explicit VR Little Endian byte layout, validates the hierarchy and required
 keys before writing, and rejects invalid PS3.10 Referenced File IDs.
 The reader rejects dangling record pointers and resolves referenced files
 relative to the DICOMDIR. A generic public record view exposes every current
-2026d F.4-1 type without discarding unknown or private attributes.
+2026d F.4-1 type without discarding unknown or private attributes. The
+`directoryRecordTree` view reconstructs the reachable typed hierarchy from the
+serialized sibling and lower-level offsets and refuses malformed or incomplete
+graphs.
 Unconditional top-level Type 1 and Type 2 keys are represented for every
 current F.5 record type, including the Content Identification Macro and the
 top-level Scope of Inventory Sequence. Common Type 1C rules validate PRIVATE record UIDs,

@@ -97,6 +97,20 @@ public struct DICOMDirectoryRecord {
     }
 }
 
+/// One reachable node in the parsed PS3.3 Basic Directory hierarchy.
+public struct DICOMDirectoryRecordTreeNode {
+    public let record:DICOMDirectoryRecord
+    public let children:[DICOMDirectoryRecordTreeNode]
+
+    public init(
+        record:DICOMDirectoryRecord,
+        children:[DICOMDirectoryRecordTreeNode] = []
+    ) {
+        self.record = record
+        self.children = children
+    }
+}
+
 enum DICOMDirectoryKeyType: Equatable {
     case type1
     case type2
@@ -321,6 +335,68 @@ extension DicomDir {
             return []
         }
         return sequence.items.map(DICOMDirectoryRecord.init(item:))
+    }
+
+    /// Reconstructs the reachable Directory Record hierarchy from the encoded
+    /// next-sibling and lower-level offsets. An empty result is returned for an
+    /// empty Directory or for an invalid/incomplete graph; use
+    /// `validateDirectoryStructure()` for diagnostics.
+    public var directoryRecordTree:[DICOMDirectoryRecordTreeNode] {
+        guard let dataSet = dataset,
+              let sequence = dataSet.element(forTagName: "DirectoryRecordSequence") as? DataSequence,
+              let first = dataSet
+                .element(forTagName: "OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity")?
+                .value as? UInt32 else {
+            return []
+        }
+        if sequence.items.isEmpty {
+            return []
+        }
+        guard first != 0 else { return [] }
+
+        var itemsByOffset:[Int:DataItem] = [:]
+        for item in sequence.items {
+            guard itemsByOffset[item.startOffset] == nil else { return [] }
+            itemsByOffset[item.startOffset] = item
+        }
+        var visited:Set<Int> = []
+
+        func buildSiblings(startingAt start:Int, depth:Int) -> [DICOMDirectoryRecordTreeNode]? {
+            guard depth <= 256 else { return nil }
+            var result:[DICOMDirectoryRecordTreeNode] = []
+            var current = start
+            while current != 0 {
+                guard !visited.contains(current), let item = itemsByOffset[current],
+                      let next = item.element(withName: "OffsetOfTheNextDirectoryRecord")?.value as? UInt32,
+                      let lower = item
+                        .element(withName: "OffsetOfReferencedLowerLevelDirectoryEntity")?
+                        .value as? UInt32 else {
+                    return nil
+                }
+                visited.insert(current)
+                let children:[DICOMDirectoryRecordTreeNode]
+                if lower == 0 {
+                    children = []
+                } else {
+                    guard let nested = buildSiblings(startingAt: Int(lower), depth: depth + 1) else {
+                        return nil
+                    }
+                    children = nested
+                }
+                result.append(DICOMDirectoryRecordTreeNode(
+                    record: DICOMDirectoryRecord(item: item),
+                    children: children
+                ))
+                current = Int(next)
+            }
+            return result
+        }
+
+        guard let roots = buildSiblings(startingAt: Int(first), depth: 0),
+              visited.count == sequence.items.count else {
+            return []
+        }
+        return roots
     }
 
     /// Validates the represented Type 1, Type 2 and common Type 1C keys from
