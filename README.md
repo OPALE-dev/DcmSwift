@@ -138,24 +138,80 @@ endianness, pixel access, Structured Reports, and radiotherapy objects.
 
 ## Current DICOM coverage
 
-| Area | Status |
-| --- | --- |
-| PS3.6 tag and UID registry | Generated from DICOM 2026d |
-| Implicit VR Little Endian | Structural read and write |
-| Explicit VR Little Endian | Structural read and write |
-| Explicit VR Big Endian | Structural read and write for interoperability; retired by DICOM |
-| Encapsulated Pixel Data | Frames located through the Extended or Basic Offset Table or the Fragment layout; RLE Lossless and Deflated Image Frame Compression decoded and encoded in Swift; JPEG Lossless Huffman Process 14 decoded and encoded and arithmetic Process 15 decoded; JPEG DCT decode covers 8/12-bit sequential or progressive Huffman and arithmetic streams with every chroma subsampling, including retired syntaxes .52-.56, and encode unsigned 8/12-bit monochrome or RGB frames with 4:4:4, 4:2:2, or 4:2:0 sampling and optimized Huffman tables; the IJG integer pipeline is bit-exact with libjpeg-turbo; retired hierarchical JPEG .59-.66 decoded within a stated tolerance of the ISO reference; other codecs are pluggable through `DICOMCodecRegistry`; JPEG-LS, JPEG 2000, HTJ2K, and JPEG XL not yet decoded |
-| Deflated Explicit VR Little Endian | Part 10 read/write with raw RFC 1951 streams and bounded inflation; not negotiated for DIMSE |
-| Native Pixel Data rendering | Portable grayscale pipeline (Modality LUT or rescale, VOI LUT or LINEAR/LINEAR_EXACT/SIGMOID window, MONOCHROME1), RGB, YBR_FULL, YBR_FULL_422, Palette Color (including segmented), 1 to 32 bits, float/double pixels, multi-frame and functional groups, Big Endian; PNG export on every platform |
-| Character sets | Every PS3.3 2026d Specific Character Set Defined Term: 13 single-byte repertoires, ISO 2022 Code Extensions (JIS X 0208/0212, KS X 1001, GB 2312, single-byte G1 sets), UTF-8, GB18030-2022, and GBK; read/write with nested Data Set inheritance/override, using bundled tables identical on every platform |
-| Unknown or invalid character set declarations | Rejected rather than decoded as UTF-8 |
-| DICOM JSON and Native DICOM Model XML | Existing convenience output is not yet PS3.18 conformant |
-| DICOMDIR | Legacy Basic hierarchy plus generic record-tree read/write; all current F.4-1 types have a lossless view; computed offsets, graph, selected F.5 keys, File-set IDs, and referenced Part 10 identities are validated |
-| PS3.12 media profiles | Not yet qualified; Basic DICOMDIR support is not a media-profile conformance claim |
-| DICOM Upper Layer/DIMSE | Experimental; C-ECHO is the most complete path |
-| C-STORE and C-FIND | Partial building blocks |
-| C-MOVE, C-GET, C-CANCEL and DIMSE-N | Not implemented or not qualified |
-| TLS, audit and DICOM security profiles | Not implemented |
+### Data Sets and files
+
+- PS3.6 tag and UID registry generated from DICOM 2026d.
+- Structural read and write of:
+  - Implicit VR Little Endian;
+  - Explicit VR Little Endian;
+  - Explicit VR Big Endian (retired by DICOM, kept for interoperability);
+  - Deflated Explicit VR Little Endian (Part 10 only, raw RFC 1951 streams,
+    bounded inflation; not negotiated for DIMSE).
+- Character sets: every PS3.3 2026d Specific Character Set Defined Term, read
+  and written with nested Data Set inheritance and override:
+  - 13 single-byte repertoires;
+  - ISO 2022 Code Extensions (JIS X 0208/0212, KS X 1001, GB 2312, single-byte
+    G1 sets);
+  - UTF-8, GB18030-2022, and GBK.
+
+  Bundled tables give identical results on every platform. Unknown or invalid
+  declarations are rejected rather than decoded as UTF-8.
+
+### Pixel Data
+
+- Encapsulated frames are located through the Extended or Basic Offset Table,
+  or from the Fragment layout.
+- Built-in codecs, all in Swift:
+
+  | Transfer Syntax | Decode | Encode |
+  | --- | --- | --- |
+  | RLE Lossless | yes | yes |
+  | Deflated Image Frame Compression | yes | yes |
+  | JPEG Baseline and Extended (.50, .51) | yes | 8/12-bit monochrome or RGB |
+  | JPEG retired DCT syntaxes (.52 to .56) | yes | no |
+  | JPEG Lossless (.57, .70) | yes | yes |
+  | JPEG Lossless, arithmetic (.58, retired) | yes | no |
+  | JPEG hierarchical (.59 to .66, retired) | yes | no |
+  | JPEG-LS Lossless and Near-Lossless (.80, .81) | yes | yes |
+
+  - JPEG DCT decoding reproduces the IJG integer pipeline bit for bit, as
+    libjpeg-turbo does, for sequential and progressive, Huffman and arithmetic,
+    8 and 12-bit streams with any chroma subsampling.
+  - JPEG encoding supports 4:4:4, 4:2:2, and 4:2:0 sampling and optimized
+    Huffman tables.
+  - Hierarchical JPEG matches the ISO reference implementation within a stated
+    tolerance.
+  - JPEG-LS passes the T.87 conformance suite, and its encoder output is
+    identical, byte for byte, to CharLS.
+- Other codecs plug in through `DICOMCodecRegistry`. JPEG 2000, HTJ2K, and
+  JPEG XL are not decoded yet.
+- Native Pixel Data renders portably:
+  - grayscale pipeline: Modality LUT or rescale, VOI LUT or
+    LINEAR/LINEAR_EXACT/SIGMOID window, MONOCHROME1;
+  - RGB, YBR_FULL, YBR_FULL_422, and Palette Color (including segmented);
+  - 1 to 32 bits, float and double pixels, Big Endian;
+  - multi-frame images and functional groups;
+  - PNG export on every platform.
+
+### Media
+
+- DICOMDIR:
+  - legacy Basic hierarchy;
+  - generic record-tree read and write, with a lossless view of every current
+    F.4-1 type;
+  - validation of computed offsets, the record graph, selected F.5 keys,
+    File-set IDs, and referenced Part 10 identities.
+- PS3.12 media profiles are not yet qualified. Basic DICOMDIR support is not a
+  media-profile conformance claim.
+- DICOM JSON and Native DICOM Model XML: the existing convenience output is not
+  yet PS3.18 conformant.
+
+### Networking and security
+
+- DICOM Upper Layer and DIMSE are experimental. C-ECHO is the most complete
+  path; C-STORE and C-FIND are partial building blocks.
+- C-MOVE, C-GET, C-CANCEL, and DIMSE-N are not implemented or not qualified.
+- TLS, audit, and the DICOM security profiles are not implemented.
 
 See the [DcmSwift 2.0 implementation plan](Documentation/DICOM_2_0_IMPLEMENTATION_PLAN.md)
 the [working Conformance Statement](Documentation/DICOM_CONFORMANCE.md), and

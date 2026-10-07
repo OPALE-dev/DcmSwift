@@ -17,6 +17,13 @@ RGB stream from the same encoder (-p -a -c, with a local fix for its missing
 quantization table in predictive mode); jpeg-sof11-rgb.ref holds the original,
 losslessly coded samples.
 
+jpegls-*.jls are JPEG-LS streams listed in jpegls-cases.json. The "charls"
+cases were encoded by CharLS 2.4 (with encoding options none) from the
+matching .raw samples; "charls-hp" cases add its HP color transforms; the
+"dcmswift" cases, which use restart intervals, were encoded by DcmSwift and
+their .raw files hold CharLS's decoding. jpegls-conformance-* come from the
+ITU-T T.87 Annex E conformance suite (t8nde0/t8nde3 and their source image).
+
 Large DICOM, DICOMDIR, SR, and RT corpora are not SwiftPM resources. They are an
 optional interoperability qualification input selected with the
 DCMSWIFT_INTEROP_CORPUS environment variable.

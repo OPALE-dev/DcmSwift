@@ -71,6 +71,8 @@ Current progress in that order:
 - retired non-hierarchical JPEG arithmetic syntaxes .52, .54, .56, and .58
   decode through the T.81 QM state machine, including sequential/progressive
   DCT and predictive lossless processes;
+- JPEG-LS Lossless and Near-Lossless (.80, .81) decode and encode in Swift,
+  pass the T.87 conformance suite, and encode byte for byte like CharLS;
 - retired hierarchical JPEG syntaxes .59 to .66 decode per T.81 Annex J
   (DHP/EXP, differential DCT and lossless frames, bilinear expansion), within
   a stated tolerance of the ISO reference implementation;

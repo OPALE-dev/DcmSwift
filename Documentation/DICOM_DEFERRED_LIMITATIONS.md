@@ -46,11 +46,21 @@ conformance without that evidence.
   palettes. Rendered output is 8 bits per channel; a high bit depth display
   path is not offered. YBR_PARTIAL_420, YBR_ICT, and YBR_RCT are only defined
   for encapsulated data and wait for the codecs.
-- Implement JPEG-LS in Swift, and JPEG 2000, HTJ2K, and JPEG XL through
-  vendored reference implementations first, with reliable, high-performance
-  Swift implementations as a later goal. RLE Lossless, Deflated Image Frame
-  Compression, JPEG Lossless, and JPEG Baseline/Extended decoding and encoding
-  are implemented. MPEG, AVC, and HEVC are outside the planned scope.
+- Implement JPEG 2000, HTJ2K, and JPEG XL through vendored reference
+  implementations first, with reliable, high-performance Swift implementations
+  as a later goal. RLE Lossless, Deflated Image Frame Compression, JPEG
+  Lossless, JPEG Baseline/Extended, and JPEG-LS decoding and encoding are
+  implemented in Swift. MPEG, AVC, and HEVC are outside the planned scope.
+- JPEG-LS limits:
+  - mapping tables (palettized JPEG-LS, LSE types 2 and 3) and oversize
+    dimensions (LSE type 4) are rejected;
+  - DICOM decoding rejects subsampled components, which the decoder itself
+    supports for line interleaving;
+  - the encoder uses default coding parameters and equal sampling;
+  - the HP color transforms are decoded as CharLS does (lossless, 8 or 16-bit,
+    interleaved); DICOM does not allow them, but old files may carry them;
+  - decoding takes about 1.7 times as long as CharLS in release builds; SIMD
+    and table-driven Golomb decoding remain.
 - Retired JPEG Transfer Syntaxes must stay readable. The progressive Huffman
   syntaxes (.53, .55), the non-hierarchical arithmetic syntaxes
   (.52, .54, .56, .58), and the hierarchical syntaxes (.59 to .66) decode.
