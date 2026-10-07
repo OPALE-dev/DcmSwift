@@ -141,6 +141,87 @@ final class DcmSwiftJPEGLosslessTests: XCTestCase {
         }
     }
 
+    // MARK: Encoder
+
+    func testEncoderRoundTripsEveryPredictorAndLayout() throws {
+        // Streams from this encoder, including restart intervals and point
+        // transforms, were verified locally to decode identically with
+        // libjpeg-turbo 3.2.0.
+        var state: UInt64 = 7
+        func random() -> Int {
+            state = state &* 6364136223846793005 &+ 1442695040888963407
+            return Int(state >> 33)
+        }
+        let codec = DICOMJPEGLosslessCodec()
+        for (bits, samples, signed) in [(8, 1, false), (12, 1, false), (16, 1, false), (16, 1, true), (8, 3, false)] {
+            let layout = self.layout(rows: 9, columns: 7, samples: samples, bits: bits, signed: signed)
+            let cell = bits > 8 ? 2 : 1
+            var raw: [UInt8] = []
+            for index in 0..<(9 * 7 * samples) {
+                let value = (index % 13 == 0 ? random() : index * 29 + random() % 7) & ((1 << bits) - 1)
+                raw.append(UInt8(value & 0xFF))
+                if cell == 2 { raw.append(UInt8(value >> 8)) }
+            }
+            for predictor in 1...7 {
+                for restartLines in [0, 2] {
+                    let stream = try codec.encode(Data(raw), description: layout, predictor: predictor,
+                                                  restartLines: restartLines)
+                    XCTAssertEqual(stream.count % 2, 0)
+                    let decoded = try codec.decode(stream, description: layout)
+                    XCTAssertEqual([UInt8](decoded.data), raw, "\(bits)-bit \(samples) predictor \(predictor)")
+                }
+            }
+        }
+    }
+
+    func testPointTransformDiscardsOnlyTheLowBits() throws {
+        let layout = self.layout(rows: 2, columns: 4, samples: 1, bits: 12, signed: false)
+        let values = [4095, 0, 1234, 3, 2048, 2047, 17, 4000]
+        let raw = Data(values.flatMap { [UInt8($0 & 0xFF), UInt8($0 >> 8)] })
+        let codec = DICOMJPEGLosslessCodec()
+        let stream = try codec.encode(raw, description: layout, predictor: 4, pointTransform: 3)
+        let decoded = try codec.decode(stream, description: layout)
+        let stored = try DICOMNativePixelData(description: decoded.description, decodedFrames: decoded.data)
+            .storedValues(frame: 0)
+        XCTAssertEqual(stored, values.map { Int64(($0 >> 3) << 3) })
+    }
+
+    func testOptimizedHuffmanCodesNeverExceedSixteenBits() throws {
+        // Fibonacci frequencies produce a maximally deep Huffman tree.
+        var frequencies = [Int](repeating: 0, count: 256)
+        var (a, b) = (1, 1)
+        for symbol in 0..<17 {
+            frequencies[symbol] = a
+            (a, b) = (b, a + b)
+        }
+        let encoder = JPEGHuffmanEncoder(frequencies: frequencies)
+        XCTAssertEqual(encoder.values.count, 17)
+        XCTAssertEqual(encoder.counts.count, 16)
+        // Kraft sum below 2^16: every code fits and the all-ones code is free.
+        let kraft = encoder.counts.enumerated().reduce(0) { $0 + Int($1.element) << (15 - $1.offset) }
+        XCTAssertLessThan(kraft, 1 << 16)
+        XCTAssertNoThrow(try JPEGHuffmanTable(counts: encoder.counts, values: encoder.values))
+    }
+
+    func testEncoderRejectsUnsupportedLayouts() {
+        let codec = DICOMJPEGLosslessCodec()
+        let wide = DICOMPixelDescription(
+            rows: 1, columns: 1, samplesPerPixel: 1, photometricInterpretation: .monochrome2,
+            bitsAllocated: 32, bitsStored: 32, highBit: 31, isSigned: false, planarConfiguration: 0, numberOfFrames: 1)
+        XCTAssertThrowsError(try codec.encode(Data(count: 4), description: wide))
+        let layout = self.layout(rows: 1, columns: 1, samples: 1, bits: 8, signed: false)
+        XCTAssertThrowsError(try codec.encode(Data([1]), description: layout, predictor: 8))
+        XCTAssertThrowsError(try codec.encode(Data([1]), description: layout, pointTransform: 8))
+    }
+
+    private func layout(rows: Int, columns: Int, samples: Int, bits: Int, signed: Bool) -> DICOMPixelDescription {
+        DICOMPixelDescription(
+            rows: rows, columns: columns, samplesPerPixel: samples,
+            photometricInterpretation: samples == 3 ? .rgb : .monochrome2,
+            bitsAllocated: bits > 8 ? 16 : 8, bitsStored: bits, highBit: bits - 1, isSigned: signed,
+            planarConfiguration: 0, numberOfFrames: 1)
+    }
+
     private func hexData(_ hex: String) -> Data {
         var bytes: [UInt8] = []
         var index = hex.startIndex

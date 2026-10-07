@@ -148,3 +148,139 @@ struct JPEGBitReader {
         self.marker = nil
     }
 }
+
+/// A Huffman code optimized for observed symbol frequencies (ITU-T T.81
+/// Annex K.2), with code lengths limited to 16 bits.
+struct JPEGHuffmanEncoder {
+    /// BITS: the number of codes of each length 1...16.
+    let counts: [UInt8]
+    /// HUFFVAL: symbols in order of increasing code length.
+    let values: [UInt8]
+    private var codes = [Int](repeating: 0, count: 256)
+    private var lengths = [Int](repeating: 0, count: 256)
+
+    init(frequencies input: [Int]) {
+        precondition(input.count == 256)
+        // A reserved symbol with frequency 1 keeps the all-ones code unused
+        // (Figure K.1).
+        var frequency = input + [1]
+        var codeSize = [Int](repeating: 0, count: 257)
+        var others = [Int](repeating: -1, count: 257)
+
+        while true {
+            // V1: the least frequent symbol; V2: the next least frequent.
+            var v1 = -1
+            var v2 = -1
+            for symbol in 0..<257 where frequency[symbol] > 0 {
+                if v1 < 0 || frequency[symbol] <= frequency[v1] {
+                    v2 = v1
+                    v1 = symbol
+                } else if v2 < 0 || frequency[symbol] <= frequency[v2] {
+                    v2 = symbol
+                }
+            }
+            guard v2 >= 0 else { break }
+            frequency[v1] += frequency[v2]
+            frequency[v2] = 0
+            codeSize[v1] += 1
+            var chain = v1
+            while others[chain] >= 0 {
+                chain = others[chain]
+                codeSize[chain] += 1
+            }
+            others[chain] = v2
+            codeSize[v2] += 1
+            chain = v2
+            while others[chain] >= 0 {
+                chain = others[chain]
+                codeSize[chain] += 1
+            }
+        }
+
+        // Count codes of each size (Figure K.2) and limit them to 16 bits
+        // (Figure K.3).
+        var bits = [Int](repeating: 0, count: 33)
+        for symbol in 0..<257 where codeSize[symbol] > 0 {
+            bits[codeSize[symbol]] += 1
+        }
+        var length = 32
+        while length > 16 {
+            while bits[length] > 0 {
+                var shorter = length - 2
+                while bits[shorter] == 0 { shorter -= 1 }
+                bits[length] -= 2
+                bits[length - 1] += 1
+                bits[shorter + 1] += 2
+                bits[shorter] -= 1
+            }
+            length -= 1
+        }
+        // Remove the reserved code from the longest length.
+        length = 16
+        while bits[length] == 0 { length -= 1 }
+        bits[length] -= 1
+
+        // Sort symbols by code size (Figure K.4), excluding the reserved one.
+        var sorted: [UInt8] = []
+        for size in 1...32 {
+            for symbol in 0..<256 where codeSize[symbol] == size {
+                sorted.append(UInt8(symbol))
+            }
+        }
+        counts = (1...16).map { UInt8(bits[$0]) }
+        values = sorted
+
+        // Canonical codes (Annex C).
+        var code = 0
+        var index = 0
+        for size in 1...16 {
+            for _ in 0..<bits[size] {
+                codes[Int(values[index])] = code
+                lengths[Int(values[index])] = size
+                code += 1
+                index += 1
+            }
+            code <<= 1
+        }
+    }
+
+    /// The DHT segment payload for this table.
+    func specification(tableClass: UInt8, identifier: UInt8) -> [UInt8] {
+        [tableClass << 4 | identifier] + counts + values
+    }
+
+    func write(_ symbol: Int, to writer: inout JPEGBitWriter) {
+        writer.write(codes[symbol], bits: lengths[symbol])
+    }
+}
+
+/// Writes entropy-coded bits most significant first, stuffing 00H after
+/// every FFH byte.
+struct JPEGBitWriter {
+    private(set) var bytes: [UInt8] = []
+    private var buffer: UInt64 = 0
+    private var count = 0
+
+    mutating func write(_ value: Int, bits: Int) {
+        guard bits > 0 else { return }
+        buffer = buffer << UInt64(bits) | UInt64(value & ((1 << bits) - 1))
+        count += bits
+        while count >= 8 {
+            count -= 8
+            let byte = UInt8((buffer >> UInt64(count)) & 0xFF)
+            bytes.append(byte)
+            if byte == 0xFF { bytes.append(0x00) }
+        }
+        buffer &= (UInt64(1) << UInt64(count)) - 1
+    }
+
+    /// Pads the last byte with one bits (F.1.2.3).
+    mutating func flush() {
+        if count > 0 { write((1 << (8 - count)) - 1, bits: 8 - count) }
+    }
+
+    mutating func restartMarker(_ index: Int) {
+        flush()
+        bytes += [0xFF, 0xD0 + UInt8(index & 7)]
+    }
+}
