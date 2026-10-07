@@ -377,10 +377,11 @@ extension DICOMJPEGLosslessCodec {
         var coder = JPEGArithmeticDecoder(scan.entropyCodedData)
         // 25 sign/zero sets of four bins, then low/high magnitude sets,
         // each containing 15 X and 15 M bins.
-        // H.1.2 models every scan component independently. The DC table
-        // selector chooses its conditioning bounds, not a shared state area.
+        // The DC table selector chooses both the conditioning bounds and
+        // the statistics area (T.81 B.2.3), so components sharing a table
+        // share their statistics; Da and Db stay per component.
         var statistics = [[UInt8]](
-            repeating: [UInt8](repeating: 0, count: 160), count: scan.components.count)
+            repeating: [UInt8](repeating: 0, count: 160), count: 4)
         var leftDifferences = [Int](repeating: 0, count: scan.components.count)
         var aboveDifferences = [[Int]](
             repeating: [Int](repeating: 0, count: width), count: scan.components.count)
@@ -435,7 +436,7 @@ extension DICOMJPEGLosslessCodec {
                     let ca = category(da, lower: conditioning.lower, upper: conditioning.upper) + 2
                     let cb = category(db, lower: conditioning.lower, upper: conditioning.upper) + 2
                     let zeroBase = (ca * 5 + cb) * 4
-                    var bins = statistics[scanIndex]
+                    var bins = statistics[table]
                     let difference: Int
                     if try coder.decode(&bins, zeroBase) == 0 {
                         difference = 0
@@ -467,7 +468,7 @@ extension DICOMJPEGLosslessCodec {
                         }
                         difference = negative ? -shiftedMagnitude - 1 : shiftedMagnitude + 1
                     }
-                    statistics[scanIndex] = bins
+                    statistics[table] = bins
                     let planeIndex = component.componentIndex
                     let predicted = prediction(planes[planeIndex], index, x, y)
                     planes[planeIndex][index] = (predicted + difference) & 0xFFFF
