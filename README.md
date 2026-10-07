@@ -138,80 +138,77 @@ endianness, pixel access, Structured Reports, and radiotherapy objects.
 
 ## Current DICOM coverage
 
-### Data Sets and files
+The tag and UID registry is generated from DICOM 2026d (PS3.6).
 
-- PS3.6 tag and UID registry generated from DICOM 2026d.
-- Structural read and write of:
-  - Implicit VR Little Endian;
-  - Explicit VR Little Endian;
-  - Explicit VR Big Endian (retired by DICOM, kept for interoperability);
-  - Deflated Explicit VR Little Endian (Part 10 only, raw RFC 1951 streams,
-    bounded inflation; not negotiated for DIMSE).
-- Character sets: every PS3.3 2026d Specific Character Set Defined Term, read
-  and written with nested Data Set inheritance and override:
-  - 13 single-byte repertoires;
-  - ISO 2022 Code Extensions (JIS X 0208/0212, KS X 1001, GB 2312, single-byte
-    G1 sets);
-  - UTF-8, GB18030-2022, and GBK.
+### Data Set encodings
 
-  Bundled tables give identical results on every platform. Unknown or invalid
-  declarations are rejected rather than decoded as UTF-8.
+| Transfer Syntax | Read | Write | Notes |
+| --- | :-: | :-: | --- |
+| Implicit VR Little Endian | ✓ | ✓ | Structural |
+| Explicit VR Little Endian | ✓ | ✓ | Structural |
+| Explicit VR Big Endian | ✓ | ✓ | Retired by DICOM; kept for interoperability |
+| Deflated Explicit VR Little Endian | ✓ | ✓ | Part 10 only; bounded inflation; not negotiated for DIMSE |
 
-### Pixel Data
+### Pixel Data codecs
 
-- Encapsulated frames are located through the Extended or Basic Offset Table,
-  or from the Fragment layout.
-- Built-in codecs, all in Swift:
+All built-in codecs are written in Swift. Encapsulated frames are located
+through the Extended or Basic Offset Table, or from the Fragment layout. UIDs
+starting with a dot abbreviate `1.2.840.10008.1.2`.
 
-  | Transfer Syntax | Decode | Encode |
-  | --- | --- | --- |
-  | RLE Lossless | yes | yes |
-  | Deflated Image Frame Compression | yes | yes |
-  | JPEG Baseline and Extended (.50, .51) | yes | 8/12-bit monochrome or RGB |
-  | JPEG retired DCT syntaxes (.52 to .56) | yes | no |
-  | JPEG Lossless (.57, .70) | yes | yes |
-  | JPEG Lossless, arithmetic (.58, retired) | yes | no |
-  | JPEG hierarchical (.59 to .66, retired) | yes | no |
-  | JPEG-LS Lossless and Near-Lossless (.80, .81) | yes | yes |
+| Transfer Syntax | UID | Decode | Encode | Qualified against |
+| --- | --- | :-: | :-: | --- |
+| RLE Lossless | .5 | ✓ | ✓ | PS3.5 Annex G |
+| Deflated Image Frame Compression | .8.1 | ✓ | ✓ | Round trips |
+| JPEG Baseline and Extended | .4.50, .4.51 | ✓ | ✓ | libjpeg-turbo, bit-exact |
+| JPEG retired DCT processes | .4.52 to .4.56 | ✓ | | libjpeg-turbo, bit-exact |
+| JPEG Lossless | .4.57, .4.70 | ✓ | ✓ | libjpeg-turbo |
+| JPEG Lossless, arithmetic (retired) | .4.58 | ✓ | | ISO reference software |
+| JPEG hierarchical (retired) | .4.59 to .4.66 | ✓ | | ISO reference software, with tolerance |
+| JPEG-LS Lossless and Near-Lossless | .4.80, .4.81 | ✓ | ✓ | T.87 conformance suite; CharLS, byte-identical |
+| JPEG 2000, HTJ2K, JPEG XL | | | | Not yet supported |
 
-  - JPEG DCT decoding reproduces the IJG integer pipeline bit for bit, as
-    libjpeg-turbo does, for sequential and progressive, Huffman and arithmetic,
-    8 and 12-bit streams with any chroma subsampling.
-  - JPEG encoding supports 4:4:4, 4:2:2, and 4:2:0 sampling and optimized
-    Huffman tables.
-  - Hierarchical JPEG matches the ISO reference implementation within a stated
-    tolerance.
-  - JPEG-LS passes the T.87 conformance suite, and its encoder output is
-    identical, byte for byte, to CharLS.
-- Other codecs plug in through `DICOMCodecRegistry`. JPEG 2000, HTJ2K, and
-  JPEG XL are not decoded yet.
-- Native Pixel Data renders portably:
-  - grayscale pipeline: Modality LUT or rescale, VOI LUT or
-    LINEAR/LINEAR_EXACT/SIGMOID window, MONOCHROME1;
-  - RGB, YBR_FULL, YBR_FULL_422, and Palette Color (including segmented);
-  - 1 to 32 bits, float and double pixels, Big Endian;
-  - multi-frame images and functional groups;
-  - PNG export on every platform.
+Other codecs can be registered through `DICOMCodecRegistry`.
 
-### Media
+### Rendering
 
-- DICOMDIR:
-  - legacy Basic hierarchy;
-  - generic record-tree read and write, with a lossless view of every current
-    F.4-1 type;
-  - validation of computed offsets, the record graph, selected F.5 keys,
-    File-set IDs, and referenced Part 10 identities.
-- PS3.12 media profiles are not yet qualified. Basic DICOMDIR support is not a
-  media-profile conformance claim.
-- DICOM JSON and Native DICOM Model XML: the existing convenience output is not
-  yet PS3.18 conformant.
+| Feature | Support |
+| --- | --- |
+| Grayscale pipeline | Modality LUT or rescale, then VOI LUT or LINEAR, LINEAR_EXACT, or SIGMOID window; MONOCHROME1 |
+| Color | RGB, YBR_FULL, YBR_FULL_422, Palette Color (including segmented) |
+| Samples | 1 to 32 bits, float and double, Big Endian |
+| Frames | Multi-frame images and functional groups |
+| Export | PNG on every platform |
+
+### Character sets
+
+Every PS3.3 2026d Specific Character Set Defined Term is read and written, with
+nested Data Set inheritance and override. Bundled tables give identical results
+on every platform.
+
+| Repertoires | Support |
+| --- | --- |
+| Single-byte | 13 repertoires |
+| ISO 2022 Code Extensions | JIS X 0208 and 0212, KS X 1001, GB 2312, single-byte G1 sets |
+| Unicode and Chinese national sets | UTF-8, GB18030-2022, GBK |
+| Unknown or invalid declarations | Rejected rather than decoded as UTF-8 |
+
+### Media and other formats
+
+| Area | Status |
+| --- | --- |
+| DICOMDIR | <ul><li>Legacy Basic hierarchy</li><li>Generic record-tree read and write, with a lossless view of every current F.4-1 type</li><li>Validation of offsets, the record graph, selected F.5 keys, File-set IDs, and referenced Part 10 identities</li></ul> |
+| PS3.12 media profiles | Not yet qualified; Basic DICOMDIR support is not a media-profile claim |
+| DICOM JSON and Native DICOM Model XML | Convenience output, not yet PS3.18 conformant |
 
 ### Networking and security
 
-- DICOM Upper Layer and DIMSE are experimental. C-ECHO is the most complete
-  path; C-STORE and C-FIND are partial building blocks.
-- C-MOVE, C-GET, C-CANCEL, and DIMSE-N are not implemented or not qualified.
-- TLS, audit, and the DICOM security profiles are not implemented.
+| Area | Status |
+| --- | --- |
+| DICOM Upper Layer and DIMSE | Experimental |
+| C-ECHO | Most complete path |
+| C-STORE, C-FIND | Partial building blocks |
+| C-MOVE, C-GET, C-CANCEL, DIMSE-N | Not implemented or not qualified |
+| TLS, audit, DICOM security profiles | Not implemented |
 
 See the [DcmSwift 2.0 implementation plan](Documentation/DICOM_2_0_IMPLEMENTATION_PLAN.md)
 the [working Conformance Statement](Documentation/DICOM_CONFORMANCE.md), and

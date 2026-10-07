@@ -22,24 +22,54 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 
 ## File and Data Set support
 
+### Part 10 files and Transfer Syntaxes
+
 | Capability | Current status |
 | --- | --- |
 | Part 10 preamble and `DICM` prefix | Read and write |
-| File Meta Information | Read and write; group length recalculated and SOP/Transfer Syntax identity consistency validated |
+| File Meta Information | <ul><li>Read and write</li><li>Group length recalculated and SOP/Transfer Syntax identity consistency validated</li></ul> |
 | Implicit VR Little Endian | Structural read and write |
 | Explicit VR Little Endian | Structural read and write |
 | Explicit VR Big Endian (retired) | Structural read and write for interoperability |
-| Deflated Explicit VR Little Endian | Part 10 read/write using raw RFC 1951 Deflate; decompressed size is bounded; DIMSE negotiation not claimed |
-| Encapsulated Pixel Data | Frame assembly from the Extended Offset Table, the Basic Offset Table, or the Fragment layout (PS3.5 A.4, PS3.3 C.7.6.3.1.8); built-in codecs are listed in [Pixel Data compression](#pixel-data-compression); other syntaxes are preserved and decodable only through registered codecs |
-| Native uncompressed Pixel Data | Stored values and rendering; see [Native Pixel Data](#native-pixel-data) |
-| Unknown/private elements | Unknown implicit values preserved as UN; private creator blocks resolved within each Data Set scope |
-| Defined/undefined-length sequences | Read and write; Item tags, boundaries, delimiters, nesting depth, and resource limits validated |
-| Specific Character Set | All PS3.3 2026d Defined Terms (Tables C.12-2 to C.12-5), including ISO 2022 Code Extensions, GB18030-2022, and GBK; nested inheritance and local override |
+| Deflated Explicit VR Little Endian | <ul><li>Part 10 read/write using raw RFC 1951 Deflate</li><li>Decompressed size is bounded</li><li>DIMSE negotiation not claimed</li></ul> |
+
+### Data elements
+
+| Capability | Current status |
+| --- | --- |
+| Unknown/private elements | <ul><li>Unknown implicit values preserved as UN</li><li>Private creator blocks resolved within each Data Set scope</li></ul> |
+| Defined/undefined-length sequences | <ul><li>Read and write</li><li>Item tags, boundaries, delimiters, nesting depth, and resource limits validated</li></ul> |
+| Specific Character Set | <ul><li>All PS3.3 2026d Defined Terms (Tables C.12-2 to C.12-5), including ISO 2022 Code Extensions, GB18030-2022, and GBK</li><li>Nested inheritance and local override</li></ul> |
 | Fixed-width numeric VR values | Scalar and multi-valued signed/unsigned integer and floating-point read/write with dictionary VM validation |
 | Lazy Bulk Data | Opt-in file-backed references and bounded reads for defined-length binary VRs and encapsulated Pixel Data Items |
-| DICOM JSON / Native DICOM Model XML | Existing convenience output is not PS3.18 conformant |
-| Basic DICOMDIR | Legacy and generic typed record-tree read/write with structural and identity validation; see [Basic DICOMDIR](#basic-dicomdir) |
+
+### Pixel Data
+
+| Capability | Current status |
+| --- | --- |
+| Encapsulated Pixel Data | <ul><li>Frame assembly from the Extended Offset Table, the Basic Offset Table, or the Fragment layout (PS3.5 A.4, PS3.3 C.7.6.3.1.8)</li><li>Built-in codecs are listed below; other syntaxes are preserved and decodable only through registered codecs</li></ul> |
+| Native uncompressed Pixel Data | <ul><li>Stored values for 1 to 32 bits allocated, any High Bit, signed or unsigned, planar configurations, YBR_FULL_422 chroma, multi-frame (unpadded 1-bit frames), Float/Double Float Pixel Data, Big Endian</li><li>Rendering through the PS3.3 C.11 grayscale pipeline (Modality LUT or rescale, VOI LUT or LINEAR/LINEAR_EXACT/SIGMOID window, MONOCHROME1) with Functional Group precedence</li><li>RGB, YBR_FULL, YBR_FULL_422, and Palette Color (including segmented) to 8-bit RGB</li><li>Portable PNG export</li></ul> |
+
+Built-in codecs, written in Swift (UIDs abbreviate `1.2.840.10008.1.2.4`):
+
+| Transfer Syntax | Decode | Encode | Details |
+| --- | :-: | :-: | --- |
+| RLE Lossless (PS3.5 Annex G) | ✓ | ✓ | Every layout |
+| Deflated Image Frame Compression (A.4.13) | ✓ | ✓ | |
+| JPEG Baseline and Extended (.50, .51) | ✓ | ✓ | <ul><li>Decode: sequential and progressive 8/12-bit streams with sampling factors, restart intervals, and libjpeg color detection; IJG integer IDCT, fancy upsampling, and YCbCr conversion, bit-exact with libjpeg-turbo</li><li>Encode: unsigned 8/12-bit monochrome and RGB, quality scaling, 4:4:4, 4:2:2, or 4:2:0 chroma, restart markers, optimized Huffman tables, IJG integer FDCT and quantization</li><li>Color frames are returned as RGB</li></ul> |
+| Retired JPEG DCT (.52 to .56) | ✓ | | Progressive Huffman (.53, .55) and arithmetic (.52, .54, .56), as above |
+| JPEG Lossless (.57, .70) | ✓ | ✓ | <ul><li>Decode: every predictor and point transform, interleaved or separate component scans, line-aligned restart intervals</li><li>Encode: 2 to 16-bit samples, any predictor and point transform, line-aligned restart intervals, optimized Huffman tables</li></ul> |
+| Retired JPEG Lossless, arithmetic (.58) | ✓ | | Statistics areas shared per table (T.81 B.2.3) |
+| Retired JPEG hierarchical (.59 to .66) | ✓ | | <ul><li>T.81 Annex J: Huffman and arithmetic, sequential, progressive, and lossless first and differential frames, with expansion</li><li>Within a stated tolerance of the ISO reference software</li></ul> |
+| JPEG-LS Lossless and Near-Lossless (.80, .81) | ✓ | ✓ | <ul><li>Decode: every interleave mode, near-lossless coding, LSE preset parameters, restart intervals, HP color transforms</li><li>Encode: 2 to 16-bit frames with default parameters, any NEAR, any interleave mode, restart intervals; byte-identical to CharLS</li></ul> |
+
+### Media and other representations
+
+| Capability | Current status |
+| --- | --- |
+| Basic DICOMDIR | <ul><li>Legacy PATIENT/STUDY/SERIES/IMAGE and generic typed record-tree read/write</li><li>Lossless view of all current F.4-1 types</li><li>Validation of serialized Item offsets, complete reachability, all unconditional top-level F.5 keys, common Type 1C keys, File-set/File IDs, the consistency flag, and referenced Part 10 identities</li></ul> |
 | PS3.12 media profiles | Not qualified; no media-profile conformance claim |
+| DICOM JSON / Native DICOM Model XML | Existing convenience output is not PS3.18 conformant |
 
 Known UIDs are not automatically supported. `TransferSyntaxCapability` is the
 authoritative programmatic statement for structural I/O, Pixel Data
@@ -49,77 +79,6 @@ The next file-core priorities are remaining semantic VR validation, broader
 DICOMDIR Directory Record coverage, and PS3.12 media-profile qualification.
 Deflated DIMSE negotiation remains separate network work.
 PS3.18 JSON and XML representations follow those binary-format milestones.
-
-## Pixel Data compression
-
-Every built-in codec is written in Swift. The last column names the evidence
-used to qualify it. Decoded color frames are returned as RGB with planar
-configuration 0, except JPEG Lossless and JPEG-LS frames, which keep their
-photometric interpretation.
-
-| Transfer Syntax | Decode | Encode | Reference |
-| --- | --- | --- | --- |
-| RLE Lossless (PS3.5 Annex G) | yes | yes | Annex G pseudo-code and hand-encoded frames |
-| Deflated Image Frame Compression (A.4.13) | yes | yes | Round trip |
-| JPEG Baseline, Extended (.50, .51) | yes | yes | libjpeg-turbo, bit-exact |
-| JPEG retired DCT (.52 to .56) | yes | no | libjpeg-turbo, bit-exact |
-| JPEG Lossless (.57, .70) | yes | yes | libjpeg-turbo |
-| JPEG Lossless, arithmetic (.58) | yes | no | ISO reference (Richter) |
-| JPEG hierarchical (.59 to .66) | yes | no | ISO reference, with tolerance |
-| JPEG-LS Lossless, Near-Lossless (.80, .81) | yes | yes | T.87 conformance suite, CharLS |
-
-JPEG DCT processes (ITU-T T.81 Annexes F and G):
-
-- decode sequential and progressive, Huffman and arithmetic, 8 and 12-bit
-  streams with any sampling factors, restart intervals, and libjpeg color
-  detection;
-- reproduce the IJG integer IDCT, fancy upsampling, and YCbCr conversion;
-- encode unsigned 8 and 12-bit monochrome and RGB frames with quality
-  scaling, 4:4:4, 4:2:2, or 4:2:0 chroma, restart markers, optimized Huffman
-  tables, and the IJG integer FDCT and quantization, including edge and
-  dummy-block behavior.
-
-JPEG Lossless (T.81 Annex H):
-
-- decode every predictor and point transform, interleaved or separate
-  component scans, and line-aligned restart intervals;
-- encode 2 to 16-bit samples with any predictor, point transform,
-  line-aligned restart interval, and optimized Huffman tables;
-- decode the arithmetic Process 15, where components that share a table
-  share its statistics area (T.81 B.2.3).
-
-JPEG hierarchical (T.81 Annex J):
-
-- decode Huffman and arithmetic, sequential, progressive, and lossless first
-  and differential frames, with horizontal and vertical expansion.
-
-JPEG-LS (ITU-T T.87):
-
-- decode every interleave mode, including line-interleaved subsampled
-  components, near-lossless coding, LSE preset parameters, restart intervals,
-  and the HP color transforms signalled in APP8 "mrfx" segments;
-- encode 2 to 16-bit monochrome or three-component frames with default
-  parameters, any NEAR value, any interleave mode, and restart intervals.
-
-## Native Pixel Data
-
-- Stored values for 1 to 32 bits allocated, any High Bit, signed or unsigned,
-  planar configurations, YBR_FULL_422 chroma, multi-frame (unpadded 1-bit
-  frames), Float and Double Float Pixel Data, and Big Endian.
-- Rendering through the PS3.3 C.11 grayscale pipeline (Modality LUT or
-  rescale, VOI LUT or LINEAR/LINEAR_EXACT/SIGMOID window, MONOCHROME1) with
-  Functional Group precedence.
-- RGB, YBR_FULL, YBR_FULL_422, and Palette Color (including segmented) to
-  8-bit RGB.
-- Portable PNG export.
-
-## Basic DICOMDIR
-
-- Legacy PATIENT/STUDY/SERIES/IMAGE and generic typed record-tree read and
-  write, with a lossless view of every current F.4-1 type.
-- Validation of serialized Item offsets, complete reachability, every
-  unconditional top-level F.5 key, common Type 1C keys, File-set and File IDs,
-  the consistency flag, and referenced Part 10 identities.
 
 The Basic DICOMDIR implementation uses Explicit VR Little Endian, defined
 length Directory Record Sequence Items, and offsets that reference Item Tags.

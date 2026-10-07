@@ -8,375 +8,64 @@ interpretation, codec support, and independently tested interoperability. A
 passing structural test is not evidence of IOD, media-profile, or clinical
 conformance.
 
-Each capability lists its normative source, the level claimed, the automated
-tests that support the claim, and what remains to be qualified.
+Each table lists, per capability, its normative source, the level claimed, the
+automated tests that support the claim, and what remains to be qualified.
 
 ## Capabilities
 
-### Public tag and UID registry
+### Registry and Data Set encoding
 
-- **Normative source:** PS3.6.
-- **Claimed level:** Known
-- **Automated evidence:** `testRuntimeDictionaryComesFromDICOM2026d`
-- **Remaining qualification:** Generate command-set registry from PS3.7
+| Capability | Normative source | Claimed level | Automated evidence | Remaining qualification |
+| --- | --- | --- | --- | --- |
+| Public tag and UID registry | PS3.6 | Known | <code>testRuntimeDictionaryComesFromDICOM2026d</code> | Generate command-set registry from PS3.7 |
+| Transfer Syntax capability separation | PS3.5 Annex A, PS3.6 UID registry | Known vs implemented capability | <code>testKnownTransferSyntaxIsNotAutomaticallyImplemented</code>, <code>testUnimplementedTransferSyntaxIsRejected</code> | Independent toolkit matrix |
+| Implicit VR Little Endian | PS3.5 7 and Annex A | Structural read/write | round-trip corpus plus <code>testDIMSECommandSetUsesLittleEndianValues</code> | Byte-exact external corpus comparison |
+| Explicit VR Little Endian | PS3.5 7 and Annex A | Structural read/write | round-trip corpus and core safety tests | Byte-exact external corpus comparison |
+| Explicit VR Big Endian | PS3.5 Annex A, retired | Structural read/write | <code>testBigEndianTransferSyntaxExposesBigEndianEncoding</code>, <code>testPart10BigEndianDatasetStartsAfterCompleteFileMetaInformation</code> | Independent toolkit comparison |
+| Deflated Explicit VR Little Endian | PS3.5 A.5 | <ul><li>Part 10 structural read/write</li><li>No DIMSE claim</li></ul> | <ul><li><code>testDeflatedExplicitVRLittleEndianPart10RoundTrip</code></li><li><code>testReadsIndependentPythonRawDeflateFixture</code></li><li><code>testDeflatedDataSetHonorsInflatedSizeLimit</code></li><li><code>testRawDeflateRejectsTruncationAndUnexpectedTrailingBytes</code></li></ul> | Streaming inflation/output and independent toolkit file exchange |
+| Modern and binary VR headers | PS3.5 6.2 and 7.1 | Structural and multi-valued semantic support | <ul><li><code>testAttributeTagValueUsesTargetByteOrder</code></li><li><code>testModernTextVRUsesLongExplicitHeaderAndURIStaysASCII</code></li><li><code>testFloatingPointAndModernBinaryVRSetters</code></li><li><code>testMultiValuedBinaryVRsRoundTripWithTypedAccessors</code></li><li><code>testExplicitVRRejectsUnknownCodeAndNonZeroReservedBytes</code></li></ul> | Complete per-VR semantic validation |
+| Signed and unsigned numeric values | PS3.5 6.2 | Scalar and multi-valued semantic support | <ul><li><code>testUnsignedVRValuesPreserveFullRange</code></li><li><code>testSignedIntegerSettersPreserveSign</code></li><li><code>testDataElementTranscodesNumericValueByteOrder</code></li><li><code>testDictionaryVMValidationHandlesRangesAndMultiples</code></li></ul> | Expand malformed-length and overflow matrix |
+| Part 10 File Meta Information | PS3.10 7.1 | Structural read/write plus identity checks | <code>testFileMetaInformationIsExplicitLittleEndianAndRecalculated</code>, <code>testFileMetaValidationReportsMissingAndMismatchedIdentifiers</code> | Application-profile validation |
+| Defined/undefined-length Sequences and Items | PS3.5 7.5 | Structural read/write with boundary validation | <code>testUndefinedSequenceRequiresZeroLengthDelimiter</code>, <code>testDefinedSequenceRejectsNonItemContent</code>, resource-limit tests | Fuzzing and external malformed corpus |
+| Private Creator block resolution | PS3.5 7.8 | Structural resolution and byte preservation | <code>testImplicitVRPrivateCreatorResolvesPrivateBlock</code>, <code>testPrivateCreatorReservationsAreScopedPerSequenceItem</code> | Safe creation/editing and optional private dictionaries |
+| Lazy Bulk Data | PS3.5 value fields, PS3.18/PS3.19 bulk-data model | Opt-in file-backed ranges and bounded reads for defined-length binary VRs and encapsulated Items | <ul><li><code>testFileBackedBulkDataRemainsLazyUntilRequested</code></li><li><code>testEncapsulatedPixelFragmentCanRemainFileBacked</code></li><li><code>testLazyBulkDataReportsMissingSourceBeforeWrite</code></li></ul> | Streaming output without full materialization |
 
-### Transfer Syntax capability separation
+### Character sets
 
-- **Normative source:** PS3.5 Annex A, PS3.6 UID registry.
-- **Claimed level:** Known vs implemented capability
-- **Automated evidence:** `testKnownTransferSyntaxIsNotAutomaticallyImplemented`, `testUnimplementedTransferSyntaxIsRejected`
-- **Remaining qualification:** Independent toolkit matrix
+| Capability | Normative source | Claimed level | Automated evidence | Remaining qualification |
+| --- | --- | --- | --- | --- |
+| Specific Character Set Defined Terms | PS3.3 C.12.1.1.2, PS3.5 6.1 and Annexes H, I, J, K | Semantic read/write of all Defined Terms, ISO 2022 Code Extensions, GB18030-2022, GBK | <ul><li><code>testAnnexH3JapanesePersonNameWithDefaultValue1</code></li><li><code>testAnnexH3JapanesePersonNameWithKatakanaValue1</code></li><li><code>testAnnexI2KoreanPersonName</code></li><li><code>testAnnexI3KoreanLongTextWithEscapeAtLineStart</code></li><li><code>testAnnexJ1ChinesePersonNameInUTF8</code></li><li><code>testAnnexJ2ChineseLongTextInUTF8</code></li><li><code>testAnnexJ3ChinesePersonNameInGB18030</code></li><li><code>testAnnexJ4ChineseLongTextInGB18030</code></li><li><code>testAnnexK2ChinesePersonNameWithGB2312</code></li><li><code>testAnnexK3ChineseLongTextWithGB2312</code></li><li><code>testDCMTKCharacterSetFilesMatchPydicom</code></li><li><code>testEverySingleByteRepertoireRoundTrips</code></li><li><code>testSingleByteCodeExtensionsSwitchG1AndRestoreValue1</code></li><li><code>testGB18030FourByteAndSupplementaryCodes</code></li><li><code>testCodeExtensionsRoundTripThroughPart10Encoding</code></li><li><code>testLatin1SpecificCharacterSetRoundTrips</code></li><li><code>testUTF8SpecificCharacterSetRoundTrips</code></li><li><code>testNestedCharacterSetOverrideDoesNotLeakToSiblingItem</code></li></ul> | PN model, per-VR repertoire validation, ISO 2022 write exchange with DCMTK |
+| Delimiters and malformed text | PS3.5 6.1.2.3, 6.1.2.5.3 | <ul><li>Single-byte 05/12 only</li><li>Value 1 restored at delimiters and Control Characters</li><li>Invalid bytes and declarations rejected</li></ul> | <ul><li><code>testOnlySingleByte0512SeparatesValues</code></li><li><code>testRomajiYenSignAndOverlineFollowISOIR14</code></li><li><code>testValue1IsRestoredAfterControlCharactersAndDelimiters</code></li><li><code>testMalformedBytesAreNotDecoded</code></li><li><code>testSpecificCharacterSetDeclarations</code></li><li><code>testUnsupportedCharacterSetDoesNotFallBackToUTF8</code></li></ul> | <code>\nnn</code> display substitution |
 
-### Implicit VR Little Endian
+### Pixel Data
 
-- **Normative source:** PS3.5 7 and Annex A.
-- **Claimed level:** Structural read/write
-- **Automated evidence:** round-trip corpus plus `testDIMSECommandSetUsesLittleEndianValues`
-- **Remaining qualification:** Byte-exact external corpus comparison
+| Capability | Normative source | Claimed level | Automated evidence | Remaining qualification |
+| --- | --- | --- | --- | --- |
+| Native Pixel Data and rendering | PS3.3 C.7.6.3, C.7.9.2, C.11.1, C.11.2, C.11.6; PS3.5 8.1.1 | Stored values, grayscale pipeline, color conversions, PNG export | <ul><li><code>testStoredValuesIgnoreUnusedBitsAndSignExtend</code></li><li><code>testLegacyHighBitAboveBitsStored</code></li><li><code>testOneBitFramesAreNotPaddedAndMayStartInsideAByte</code></li><li><code>testThirtyTwoBitUnsignedValuesKeepTheirFullRange</code></li><li><code>testPlanarConfigurationOneIsReturnedPixelByPixel</code></li><li><code>testYBRFull422SharesChromaBetweenPixelPairs</code></li><li><code>testBigEndianPixelDataIsNormalized</code></li><li><code>testLinearWindowMatchesTheNormativeExamples</code></li><li><code>testSigmoidAndLinearExactFunctions</code></li><li><code>testLinearExactIdentityExampleThroughThePipeline</code></li><li><code>testRescaleThenWindowForCTValues</code></li><li><code>testIdentityVOIUsesThePossibleRangeAndMonochrome1IsInverted</code></li><li><code>testModalityLUTSequence</code></li><li><code>testVOILUTWithEightBitEntriesEncodedInSixteenBits</code></li><li><code>testFunctionalGroupsOverrideTopLevelValuesPerFrame</code></li><li><code>testFloatPixelDataUsesTheValueRange</code></li><li><code>testYBRFullConvertsWithCCIR601Coefficients</code></li><li><code>testPaletteColorClampsAndScalesSixteenBitEntries</code></li><li><code>testSegmentedPaletteSegmentsExpand</code></li><li><code>testInvalidImagesAreReported</code></li><li><code>testPNGEncodingIsValidAndLossless</code></li><li><code>testPNGDecodesWithImageIO</code></li><li><code>testToPNG</code></li><li><code>testExternalDICOMCorpusRenders</code></li></ul> | Overlays, padding, presentation states, ICC, encapsulated codecs |
+| Encapsulated Pixel Data fragments | PS3.5 8 and Annex A | Fragment preservation only | <code>testReadLimitsCountPixelFragmentsSeparatelyFromOffsetTable</code>, <code>testDefaultWriterPreservesEncapsulatedTransferSyntaxUID</code> | Extended Offset Table validation and codecs |
+| Encapsulated frames and codecs | PS3.5 A.4, A.4.2, A.4.13, Annex G; PS3.3 C.7.6.3.1.8 | <ul><li>Frame assembly</li><li>RLE and Deflated Image Frame decode/encode</li><li>Codec registry</li></ul> | <ul><li><code>testRLESegmentDecodingFollowsTheAnnexGPseudoCode</code></li><li><code>testHandEncodedRLEFrames</code></li><li><code>testRLEEncoderRunsFollowAnnexG</code></li><li><code>testRLERoundTripsEveryLayout</code></li><li><code>testBasicOffsetTableFromAnnexG6</code></li><li><code>testFramesSpanningFragmentsAndOffsetTableErrors</code></li><li><code>testExtendedOffsetTableExcludesFragmentPadding</code></li><li><code>testRLEImageRendersAfterAPart10RoundTrip</code></li><li><code>testDeflatedImageFrameCompressionRoundTrips</code></li><li><code>testRegisteredDecodersTakePrecedence</code></li><li><code>testExternalDICOMCorpusRenders</code></li></ul> | <ul><li>JPEG family, JPEG 2000, HTJ2K, JPEG XL</li><li>Transcoding API</li></ul> |
+| JPEG Lossless (Processes 14/15) | PS3.5 A.4.1; ITU-T T.81 Annexes C, D, F.1.2, F.2.2, H, K.2 | <ul><li>Huffman decode/encode</li><li>Arithmetic decode</li></ul> | <ul><li><code>testLibjpegTurboStreamsDecodeExactly</code></li><li><code>testArithmeticLosslessIndependentSOF11Vector</code></li><li><code>testArithmeticLosslessComponentsShareStatisticsByTable</code></li><li><code>testInvalidLosslessStreamsAreRejected</code></li><li><code>testEncoderRoundTripsEveryPredictorAndLayout</code></li><li><code>testPointTransformDiscardsOnlyTheLowBits</code></li><li><code>testOptimizedHuffmanCodesNeverExceedSixteenBits</code></li><li><code>testEncoderRejectsUnsupportedLayouts</code></li><li><code>testExternalDICOMCorpusRenders</code></li></ul> | <ul><li>Subsampled components</li><li>Restart intervals inside lines</li><li>Arithmetic encoding</li></ul> |
+| JPEG Baseline, Extended, and non-hierarchical progression | PS3.5 A.4.1; ITU-T T.81 Annexes A, B, C, D, F, G, K.1, K.2 | <ul><li>Huffman decode/encode</li><li>Arithmetic SOF9/SOF10 decode</li><li>IJG integer pipeline bit-exact with libjpeg-turbo</li></ul> | <ul><li><code>testDecodingIsBitExactWithLibjpegTurbo</code></li><li><code>testArithmeticSequentialAndProgressiveFixtures</code></li><li><code>testArithmeticDCTMatchesLibjpegTurboWhenAvailable</code></li><li><code>testArithmeticDCTColorAndTwelveBitWhenAvailable</code></li><li><code>testEncapsulatedYBRImageRendersAsRGB</code></li><li><code>testEncoderRoundTripsSamplingModesAndRestartMarkers</code></li><li><code>testEncoderMatchesLibjpegTurboIntegerPipelineWhenAvailable</code></li><li><code>testExtendedEncoderRoundTripsTwelveBitMonochrome</code></li><li><code>testEncoderRejectsUnsupportedInputs</code></li><li><code>testInvalidStreamsAreRejected</code></li><li><code>testRetiredProgressiveHuffmanSyntaxesRemainReadable</code></li><li><code>testKnownTransferSyntaxIsNotAutomaticallyImplemented</code></li><li><code>testExternalDICOMCorpusRenders</code></li></ul> | <ul><li>Arithmetic encoding</li><li>Signed/YBR input</li><li>Streaming coefficient storage</li><li>Performance</li></ul> |
+| JPEG hierarchical (Processes 16-29) | PS3.5 A.4.1; ITU-T T.81 Annex J, B.3.2, B.3.3 | Decode of every first and differential frame type with expansion | <ul><li><code>testDecodingMatchesTheISOReferenceWithinTolerance</code></li><li><code>testEveryHierarchicalSyntaxIsDecodable</code></li><li><code>testNonHierarchicalDecodersDelegateHierarchicalStreams</code></li><li><code>testSingleFrameStreamsUnderHierarchicalSyntaxesStillDecode</code></li><li><code>testMalformedStreamsAreRejectedWithoutCrashing</code></li></ul> | <ul><li>Bit-exact match with the fixed-point reference</li><li>Subsampled lossless frames</li><li>Encoding</li></ul> |
+| JPEG-LS (Lossless and Near-Lossless) | PS3.5 A.4.3; ITU-T T.87 | <ul><li>Decode of every interleave mode, near-lossless coding, LSE preset parameters, restart intervals, HP color transforms</li><li>Encode with default parameters</li></ul> | <ul><li><code>testDecodingMatchesTheSourceWithinNear</code></li><li><code>testEncodingReproducesCharLSByteForByte</code></li><li><code>testConformanceStreamsWithPresetParameters</code></li><li><code>testEncoderRoundTripsSignedAndNearLosslessFrames</code></li><li><code>testCapabilitiesAndRegistry</code></li><li><code>testMalformedStreamsAreRejectedWithoutCrashing</code></li><li><code>testFullConformanceSuiteWhenAvailable</code></li></ul> | <ul><li>Mapping tables (palettes)</li><li>Oversize dimensions (LSE type 4)</li><li>Encoding with custom preset parameters or subsampling</li><li>SIMD performance</li></ul> |
 
-### Explicit VR Little Endian
+### Media
 
-- **Normative source:** PS3.5 7 and Annex A.
-- **Claimed level:** Structural read/write
-- **Automated evidence:** round-trip corpus and core safety tests
-- **Remaining qualification:** Byte-exact external corpus comparison
+| Capability | Normative source | Claimed level | Automated evidence | Remaining qualification |
+| --- | --- | --- | --- | --- |
+| Basic DICOMDIR and file-sets | PS3.3 Annex F, PS3.10 8 | <ul><li>Legacy PATIENT/STUDY/SERIES/IMAGE plus typed generic record-tree read/write</li><li>Fail-closed public tree reconstruction from serialized offsets</li><li>Synthetic round-trip of all 35 current F.4-1 types with unconditional top-level Type 1/2 keys from F.5 and included macros</li><li>Lossless view, graph, hierarchy, common Type 1C keys, recursive Basic/Enhanced Coded Entry and SOP Instance Reference checks, Scope of Inventory structure and locally determinable dependencies, F.7 Icon Image structure/pixel constraints, verified SR and Hanging Protocol conditions, Related General SOP Class UID, and selected referenced-instance conditions</li><li>Unknown/retired/misplaced record types load and stay traversable</li></ul> | <ul><li><code>testWriteDicomDir</code></li><li><code>testGenericDirectoryRecordTreeWritesAdditionalRecordTypes</code></li><li><code>testGenericDirectoryRecordTreeRejectsInvalidDefinitions</code></li><li><code>testGenericWriterRoundTripsEveryCurrentDirectoryRecordType</code></li><li><code>testDirectoryRecordIncludedMacroTopLevelKeys</code></li><li><code>testScopeOfInventoryMacroValidation</code></li><li><code>testDirectoryRecordCodeSequenceMacroValidation</code></li><li><code>testSOPInstanceReferenceMacroValidation</code></li><li><code>testIconImageKeyValidation</code></li><li><code>testDirectoryRecordTypeRegistryAndLosslessGenericView</code></li><li><code>testDirectoryRecordKeyValidationCoversBasicAndRTRecords</code></li><li><code>testDirectoryRecordConditionalKeyValidation</code></li><li><code>testDirectoryRecordSelfContainedConditionalRules</code></li><li><code>testReferencedInstanceConditionalDirectoryKeys</code></li><li><code>testReferencedSRConceptModifierRequiresDirectoryContentSequence</code></li><li><code>testDirectoryStructureValidationRejectsSemanticGraphErrors</code></li><li><code>testUnknownAndRetiredDirectoryRecordTypesRemainTraversable</code></li></ul> | Complete semantic per-type writer qualification, deeper IOD/module-dependent F.5 conditions and conditional/nested included macros, palette LUT semantics, external-tool exchange, update semantics, descriptor content decoding, PS3.11/PS3.12 profiles and formats |
 
-### Explicit VR Big Endian
+### Experimental or not implemented
 
-- **Normative source:** PS3.5 Annex A, retired.
-- **Claimed level:** Structural read/write
-- **Automated evidence:** `testBigEndianTransferSyntaxExposesBigEndianEncoding`, `testPart10BigEndianDatasetStartsAfterCompleteFileMetaInformation`
-- **Remaining qualification:** Independent toolkit comparison
-
-### Deflated Explicit VR Little Endian
-
-- **Normative source:** PS3.5 A.5.
-- **Claimed level:**
-  - Part 10 structural read/write
-  - no DIMSE claim
-- **Automated evidence:**
-  - `testDeflatedExplicitVRLittleEndianPart10RoundTrip`
-  - `testReadsIndependentPythonRawDeflateFixture`
-  - `testDeflatedDataSetHonorsInflatedSizeLimit`
-  - `testRawDeflateRejectsTruncationAndUnexpectedTrailingBytes`
-- **Remaining qualification:** Streaming inflation/output and independent toolkit file exchange
-
-### Modern and binary VR headers
-
-- **Normative source:** PS3.5 6.2 and 7.1.
-- **Claimed level:** Structural and multi-valued semantic support
-- **Automated evidence:**
-  - `testAttributeTagValueUsesTargetByteOrder`
-  - `testModernTextVRUsesLongExplicitHeaderAndURIStaysASCII`
-  - `testFloatingPointAndModernBinaryVRSetters`
-  - `testMultiValuedBinaryVRsRoundTripWithTypedAccessors`
-  - `testExplicitVRRejectsUnknownCodeAndNonZeroReservedBytes`
-- **Remaining qualification:** Complete per-VR semantic validation
-
-### Signed and unsigned numeric values
-
-- **Normative source:** PS3.5 6.2.
-- **Claimed level:** Scalar and multi-valued semantic support
-- **Automated evidence:**
-  - `testUnsignedVRValuesPreserveFullRange`
-  - `testSignedIntegerSettersPreserveSign`
-  - `testDataElementTranscodesNumericValueByteOrder`
-  - `testDictionaryVMValidationHandlesRangesAndMultiples`
-- **Remaining qualification:** Expand malformed-length and overflow matrix
-
-### Part 10 File Meta Information
-
-- **Normative source:** PS3.10 7.1.
-- **Claimed level:** Structural read/write plus identity checks
-- **Automated evidence:** `testFileMetaInformationIsExplicitLittleEndianAndRecalculated`, `testFileMetaValidationReportsMissingAndMismatchedIdentifiers`
-- **Remaining qualification:** Application-profile validation
-
-### Defined/undefined-length Sequences and Items
-
-- **Normative source:** PS3.5 7.5.
-- **Claimed level:** Structural read/write with boundary validation
-- **Automated evidence:** `testUndefinedSequenceRequiresZeroLengthDelimiter`, `testDefinedSequenceRejectsNonItemContent`, resource-limit tests
-- **Remaining qualification:** Fuzzing and external malformed corpus
-
-### Encapsulated Pixel Data fragments
-
-- **Normative source:** PS3.5 8 and Annex A.
-- **Claimed level:** Fragment preservation only
-- **Automated evidence:** `testReadLimitsCountPixelFragmentsSeparatelyFromOffsetTable`, `testDefaultWriterPreservesEncapsulatedTransferSyntaxUID`
-- **Remaining qualification:** Extended Offset Table validation and codecs
-
-### Private Creator block resolution
-
-- **Normative source:** PS3.5 7.8.
-- **Claimed level:** Structural resolution and byte preservation
-- **Automated evidence:** `testImplicitVRPrivateCreatorResolvesPrivateBlock`, `testPrivateCreatorReservationsAreScopedPerSequenceItem`
-- **Remaining qualification:** Safe creation/editing and optional private dictionaries
-
-### Specific Character Set Defined Terms
-
-- **Normative source:** PS3.3 C.12.1.1.2, PS3.5 6.1 and Annexes H, I, J, K.
-- **Claimed level:** Semantic read/write of all Defined Terms, ISO 2022 Code Extensions, GB18030-2022, GBK
-- **Automated evidence:**
-  - `testAnnexH3JapanesePersonNameWithDefaultValue1`
-  - `testAnnexH3JapanesePersonNameWithKatakanaValue1`
-  - `testAnnexI2KoreanPersonName`
-  - `testAnnexI3KoreanLongTextWithEscapeAtLineStart`
-  - `testAnnexJ1ChinesePersonNameInUTF8`
-  - `testAnnexJ2ChineseLongTextInUTF8`
-  - `testAnnexJ3ChinesePersonNameInGB18030`
-  - `testAnnexJ4ChineseLongTextInGB18030`
-  - `testAnnexK2ChinesePersonNameWithGB2312`
-  - `testAnnexK3ChineseLongTextWithGB2312`
-  - `testDCMTKCharacterSetFilesMatchPydicom`
-  - `testEverySingleByteRepertoireRoundTrips`
-  - `testSingleByteCodeExtensionsSwitchG1AndRestoreValue1`
-  - `testGB18030FourByteAndSupplementaryCodes`
-  - `testCodeExtensionsRoundTripThroughPart10Encoding`
-  - `testLatin1SpecificCharacterSetRoundTrips`
-  - `testUTF8SpecificCharacterSetRoundTrips`
-  - `testNestedCharacterSetOverrideDoesNotLeakToSiblingItem`
-- **Remaining qualification:** PN model, per-VR repertoire validation, ISO 2022 write exchange with DCMTK
-
-### Delimiters and malformed text
-
-- **Normative source:** PS3.5 6.1.2.3, 6.1.2.5.3.
-- **Claimed level:**
-  - Single-byte 05/12 only
-  - Value 1 restored at delimiters and Control Characters
-  - invalid bytes and declarations rejected
-- **Automated evidence:**
-  - `testOnlySingleByte0512SeparatesValues`
-  - `testRomajiYenSignAndOverlineFollowISOIR14`
-  - `testValue1IsRestoredAfterControlCharactersAndDelimiters`
-  - `testMalformedBytesAreNotDecoded`
-  - `testSpecificCharacterSetDeclarations`
-  - `testUnsupportedCharacterSetDoesNotFallBackToUTF8`
-- **Remaining qualification:** `\nnn` display substitution
-
-### Lazy Bulk Data
-
-- **Normative source:** PS3.5 value fields, PS3.18/PS3.19 bulk-data model.
-- **Claimed level:** Opt-in file-backed ranges and bounded reads for defined-length binary VRs and encapsulated Items
-- **Automated evidence:**
-  - `testFileBackedBulkDataRemainsLazyUntilRequested`
-  - `testEncapsulatedPixelFragmentCanRemainFileBacked`
-  - `testLazyBulkDataReportsMissingSourceBeforeWrite`
-- **Remaining qualification:** Streaming output without full materialization
-
-### Native Pixel Data and rendering
-
-- **Normative source:** PS3.3 C.7.6.3, C.7.9.2, C.11.1, C.11.2, C.11.6; PS3.5 8.1.1.
-- **Claimed level:** Stored values, grayscale pipeline, color conversions, PNG export
-- **Automated evidence:**
-  - `testStoredValuesIgnoreUnusedBitsAndSignExtend`
-  - `testLegacyHighBitAboveBitsStored`
-  - `testOneBitFramesAreNotPaddedAndMayStartInsideAByte`
-  - `testThirtyTwoBitUnsignedValuesKeepTheirFullRange`
-  - `testPlanarConfigurationOneIsReturnedPixelByPixel`
-  - `testYBRFull422SharesChromaBetweenPixelPairs`
-  - `testBigEndianPixelDataIsNormalized`
-  - `testLinearWindowMatchesTheNormativeExamples`
-  - `testSigmoidAndLinearExactFunctions`
-  - `testLinearExactIdentityExampleThroughThePipeline`
-  - `testRescaleThenWindowForCTValues`
-  - `testIdentityVOIUsesThePossibleRangeAndMonochrome1IsInverted`
-  - `testModalityLUTSequence`
-  - `testVOILUTWithEightBitEntriesEncodedInSixteenBits`
-  - `testFunctionalGroupsOverrideTopLevelValuesPerFrame`
-  - `testFloatPixelDataUsesTheValueRange`
-  - `testYBRFullConvertsWithCCIR601Coefficients`
-  - `testPaletteColorClampsAndScalesSixteenBitEntries`
-  - `testSegmentedPaletteSegmentsExpand`
-  - `testInvalidImagesAreReported`
-  - `testPNGEncodingIsValidAndLossless`
-  - `testPNGDecodesWithImageIO`
-  - `testToPNG`
-  - `testExternalDICOMCorpusRenders`
-- **Remaining qualification:** Overlays, padding, presentation states, ICC, encapsulated codecs
-
-### Encapsulated frames and codecs
-
-- **Normative source:** PS3.5 A.4, A.4.2, A.4.13, Annex G; PS3.3 C.7.6.3.1.8.
-- **Claimed level:**
-  - Frame assembly
-  - RLE and Deflated Image Frame decode/encode
-  - codec registry
-- **Automated evidence:**
-  - `testRLESegmentDecodingFollowsTheAnnexGPseudoCode`
-  - `testHandEncodedRLEFrames`
-  - `testRLEEncoderRunsFollowAnnexG`
-  - `testRLERoundTripsEveryLayout`
-  - `testBasicOffsetTableFromAnnexG6`
-  - `testFramesSpanningFragmentsAndOffsetTableErrors`
-  - `testExtendedOffsetTableExcludesFragmentPadding`
-  - `testRLEImageRendersAfterAPart10RoundTrip`
-  - `testDeflatedImageFrameCompressionRoundTrips`
-  - `testRegisteredDecodersTakePrecedence`
-  - `testExternalDICOMCorpusRenders`
-- **Remaining qualification:**
-  - JPEG family, JPEG 2000, HTJ2K, JPEG XL
-  - transcoding API
-
-### JPEG Lossless (Processes 14/15)
-
-- **Normative source:** PS3.5 A.4.1; ITU-T T.81 Annexes C, D, F.1.2, F.2.2, H, K.2.
-- **Claimed level:**
-  - Huffman decode/encode
-  - arithmetic decode
-- **Automated evidence:**
-  - `testLibjpegTurboStreamsDecodeExactly`
-  - `testArithmeticLosslessIndependentSOF11Vector`
-  - `testArithmeticLosslessComponentsShareStatisticsByTable`
-  - `testInvalidLosslessStreamsAreRejected`
-  - `testEncoderRoundTripsEveryPredictorAndLayout`
-  - `testPointTransformDiscardsOnlyTheLowBits`
-  - `testOptimizedHuffmanCodesNeverExceedSixteenBits`
-  - `testEncoderRejectsUnsupportedLayouts`
-  - `testExternalDICOMCorpusRenders`
-- **Remaining qualification:**
-  - Subsampled components
-  - restart intervals inside lines
-  - arithmetic encoding
-
-### JPEG Baseline, Extended, and non-hierarchical progression
-
-- **Normative source:** PS3.5 A.4.1; ITU-T T.81 Annexes A, B, C, D, F, G, K.1, K.2.
-- **Claimed level:**
-  - Huffman decode/encode
-  - arithmetic SOF9/SOF10 decode
-  - IJG integer pipeline bit-exact with libjpeg-turbo
-- **Automated evidence:**
-  - `testDecodingIsBitExactWithLibjpegTurbo`
-  - `testArithmeticSequentialAndProgressiveFixtures`
-  - `testArithmeticDCTMatchesLibjpegTurboWhenAvailable`
-  - `testArithmeticDCTColorAndTwelveBitWhenAvailable`
-  - `testEncapsulatedYBRImageRendersAsRGB`
-  - `testEncoderRoundTripsSamplingModesAndRestartMarkers`
-  - `testEncoderMatchesLibjpegTurboIntegerPipelineWhenAvailable`
-  - `testExtendedEncoderRoundTripsTwelveBitMonochrome`
-  - `testEncoderRejectsUnsupportedInputs`
-  - `testInvalidStreamsAreRejected`
-  - `testRetiredProgressiveHuffmanSyntaxesRemainReadable`
-  - `testKnownTransferSyntaxIsNotAutomaticallyImplemented`
-  - `testExternalDICOMCorpusRenders`
-- **Remaining qualification:**
-  - Arithmetic encoding
-  - signed/YBR input
-  - streaming coefficient storage
-  - performance
-
-### JPEG hierarchical (Processes 16-29)
-
-- **Normative source:** PS3.5 A.4.1; ITU-T T.81 Annex J, B.3.2, B.3.3.
-- **Claimed level:** Decode of every first and differential frame type with expansion
-- **Automated evidence:**
-  - `testDecodingMatchesTheISOReferenceWithinTolerance`
-  - `testEveryHierarchicalSyntaxIsDecodable`
-  - `testNonHierarchicalDecodersDelegateHierarchicalStreams`
-  - `testSingleFrameStreamsUnderHierarchicalSyntaxesStillDecode`
-  - `testMalformedStreamsAreRejectedWithoutCrashing`
-- **Remaining qualification:**
-  - Bit-exact match with the fixed-point reference
-  - subsampled lossless frames
-  - encoding
-
-### JPEG-LS (Lossless and Near-Lossless)
-
-- **Normative source:** PS3.5 A.4.3; ITU-T T.87.
-- **Claimed level:**
-  - Decode of every interleave mode, near-lossless coding, LSE preset parameters, restart intervals, HP color transforms
-  - encode with default parameters
-- **Automated evidence:**
-  - `testDecodingMatchesTheSourceWithinNear`
-  - `testEncodingReproducesCharLSByteForByte`
-  - `testConformanceStreamsWithPresetParameters`
-  - `testEncoderRoundTripsSignedAndNearLosslessFrames`
-  - `testCapabilitiesAndRegistry`
-  - `testMalformedStreamsAreRejectedWithoutCrashing`
-  - `testFullConformanceSuiteWhenAvailable`
-- **Remaining qualification:**
-  - Mapping tables (palettes)
-  - oversize dimensions (LSE type 4)
-  - encoding with custom preset parameters or subsampling
-  - SIMD performance
-
-### Basic DICOMDIR and file-sets
-
-- **Normative source:** PS3.3 Annex F, PS3.10 8.
-- **Claimed level:**
-  - Legacy PATIENT/STUDY/SERIES/IMAGE plus typed generic record-tree read/write
-  - fail-closed public tree reconstruction from serialized offsets
-  - synthetic round-trip of all 35 current F.4-1 types with unconditional top-level Type 1/2 keys from F.5 and included macros
-  - lossless view, graph, hierarchy, common Type 1C keys, recursive Basic/Enhanced Coded Entry and SOP Instance Reference checks, Scope of Inventory structure and locally determinable dependencies, F.7 Icon Image structure/pixel constraints, verified SR and Hanging Protocol conditions, Related General SOP Class UID, and selected referenced-instance conditions
-  - unknown/retired/misplaced record types load and stay traversable
-- **Automated evidence:**
-  - `testWriteDicomDir`
-  - `testGenericDirectoryRecordTreeWritesAdditionalRecordTypes`
-  - `testGenericDirectoryRecordTreeRejectsInvalidDefinitions`
-  - `testGenericWriterRoundTripsEveryCurrentDirectoryRecordType`
-  - `testDirectoryRecordIncludedMacroTopLevelKeys`
-  - `testScopeOfInventoryMacroValidation`
-  - `testDirectoryRecordCodeSequenceMacroValidation`
-  - `testSOPInstanceReferenceMacroValidation`
-  - `testIconImageKeyValidation`
-  - `testDirectoryRecordTypeRegistryAndLosslessGenericView`
-  - `testDirectoryRecordKeyValidationCoversBasicAndRTRecords`
-  - `testDirectoryRecordConditionalKeyValidation`
-  - `testDirectoryRecordSelfContainedConditionalRules`
-  - `testReferencedInstanceConditionalDirectoryKeys`
-  - `testReferencedSRConceptModifierRequiresDirectoryContentSequence`
-  - `testDirectoryStructureValidationRejectsSemanticGraphErrors`
-  - `testUnknownAndRetiredDirectoryRecordTypesRemainTraversable`
-- **Remaining qualification:** Complete semantic per-type writer qualification, deeper IOD/module-dependent F.5 conditions and conditional/nested included macros, palette LUT semantics, external-tool exchange, update semantics, descriptor content decoding, PS3.11/PS3.12 profiles and formats
-
-### DICOM JSON
-
-- **Normative source:** PS3.18 Annex F.
-- **Claimed level:** Not conformant
-- **Automated evidence:** none
-- **Remaining qualification:** Value, PN, SQ, null, InlineBinary, BulkDataURI
-
-### Native DICOM Model XML
-
-- **Normative source:** PS3.19 Annex A, used by PS3.18.
-- **Claimed level:** Not conformant
-- **Automated evidence:** none
-- **Remaining qualification:** Namespace, values, PN, SQ, bulk data, escaping
-
-### DICOM Upper Layer association
-
-- **Normative source:** PS3.8.
-- **Claimed level:** Experimental
-- **Automated evidence:** limited User Information tests
-- **Remaining qualification:** Full state/negotiation/fragmentation and peer tests
-
-### DIMSE services
-
-- **Normative source:** PS3.7.
-- **Claimed level:** Experimental/partial
-- **Automated evidence:** command-set endian test plus legacy service tests
-- **Remaining qualification:** Complete service/status/cancel matrix
-
-### TLS and DICOM security profiles
-
-- **Normative source:** PS3.15.
-- **Claimed level:** Not implemented
-- **Automated evidence:** none
-- **Remaining qualification:** Transport, identity, audit, signatures, encryption
-
-### IOD and module validation
-
-- **Normative source:** PS3.3.
-- **Claimed level:** Not implemented
-- **Automated evidence:** none
-- **Remaining qualification:** Separate declarative validation layer
-
-### Context Groups and terminology
-
-- **Normative source:** PS3.16.
-- **Claimed level:** Not implemented
-- **Automated evidence:** none
-- **Remaining qualification:** Versioned terminology layer
+| Capability | Normative source | Status | Current evidence | Remaining qualification |
+| --- | --- | --- | --- | --- |
+| DICOM JSON | PS3.18 Annex F | Not conformant | none | Value, PN, SQ, null, InlineBinary, BulkDataURI |
+| Native DICOM Model XML | PS3.19 Annex A, used by PS3.18 | Not conformant | none | Namespace, values, PN, SQ, bulk data, escaping |
+| DICOM Upper Layer association | PS3.8 | Experimental | limited User Information tests | Full state/negotiation/fragmentation and peer tests |
+| DIMSE services | PS3.7 | Experimental/partial | command-set endian test plus legacy service tests | Complete service/status/cancel matrix |
+| TLS and DICOM security profiles | PS3.15 | Not implemented | none | Transport, identity, audit, signatures, encryption |
+| IOD and module validation | PS3.3 | Not implemented | none | Separate declarative validation layer |
+| Context Groups and terminology | PS3.16 | Not implemented | none | Versioned terminology layer |
 
 ## Corpus policy
 
