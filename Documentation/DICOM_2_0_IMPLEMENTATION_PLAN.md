@@ -161,7 +161,7 @@ representations are built on a stable, lossless Data Set model.
   - [x] JPEG-LS;
   - [x] JPEG 2000 and HTJ2K (vendored OpenJPEG and OpenJPH);
   - [x] JPEG XL decode (vendored libjxl, .110 to .112);
-  - [ ] JPEG XL encode;
+  - [x] JPEG XL encode (.110, .112) and JPEG recompression (.111) both ways;
   - [x] JPEG 2000 Part 2 multi-component transforms (.92, .93) decode, by
     component collection;
   - [x] JPEG 2000 Part 2 encode (grayscale, wavelet across frames);

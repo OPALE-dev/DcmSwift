@@ -54,6 +54,8 @@ public struct DICOMPhotometricInterpretation: RawRepresentable, Hashable, Sendab
     public static let ybrPartial420 = Self(rawValue: "YBR_PARTIAL_420")
     public static let ybrICT = Self(rawValue: "YBR_ICT")
     public static let ybrRCT = Self(rawValue: "YBR_RCT")
+    /// The JPEG XL XYB color space (PS3.5 8.2.15).
+    public static let xyb = Self(rawValue: "XYB")
 
     public var isMonochrome: Bool { self == .monochrome1 || self == .monochrome2 }
 }

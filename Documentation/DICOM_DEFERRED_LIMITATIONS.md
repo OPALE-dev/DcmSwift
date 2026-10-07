@@ -50,19 +50,23 @@ conformance without that evidence.
   plan. YBR_ICT and YBR_RCT frames are returned as RGB by the JPEG 2000
   codec; YBR_PARTIAL_420 is only used by video syntaxes, which are out of
   scope.
-- JPEG XL decodes through the vendored libjxl 0.12.0. Encoding and a reliable,
-  high-performance Swift implementation remain future work. Reliable,
+- JPEG XL decodes and encodes through the vendored libjxl 0.12.0. A reliable,
+  high-performance Swift implementation remains future work. Reliable,
   high-performance Swift implementations of JPEG 2000 and HTJ2K are also a
   later goal. RLE
   Lossless, Deflated Image Frame Compression, JPEG Lossless, JPEG
   Baseline/Extended, and JPEG-LS are implemented in Swift; JPEG 2000 and HTJ2K
   use the vendored OpenJPEG 2.5.4 (decoding, JPEG 2000 encoding) and OpenJPH
-  0.32.0 (HTJ2K encoding). JPEG XL uses libjxl 0.12.0 for decoding. OpenJPH is
+  0.32.0 (HTJ2K encoding). JPEG XL uses libjxl 0.12.0, with Brotli and skcms. OpenJPH is
   built without its SIMD variants, which
   need per-file compiler flags that SwiftPM does not allow. MPEG, AVC,
   and HEVC are outside the planned scope.
 - JPEG XL limits:
-  - encoding is not implemented;
+  - the encoder takes unsigned 8 or 16-bit cells only (no signed, 24-bit, or
+    YBR input) and labels lossy color frames RGB rather than XYB;
+  - JPEG recompression keeps 8-bit Huffman JPEG with 4:4:4, 4:2:2, 4:2:0, or
+    4:4:0 chroma; libjxl renders its pixels with its own IDCT and chroma
+    upsampling, up to 16 levels from libjpeg-turbo at chroma edges;
   - signed or floating-point samples, alpha or other extra channels, animation,
     and non-identity orientation are rejected;
   - the tracked fixtures cover lossless 8/12-bit, RGB, lossy, raw/container,

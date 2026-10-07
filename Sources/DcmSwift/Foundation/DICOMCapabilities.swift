@@ -36,6 +36,7 @@ public enum DICOMCapabilities {
         DICOMJPEGLSCodec.lossless, DICOMJPEGLSCodec.nearLossless,
         DICOMJPEG2000Codec.lossless, DICOMJPEG2000Codec.lossy,
         DICOMJPEG2000Codec.partTwoLossless, DICOMJPEG2000Codec.partTwo,
+        DICOMJPEGXLCodec.lossless, DICOMJPEGXLCodec.jpegRecompression, DICOMJPEGXLCodec.general,
         DICOMJPEG2000Codec.htj2kLossless, DICOMJPEG2000Codec.htj2kLosslessRPCL, DICOMJPEG2000Codec.htj2k
     ]
 

@@ -132,11 +132,26 @@ updated this file. The previous Codex → Claude handoff is archived in
 - The package C++ language level is now C++17. OpenJPEG and OpenJPH build and
   test successfully at that level.
 
+### C. JPEG XL encode (Claude) — done
+- `Sources/CJPEGXL` now also vendors the libjxl encoder sources, DEC_JPEG and
+  DEC_BOX sources, `jxl_cms.cc`, the thread runner, Brotli 1.2.0
+  (common/dec/enc), and skcms (baseline only), at the commits pinned by
+  libjxl 0.12.0 (`/tmp/dcmswift-libjxl.*/libjxl` was the checkout).
+  `JPEGXL_ENABLE_TRANSCODE_JPEG=1` (needed by the encoder's JPEGData, and it
+  enables `reconstructJPEG`).
+- API: `DICOMJPEGXLCodec.encode(_:description:mode:effort:)` (`.lossless`
+  for .110, `.distance(d)` for .112), `recompressJPEG(_:)` (.111, keeps jbrd)
+  and `reconstructJPEG(_:)`.
+- Oracle: imagecodecs 2026.8.16 (libjxl 0.12.0) in
+  `/tmp/dcmswift-jxl-venv.lq7mA9` decoded every output identically and
+  `jpegxl_decode_jpeg` rebuilt every recompressed fixture JPEG bit for bit.
+  libjxl's JPEG pixel rendering differs from libjpeg-turbo by up to 16 levels
+  (also seen in imagecodecs), hence the test tolerance.
+
 ### Conventions reminder
 Docs as several short tables with HTML lists in cells (memory: feedback-docs-lists); never `rm` with wildcards; commit message style with trailer; before each commit run release build, `swift test --parallel`, iOS xcodebuild with a fresh derivedDataPath.
 
 ## Next
-- JPEG XL encode (user request 2026-10-07, separate commit);
 - then the network (user request 2026-10-07): rework the architecture on
   SwiftNIO, DIMSE, and the services, with a TLS layer planned; server code
   must be robust, leak-free, and resilient to errors;
