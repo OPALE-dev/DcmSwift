@@ -12,8 +12,8 @@ struct JPEGStream {
     }
 
     struct Frame {
-        /// The SOF marker's low nibble: 0 baseline, 1 extended, 2
-        /// progressive, 3 lossless (Huffman); others are unsupported.
+        /// The SOF marker's low nibble: 0...3 for Huffman and 9...11 for
+        /// the corresponding arithmetic sequential/progressive/lossless modes.
         let process: UInt8
         let precision: Int
         let lines: Int
@@ -40,6 +40,10 @@ struct JPEGStream {
         let dcTables: [Int: JPEGHuffmanTable]
         let acTables: [Int: JPEGHuffmanTable]
         let quantizationTables: [Int: [Int]]
+        /// Arithmetic DC conditioning (L, U) and AC conditioning (K),
+        /// supplied by DAC markers. T.81 defaults are (0, 1) and 5.
+        let arithmeticDCTables: [Int: (lower: Int, upper: Int)]
+        let arithmeticACTables: [Int: Int]
         /// The entropy-coded data, including RST markers and stuffed bytes.
         let entropyCodedData: ArraySlice<UInt8>
     }
@@ -57,6 +61,8 @@ struct JPEGStream {
         var dcTables: [Int: JPEGHuffmanTable] = [:]
         var acTables: [Int: JPEGHuffmanTable] = [:]
         var quantizationTables: [Int: [Int]] = [:]
+        var arithmeticDCTables: [Int: (lower: Int, upper: Int)] = [:]
+        var arithmeticACTables: [Int: Int] = [:]
         var restartInterval = 0
 
         func uint16(_ at: Int) -> Int { Int(bytes[at]) << 8 | Int(bytes[at + 1]) }
@@ -141,6 +147,28 @@ struct JPEGStream {
                 guard segment.count == 2 else { throw fail("restart interval is invalid") }
                 restartInterval = uint16(segment.lowerBound)
 
+            case 0xCC:
+                guard segment.count.isMultiple(of: 2) else { throw fail("arithmetic conditioning table is truncated") }
+                var offset = segment.lowerBound
+                while offset < segment.upperBound {
+                    let tableClass = bytes[offset] >> 4
+                    let identifier = Int(bytes[offset] & 0x0F)
+                    let conditioning = Int(bytes[offset + 1])
+                    guard identifier <= 3 else { throw fail("arithmetic conditioning table identifier is invalid") }
+                    if tableClass == 0 {
+                        let lower = conditioning & 0x0F
+                        let upper = conditioning >> 4
+                        guard lower <= upper else { throw fail("arithmetic DC conditioning is invalid") }
+                        arithmeticDCTables[identifier] = (lower, upper)
+                    } else if tableClass == 1 {
+                        guard conditioning <= 63 else { throw fail("arithmetic AC conditioning is invalid") }
+                        arithmeticACTables[identifier] = conditioning
+                    } else {
+                        throw fail("arithmetic conditioning table class is invalid")
+                    }
+                    offset += 2
+                }
+
             case 0xDA:
                 guard let frame else { throw fail("scan precedes the frame header") }
                 guard segment.count >= 1 else { throw fail("scan header is truncated") }
@@ -151,10 +179,15 @@ struct JPEGStream {
                     guard let componentIndex = frame.components.firstIndex(where: { $0.identifier == bytes[base] }) else {
                         throw fail("scan refers to an unknown component")
                     }
+                    let dcTable = Int(bytes[base + 1] >> 4)
+                    let acTable = Int(bytes[base + 1] & 0x0F)
+                    guard dcTable <= 3, acTable <= 3 else {
+                        throw fail("scan table selector is invalid")
+                    }
                     return ScanComponent(
                         componentIndex: componentIndex,
-                        dcTable: Int(bytes[base + 1] >> 4),
-                        acTable: Int(bytes[base + 1] & 0x0F))
+                        dcTable: dcTable,
+                        acTable: acTable)
                 }
                 let tail = segment.upperBound - 3
                 let entropyEnd = Self.endOfEntropyCodedData(in: bytes, from: position)
@@ -168,6 +201,8 @@ struct JPEGStream {
                     dcTables: dcTables,
                     acTables: acTables,
                     quantizationTables: quantizationTables,
+                    arithmeticDCTables: arithmeticDCTables,
+                    arithmeticACTables: arithmeticACTables,
                     entropyCodedData: bytes[position..<entropyEnd]))
                 position = entropyEnd
 

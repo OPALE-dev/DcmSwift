@@ -2,19 +2,23 @@ import Foundation
 
 /// JPEG Lossless, Non-Hierarchical (Process 14): 1.2.840.10008.1.2.4.57 and
 /// its first-order prediction subset 1.2.840.10008.1.2.4.70 (PS3.5 A.4.1),
-/// decoded per ITU-T T.81 Annex H with Huffman coding.
+/// decoded per ITU-T T.81 Annex H with Huffman or arithmetic coding.
 public struct DICOMJPEGLosslessCodec: DICOMPixelDataDecoder {
     public static let processFourteen = "1.2.840.10008.1.2.4.57"
+    /// Retired: Lossless, Non-Hierarchical, arithmetic coding (Process 15).
+    public static let processFifteen = "1.2.840.10008.1.2.4.58"
     public static let firstOrderPrediction = "1.2.840.10008.1.2.4.70"
-    public var transferSyntaxUIDs: Set<String> { [Self.processFourteen, Self.firstOrderPrediction] }
+    public var transferSyntaxUIDs: Set<String> {
+        [Self.processFourteen, Self.processFifteen, Self.firstOrderPrediction]
+    }
 
     public init() {}
 
     public func decode(_ encodedFrame: Data, description: DICOMPixelDescription) throws -> DICOMDecodedFrame {
         let stream = try JPEGStream([UInt8](encodedFrame))
         let frame = stream.frame
-        guard frame.process == 3 else {
-            throw DICOMCodecError.unsupportedImage("SOF\(frame.process) is not JPEG Lossless with Huffman coding")
+        guard frame.process == 3 || frame.process == 11 else {
+            throw DICOMCodecError.unsupportedImage("SOF\(frame.process) is not a supported JPEG Lossless process")
         }
         guard (2...16).contains(frame.precision) else {
             throw DICOMCodecError.corruptedData("JPEG Lossless precision \(frame.precision)")
@@ -41,7 +45,12 @@ public struct DICOMJPEGLosslessCodec: DICOMPixelDataDecoder {
         var decoded = Set<Int>()
 
         for scan in stream.scans {
-            try decodeScan(scan, precision: frame.precision, width: width, height: height, planes: &planes)
+            if frame.process == 11 {
+                try decodeArithmeticScan(
+                    scan, precision: frame.precision, width: width, height: height, planes: &planes)
+            } else {
+                try decodeScan(scan, precision: frame.precision, width: width, height: height, planes: &planes)
+            }
             for component in scan.components {
                 decoded.insert(component.componentIndex)
                 shifts[component.componentIndex] = scan.approximationLow

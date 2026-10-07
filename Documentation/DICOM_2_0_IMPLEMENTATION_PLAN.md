@@ -68,6 +68,9 @@ Current progress in that order:
   and retired Huffman syntaxes, and encode unsigned monochrome or RGB input
   through the IJG integer FDCT, quantization, chroma-subsampling, restart, and
   optimized-Huffman pipeline verified against libjpeg-turbo;
+- retired non-hierarchical JPEG arithmetic syntaxes .52, .54, .56, and .58
+  decode through the T.81 QM state machine, including sequential/progressive
+  DCT and predictive lossless processes;
 - every Specific Character Set Defined Term, including ISO 2022 Code
   Extensions, GB18030-2022, and GBK, reads and writes with platform-independent
   tables and PS3.5 Annex H-K vectors;
