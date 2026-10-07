@@ -1,8 +1,43 @@
 stages:
   - test
 
+variables:
+  # Confidential interoperability corpus published in this project's Generic
+  # Package Registry. Bump both values together when the corpus changes.
+  DCM_CORPUS_VERSION: "2026.10.07"
+  DCM_CORPUS_SHA256: ""
+  # Fail, rather than skip, the corpus tests when the corpus is unavailable.
+  DCMSWIFT_REQUIRE_INTEROP_CORPUS: "1"
+
+.interop-corpus:
+  cache:
+    key: dcmswift-dicom-corpus-$DCM_CORPUS_VERSION
+    paths:
+      - .corpus/
+  before_script:
+    - |
+      CORPUS_ROOT="$CI_PROJECT_DIR/.corpus/dcmswift-dicom-corpus"
+      if [ ! -d "$CORPUS_ROOT" ]; then
+        test -n "$DCM_CORPUS_SHA256" || { echo "DCM_CORPUS_SHA256 is not set"; exit 1; }
+        command -v curl >/dev/null || { apt-get update -qq && apt-get install -y -qq curl; }
+        curl --fail --silent --show-error --location \
+          --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          --output corpus.tar.gz \
+          "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/dcmswift-dicom-corpus/$DCM_CORPUS_VERSION/dcmswift-dicom-corpus.tar.gz"
+        if command -v sha256sum >/dev/null; then
+          echo "$DCM_CORPUS_SHA256  corpus.tar.gz" | sha256sum -c -
+        else
+          echo "$DCM_CORPUS_SHA256  corpus.tar.gz" | shasum -a 256 -c -
+        fi
+        rm -rf .corpus && mkdir -p .corpus
+        tar -xzf corpus.tar.gz -C .corpus
+        rm corpus.tar.gz
+      fi
+      export DCMSWIFT_INTEROP_CORPUS="$CORPUS_ROOT"
+
 swift-package:
   stage: test
+  extends: .interop-corpus
   image: swift:6.1
   tags:
     - deploy
@@ -13,6 +48,7 @@ swift-package:
 
 macos-package:
   stage: test
+  extends: .interop-corpus
   tags:
     - swift
   script:
@@ -23,6 +59,7 @@ macos-package:
 
 ios-package:
   stage: test
+  extends: .interop-corpus
   tags:
     - swift
   script:
@@ -33,4 +70,9 @@ ios-package:
     - IOS_RUNTIME=$(xcrun simctl list runtimes available | awk '/^iOS / {version=$2} END {print version}')
     - SIMULATOR_ID=$(xcrun simctl list devices available "iOS $IOS_RUNTIME" | grep -m1 'iPhone' | grep -oE '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}')
     - test -n "$SIMULATOR_ID"
-    - xcodebuild test -scheme DcmSwift-Package -destination "platform=iOS Simulator,id=$SIMULATOR_ID"
+    # xcodebuild forwards TEST_RUNNER_-prefixed variables to the test process.
+    - >-
+      TEST_RUNNER_DCMSWIFT_INTEROP_CORPUS="$DCMSWIFT_INTEROP_CORPUS"
+      TEST_RUNNER_DCMSWIFT_REQUIRE_INTEROP_CORPUS="$DCMSWIFT_REQUIRE_INTEROP_CORPUS"
+      xcodebuild test -scheme DcmSwift-Package
+      -destination "platform=iOS Simulator,id=$SIMULATOR_ID"

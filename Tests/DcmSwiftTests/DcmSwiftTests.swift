@@ -209,8 +209,14 @@ class DcmSwiftTests: XCTestCase {
     }
 
     private func externalDICOMCorpusPaths() throws -> [String] {
-        guard let root = ProcessInfo.processInfo.environment["DCMSWIFT_INTEROP_CORPUS"],
-              !root.isEmpty else {
+        let environment = ProcessInfo.processInfo.environment
+        guard let root = environment["DCMSWIFT_INTEROP_CORPUS"], !root.isEmpty else {
+            // CI sets DCMSWIFT_REQUIRE_INTEROP_CORPUS so a missing corpus fails
+            // the qualification instead of reporting a green skipped run.
+            if environment["DCMSWIFT_REQUIRE_INTEROP_CORPUS"] == "1" {
+                XCTFail("DCMSWIFT_REQUIRE_INTEROP_CORPUS is set but DCMSWIFT_INTEROP_CORPUS is not")
+                return []
+            }
             throw XCTSkip("Set DCMSWIFT_INTEROP_CORPUS to run optional interoperability qualification")
         }
         var isDirectory: ObjCBool = false

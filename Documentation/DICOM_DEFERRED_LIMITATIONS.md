@@ -156,9 +156,11 @@ conformance without that evidence.
   Swift 6 concurrency checking currently reports NIO pipeline `Sendable`
   diagnostics that would become errors in Swift 6 language mode; that migration
   remains a separate release gate.
-- The large interoperability corpus is intentionally not versioned. Clean CI
-  executes tracked synthetic tests and reports corpus-dependent coverage as
-  skipped; passing CI alone is therefore not corpus interoperability evidence.
+- The large interoperability corpus is intentionally not versioned in git.
+  GitLab CI downloads a pinned, checksummed archive from the private Generic
+  Package Registry and fails, rather than skips, when it is unavailable. The
+  corpus is internal to OPALE and remains no substitute for exchange with
+  independent DICOM toolkits.
 
 ## Completion rule
 
