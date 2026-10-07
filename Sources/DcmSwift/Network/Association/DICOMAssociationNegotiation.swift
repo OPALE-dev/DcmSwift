@@ -52,11 +52,16 @@ public struct DICOMAbstractSyntaxSupport: Sendable {
     /// This side may act as SCU when the requestor proposes the SCP role
     /// (for example C-STORE sub-operations of C-GET).
     public var scuRole: Bool
+    /// Choose the first proposed transfer syntax that is supported, rather
+    /// than this side's preference: a storage SCP then keeps instances as
+    /// the requestor encoded them.
+    public var prefersProposedOrder: Bool
 
-    public init(transferSyntaxes: [String], scpRole: Bool = true, scuRole: Bool = false) {
+    public init(transferSyntaxes: [String], scpRole: Bool = true, scuRole: Bool = false, prefersProposedOrder: Bool = false) {
         self.transferSyntaxes = transferSyntaxes
         self.scpRole = scpRole
         self.scuRole = scuRole
+        self.prefersProposedOrder = prefersProposedOrder
     }
 }
 
@@ -150,7 +155,10 @@ public enum DICOMAssociationNegotiator {
                     id: proposal.id, result: .abstractSyntaxNotSupported, transferSyntax: ""))
                 continue
             }
-            guard let syntax = support.transferSyntaxes.first(where: proposal.transferSyntaxes.contains) else {
+            let chosen = support.prefersProposedOrder
+                ? proposal.transferSyntaxes.first(where: support.transferSyntaxes.contains)
+                : support.transferSyntaxes.first(where: proposal.transferSyntaxes.contains)
+            guard let syntax = chosen else {
                 results.append(DICOMPresentationContextResult(
                     id: proposal.id, result: .transferSyntaxesNotSupported, transferSyntax: ""))
                 continue

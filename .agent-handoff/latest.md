@@ -151,12 +151,38 @@ updated this file. The previous Codex → Claude handoff is archived in
 ### Conventions reminder
 Docs as several short tables with HTML lists in cells (memory: feedback-docs-lists); never `rm` with wildcards; commit message style with trailer; before each commit run release build, `swift test --parallel`, iOS xcodebuild with a fresh derivedDataPath.
 
+## Network rewrite (Claude, in progress, 2026-10-07)
+New code in `Sources/DcmSwift/Network/` (old `Networking/` still present, to
+migrate then delete; beware case-insensitive object-file collisions: never
+name a new file like an old one, e.g. DICOMAssociation.swift vs
+DicomAssociation.swift).
+- Done and tested: PDU model/codec/framing (byte-exact with pynetdicom),
+  PS3.8 state machine (all 494 table cells), negotiation (roles, async
+  window, user identity, proposed-order TS for storage), DIMSE commands
+  (byte-exact with pynetdicom), statuses, fragmentation/reassembly with
+  spill-to-disk (POSIX file I/O), runtime actor (send lock, response queues
+  with back-pressure, C-CANCEL, release/abort/ARTIM), DICOMClient
+  (withAssociation scope: echo/store(file|dataset|item)/find(AsyncSequence,
+  early stop = C-CANCEL)/move/get), DICOMServer (NIOAsyncChannel, discarding
+  task group, max associations -> RJ transient, TLS via swift-nio-ssl, idle
+  timeout, storage/query/retrieve service protocols, C-MOVE through an
+  outgoing association, C-GET on the same association).
+- Tests: DcmSwiftNetwork{PDU,StateMachine,Negotiation,DIMSE,Integration}Tests.
+- Interop scripts: `Scripts/interop/scu.py` (pynetdicom SCU vs our server:
+  ALL OK) and `scp.py` (pynetdicom SCP vs our client: OK except the MR RLE
+  context, which pynetdicom did not accept: investigate). Run with a venv
+  holding pynetdicom 3.0.4 + pydicom 3; see the removed ZZ test in git
+  history of this session for the Swift driver (start server port 0, run
+  script with port).
+- TODO next: TLS loopback test (generate test certs), N-services (storage
+  commitment), migrate DcmEcho/DcmStore/DcmFind/DcmServer to the new API and
+  delete `Networking/`, docs (README, CONFORMANCE network section,
+  LIMITATIONS, TRACEABILITY, PLAN Phase 2 checkboxes), Linux CI run, iOS run.
+
 ## Next
-- then the network (user request 2026-10-07): rework the architecture on
-  SwiftNIO, DIMSE, and the services, with a TLS layer planned; server code
-  must be robust, leak-free, and resilient to errors;
-- then 6: fuzzing, DCMTK/pydicom cross-checks, PS3.18 JSON / PS3.19 XML, network rewrite (NIOAsyncChannel, swift-nio-ssl, transport-services);
-- then 7: rendering and presentation (plan Phase 3: PS3.4 Annex N, GSPS/CSPS, overlays, shutters, padding, Presentation LUT + GSDF, ICC, high bit depth, RWVM).
+- finish the network work above;
+- then 6: fuzzing, DCMTK/pydicom cross-checks, PS3.18 JSON / PS3.19 XML;
+- then 7: rendering and presentation (plan Phase 3).
 
 ## Conventions and methods that work
 - Every codec is checked against an independent reference **before** committing:
