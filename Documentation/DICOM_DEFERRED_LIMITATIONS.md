@@ -51,8 +51,11 @@ conformance without that evidence.
   Deflated Image Frame Compression, and the JPEG Lossless decoder are
   implemented. MPEG, AVC, and HEVC are outside the planned scope.
 - JPEG Lossless decoding rejects subsampled components, restart intervals that
-  start inside a line, and DNL markers; it has no encoder yet. Point transforms
-  and restart intervals have no independent test stream yet.
+  start inside a line, and DNL markers. Encoded streams were verified with
+  libjpeg-turbo 3.2.0, including restart intervals and point transforms.
+  pylibjpeg-libjpeg decodes point-transformed streams differently from T.81
+  H.1.2.1 (it predicts the first sample from 2^(P-1) instead of 2^(P-Pt-1)), so
+  point transforms may not interoperate with readers built on it.
 - There is no Data Set level transcoding API yet: frames are encoded with
   the codec types directly.
 
