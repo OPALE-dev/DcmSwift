@@ -48,7 +48,10 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
         TransferSyntax.JPEG2000LosslessOnly,
         TransferSyntax.JPEG2000,
         TransferSyntax.JPEG2000Part2Lossless,
-        TransferSyntax.JPEG2000Part2
+        TransferSyntax.JPEG2000Part2,
+        TransferSyntax.JPEGXLLossless,
+        TransferSyntax.JPEGXLJPEGRecompression,
+        TransferSyntax.JPEGXL
     ]
     
     /**
@@ -186,6 +189,15 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
      Transfer Syntax : JPEG 2000 Part 2 Multicomponent Image Compression
      */
     public static let JPEG2000Part2 = "1.2.840.10008.1.2.4.93"
+
+    /// JPEG XL Lossless Image Compression.
+    public static let JPEGXLLossless = "1.2.840.10008.1.2.4.110"
+
+    /// JPEG XL JPEG Recompression.
+    public static let JPEGXLJPEGRecompression = "1.2.840.10008.1.2.4.111"
+
+    /// JPEG XL Image Compression.
+    public static let JPEGXL = "1.2.840.10008.1.2.4.112"
     
     
     public var tsUID:String         = "1.2.840.10008.1.2.1"

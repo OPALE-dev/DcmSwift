@@ -1,0 +1,4 @@
+module CJPEGXL {
+    header "jxl/decode.h"
+    export *
+}

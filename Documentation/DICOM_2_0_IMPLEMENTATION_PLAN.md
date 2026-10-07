@@ -160,7 +160,8 @@ representations are built on a stable, lossless Data Set model.
     including hierarchical;
   - [x] JPEG-LS;
   - [x] JPEG 2000 and HTJ2K (vendored OpenJPEG and OpenJPH);
-  - [ ] JPEG XL (vendored libjxl);
+  - [x] JPEG XL decode (vendored libjxl, .110 to .112);
+  - [ ] JPEG XL encode;
   - [ ] JPEG 2000 Part 2 multi-component transforms (.92, .93);
   - ~~MPEG, AVC, and HEVC~~ (out of scope).
 

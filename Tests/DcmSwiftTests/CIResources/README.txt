@@ -30,6 +30,11 @@ OpenJPEG decoder under test; jp2_rgb8_padded is an OpenJPEG JP2 file followed
 by one padding byte, as in an even-length DICOM fragment. Lossless .raw files
 hold the source samples; the lossy one holds OpenJPH's own decoding.
 
+jpegxl-*.jxl are listed in jpegxl-cases.json. They were encoded and decoded by
+imagecodecs 2026.8.16 with libjxl 0.12.0; matching .raw files contain the
+independently decoded native pixels. The set covers lossless raw codestreams,
+a lossless container, lossy coding, and reversible JPEG recompression.
+
 Large DICOM, DICOMDIR, SR, and RT corpora are not SwiftPM resources. They are an
 optional interoperability qualification input selected with the
 DCMSWIFT_INTEROP_CORPUS environment variable.

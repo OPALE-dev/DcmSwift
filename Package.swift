@@ -68,12 +68,32 @@ let package = Package(
             linkerSettings: [
                 .linkedLibrary("m", .when(platforms: [.linux]))
             ]),
+        // libjxl 0.12.0 decoder and its pinned Highway runtime, vendored as
+        // source (see Sources/CJPEGXL/README.DcmSwift.md).
+        .target(
+            name: "CJPEGXL",
+            exclude: ["LICENSE", "README.DcmSwift.md"],
+            cxxSettings: [
+                .define("JXL_INTERNAL_LIBRARY_BUILD"),
+                .define("JXL_STATIC_DEFINE"),
+                .define("JPEGXL_ENABLE_TRANSCODE_JPEG", to: "0"),
+                .define("JPEGXL_ENABLE_BOXES", to: "0"),
+                .headerSearchPath("."),
+                .headerSearchPath("lib"),
+                .headerSearchPath("lib/include"),
+                .headerSearchPath("third_party/highway")
+            ],
+            linkerSettings: [
+                .linkedLibrary("m", .when(platforms: [.linux])),
+                .linkedLibrary("pthread", .when(platforms: [.linux]))
+            ]),
         .target(
             name: "DcmSwift",
             dependencies: [
                 "CZlib",
                 "COpenJPEG",
                 "COpenJPH",
+                "CJPEGXL",
                 .product(name: "NIO", package: "swift-nio"),
                 .product(name: "Html", package: "swift-html")
             ],
@@ -136,5 +156,5 @@ let package = Package(
             resources: [.process("CIResources")]
         )
     ],
-    cxxLanguageStandard: .cxx14
+    cxxLanguageStandard: .cxx17
 )

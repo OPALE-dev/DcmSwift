@@ -48,18 +48,32 @@ conformance without that evidence.
   plan. YBR_ICT and YBR_RCT frames are returned as RGB by the JPEG 2000
   codec; YBR_PARTIAL_420 is only used by video syntaxes, which are out of
   scope.
-- Implement JPEG XL through the vendored reference implementation (libjxl),
-  with reliable, high-performance Swift implementations of JPEG 2000, HTJ2K,
-  and JPEG XL as a later goal. RLE
+- JPEG XL decodes through the vendored libjxl 0.12.0. Encoding and a reliable,
+  high-performance Swift implementation remain future work. Reliable,
+  high-performance Swift implementations of JPEG 2000 and HTJ2K are also a
+  later goal. RLE
   Lossless, Deflated Image Frame Compression, JPEG Lossless, JPEG
   Baseline/Extended, and JPEG-LS are implemented in Swift; JPEG 2000 and HTJ2K
   use the vendored OpenJPEG 2.5.4 (decoding, JPEG 2000 encoding) and OpenJPH
-  0.32.0 (HTJ2K encoding). OpenJPH is built without its SIMD variants, which
+  0.32.0 (HTJ2K encoding). JPEG XL uses libjxl 0.12.0 for decoding. OpenJPH is
+  built without its SIMD variants, which
   need per-file compiler flags that SwiftPM does not allow. MPEG, AVC,
   and HEVC are outside the planned scope.
+- JPEG XL limits:
+  - encoding is not implemented;
+  - signed or floating-point samples, alpha or other extra channels, animation,
+    and non-identity orientation are rejected;
+  - the tracked fixtures cover lossless 8/12-bit, RGB, lossy, raw/container,
+    and reversible JPEG recompression streams, but no external DICOM JPEG XL
+    corpus is currently qualified.
 - JPEG 2000 limits:
   - Part 2 multi-component transforms (.92, .93) and JPIP (.94, .95) are
     preserved but not decoded;
+  - Part 2 component collections can span multiple DICOM Frames and Fragments,
+    so they require a volume/component-collection decoder rather than the
+    current independent-frame codec protocol; OpenJPEG 2.5.4 also rejects MCT
+    type 2 during header parsing and its dormant custom inverse path is not
+    safe enough to enable without further repair and qualification;
   - subsampled components are rejected;
   - the pydicom JPEG 2000 and HTJ2K files (20 decodable files, including
     signed, 10 to 16-bit, YBR_RCT/YBR_ICT, and multi-frame images) were
