@@ -139,8 +139,8 @@ representations are built on a stable, lossless Data Set model.
 - [x] make unsupported ISO 2022/code-extension declarations explicit failures,
   never implicit UTF-8 fallbacks;
 - [x] propagate Specific Character Set into nested Data Sets;
-- [ ] cover Person Name component groups and multi-valued text (multi-valued
-  text and PN decoding are done; PN is still exposed as a flat string);
+- [x] cover Person Name component groups and multi-valued text with structured,
+  typed read/write APIs while retaining the historical flat string API;
 - [x] add ISO 2022 repertoires incrementally with conformance vectors (every
   PS3.3 2026d Defined Term, with PS3.5 Annex H-K and DCMTK vectors).
 

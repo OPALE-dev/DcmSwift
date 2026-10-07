@@ -268,6 +268,16 @@ public class DataSet: DicomObject {
         }
         return nil
     }
+
+    /// Decoded Values of a character-string Data Element.
+    public func textValues(forTag tag:String) -> [String]? {
+        element(forTagName: tag)?.textValues
+    }
+
+    /// Structured Values of a Person Name Data Element.
+    public func personNames(forTag tag:String) -> [DICOMPersonName]? {
+        element(forTagName: tag)?.personNames
+    }
     
     
     public func integer32(forTag tag:String ) -> Int32? {
@@ -405,6 +415,32 @@ public class DataSet: DicomObject {
         }
         
         return nil
+    }
+
+    /// Creates or updates a character-string Data Element from separate
+    /// Values, applying its DICOM value delimiter and Specific Character Set.
+    @discardableResult
+    public func set(textValues values:[String], forTagName name:String) -> DataElement? {
+        let element = element(forTagName: name) ?? DataElement(withTagName: name, dataset: self)
+        guard let element, element.setTextValues(values) else { return nil }
+        if !allElements.contains(where: { $0 === element }) { add(element: element) }
+        if element.name == "SpecificCharacterSet" {
+            characterSet = DICOMCharacterSet(specificCharacterSet: values.joined(separator: "\\"))
+        }
+        sortElements()
+        recalculateOffsets()
+        return element
+    }
+
+    /// Creates or updates a PN Data Element from structured names.
+    @discardableResult
+    public func set(personNames names:[DICOMPersonName], forTagName name:String) -> DataElement? {
+        let element = element(forTagName: name) ?? DataElement(withTagName: name, dataset: self)
+        guard let element, element.setPersonNames(names) else { return nil }
+        if !allElements.contains(where: { $0 === element }) { add(element: element) }
+        sortElements()
+        recalculateOffsets()
+        return element
     }
     
     
