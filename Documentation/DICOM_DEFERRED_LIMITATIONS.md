@@ -46,9 +46,12 @@ conformance without that evidence.
   palettes. Rendered output is 8 bits per channel; a high bit depth display
   path is not offered. YBR_PARTIAL_420, YBR_ICT, and YBR_RCT are only defined
   for encapsulated data and wait for the codecs.
-- Add optional, independently qualified codecs for RLE, JPEG, JPEG-LS, JPEG
-  2000, HTJ2K, MPEG, AVC and HEVC. Encapsulated fragments are currently
-  preserved structurally; preservation is not a decode/encode claim.
+- Implement JPEG Lossless, JPEG baseline/extended, and JPEG-LS in Swift, and
+  JPEG 2000, HTJ2K, and JPEG XL through vendored reference implementations.
+  RLE Lossless and Deflated Image Frame Compression are implemented. MPEG,
+  AVC, and HEVC are outside the planned scope.
+- There is no Data Set level transcoding API yet: frames are encoded with
+  the codec types directly.
 
 ## Deflated Explicit VR Little Endian
 

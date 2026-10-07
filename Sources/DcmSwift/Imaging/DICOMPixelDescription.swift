@@ -104,6 +104,11 @@ public struct DICOMPixelDescription: Equatable, Sendable {
             : 0...((Int64(1) << bitsStored) - 1)
     }
 
+    /// True when the Pixel Data is encapsulated, so constraints that only
+    /// apply to the native layout (such as the even width of YBR_FULL_422)
+    /// are not enforced.
+    public let isEncapsulated: Bool
+
     public init(dataset: DataSet) throws {
         let scope = DICOMAttributeScope(dataset: dataset)
         let sampleFormat: SampleFormat
@@ -116,10 +121,50 @@ public struct DICOMPixelDescription: Equatable, Sendable {
         } else {
             sampleFormat = .integer
         }
-        try self.init(scope: scope, sampleFormat: sampleFormat)
+        try self.init(
+            scope: scope, sampleFormat: sampleFormat,
+            isEncapsulated: scope.element("PixelData") is DataSequence)
     }
 
-    init(scope: DICOMAttributeScope, sampleFormat: SampleFormat) throws {
+    /// A description of decoded pixels, for codecs whose output differs from
+    /// the encoded image (for example a single decoded frame in RGB).
+    init(
+        rows: Int, columns: Int, samplesPerPixel: Int,
+        photometricInterpretation: DICOMPhotometricInterpretation,
+        bitsAllocated: Int, bitsStored: Int, highBit: Int, isSigned: Bool,
+        planarConfiguration: Int, numberOfFrames: Int,
+        sampleFormat: SampleFormat = .integer, isEncapsulated: Bool = false
+    ) {
+        self.rows = rows
+        self.columns = columns
+        self.samplesPerPixel = samplesPerPixel
+        self.photometricInterpretation = photometricInterpretation
+        self.bitsAllocated = bitsAllocated
+        self.bitsStored = bitsStored
+        self.highBit = highBit
+        self.isSigned = isSigned
+        self.planarConfiguration = planarConfiguration
+        self.numberOfFrames = numberOfFrames
+        self.sampleFormat = sampleFormat
+        self.isEncapsulated = isEncapsulated
+    }
+
+    /// The same description for one native frame, optionally with another
+    /// photometric interpretation or planar configuration.
+    func decodedFrame(
+        photometricInterpretation: DICOMPhotometricInterpretation? = nil,
+        planarConfiguration: Int? = nil
+    ) -> DICOMPixelDescription {
+        DICOMPixelDescription(
+            rows: rows, columns: columns, samplesPerPixel: samplesPerPixel,
+            photometricInterpretation: photometricInterpretation ?? self.photometricInterpretation,
+            bitsAllocated: bitsAllocated, bitsStored: bitsStored, highBit: highBit, isSigned: isSigned,
+            planarConfiguration: planarConfiguration ?? self.planarConfiguration, numberOfFrames: 1,
+            sampleFormat: sampleFormat, isEncapsulated: false)
+    }
+
+    init(scope: DICOMAttributeScope, sampleFormat: SampleFormat, isEncapsulated: Bool) throws {
+        self.isEncapsulated = isEncapsulated
         func required(_ name: String) throws -> Int {
             guard let value = scope.integer(name) else { throw DICOMPixelDataError.missingAttribute(name) }
             return value
@@ -211,7 +256,9 @@ public struct DICOMPixelDescription: Equatable, Sendable {
                 throw DICOMPixelDataError.invalidAttribute("SamplesPerPixel", "\(name) requires 3")
             }
         case .ybrFull422:
-            guard samplesPerPixel == 3, planarConfiguration == 0, columns % 2 == 0, bitsAllocated >= 8 else {
+            // Even widths are only required for the native layout.
+            guard samplesPerPixel == 3, planarConfiguration == 0, bitsAllocated >= 8,
+                  isEncapsulated || columns % 2 == 0 else {
                 throw DICOMPixelDataError.invalidAttribute(
                     "PhotometricInterpretation",
                     "YBR_FULL_422 requires 3 samples, Planar Configuration 0, and an even number of columns")
