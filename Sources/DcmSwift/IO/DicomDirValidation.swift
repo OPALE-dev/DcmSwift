@@ -19,16 +19,19 @@ private enum DICOMDirectoryHierarchy {
     static let retired:Set<String> = [
         "PRINT QUEUE", "FILM SESSION", "FILM BOX", "IMAGE BOX", "OVERLAY",
         "MODALITY LUT", "VOI LUT", "CURVE", "TOPIC", "VISIT", "RESULTS",
-        "INTERPRETATION", "STUDY COMPONENT", "STORED PRINT", "MRDR"
+        "INTERPRETATION", "STUDY COMPONENT", "STORED PRINT", "MRDR",
+        "HL7 STRUC DOC"
     ]
 
-    static func children(of type:String) -> Set<String> {
+    /// Permitted lower-level types, or nil when the current Table F.4-1 does
+    /// not define the entity below a retired or unknown record type.
+    static func children(of type:String) -> Set<String>? {
         switch type {
         case "PATIENT": return ["STUDY", "PRIVATE"]
         case "STUDY": return ["SERIES", "PRIVATE"]
         case "SERIES": return seriesChildren
         case "PRIVATE": return allCurrent.union(retired)
-        default: return ["PRIVATE"]
+        default: return allCurrent.contains(type) ? ["PRIVATE"] : nil
         }
     }
 }
@@ -37,12 +40,26 @@ extension DicomDir {
     /// Validates the Basic Directory container and offset graph independently
     /// from any PS3.11 application profile or PS3.12 media format.
     public func validateDirectoryStructure() -> [ValidationResult] {
+        return directoryStructureDiagnostics().results
+    }
+
+    /// Structure diagnostics plus whether any error prevents trustworthy
+    /// traversal. Record Type value and placement errors are reported but do
+    /// not block reading, so unknown, retired, and misplaced records remain
+    /// observable through the parsed hierarchy.
+    func directoryStructureDiagnostics() -> (results:[ValidationResult], blocksTraversal:Bool) {
         guard let dataSet = dataset else {
-            return [ValidationResult(self, message: "DICOMDIR has no Data Set", severity: .Error)]
+            return ([ValidationResult(self, message: "DICOMDIR has no Data Set", severity: .Error)], true)
         }
 
         var results:[ValidationResult] = []
+        var blocksTraversal = false
         func error(_ object:Any, _ message:String) {
+            results.append(ValidationResult(object, message: message, severity: .Error))
+            blocksTraversal = true
+        }
+
+        func recordError(_ object:Any, _ message:String) {
             results.append(ValidationResult(object, message: message, severity: .Error))
         }
 
@@ -58,7 +75,7 @@ extension DicomDir {
         }
         guard let fileSetElement = dataSet.element(forTagName: "FileSetID") else {
             error(dataSet, "DICOMDIR is missing the Type 2 FileSetID element")
-            return results
+            return (results, blocksTraversal)
         }
         let fileSetID = (fileSetElement.value as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -81,11 +98,11 @@ extension DicomDir {
         guard let sequence = dataSet.element(forTagName: "DirectoryRecordSequence") as? DataSequence else {
             // The Directory Information Module is optional for primitive
             // environments; File-set Identification remains mandatory.
-            return results
+            return (results, blocksTraversal)
         }
         guard let consistency = dataSet.element(forTagName: "FileSetConsistencyFlag") else {
             error(dataSet, "Directory Information Module is missing FileSetConsistencyFlag")
-            return results
+            return (results, blocksTraversal)
         }
         if consistency.value as? UInt16 != 0 {
             error(consistency, "FileSetConsistencyFlag must be 0000H")
@@ -122,7 +139,7 @@ extension DicomDir {
               let lastElement = dataSet.element(forTagName: "OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity"),
               let lastValue = lastElement.value as? UInt32 else {
             error(dataSet, "Directory Information Module is missing root Directory Record offsets")
-            return results
+            return (results, blocksTraversal)
         }
         let firstRoot = Int(firstValue)
         let declaredLastRoot = Int(lastValue)
@@ -131,11 +148,11 @@ extension DicomDir {
             if firstRoot != 0 || declaredLastRoot != 0 {
                 error(sequence, "Empty Directory Record Sequence must have zero root offsets")
             }
-            return results
+            return (results, blocksTraversal)
         }
         if firstRoot == 0 || declaredLastRoot == 0 {
             error(sequence, "Non-empty Directory Record Sequence must have non-zero first and last root offsets")
-            return results
+            return (results, blocksTraversal)
         }
 
         var visited:Set<Int> = []
@@ -147,7 +164,7 @@ extension DicomDir {
 
         func visitEntity(
             startingAt start:Int,
-            allowedTypes:Set<String>,
+            allowedTypes:Set<String>?,
             parentDescription:String,
             depth:Int = 0
         ) -> Int? {
@@ -174,16 +191,17 @@ extension DicomDir {
                     activePath.remove(current)
                     return last
                 }
+                // Retired and unknown records have no current Table F.4-1
+                // position, so only their type value is reported.
                 if DICOMDirectoryHierarchy.retired.contains(type) {
                     warning(item, "Directory Record Type \(type) is retired")
                 } else if !DICOMDirectoryHierarchy.allCurrent.contains(type) {
-                    error(item, "Unknown Directory Record Type \(type)")
-                }
-                if !allowedTypes.contains(type) {
-                    error(item, "Directory Record Type \(type) is not permitted below \(parentDescription)")
+                    recordError(item, "Unknown Directory Record Type \(type)")
+                } else if let allowedTypes, !allowedTypes.contains(type) {
+                    recordError(item, "Directory Record Type \(type) is not permitted below \(parentDescription)")
                 }
                 if type == "PRIVATE", item.element(withName: "PrivateRecordUID") == nil {
-                    error(item, "PRIVATE Directory Record requires PrivateRecordUID")
+                    recordError(item, "PRIVATE Directory Record requires PrivateRecordUID")
                 }
 
                 if let lower = itemOffset("OffsetOfReferencedLowerLevelDirectoryEntity", item), lower != 0 {
@@ -212,7 +230,7 @@ extension DicomDir {
         if visited.count != sequence.items.count {
             error(sequence, "Directory Record Sequence contains unreachable or orphan Items")
         }
-        return results
+        return (results, blocksTraversal)
     }
 
     /// Verifies referenced Part 10 files and their identity attributes. This is
