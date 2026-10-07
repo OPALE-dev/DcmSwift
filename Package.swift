@@ -52,11 +52,28 @@ let package = Package(
                 .linkedLibrary("m", .when(platforms: [.linux])),
                 .linkedLibrary("pthread", .when(platforms: [.linux]))
             ]),
+        // OpenJPH 0.32.0, generic (non-SIMD) sources vendored unchanged, behind a
+        // C interface (see Sources/COpenJPH/README.DcmSwift.md).
+        .target(
+            name: "COpenJPH",
+            exclude: ["LICENSE", "README.DcmSwift.md"],
+            cxxSettings: [
+                .define("OJPH_DISABLE_SIMD"),
+                .headerSearchPath("openjph/src/core/openjph"),
+                .headerSearchPath("openjph/src/core/codestream"),
+                .headerSearchPath("openjph/src/core/coding"),
+                .headerSearchPath("openjph/src/core/transform"),
+                .headerSearchPath("openjph/src/core/others")
+            ],
+            linkerSettings: [
+                .linkedLibrary("m", .when(platforms: [.linux]))
+            ]),
         .target(
             name: "DcmSwift",
             dependencies: [
                 "CZlib",
                 "COpenJPEG",
+                "COpenJPH",
                 .product(name: "NIO", package: "swift-nio"),
                 .product(name: "Html", package: "swift-html")
             ],
@@ -118,5 +135,6 @@ let package = Package(
             exclude: ["Resources"],
             resources: [.process("CIResources")]
         )
-    ]
+    ],
+    cxxLanguageStandard: .cxx14
 )

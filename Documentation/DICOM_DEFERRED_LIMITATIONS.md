@@ -44,14 +44,18 @@ conformance without that evidence.
   Pixel Padding Value and Range, Presentation States, Supplemental or Enhanced
   Palette Color LUTs, ICC profiles, Real World Value Mapping, or alpha
   palettes. Rendered output is 8 bits per channel; a high bit depth display
-  path is not offered. YBR_PARTIAL_420, YBR_ICT, and YBR_RCT are only defined
-  for encapsulated data and wait for the codecs.
-- Implement JPEG XL and HTJ2K encoding through vendored reference
-  implementations (libjxl, OpenJPH), with reliable, high-performance Swift
-  implementations of JPEG 2000, HTJ2K, and JPEG XL as a later goal. RLE
+  path is not offered. These are planned in Phase 3 of the implementation
+  plan. YBR_ICT and YBR_RCT frames are returned as RGB by the JPEG 2000
+  codec; YBR_PARTIAL_420 is only used by video syntaxes, which are out of
+  scope.
+- Implement JPEG XL through the vendored reference implementation (libjxl),
+  with reliable, high-performance Swift implementations of JPEG 2000, HTJ2K,
+  and JPEG XL as a later goal. RLE
   Lossless, Deflated Image Frame Compression, JPEG Lossless, JPEG
   Baseline/Extended, and JPEG-LS are implemented in Swift; JPEG 2000 and HTJ2K
-  decoding and JPEG 2000 encoding use the vendored OpenJPEG 2.5.4. MPEG, AVC,
+  use the vendored OpenJPEG 2.5.4 (decoding, JPEG 2000 encoding) and OpenJPH
+  0.32.0 (HTJ2K encoding). OpenJPH is built without its SIMD variants, which
+  need per-file compiler flags that SwiftPM does not allow. MPEG, AVC,
   and HEVC are outside the planned scope.
 - JPEG 2000 limits:
   - Part 2 multi-component transforms (.92, .93) and JPIP (.94, .95) are

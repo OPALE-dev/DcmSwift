@@ -71,8 +71,9 @@ Current progress in that order:
 - retired non-hierarchical JPEG arithmetic syntaxes .52, .54, .56, and .58
   decode through the T.81 QM state machine, including sequential/progressive
   DCT and predictive lossless processes;
-- JPEG 2000 (.90, .91) decodes and encodes, and HTJ2K (.201 to .203) decodes,
-  through the vendored OpenJPEG 2.5.4;
+- JPEG 2000 (.90, .91) and HTJ2K (.201 to .203) decode through the vendored
+  OpenJPEG 2.5.4; JPEG 2000 encodes with OpenJPEG and HTJ2K with the vendored
+  OpenJPH 0.32.0;
 - JPEG-LS Lossless and Near-Lossless (.80, .81) decode and encode in Swift,
   pass the T.87 conformance suite, and encode byte for byte like CharLS;
 - retired hierarchical JPEG syntaxes .59 to .66 decode per T.81 Annex J
@@ -191,13 +192,30 @@ tests.
 - test fragmentation and association state transitions with independent peers;
 - add TLS with explicit certificate and hostname validation policies.
 
-## Phase 3 — Web, security, and advanced objects
+## Phase 3 — Image rendering and presentation (after the network)
+
+Goal: render every image as a conformant display application would, following
+the PS3.4 Annex N pixel transformation sequence, and qualify the result against
+an independent renderer (DCMTK `dcmp2pgm`, and IHE Consistent Presentation of
+Images test material).
+
+| Area | Scope | Normative source |
+| --- | --- | --- |
+| Grayscale pipeline completion | <ul><li>Pixel Padding Value and Range</li><li>Presentation LUT and P-Values</li><li>High bit depth output (10 to 16 bits)</li></ul> | PS3.3 C.7.5.1.1.2, C.11.4, C.11.6; PS3.4 N.2 |
+| Display calibration | Grayscale Standard Display Function mapping from P-Values | PS3.14 |
+| Overlays and shutters | <ul><li>Overlay Planes (60xx), including multi-frame overlays</li><li>Display Shutter and Bitmap Display Shutter</li></ul> | PS3.3 C.9.2, C.7.6.11, C.7.6.15 |
+| Presentation States | <ul><li>Grayscale Softcopy Presentation State: VOI, spatial transformation, displayed area, graphic and text annotations, compound graphics</li><li>Color, Pseudo-color, and Blending Presentation States</li><li>Variable Modality LUT Presentation State</li></ul> | PS3.3 C.11.10 to C.11.15; PS3.4 Annex N |
+| Color management | <ul><li>ICC profiles to PCS-Values</li><li>Supplemental and Enhanced Palette Color LUTs</li></ul> | PS3.3 C.11.15, C.7.6.19, C.7.6.23; PS3.4 N.2.1 |
+| Quantitative data | Real World Value Mapping | PS3.3 C.7.6.16.2.11 |
+| Performance | Vectorized rendering and multi-frame (cine) streaming | — |
+
+## Phase 4 — Web, security, and advanced objects
 
 - DICOMweb: QIDO-RS, WADO-RS, STOW-RS, media types, multipart streaming,
   rendered retrieval, and standard error payloads;
 - security and audit: TLS profiles, authentication hooks, ATNA audit events,
   digital signatures, encrypted attributes, and de-identification profiles;
-- semantic APIs for Structured Reports, presentation states, segmentations,
+- semantic APIs for Structured Reports, segmentations,
   radiotherapy, waveforms, encapsulated documents, and parametric maps;
 - terminology/context-group handling from PS3.16 with version provenance.
 
