@@ -22,6 +22,16 @@ public protocol DICOMPixelDataDecoder: Sendable {
     func decode(_ encodedFrame: Data, description: DICOMPixelDescription) throws -> DICOMDecodedFrame
 }
 
+/// A decoder for Transfer Syntaxes whose encoded units may hold several
+/// frames: JPEG 2000 Part 2 component collections (PS3.5 A.4.4), where
+/// each Fragment holds data of one collection and a collection spans frames.
+public protocol DICOMPixelDataCollectionDecoder: DICOMPixelDataDecoder {
+    /// Decodes one encoded unit (the concatenated Fragments of a component
+    /// collection) to the consecutive frames it holds. `description` is the
+    /// encoded image's description with one frame.
+    func decodeCollection(_ encoded: Data, description: DICOMPixelDescription) throws -> [DICOMDecodedFrame]
+}
+
 /// Errors raised by codecs while decoding a frame.
 public enum DICOMCodecError: Error, Equatable, CustomStringConvertible {
     case unsupportedTransferSyntax(String)

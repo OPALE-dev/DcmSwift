@@ -195,8 +195,8 @@ final class DcmSwiftJPEG2000Tests: XCTestCase {
             XCTAssertTrue(capability.canDecodePixelData, uid)
             XCTAssertTrue(capability.canEncodePixelData, uid)
         }
-        // Part 2 multi-component and JPIP syntaxes are preserved only.
-        for uid in ["1.2.840.10008.1.2.4.92", "1.2.840.10008.1.2.4.93", "1.2.840.10008.1.2.4.94"] {
+        // JPIP syntaxes are preserved only.
+        for uid in ["1.2.840.10008.1.2.4.94"] {
             XCTAssertNil(DICOMCodecRegistry.decoder(for: uid), uid)
         }
     }
