@@ -146,7 +146,10 @@ conformance without that evidence.
 - Linux is a required platform, but CoreGraphics/AppKit/UIKit-backed image
   creation and PNG export are currently Apple-only. A portable pixel rendering
   and image export layer remains to be designed and qualified.
-- GitLab CI currently qualifies the official Swift 6.1 Linux image. Additional
+- GitLab CI currently qualifies the official Swift 6.1 Linux image, plus macOS
+  and an iOS Simulator (newest installed runtime) on the `swift` macOS runner.
+  Physical iOS devices, the minimum declared iOS 13 runtime, and other Apple
+  platforms are not exercised. Additional
   Linux distributions, architectures, Swift releases, and libc variants are
   not yet part of the tested platform matrix.
 - The package still uses Swift tools/language compatibility mode 5.9. Strict

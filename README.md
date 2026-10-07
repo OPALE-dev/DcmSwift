@@ -16,21 +16,23 @@ implemented.
 
 ## Requirements
 
-* macOS 10.15 or later, or Linux with a supported Swift toolchain
+* macOS 10.15 or later, iOS 13 or later, or Linux with a supported Swift
+  toolchain
 * Swift 5.9 or later (GitLab CI currently qualifies the package with the
-  official Swift 6.1 Linux image)
+  official Swift 6.1 Linux image, and on a macOS runner with Xcode for macOS
+  and the newest installed iOS Simulator runtime)
 * system `zlib` development files (`zlib1g-dev` on Debian/Ubuntu, or `zlib`
   through Homebrew on macOS)
 
 Linux is a required DcmSwift 2.0 platform, not a best-effort build target.
 Library code, command-line tools, and the platform-independent test suite must
-build and run on both Linux and Apple platforms. Image export APIs that require
+build and run on both Linux and Apple platforms; the library and its test suite
+must also build and run on iOS. Image export APIs that require
 CoreGraphics/AppKit/UIKit remain conditionally available and are not part of
 the Linux API surface.
 
 ## Dependencies
 
-* `Kitura/BlueSocket` (networking)
 * `apple/swift-nio` (networking)
 * `apple/swift-argument-parser` (command-line tools)
 * `pointfreeco/swift-html` (HTML rendering of DICOM SR)
@@ -44,6 +46,12 @@ Run the same package-level checks on macOS or Linux:
 
     swift build -c release
     swift test
+
+On macOS, the iOS build and test run use Xcode:
+
+    xcodebuild build -scheme DcmSwift -destination 'generic/platform=iOS'
+    xcodebuild test -scheme DcmSwift-Package \
+      -destination 'platform=iOS Simulator,name=<iPhone simulator>'
 
 The mandatory unit suite uses only small, deterministic synthetic fixtures that
 are versioned with the source. It executes identically in a clean checkout on

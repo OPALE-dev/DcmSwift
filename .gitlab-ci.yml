@@ -10,3 +10,27 @@ swift-package:
     - swift --version
     - swift build -c release
     - swift test
+
+macos-package:
+  stage: test
+  tags:
+    - swift
+  script:
+    - xcodebuild -version
+    - swift --version
+    - swift build -c release
+    - swift test
+
+ios-package:
+  stage: test
+  tags:
+    - swift
+  script:
+    - xcodebuild -version
+    - xcodebuild build -scheme DcmSwift -destination 'generic/platform=iOS' -quiet
+    # Use an iPhone simulator from the newest installed iOS runtime so the job
+    # does not depend on device names that change between Xcode releases.
+    - IOS_RUNTIME=$(xcrun simctl list runtimes available | awk '/^iOS / {version=$2} END {print version}')
+    - SIMULATOR_ID=$(xcrun simctl list devices available "iOS $IOS_RUNTIME" | grep -m1 'iPhone' | grep -oE '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}')
+    - test -n "$SIMULATOR_ID"
+    - xcodebuild test -scheme DcmSwift-Package -destination "platform=iOS Simulator,id=$SIMULATOR_ID"
