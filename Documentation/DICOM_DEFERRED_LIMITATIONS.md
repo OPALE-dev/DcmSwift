@@ -40,9 +40,12 @@ conformance without that evidence.
   a general streaming Data Set API.
 - Serializing deferred values may materialize them in memory; implement bounded
   streaming output and test source-file changes during a write.
-- Implement and qualify native Pixel Data interpretation across photometric
-  interpretations, planar configurations, bit packing, multi-frame layouts,
-  overlays, palettes, float/double pixels, and related functional groups.
+- Native Pixel Data rendering does not yet apply Overlay Planes (60xx),
+  Pixel Padding Value and Range, Presentation States, Supplemental or Enhanced
+  Palette Color LUTs, ICC profiles, Real World Value Mapping, or alpha
+  palettes. Rendered output is 8 bits per channel; a high bit depth display
+  path is not offered. YBR_PARTIAL_420, YBR_ICT, and YBR_RCT are only defined
+  for encapsulated data and wait for the codecs.
 - Add optional, independently qualified codecs for RLE, JPEG, JPEG-LS, JPEG
   2000, HTJ2K, MPEG, AVC and HEVC. Encapsulated fragments are currently
   preserved structurally; preservation is not a decode/encode claim.
@@ -147,9 +150,8 @@ conformance without that evidence.
 
 ## Cross-platform implementation
 
-- Linux is a required platform, but CoreGraphics/AppKit/UIKit-backed image
-  creation and PNG export are currently Apple-only. A portable pixel rendering
-  and image export layer remains to be designed and qualified.
+- Image rendering and PNG export are portable. Encapsulated frames can only be
+  displayed through the Apple system decoders until DcmSwift has codecs.
 - GitLab CI currently qualifies the official Swift 6.1 Linux image, plus macOS
   and an iOS Simulator (newest installed runtime) on the `swift` macOS runner.
   Physical iOS devices, the minimum declared iOS 13 runtime, and other Apple

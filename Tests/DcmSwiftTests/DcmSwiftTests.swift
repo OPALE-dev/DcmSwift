@@ -201,6 +201,32 @@ class DcmSwiftTests: XCTestCase {
         }
     }
 
+    public func testExternalDICOMCorpusRenders() throws {
+        var rendered = 0
+        for path in try externalDICOMCorpusPaths() where path.hasSuffix(".dcm") {
+            guard let file = DicomFile(forPath: path),
+                  file.dataset.hasElement(forTagName: "PixelData") else { continue }
+            do {
+                let renderer = try DICOMImageRenderer(dataset: file.dataset)
+                for frame in Set([0, renderer.description.numberOfFrames - 1]) {
+                    _ = try renderer.render(frame: frame)
+                }
+                rendered += 1
+            } catch DICOMPixelDataError.encapsulatedPixelData {
+                // Codecs are not implemented yet.
+            } catch let error as DICOMPixelDataError {
+                // Only malformed Image Pixel attributes may prevent rendering.
+                switch error {
+                case .missingAttribute, .invalidAttribute:
+                    Logger.info("Not rendered \(path): \(error)")
+                default:
+                    XCTFail("\(path): \(error)")
+                }
+            }
+        }
+        XCTAssertGreaterThan(rendered, 0)
+    }
+
     public func testExternalDICOMCorpusRoundTrips() throws {
         let paths = try externalDICOMCorpusPaths()
         for path in paths {
@@ -749,7 +775,6 @@ class DcmSwiftTests: XCTestCase {
         }
     }
     
-#if os(macOS) || os(iOS)
     public func testToPNG() throws {
         let path = try requireDICOMResource("rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424")
         let dcmFile = try XCTUnwrap(DicomFile(forPath: path))
@@ -759,7 +784,6 @@ class DcmSwiftTests: XCTestCase {
             .filter { $0.hasSuffix(".png") }
         XCTAssertEqual(outputs.count, 2)
     }
-#endif
     
     public func testGetUnscaledDose() throws {
         let p = try requireDICOMResource("rt_dose_1.2.826.0.1.3680043.8.274.1.1.6549911257.77961.3133305374.424")
