@@ -46,10 +46,15 @@ conformance without that evidence.
   palettes. Rendered output is 8 bits per channel; a high bit depth display
   path is not offered. YBR_PARTIAL_420, YBR_ICT, and YBR_RCT are only defined
   for encapsulated data and wait for the codecs.
-- Implement JPEG baseline/extended and JPEG-LS in Swift, and JPEG 2000,
-  HTJ2K, and JPEG XL through vendored reference implementations. RLE Lossless,
-  Deflated Image Frame Compression, and the JPEG Lossless decoder are
+- Implement JPEG-LS in Swift, and JPEG 2000, HTJ2K, and JPEG XL through
+  vendored reference implementations first, with reliable, high-performance
+  Swift implementations as a later goal. RLE Lossless, Deflated Image Frame
+  Compression, JPEG Lossless, and JPEG Baseline/Extended decoding are
   implemented. MPEG, AVC, and HEVC are outside the planned scope.
+- JPEG Baseline/Extended has no encoder, no arithmetic coding (SOF9-11, not
+  used by the current DICOM Transfer Syntaxes), and decodes at about 40
+  megapixels per second, well below SIMD libraries; entropy decoding and SIMD
+  work remain. YCbCr frames are always converted to RGB.
 - JPEG Lossless decoding rejects subsampled components, restart intervals that
   start inside a line, and DNL markers. Encoded streams were verified with
   libjpeg-turbo 3.2.0, including restart intervals and point transforms.
