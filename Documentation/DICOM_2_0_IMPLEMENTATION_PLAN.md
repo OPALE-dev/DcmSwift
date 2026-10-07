@@ -61,6 +61,9 @@ Current progress in that order:
   DICOMDIR milestone;
 - binary multi-valued VR/VM handling, lazy Bulk Data, and Deflated Explicit VR
   Little Endian are implemented with malformed-input regression tests;
+- native Pixel Data is decoded and rendered portably (grayscale pipeline,
+  RGB, YBR, Palette Color, multi-frame, functional groups) and matches pydicom
+  stored and Modality values on the interoperability corpus;
 - every Specific Character Set Defined Term, including ISO 2022 Code
   Extensions, GB18030-2022, and GBK, reads and writes with platform-independent
   tables and PS3.5 Annex H-K vectors;

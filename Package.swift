@@ -100,7 +100,7 @@ let package = Package(
             ]),
         .testTarget(
             name: "DcmSwiftTests",
-            dependencies: ["DcmSwift"],
+            dependencies: ["DcmSwift", "CZlib"],
             exclude: ["Resources"],
             resources: [.process("CIResources")]
         )

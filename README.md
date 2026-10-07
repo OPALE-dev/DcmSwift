@@ -27,9 +27,8 @@ implemented.
 Linux is a required DcmSwift 2.0 platform, not a best-effort build target.
 Library code, command-line tools, and the platform-independent test suite must
 build and run on both Linux and Apple platforms; the library and its test suite
-must also build and run on iOS. Image export APIs that require
-CoreGraphics/AppKit/UIKit remain conditionally available and are not part of
-the Linux API surface.
+must also build and run on iOS. Image rendering and PNG export are portable;
+only the `CGImage`, `NSImage`, and `UIImage` conveniences are Apple-specific.
 
 ## Dependencies
 
@@ -147,6 +146,7 @@ endianness, pixel access, Structured Reports, and radiotherapy objects.
 | Explicit VR Big Endian | Structural read and write for interoperability; retired by DICOM |
 | Encapsulated JPEG/RLE transfer syntaxes | Fragment preservation only; no codec claim |
 | Deflated Explicit VR Little Endian | Part 10 read/write with raw RFC 1951 streams and bounded inflation; not negotiated for DIMSE |
+| Native Pixel Data rendering | Portable grayscale pipeline (Modality LUT or rescale, VOI LUT or LINEAR/LINEAR_EXACT/SIGMOID window, MONOCHROME1), RGB, YBR_FULL, YBR_FULL_422, Palette Color (including segmented), 1 to 32 bits, float/double pixels, multi-frame and functional groups, Big Endian; PNG export on every platform |
 | Character sets | Every PS3.3 2026d Specific Character Set Defined Term: 13 single-byte repertoires, ISO 2022 Code Extensions (JIS X 0208/0212, KS X 1001, GB 2312, single-byte G1 sets), UTF-8, GB18030-2022, and GBK; read/write with nested Data Set inheritance/override, using bundled tables identical on every platform |
 | Unknown or invalid character set declarations | Rejected rather than decoded as UTF-8 |
 | DICOM JSON and Native DICOM Model XML | Existing convenience output is not yet PS3.18 conformant |
@@ -238,6 +238,27 @@ Add an element, here a sequence, to a dataset:
 
     dataset.add(element: DataSequence(withTag: tag, parent: nil))
     
+## Images
+
+`DICOMImageRenderer` interprets native Pixel Data on every platform and
+produces 8-bit gray or RGB pixels:
+
+```swift
+let file = DicomFile(forPath: path)!
+let renderer = try DICOMImageRenderer(dataset: file.dataset)
+let ct = try renderer.render(frame: 0)            // first window, VOI LUT, or identity
+let bone = try renderer.render(options: DICOMRenderingOptions(
+    voi: .window(DICOMWindow(center: 400, width: 1800))))
+try bone.pngData().write(to: outputURL)
+let hounsfield = try renderer.modalityValues(frame: 0)
+```
+
+`DICOMNativePixelData` exposes stored values frame by frame without loading
+file-backed Bulk Data. Window and VOI LUT values come from the Per-Frame or
+Shared Functional Groups before the top-level attributes. Encapsulated Pixel
+Data reports `DICOMPixelDataError.encapsulatedPixelData` until codecs are
+available; `DicomImage` still hands such frames to the Apple system decoders.
+
 ## DICOMDIR
 
 `DicomDir` preserves its legacy Basic Directory PATIENT → STUDY → SERIES →

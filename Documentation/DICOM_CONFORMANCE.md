@@ -31,7 +31,7 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Explicit VR Big Endian (retired) | Structural read and write for interoperability |
 | Deflated Explicit VR Little Endian | Part 10 read/write using raw RFC 1951 Deflate; decompressed size is bounded; DIMSE negotiation not claimed |
 | Encapsulated Pixel Data | Fragment structure preservation only; no codec claim |
-| Native uncompressed Pixel Data | Byte access; full image interpretation is not yet claimed |
+| Native uncompressed Pixel Data | Stored values for 1 to 32 bits allocated, any High Bit, signed or unsigned, planar configurations, YBR_FULL_422 chroma, multi-frame (unpadded 1-bit frames), Float/Double Float Pixel Data, Big Endian; rendering through the PS3.3 C.11 grayscale pipeline (Modality LUT or rescale, VOI LUT or LINEAR/LINEAR_EXACT/SIGMOID window, MONOCHROME1) with Functional Group precedence, and RGB, YBR_FULL, YBR_FULL_422, and Palette Color (including segmented) to 8-bit RGB; portable PNG export |
 | Unknown/private elements | Unknown implicit values preserved as UN; private creator blocks resolved within each Data Set scope |
 | Defined/undefined-length sequences | Read and write; Item tags, boundaries, delimiters, nesting depth, and resource limits validated |
 | Specific Character Set | All PS3.3 2026d Defined Terms (Tables C.12-2 to C.12-5), including ISO 2022 Code Extensions, GB18030-2022, and GBK; nested inheritance and local override |
