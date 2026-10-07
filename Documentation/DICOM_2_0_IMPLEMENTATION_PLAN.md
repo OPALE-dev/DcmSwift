@@ -4,6 +4,9 @@ This plan targets DICOM 2026d. It separates registry knowledge from actual
 implementation so that no UID, transfer syntax, SOP class, media profile, or
 service is advertised merely because it exists in the standard.
 
+Status legend: `[x]` done, `[ ]` to do (partial work is noted), and
+~~struck through~~ for items moved out of scope.
+
 ## Capability levels
 
 Every supported feature must state its level explicitly:
@@ -22,13 +25,14 @@ Every supported feature must state its level explicitly:
 
 Deliverables:
 
-- generate the tag and UID registry from PS3.6 2026d;
-- keep command-set tags from PS3.7 as a documented bootstrap until a PS3.7
+- [x] generate the tag and UID registry from PS3.6 2026d;
+- [x] keep command-set tags from PS3.7 as a documented bootstrap until a PS3.7
   generator replaces them;
-- expose transfer-syntax capabilities independently of UID discovery;
-- publish a living Conformance Statement with explicit limitations;
-- add a traceability matrix linking capabilities to normative parts and tests;
-- define a corpus policy: synthetic edge cases, public DICOM samples, and
+- [ ] replace that bootstrap with a PS3.7 command-set generator;
+- [x] expose transfer-syntax capabilities independently of UID discovery;
+- [x] publish a living Conformance Statement with explicit limitations;
+- [x] add a traceability matrix linking capabilities to normative parts and tests;
+- [x] define a corpus policy: synthetic edge cases, public DICOM samples, and
   round trips with independent toolkits.
 
 The current implementation evidence and remaining gaps are tracked in
@@ -38,72 +42,76 @@ documentation release gates are complete.
 
 Acceptance criteria:
 
-- an unknown or unimplemented transfer syntax is never silently treated as
+- [x] an unknown or unimplemented transfer syntax is never silently treated as
   Explicit VR Little Endian;
-- public capability APIs never claim codec or DIMSE support without tests;
-- the generated registry is reproducible from the pinned standard edition.
+- [x] public capability APIs never claim codec or DIMSE support without tests;
+- [x] the generated registry is reproducible from the pinned standard edition
+  (`Scripts/generate-dicom-dictionary.py`).
 
 ## Phase 1 — File and Data Set core (priority)
 
 Implementation order for the remaining Phase 1 work:
 
-1. keep the capability matrix, Conformance Statement, and tests synchronized;
-2. complete binary and multi-valued VR handling plus VR/VM validation;
-3. introduce lazy Bulk Data access;
-4. implement Deflated Explicit VR Little Endian;
-5. rebuild and qualify DICOMDIR and media-file handling;
-6. implement the PS3.18 DICOM JSON model;
-7. implement the PS3.18 Native DICOM Model XML representation.
+1. [x] keep the capability matrix, Conformance Statement, and tests synchronized
+   (ongoing with every change);
+2. [x] complete binary and multi-valued VR handling plus VR/VM validation
+   (per-VR lexical validation remains in 1.6);
+3. [x] introduce lazy Bulk Data access;
+4. [x] implement Deflated Explicit VR Little Endian;
+5. [ ] rebuild and qualify DICOMDIR and media-file handling (DICOMDIR rebuilt;
+   PS3.12 media-profile qualification remains);
+6. [ ] implement the PS3.18 DICOM JSON model;
+7. [ ] implement the PS3.18 Native DICOM Model XML representation.
 
-Current progress in that order:
+Progress so far:
 
-- capability/conformance documentation is synchronized through the Basic
+- [x] capability/conformance documentation is synchronized through the Basic
   DICOMDIR milestone;
-- binary multi-valued VR/VM handling, lazy Bulk Data, and Deflated Explicit VR
+- [x] binary multi-valued VR/VM handling, lazy Bulk Data, and Deflated Explicit VR
   Little Endian are implemented with malformed-input regression tests;
-- native Pixel Data is decoded and rendered portably (grayscale pipeline,
+- [x] native Pixel Data is decoded and rendered portably (grayscale pipeline,
   RGB, YBR, Palette Color, multi-frame, functional groups) and matches pydicom
   stored and Modality values on the interoperability corpus;
-- JPEG Baseline and Extended frames decode at 8/12 bits, including progressive
+- [x] JPEG Baseline and Extended frames decode at 8/12 bits, including progressive
   and retired Huffman syntaxes, and encode unsigned monochrome or RGB input
   through the IJG integer FDCT, quantization, chroma-subsampling, restart, and
   optimized-Huffman pipeline verified against libjpeg-turbo;
-- retired non-hierarchical JPEG arithmetic syntaxes .52, .54, .56, and .58
+- [x] retired non-hierarchical JPEG arithmetic syntaxes .52, .54, .56, and .58
   decode through the T.81 QM state machine, including sequential/progressive
   DCT and predictive lossless processes;
-- JPEG 2000 (.90, .91) and HTJ2K (.201 to .203) decode through the vendored
+- [x] JPEG 2000 (.90, .91) and HTJ2K (.201 to .203) decode through the vendored
   OpenJPEG 2.5.4; JPEG 2000 encodes with OpenJPEG and HTJ2K with the vendored
   OpenJPH 0.32.0;
-- JPEG-LS Lossless and Near-Lossless (.80, .81) decode and encode in Swift,
+- [x] JPEG-LS Lossless and Near-Lossless (.80, .81) decode and encode in Swift,
   pass the T.87 conformance suite, and encode byte for byte like CharLS;
-- retired hierarchical JPEG syntaxes .59 to .66 decode per T.81 Annex J
+- [x] retired hierarchical JPEG syntaxes .59 to .66 decode per T.81 Annex J
   (DHP/EXP, differential DCT and lossless frames, bilinear expansion), within
   a stated tolerance of the ISO reference implementation;
-- every Specific Character Set Defined Term, including ISO 2022 Code
+- [x] every Specific Character Set Defined Term, including ISO 2022 Code
   Extensions, GB18030-2022, and GBK, reads and writes with platform-independent
   tables and PS3.5 Annex H-K vectors;
-- Basic DICOMDIR PATIENT/STUDY/SERIES/IMAGE read/write now computes offsets
+- [x] Basic DICOMDIR PATIENT/STUDY/SERIES/IMAGE read/write now computes offsets
   from the serialized layout and validates the record graph, File-set/File IDs,
   and referenced Part 10 identities;
-- a typed generic record-tree writer now shares the same offset and validation
+- [x] a typed generic record-tree writer now shares the same offset and validation
   path, supports nested Sequences, and has round-trip coverage for RT DOSE and
   SR DOCUMENT records while preserving the legacy construction API; a synthetic
   all-types file additionally round-trips every current F.4-1 type with its
   unconditional top-level Type 1/2 keys, including the Content Identification
   Macro and top-level Scope of Inventory Sequence;
-- parsed offset graphs expose a lossless public record tree and fail closed
+- [x] parsed offset graphs expose a lossless public record tree and fail closed
   rather than returning a partial tree for malformed or orphaned graphs;
-- unknown, retired, and misplaced record types are reported without blocking
+- [x] unknown, retired, and misplaced record types are reported without blocking
   the load or hiding their lower-level records;
-- Basic and Enhanced Coded Entry macro rules are validated recursively in
+- [x] Basic and Enhanced Coded Entry macro rules are validated recursively in
   Directory Record code sequences;
-- SOP Instance Reference Macros in Referenced Image, Instance, and Waveform
+- [x] SOP Instance Reference Macros in Referenced Image, Instance, and Waveform
   Sequences validate non-empty cardinality and both mandatory UIDs;
-- Scope of Inventory validates its outer cardinality, locally determinable
+- [x] Scope of Inventory validates its outer cardinality, locally determinable
   extended-matching dependencies, and present matching Sequence cardinalities;
-- Icon Image Keys validate PS3.3 F.7 structure, restricted pixel attributes,
+- [x] Icon Image Keys validate PS3.3 F.7 structure, restricted pixel attributes,
   native byte length, and palette attribute presence;
-- every current PS3.3 2026d Table F.4-1 Directory Record Type now has an
+- [x] every current PS3.3 2026d Table F.4-1 Directory Record Type now has an
   extensible public identifier and a lossless generic record view; unconditional
   top-level Type 1 and Type 2 keys are represented for every current F.5 record
   type and its included macros, and common Type 1C rules cover PRIVATE record
@@ -111,7 +119,7 @@ Current progress in that order:
   identity tuples, extended character sets used by record keys, verified SR
   documents, Hanging Protocol Definition Items, Related General SOP Class UID,
   and selected keys conditioned by the referenced SOP Instance;
-- broader Directory Record coverage and PS3.12 media-profile qualification are
+- [ ] broader Directory Record coverage and PS3.12 media-profile qualification are
   still required before starting the planned JSON and XML work.
 
 JSON and XML work deliberately follows the binary core so that alternate
@@ -119,59 +127,75 @@ representations are built on a stable, lossless Data Set model.
 
 ### 1.1 Binary safety and VR completeness
 
-- bounds-check every tag, length, item, fragment, and delimiter;
-- support every current VR header form and numeric signedness;
-- support scalar and multi-valued binary VRs, including AT, OL, OV, SV, UV;
-- preserve unknown and private elements losslessly;
-- reject impossible lengths and integer overflows deterministically.
+- [x] bounds-check every tag, length, item, fragment, and delimiter;
+- [x] support every current VR header form and numeric signedness;
+- [x] support scalar and multi-valued binary VRs, including AT, OL, OV, SV, UV;
+- [x] preserve unknown and private elements losslessly;
+- [x] reject impossible lengths and integer overflows deterministically.
 
 ### 1.2 Character repertoires
 
-- implement the default repertoire, ISO_IR 100, and ISO_IR 192 first;
-- make unsupported ISO 2022/code-extension declarations explicit failures,
+- [x] implement the default repertoire, ISO_IR 100, and ISO_IR 192 first;
+- [x] make unsupported ISO 2022/code-extension declarations explicit failures,
   never implicit UTF-8 fallbacks;
-- propagate Specific Character Set into nested Data Sets;
-- cover Person Name component groups and multi-valued text;
-- add ISO 2022 repertoires incrementally with conformance vectors (done for
-  every PS3.3 2026d Defined Term, with PS3.5 Annex H-K and DCMTK vectors).
+- [x] propagate Specific Character Set into nested Data Sets;
+- [ ] cover Person Name component groups and multi-valued text (multi-valued
+  text and PN decoding are done; PN is still exposed as a flat string);
+- [x] add ISO 2022 repertoires incrementally with conformance vectors (every
+  PS3.3 2026d Defined Term, with PS3.5 Annex H-K and DCMTK vectors).
 
 ### 1.3 File Meta Information and transfer syntaxes
 
-- always encode group 0002 as Explicit VR Little Endian;
-- calculate File Meta Information Group Length at serialization time;
-- validate SOP Class/Instance consistency between meta information and Data Set;
-- enforce transfer-syntax read/write capabilities;
-- add Deflated Explicit VR Little Endian;
-- preserve encapsulated fragments and extended offset tables;
-- add codecs behind optional capability providers (RLE, JPEG, JPEG-LS,
-  JPEG 2000, HTJ2K, MPEG and HEVC) without coupling the core parser to them.
+- [x] always encode group 0002 as Explicit VR Little Endian;
+- [x] calculate File Meta Information Group Length at serialization time;
+- [x] validate SOP Class/Instance consistency between meta information and Data Set;
+- [x] enforce transfer-syntax read/write capabilities;
+- [x] add Deflated Explicit VR Little Endian;
+- [x] preserve encapsulated fragments and extended offset tables;
+- [ ] validate Extended Offset Table and its lengths against the fragments;
+- add codecs behind optional capability providers (`DICOMCodecRegistry`)
+  without coupling the core parser to them:
+  - [x] RLE Lossless and Deflated Image Frame Compression;
+  - [x] JPEG Baseline, Extended, Lossless, and every retired JPEG process,
+    including hierarchical;
+  - [x] JPEG-LS;
+  - [x] JPEG 2000 and HTJ2K (vendored OpenJPEG and OpenJPH);
+  - [ ] JPEG XL (vendored libjxl);
+  - [ ] JPEG 2000 Part 2 multi-component transforms (.92, .93);
+  - ~~MPEG, AVC, and HEVC~~ (out of scope).
 
 ### 1.4 Sequences, bulk data, and private data
 
-- cover defined and undefined lengths for sequences and items;
-- validate delimiters and nesting depth and impose configurable resource limits;
-- expose bulk data lazily to avoid mandatory full-file loading;
-- implement private creator block resolution and retain unknown private values;
-- preserve original bytes when semantic decoding is unavailable.
+- [x] cover defined and undefined lengths for sequences and items;
+- [x] validate delimiters and nesting depth and impose configurable resource limits;
+- [x] expose bulk data lazily to avoid mandatory full-file loading;
+- [x] implement private creator block resolution and retain unknown private values;
+- [ ] preserve original bytes when semantic decoding is unavailable (unknown
+  values are kept as UN; byte-preserving editing guarantees and their tests
+  remain).
 
 ### 1.5 DICOM JSON, Native DICOM Model XML, and media files
 
-- replace the current convenience JSON/XML output with PS3.18-conformant
+- [ ] replace the current convenience JSON/XML output with PS3.18-conformant
   models, including Value, InlineBinary, BulkDataURI, PN objects, and nulls;
-- rebuild DICOMDIR around PS3.10/PS3.12 record offset rules;
-- validate File-set IDs, referenced file IDs, and supported media profiles.
+- [x] rebuild DICOMDIR around PS3.10/PS3.12 record offset rules;
+- [x] validate File-set IDs and referenced file IDs;
+- [ ] qualify supported PS3.12 media profiles.
 
 The media-file work in this section precedes JSON and XML in the current
 implementation order.
 
 ### 1.6 Validation and interoperability
 
-- validate VR, VM, retired status, UID syntax, dates/times, and required file
-  meta attributes without confusing dictionary validity with IOD validity;
-- add IOD/module validation from PS3.3 as a separate layer;
-- test byte-exact round trips for all native transfer syntaxes;
-- compare reads and writes with at least DCMTK and pydicom/GDCM;
-- fuzz the parser and retain every crash or corruption case as a regression.
+- [ ] validate VR, VM, retired status, UID syntax, dates/times, and required file
+  meta attributes without confusing dictionary validity with IOD validity
+  (File Meta and numeric VM checks done; per-VR lexical rules remain);
+- [ ] add IOD/module validation from PS3.3 as a separate layer;
+- [ ] test byte-exact round trips for all native transfer syntaxes (round trips
+  exist; byte-exact comparison with an external corpus remains);
+- [ ] compare reads and writes with at least DCMTK and pydicom/GDCM (pixel data
+  and character sets are checked against pydicom and DCMTK vectors);
+- [ ] fuzz the parser and retain every crash or corruption case as a regression.
 
 Phase 1 is complete only when malformed input cannot crash the parser, supported
 native transfer syntaxes round-trip without semantic loss, supported character
@@ -180,17 +204,18 @@ tests.
 
 ## Phase 2 — DICOM Upper Layer and DIMSE (priority after the file core)
 
-- implement and test all A-ASSOCIATE negotiation items, role selection,
+- [ ] implement and test all A-ASSOCIATE negotiation items, role selection,
   asynchronous operations, extended negotiation, identity, rejection, release,
   and abort paths;
-- enforce odd presentation-context IDs, maximum PDU length, PDV fragmentation,
+- [ ] enforce odd presentation-context IDs, maximum PDU length, PDV fragmentation,
   command/data ordering, and timeouts;
-- implement C-ECHO, C-STORE, C-FIND, C-MOVE, C-GET and C-CANCEL as SCU/SCP;
-- add Storage Commitment and selected DIMSE-N services only after their service
+- [ ] implement C-ECHO, C-STORE, C-FIND, C-MOVE, C-GET and C-CANCEL as SCU/SCP
+  (C-ECHO is the most complete experimental path);
+- [ ] add Storage Commitment and selected DIMSE-N services only after their service
   contracts and persistence semantics are defined;
-- model status codes per service rather than as a single generic success flag;
-- test fragmentation and association state transitions with independent peers;
-- add TLS with explicit certificate and hostname validation policies.
+- [ ] model status codes per service rather than as a single generic success flag;
+- [ ] test fragmentation and association state transitions with independent peers;
+- [ ] add TLS with explicit certificate and hostname validation policies.
 
 ## Phase 3 — Image rendering and presentation (after the network)
 
@@ -199,25 +224,25 @@ the PS3.4 Annex N pixel transformation sequence, and qualify the result against
 an independent renderer (DCMTK `dcmp2pgm`, and IHE Consistent Presentation of
 Images test material).
 
-| Area | Scope | Normative source |
-| --- | --- | --- |
-| Grayscale pipeline completion | <ul><li>Pixel Padding Value and Range</li><li>Presentation LUT and P-Values</li><li>High bit depth output (10 to 16 bits)</li></ul> | PS3.3 C.7.5.1.1.2, C.11.4, C.11.6; PS3.4 N.2 |
-| Display calibration | Grayscale Standard Display Function mapping from P-Values | PS3.14 |
-| Overlays and shutters | <ul><li>Overlay Planes (60xx), including multi-frame overlays</li><li>Display Shutter and Bitmap Display Shutter</li></ul> | PS3.3 C.9.2, C.7.6.11, C.7.6.15 |
-| Presentation States | <ul><li>Grayscale Softcopy Presentation State: VOI, spatial transformation, displayed area, graphic and text annotations, compound graphics</li><li>Color, Pseudo-color, and Blending Presentation States</li><li>Variable Modality LUT Presentation State</li></ul> | PS3.3 C.11.10 to C.11.15; PS3.4 Annex N |
-| Color management | <ul><li>ICC profiles to PCS-Values</li><li>Supplemental and Enhanced Palette Color LUTs</li></ul> | PS3.3 C.11.15, C.7.6.19, C.7.6.23; PS3.4 N.2.1 |
-| Quantitative data | Real World Value Mapping | PS3.3 C.7.6.16.2.11 |
-| Performance | Vectorized rendering and multi-frame (cine) streaming | — |
+| Status | Area | Scope | Normative source |
+| :-: | --- | --- | --- |
+| ☐ | Grayscale pipeline completion | <ul><li>Pixel Padding Value and Range</li><li>Presentation LUT and P-Values</li><li>High bit depth output (10 to 16 bits)</li></ul> | PS3.3 C.7.5.1.1.2, C.11.4, C.11.6; PS3.4 N.2 |
+| ☐ | Display calibration | Grayscale Standard Display Function mapping from P-Values | PS3.14 |
+| ☐ | Overlays and shutters | <ul><li>Overlay Planes (60xx), including multi-frame overlays</li><li>Display Shutter and Bitmap Display Shutter</li></ul> | PS3.3 C.9.2, C.7.6.11, C.7.6.15 |
+| ☐ | Presentation States | <ul><li>Grayscale Softcopy Presentation State: VOI, spatial transformation, displayed area, graphic and text annotations, compound graphics</li><li>Color, Pseudo-color, and Blending Presentation States</li><li>Variable Modality LUT Presentation State</li></ul> | PS3.3 C.11.10 to C.11.15; PS3.4 Annex N |
+| ☐ | Color management | <ul><li>ICC profiles to PCS-Values</li><li>Supplemental and Enhanced Palette Color LUTs</li></ul> | PS3.3 C.11.15, C.7.6.19, C.7.6.23; PS3.4 N.2.1 |
+| ☐ | Quantitative data | Real World Value Mapping | PS3.3 C.7.6.16.2.11 |
+| ☐ | Performance | Vectorized rendering and multi-frame (cine) streaming | — |
 
 ## Phase 4 — Web, security, and advanced objects
 
-- DICOMweb: QIDO-RS, WADO-RS, STOW-RS, media types, multipart streaming,
+- [ ] DICOMweb: QIDO-RS, WADO-RS, STOW-RS, media types, multipart streaming,
   rendered retrieval, and standard error payloads;
-- security and audit: TLS profiles, authentication hooks, ATNA audit events,
+- [ ] security and audit: TLS profiles, authentication hooks, ATNA audit events,
   digital signatures, encrypted attributes, and de-identification profiles;
-- semantic APIs for Structured Reports, segmentations,
+- [ ] semantic APIs for Structured Reports, segmentations,
   radiotherapy, waveforms, encapsulated documents, and parametric maps;
-- terminology/context-group handling from PS3.16 with version provenance.
+- [ ] terminology/context-group handling from PS3.16 with version provenance.
 
 ## Release gates
 
