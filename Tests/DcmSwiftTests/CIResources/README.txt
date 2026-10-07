@@ -24,6 +24,12 @@ matching .raw samples; "charls-hp" cases add its HP color transforms; the
 their .raw files hold CharLS's decoding. jpegls-conformance-* come from the
 ITU-T T.87 Annex E conformance suite (t8nde0/t8nde3 and their source image).
 
+jpeg2000-*.j2k are listed in jpeg2000-cases.json. The ht_* codestreams were
+encoded by OpenJPH 0.31 (through imagecodecs 2026.8.16), independently of the
+OpenJPEG decoder under test; jp2_rgb8_padded is an OpenJPEG JP2 file followed
+by one padding byte, as in an even-length DICOM fragment. Lossless .raw files
+hold the source samples; the lossy one holds OpenJPH's own decoding.
+
 Large DICOM, DICOMDIR, SR, and RT corpora are not SwiftPM resources. They are an
 optional interoperability qualification input selected with the
 DCMSWIFT_INTEROP_CORPUS environment variable.

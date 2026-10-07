@@ -1,0 +1,62 @@
+[
+ {
+  "name": "ht_gray8",
+  "rows": 29,
+  "columns": 37,
+  "samples": 1,
+  "bits": 8,
+  "signed": false,
+  "lossless": true,
+  "transferSyntax": "1.2.840.10008.1.2.4.201"
+ },
+ {
+  "name": "ht_gray16s",
+  "rows": 31,
+  "columns": 45,
+  "samples": 1,
+  "bits": 16,
+  "signed": true,
+  "lossless": true,
+  "transferSyntax": "1.2.840.10008.1.2.4.201"
+ },
+ {
+  "name": "ht_rgb8",
+  "rows": 23,
+  "columns": 31,
+  "samples": 3,
+  "bits": 8,
+  "signed": false,
+  "lossless": true,
+  "transferSyntax": "1.2.840.10008.1.2.4.201"
+ },
+ {
+  "name": "ht_gray12_rpcl",
+  "rows": 40,
+  "columns": 33,
+  "samples": 1,
+  "bits": 12,
+  "signed": false,
+  "lossless": true,
+  "transferSyntax": "1.2.840.10008.1.2.4.202"
+ },
+ {
+  "name": "ht_gray12_lossy",
+  "rows": 48,
+  "columns": 40,
+  "samples": 1,
+  "bits": 12,
+  "signed": false,
+  "lossless": false,
+  "transferSyntax": "1.2.840.10008.1.2.4.203"
+ },
+ {
+  "name": "jp2_rgb8_padded",
+  "rows": 20,
+  "columns": 24,
+  "samples": 3,
+  "bits": 8,
+  "signed": false,
+  "lossless": true,
+  "transferSyntax": "1.2.840.10008.1.2.4.90"
+ }
+]

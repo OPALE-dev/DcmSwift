@@ -39,10 +39,24 @@ let package = Package(
                 .brew(["zlib"]),
                 .apt(["zlib1g-dev"])
             ]),
+        // OpenJPEG 2.5.4, vendored unchanged (see Sources/COpenJPEG/README.DcmSwift.md).
+        .target(
+            name: "COpenJPEG",
+            exclude: ["LICENSE", "README.DcmSwift.md"],
+            cSettings: [
+                // OPJ_STATIC would give the API hidden visibility, which breaks
+                // Xcode builds that link the target separately.
+                .define("MUTEX_pthread")
+            ],
+            linkerSettings: [
+                .linkedLibrary("m", .when(platforms: [.linux])),
+                .linkedLibrary("pthread", .when(platforms: [.linux]))
+            ]),
         .target(
             name: "DcmSwift",
             dependencies: [
                 "CZlib",
+                "COpenJPEG",
                 .product(name: "NIO", package: "swift-nio"),
                 .product(name: "Html", package: "swift-html")
             ],

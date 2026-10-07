@@ -50,7 +50,8 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Encapsulated Pixel Data | <ul><li>Frame assembly from the Extended Offset Table, the Basic Offset Table, or the Fragment layout (PS3.5 A.4, PS3.3 C.7.6.3.1.8)</li><li>Built-in codecs are listed below; other syntaxes are preserved and decodable only through registered codecs</li></ul> |
 | Native uncompressed Pixel Data | <ul><li>Stored values for 1 to 32 bits allocated, any High Bit, signed or unsigned, planar configurations, YBR_FULL_422 chroma, multi-frame (unpadded 1-bit frames), Float/Double Float Pixel Data, Big Endian</li><li>Rendering through the PS3.3 C.11 grayscale pipeline (Modality LUT or rescale, VOI LUT or LINEAR/LINEAR_EXACT/SIGMOID window, MONOCHROME1) with Functional Group precedence</li><li>RGB, YBR_FULL, YBR_FULL_422, and Palette Color (including segmented) to 8-bit RGB</li><li>Portable PNG export</li></ul> |
 
-Built-in codecs, written in Swift (UIDs abbreviate `1.2.840.10008.1.2.4`):
+Built-in codecs, written in Swift except JPEG 2000 and HTJ2K, which use the
+vendored OpenJPEG 2.5.4 (UIDs abbreviate `1.2.840.10008.1.2.4`):
 
 | Transfer Syntax | Decode | Encode | Details |
 | --- | :-: | :-: | --- |
@@ -62,6 +63,8 @@ Built-in codecs, written in Swift (UIDs abbreviate `1.2.840.10008.1.2.4`):
 | Retired JPEG Lossless, arithmetic (.58) | ✓ | | Statistics areas shared per table (T.81 B.2.3) |
 | Retired JPEG hierarchical (.59 to .66) | ✓ | | <ul><li>T.81 Annex J: Huffman and arithmetic, sequential, progressive, and lossless first and differential frames, with expansion</li><li>Within a stated tolerance of the ISO reference software</li></ul> |
 | JPEG-LS Lossless and Near-Lossless (.80, .81) | ✓ | ✓ | <ul><li>Decode: every interleave mode, near-lossless coding, LSE preset parameters, restart intervals, HP color transforms</li><li>Encode: 2 to 16-bit frames with default parameters, any NEAR, any interleave mode, restart intervals; byte-identical to CharLS</li></ul> |
+| JPEG 2000 Lossless and lossy (.90, .91) | ✓ | ✓ | <ul><li>Decode: raw codestreams and JP2 files, signed and unsigned samples up to 16 bits in 8 or 16-bit cells; frames using the multiple-component transform are returned as RGB</li><li>Encode: reversible 5/3 (YBR_RCT for color) or irreversible 9/7 with a compression ratio or PSNR target (YBR_ICT for color)</li><li>Subsampled components are rejected</li></ul> |
+| HTJ2K (.201, .202, .203) | ✓ | | Decode through OpenJPEG, as for JPEG 2000; encoding waits for the vendored OpenJPH |
 
 ### Media and other representations
 
