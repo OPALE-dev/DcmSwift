@@ -99,7 +99,7 @@ public struct DICOMRenderingOptions: Equatable, Sendable {
     }
 }
 
-/// Renders native Pixel Data through the grayscale pipeline (Modality LUT or
+/// Renders native or decodable encapsulated Pixel Data through the grayscale pipeline (Modality LUT or
 /// Rescale, VOI LUT or window, MONOCHROME1 polarity) or the color
 /// conversions of PS3.3 C.7.6.3.1.2, on every platform.
 ///
@@ -107,16 +107,30 @@ public struct DICOMRenderingOptions: Equatable, Sendable {
 /// Shared Functional Groups, then the top-level Data Set.
 public struct DICOMImageRenderer {
     public let description: DICOMPixelDescription
-    public let pixelData: DICOMNativePixelData
+    /// Native Pixel Data, when the Pixel Data is not encapsulated.
+    public let pixelData: DICOMNativePixelData?
+    /// Encapsulated Pixel Data, decoded frame by frame by a registered codec.
+    public let encapsulatedPixelData: DICOMEncapsulatedPixelData?
     private let scope: DICOMAttributeScope
     private let shared: DICOMAttributeScope?
     private let perFrame: [DICOMAttributeScope]
 
     public init(dataset: DataSet) throws {
-        let pixelData = try DICOMNativePixelData(dataset: dataset)
         let scope = DICOMAttributeScope(dataset: dataset)
-        self.pixelData = pixelData
-        self.description = pixelData.description
+        if scope.element("PixelData") is DataSequence {
+            let encapsulated = try DICOMEncapsulatedPixelData(dataset: dataset)
+            guard DICOMCodecRegistry.decoder(for: encapsulated.transferSyntaxUID) != nil else {
+                throw DICOMPixelDataError.encapsulatedPixelData(transferSyntax: encapsulated.transferSyntaxUID)
+            }
+            self.pixelData = nil
+            self.encapsulatedPixelData = encapsulated
+            self.description = encapsulated.description
+        } else {
+            let pixelData = try DICOMNativePixelData(dataset: dataset)
+            self.pixelData = pixelData
+            self.encapsulatedPixelData = nil
+            self.description = pixelData.description
+        }
         self.scope = scope
         self.shared = scope.items("SharedFunctionalGroupsSequence").first.map(DICOMAttributeScope.init(item:))
         self.perFrame = scope.items("PerFrameFunctionalGroupsSequence").map(DICOMAttributeScope.init(item:))
@@ -186,20 +200,44 @@ public struct DICOMImageRenderer {
             signedFirstValue: signedInput, name: "VOILUTSequence")
     }
 
+    // MARK: Frames
+
+    /// Native samples of a frame and the index to read them at: the frame
+    /// itself for native Pixel Data, or 0 in a decoded single-frame source.
+    private func source(of frame: Int) throws -> (pixels: DICOMNativePixelData, index: Int) {
+        if let pixelData {
+            return (pixelData, frame)
+        }
+        guard let encapsulatedPixelData else { throw DICOMPixelDataError.missingPixelData }
+        guard (0..<description.numberOfFrames).contains(frame) else {
+            throw DICOMPixelDataError.frameOutOfRange(frame, numberOfFrames: description.numberOfFrames)
+        }
+        let decoded = try encapsulatedPixelData.decodedFrame(frame)
+        return (try DICOMNativePixelData(description: decoded.description, decodedFrames: decoded.data), 0)
+    }
+
+    /// Stored sample values of a frame, decoding it first when encapsulated.
+    public func storedValues(frame: Int = 0) throws -> [Int64] {
+        let source = try source(of: frame)
+        return try source.pixels.storedValues(frame: source.index)
+    }
+
     // MARK: Rendering
 
     public func render(frame: Int = 0, options: DICOMRenderingOptions = DICOMRenderingOptions()) throws
         -> DICOMRenderedImage {
-        switch description.photometricInterpretation {
+        let source = try source(of: frame)
+        let frameDescription = source.pixels.description
+        switch frameDescription.photometricInterpretation {
         case .monochrome1, .monochrome2:
-            return try renderGrayscale(frame: frame, options: options)
+            return try renderGrayscale(frame: frame, source: source, options: options)
         case .rgb, .ybrFull, .ybrFull422:
-            return try renderColor(frame: frame)
+            return try renderColor(source: source)
         case .paletteColor:
-            return try renderPalette(frame: frame)
+            return try renderPalette(source: source)
         default:
             throw DICOMPixelDataError.unsupportedPhotometricInterpretation(
-                description.photometricInterpretation.rawValue)
+                frameDescription.photometricInterpretation.rawValue)
         }
     }
 
@@ -207,14 +245,20 @@ public struct DICOMImageRenderer {
     /// Modality LUT, else Rescale Slope and Intercept. Floating point Pixel
     /// Data is returned unchanged.
     public func modalityValues(frame: Int = 0) throws -> [Double] {
-        guard description.photometricInterpretation.isMonochrome else {
+        try modalityValues(frame: frame, source: source(of: frame))
+    }
+
+    private func modalityValues(
+        frame: Int, source: (pixels: DICOMNativePixelData, index: Int)
+    ) throws -> [Double] {
+        guard source.pixels.description.photometricInterpretation.isMonochrome else {
             throw DICOMPixelDataError.unsupportedPhotometricInterpretation(
-                description.photometricInterpretation.rawValue)
+                source.pixels.description.photometricInterpretation.rawValue)
         }
         if description.sampleFormat != .integer {
-            return try pixelData.floatingPointValues(frame: frame)
+            return try source.pixels.floatingPointValues(frame: source.index)
         }
-        let stored = try pixelData.storedValues(frame: frame)
+        let stored = try source.pixels.storedValues(frame: source.index)
         if let lut = try modalityLookupTable {
             return stored.map { Double(lut.entry(for: Int($0))) }
         }
@@ -222,7 +266,9 @@ public struct DICOMImageRenderer {
         return stored.map { Double($0) * slope + intercept }
     }
 
-    private func renderGrayscale(frame: Int, options: DICOMRenderingOptions) throws -> DICOMRenderedImage {
+    private func renderGrayscale(
+        frame: Int, source: (pixels: DICOMNativePixelData, index: Int), options: DICOMRenderingOptions
+    ) throws -> DICOMRenderedImage {
         let modalityLUT = try modalityLookupTable
         let (slope, intercept) = try rescale(frame: frame)
 
@@ -236,7 +282,7 @@ public struct DICOMImageRenderer {
             possibleRange = ends.min()!...ends.max()!
         }
 
-        let values = try modalityValues(frame: frame)
+        let values = try modalityValues(frame: frame, source: source)
 
         var selection = options.voi
         if selection == .automatic {
@@ -271,7 +317,7 @@ public struct DICOMImageRenderer {
             voi = Self.linearMap(range)
         }
 
-        let invert = options.honorsMonochrome1 && description.photometricInterpretation == .monochrome1
+        let invert = options.honorsMonochrome1 && source.pixels.description.photometricInterpretation == .monochrome1
         let pixels = values.map { value -> UInt8 in
             let output = value.isFinite ? voi(value) : 0
             let byte = UInt8(clamping: Int(min(max(output, 0), 255).rounded()))
@@ -286,11 +332,12 @@ public struct DICOMImageRenderer {
         return { ($0 - range.lowerBound) / span * 255 }
     }
 
-    private func renderColor(frame: Int) throws -> DICOMRenderedImage {
+    private func renderColor(source: (pixels: DICOMNativePixelData, index: Int)) throws -> DICOMRenderedImage {
+        let description = source.pixels.description
         guard description.sampleFormat == .integer else {
             throw DICOMPixelDataError.unsupportedPhotometricInterpretation("floating point color")
         }
-        let samples = try pixelData.storedValues(frame: frame)
+        let samples = try source.pixels.storedValues(frame: source.index)
         let maximum = Double(description.storedValueRange.upperBound)
         let toByte = { (value: Double) -> UInt8 in
             UInt8(clamping: Int((min(max(value, 0), maximum) / maximum * 255).rounded()))
@@ -317,7 +364,7 @@ public struct DICOMImageRenderer {
         return DICOMRenderedImage(width: description.columns, height: description.rows, format: .rgb8, pixels: pixels)
     }
 
-    private func renderPalette(frame: Int) throws -> DICOMRenderedImage {
+    private func renderPalette(source: (pixels: DICOMNativePixelData, index: Int)) throws -> DICOMRenderedImage {
         let palettes = try ["Red", "Green", "Blue"].map { color -> DICOMLookupTable in
             let name = "\(color)PaletteColorLookupTableDescriptor"
             guard let descriptor = scope.element(name) else { throw DICOMPixelDataError.missingAttribute(name) }
@@ -336,7 +383,7 @@ public struct DICOMImageRenderer {
             throw DICOMPixelDataError.invalidLookupTable(
                 "PaletteColorLookupTableDescriptor", "Red, Green, and Blue descriptors differ")
         }
-        let samples = try pixelData.storedValues(frame: frame)
+        let samples = try source.pixels.storedValues(frame: source.index)
         var pixels = [UInt8](repeating: 0, count: samples.count * 3)
         for (index, sample) in samples.enumerated() {
             for channel in 0..<3 {

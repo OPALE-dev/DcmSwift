@@ -144,7 +144,7 @@ endianness, pixel access, Structured Reports, and radiotherapy objects.
 | Implicit VR Little Endian | Structural read and write |
 | Explicit VR Little Endian | Structural read and write |
 | Explicit VR Big Endian | Structural read and write for interoperability; retired by DICOM |
-| Encapsulated JPEG/RLE transfer syntaxes | Fragment preservation only; no codec claim |
+| Encapsulated Pixel Data | Frames located through the Extended or Basic Offset Table or the Fragment layout; RLE Lossless and Deflated Image Frame Compression decoded and encoded in Swift; other codecs pluggable through `DICOMCodecRegistry`; JPEG, JPEG-LS, JPEG 2000, HTJ2K, and JPEG XL not yet decoded |
 | Deflated Explicit VR Little Endian | Part 10 read/write with raw RFC 1951 streams and bounded inflation; not negotiated for DIMSE |
 | Native Pixel Data rendering | Portable grayscale pipeline (Modality LUT or rescale, VOI LUT or LINEAR/LINEAR_EXACT/SIGMOID window, MONOCHROME1), RGB, YBR_FULL, YBR_FULL_422, Palette Color (including segmented), 1 to 32 bits, float/double pixels, multi-frame and functional groups, Big Endian; PNG export on every platform |
 | Character sets | Every PS3.3 2026d Specific Character Set Defined Term: 13 single-byte repertoires, ISO 2022 Code Extensions (JIS X 0208/0212, KS X 1001, GB 2312, single-byte G1 sets), UTF-8, GB18030-2022, and GBK; read/write with nested Data Set inheritance/override, using bundled tables identical on every platform |
@@ -256,8 +256,11 @@ let hounsfield = try renderer.modalityValues(frame: 0)
 `DICOMNativePixelData` exposes stored values frame by frame without loading
 file-backed Bulk Data. Window and VOI LUT values come from the Per-Frame or
 Shared Functional Groups before the top-level attributes. Encapsulated Pixel
-Data reports `DICOMPixelDataError.encapsulatedPixelData` until codecs are
-available; `DicomImage` still hands such frames to the Apple system decoders.
+Data is decoded frame by frame by the codec registered for its Transfer
+Syntax: RLE Lossless and Deflated Image Frame Compression are built in, and
+applications can register more with `DICOMCodecRegistry.register(_:)`. Other
+syntaxes report `DICOMPixelDataError.encapsulatedPixelData`; `DicomImage`
+still hands such frames to the Apple system decoders.
 
 ## DICOMDIR
 

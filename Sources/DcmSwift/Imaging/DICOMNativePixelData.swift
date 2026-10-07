@@ -9,8 +9,34 @@ import Foundation
 /// per pixel.
 public struct DICOMNativePixelData {
     public let description: DICOMPixelDescription
-    private let element: DataElement
+    private let storage: Storage
     private let byteLayout: ByteLayout
+
+    private enum Storage {
+        /// A Data Element, read by range so Bulk Data may stay on disk.
+        case element(DataElement)
+        /// Frames produced by a codec, in little endian native layout.
+        case bytes(Data)
+
+        var count: Int {
+            switch self {
+            case .element(let element): return element.bulkDataReference?.length ?? element.length
+            case .bytes(let data): return data.count
+            }
+        }
+
+        func load(_ range: Range<Int>) throws -> Data {
+            switch self {
+            case .element(let element):
+                return try element.loadData(range: range)
+            case .bytes(let data):
+                guard range.lowerBound >= 0, range.upperBound <= data.count else {
+                    throw DICOMPixelDataError.truncatedPixelData(expectedBytes: range.upperBound, actualBytes: data.count)
+                }
+                return data.subdata(in: (data.startIndex + range.lowerBound)..<(data.startIndex + range.upperBound))
+            }
+        }
+    }
 
     /// How samples are laid out in the Value Field.
     private enum ByteLayout {
@@ -41,6 +67,7 @@ public struct DICOMNativePixelData {
         }
 
         let bigEndian = element.byteOrder == .BigEndian
+        let byteLayout: ByteLayout
         if !bigEndian || (description.bitsAllocated == 8 && element.vr == .OB) {
             byteLayout = .littleEndian
         } else if description.bitsAllocated <= 8 {
@@ -49,14 +76,23 @@ public struct DICOMNativePixelData {
             byteLayout = .bigEndianCells
         }
 
+        try self.init(description: description, storage: .element(element), byteLayout: byteLayout)
+    }
+
+    /// Decoded frames in little endian native layout, as produced by a codec.
+    public init(description: DICOMPixelDescription, decodedFrames data: Data) throws {
+        try self.init(description: description, storage: .bytes(data), byteLayout: .littleEndian)
+    }
+
+    private init(description: DICOMPixelDescription, storage: Storage, byteLayout: ByteLayout) throws {
         let requiredBits = description.bitsPerFrame * description.numberOfFrames
         let requiredBytes = (requiredBits + 7) / 8
-        let available = element.bulkDataReference?.length ?? element.length
-        guard available >= requiredBytes else {
-            throw DICOMPixelDataError.truncatedPixelData(expectedBytes: requiredBytes, actualBytes: available)
+        guard storage.count >= requiredBytes else {
+            throw DICOMPixelDataError.truncatedPixelData(expectedBytes: requiredBytes, actualBytes: storage.count)
         }
         self.description = description
-        self.element = element
+        self.storage = storage
+        self.byteLayout = byteLayout
     }
 
     // MARK: Frames
@@ -82,11 +118,11 @@ public struct DICOMNativePixelData {
     /// Reads a byte range, undoing the Big Endian word swap when needed.
     private func normalizedBytes(in range: Range<Int>) throws -> [UInt8] {
         guard byteLayout == .bigEndianWords else {
-            return [UInt8](try element.loadData(range: range))
+            return [UInt8](try storage.load(range))
         }
         let lower = range.lowerBound & ~1
-        let upper = min((range.upperBound + 1) & ~1, element.bulkDataReference?.length ?? element.length)
-        var words = [UInt8](try element.loadData(range: lower..<upper))
+        let upper = min((range.upperBound + 1) & ~1, storage.count)
+        var words = [UInt8](try storage.load(lower..<upper))
         var index = 0
         while index + 1 < words.count {
             words.swapAt(index, index + 1)

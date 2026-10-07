@@ -24,8 +24,14 @@ public enum DICOMCapabilities {
     /// Encapsulated syntaxes whose Data Set and fragment structure can be preserved.
     /// This does not imply that the compressed frames can be decoded or encoded.
     private static func isEncapsulatedPixelSyntax(_ uid: String) -> Bool {
-        uid.hasPrefix("1.2.840.10008.1.2.4.") || uid == "1.2.840.10008.1.2.5"
+        uid.hasPrefix("1.2.840.10008.1.2.4.") || uid == DICOMRLECodec.transferSyntaxUID
+            || uid == DICOMDeflatedFrameCodec.transferSyntaxUID
     }
+
+    /// Syntaxes with a built-in frame encoder.
+    private static let encodableUIDs: Set<String> = [
+        DICOMRLECodec.transferSyntaxUID, DICOMDeflatedFrameCodec.transferSyntaxUID
+    ]
 
     public static func transferSyntax(_ uid: String) -> TransferSyntaxCapability {
         if uid == TransferSyntax.deflatedExplicitVRLittleEndian {
@@ -58,8 +64,9 @@ public enum DICOMCapabilities {
                 canReadDataset: true,
                 canWriteDataset: true,
                 canPreservePixelData: true,
-                canDecodePixelData: false,
-                canEncodePixelData: false,
+                // Includes decoders registered by the application.
+                canDecodePixelData: DICOMCodecRegistry.decoder(for: uid) != nil,
+                canEncodePixelData: encodableUIDs.contains(uid),
                 canNegotiateForDIMSE: false
             )
         }
