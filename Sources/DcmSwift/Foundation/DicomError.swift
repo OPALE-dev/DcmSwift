@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import Socket
 
 
 
@@ -120,12 +119,6 @@ public enum NetworkError: LocalizedError {
 //    public convenience init(description:String, level:ErrorLevel, realm:ErrorRealm = .general) {
 //        self.init(code: 0, level: level, realm: realm)
 //        self.customDescription = description
-//    }
-//    
-//    
-//    public convenience init(socketError error:Socket.Error) {
-//        self.init(code: Int(error.errorCode), level: .error, realm: .socket)
-//        self.customDescription = error.description
 //    }
 //    
 //    

@@ -6,7 +6,8 @@ import PackageDescription
 let package = Package(
     name: "DcmSwift",
     platforms: [
-        .macOS(.v10_15)
+        .macOS(.v10_15),
+        .iOS(.v13)
     ],
     products: [
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
@@ -24,7 +25,6 @@ let package = Package(
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
-        .package(url: "https://github.com/Kitura/BlueSocket.git", from: "2.0.2"),
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.8.2"),
         .package(url: "https://github.com/pointfreeco/swift-html", from: "0.5.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.103.0")
@@ -43,7 +43,6 @@ let package = Package(
             name: "DcmSwift",
             dependencies: [
                 "CZlib",
-                .product(name: "Socket", package: "BlueSocket"),
                 .product(name: "NIO", package: "swift-nio"),
                 .product(name: "Html", package: "swift-html")
             ],
