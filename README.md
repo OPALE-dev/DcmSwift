@@ -151,10 +151,11 @@ The tag and UID registry is generated from DICOM 2026d (PS3.6).
 
 ### Pixel Data codecs
 
-Built-in codecs are written in Swift, except JPEG 2000 and HTJ2K, which use the
-vendored OpenJPEG 2.5.4 and OpenJPH 0.32.0 (both BSD 2-Clause). Encapsulated frames are located
-through the Extended or Basic Offset Table, or from the Fragment layout. UIDs
-starting with a dot abbreviate `1.2.840.10008.1.2`.
+Built-in codecs are written in Swift, except JPEG 2000, HTJ2K, and JPEG XL,
+which use the vendored OpenJPEG 2.5.4, OpenJPH 0.32.0, and libjxl 0.12.0.
+Encapsulated frames are located through the Extended or Basic Offset Table, or
+from the Fragment layout. UIDs starting with a dot abbreviate
+`1.2.840.10008.1.2`.
 
 | Transfer Syntax | UID | Decode | Encode | Qualified against |
 | --- | --- | :-: | :-: | --- |
@@ -168,7 +169,8 @@ starting with a dot abbreviate `1.2.840.10008.1.2`.
 | JPEG-LS Lossless and Near-Lossless | .4.80, .4.81 | ✓ | ✓ | T.87 conformance suite; CharLS, byte-identical |
 | JPEG 2000 (Part 1) | .4.90, .4.91 | ✓ | ✓ | OpenJPEG; lossless pairs identical to uncompressed originals |
 | HTJ2K | .4.201, .4.202, .4.203 | ✓ | ✓ | Decoded by OpenJPEG, encoded by OpenJPH; cross-checked in both directions |
-| JPEG 2000 Part 2, JPIP, JPEG XL | | | | Not yet supported |
+| JPEG XL | .4.110, .4.111, .4.112 | ✓ | | libjxl; lossless, lossy, and JPEG recompression fixtures |
+| JPEG 2000 Part 2, JPIP | .4.92 to .4.95 | | | Not yet supported |
 
 Other codecs can be registered through `DICOMCodecRegistry`.
 
