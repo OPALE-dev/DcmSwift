@@ -15,8 +15,10 @@ conformance without that evidence.
   padding, character repertoires, ranges, and the detailed rules for AE, AS,
   CS, DA, DS, DT, IS, LO, LT, PN, SH, ST, TM, UC, UI, UR and UT.
 - Complete context-dependent VR resolution beyond the currently covered cases.
-- Model Person Name component groups and representations rather than exposing
-  PN only as a flat string.
+- Person Name component groups and multi-valued character strings now have
+  typed read/write APIs. The historical flat `value` and `string(forTag:)`
+  accessors remain for source compatibility. Full per-VR length, repertoire,
+  and lexical validation remains deferred.
 - Specific Character Set: undecodable bytes make the whole value unavailable
   as text; the PS3.5 6.1.2.3 `\nnn` display substitution is not offered. Text
   encoders do not yet validate per-VR repertoires (for example CS and AE).

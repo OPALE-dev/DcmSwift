@@ -119,6 +119,11 @@ set and in every Sequence Item. Unknown private values remain byte-preserving
 `UN` values unless their explicit VR is present on the wire.
 Fixed-width numeric VRs support typed multi-valued encoding and decoding for
 signed and unsigned 16/32/64-bit integers and 32/64-bit floating-point values.
+Character-string elements expose `textValues`, and PN elements expose
+`personNames` as structured `DICOMPersonName` values with named alphabetic,
+ideographic, and phonetic component groups. Data sets provide matching
+`textValues(forTag:)`, `personNames(forTag:)`, and typed setters, while the
+historical flat `value` API remains available.
 Dictionary VM expressions, including bounded ranges and `2-2n`/`3-3n`
 multiples, are validated independently from IOD requirements.
 Explicit VR parsing rejects unknown VR codes and non-zero reserved bytes in

@@ -40,6 +40,7 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Unknown/private elements | <ul><li>Unknown implicit values preserved as UN</li><li>Private creator blocks resolved within each Data Set scope</li></ul> |
 | Defined/undefined-length sequences | <ul><li>Read and write</li><li>Item tags, boundaries, delimiters, nesting depth, and resource limits validated</li></ul> |
 | Specific Character Set | <ul><li>All PS3.3 2026d Defined Terms (Tables C.12-2 to C.12-5), including ISO 2022 Code Extensions, GB18030-2022, and GBK</li><li>Nested inheritance and local override</li></ul> |
+| Text and Person Name values | <ul><li>Typed multi-valued character-string read/write</li><li>PN alphabetic, ideographic, and phonetic groups with five named components</li><li>Interior empty Values, groups, and components preserved</li></ul> |
 | Fixed-width numeric VR values | Scalar and multi-valued signed/unsigned integer and floating-point read/write with dictionary VM validation |
 | Lazy Bulk Data | Opt-in file-backed references and bounded reads for defined-length binary VRs and encapsulated Pixel Data Items |
 

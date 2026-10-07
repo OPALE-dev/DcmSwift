@@ -309,6 +309,52 @@ public class DataElement : DicomObject {
     public var float32Values:[Float32]? { fixedWidthValues(for: .FL, width: 4) { $0.toFloat32(byteOrder: byteOrder) } }
     public var float64Values:[Float64]? { fixedWidthValues(for: .FD, width: 8) { $0.toFloat64(byteOrder: byteOrder) } }
 
+    /// Decoded character-string Values. Multi-valued VRs are split on the
+    /// DICOM value delimiter while single-valued text VRs retain backslashes.
+    /// Final Value Field padding is removed from the last Value.
+    public var textValues:[String]? {
+        guard Self.isTextVR(vr), length > 0 else { return length == 0 && Self.isTextVR(vr) ? [] : nil }
+        let decoded: String?
+        if usesSpecificCharacterSet {
+            decoded = effectiveCharacterSet.decode(data, vr: vr)
+        } else {
+            decoded = DICOMCharacterSet.defaultRepertoire.decode(data)
+        }
+        guard var text = decoded else { return nil }
+        while text.last == " " || text.last == "\0" { text.removeLast() }
+        guard Self.usesTextValueDelimiter(vr) else { return [text] }
+        return text.split(separator: "\\", omittingEmptySubsequences: false).map(String.init)
+    }
+
+    /// Structured Values for a PN element, including alphabetic,
+    /// ideographic, and phonetic component groups.
+    public var personNames:[DICOMPersonName]? {
+        guard vr == .PN, let values = textValues else { return nil }
+        let names = values.compactMap(DICOMPersonName.init(rawValue:))
+        return names.count == values.count ? names : nil
+    }
+
+    /// Encodes character-string Values using the element's effective Specific
+    /// Character Set. Individual Values must not contain the value delimiter.
+    @discardableResult
+    public func setTextValues(_ values: [String]) -> Bool {
+        guard Self.isTextVR(vr) else { return false }
+        if Self.usesTextValueDelimiter(vr) {
+            guard values.allSatisfy({ !$0.contains("\\") }) else { return false }
+        } else {
+            guard values.count <= 1 else { return false }
+        }
+        return setValue(values.joined(separator: Self.usesTextValueDelimiter(vr) ? "\\" : ""))
+    }
+
+    /// Encodes structured Person Name Values using the element's effective
+    /// Specific Character Set.
+    @discardableResult
+    public func setPersonNames(_ names: [DICOMPersonName]) -> Bool {
+        guard vr == .PN, names.allSatisfy(\.isValid) else { return false }
+        return setTextValues(names.map(\.rawValue))
+    }
+
     public var attributeTagValues:[DataTag]? {
         guard vr == .AT, let data, data.count.isMultiple(of: 4) else { return nil }
         return data.chunked(into: 4).map { DataTag(withData: $0, byteOrder: byteOrder) }
@@ -324,8 +370,7 @@ public class DataElement : DicomObject {
         case .FL, .SL, .UL: return data.count / 4
         case .FD, .SV, .UV: return data.count / 8
         case .AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UI, .UR, .UT:
-            guard let text = value as? String else { return 1 }
-            return text.components(separatedBy: "\\").count
+            return textValues?.count ?? 1
         default: return 1
         }
     }
@@ -409,6 +454,24 @@ public class DataElement : DicomObject {
             return false
         }
     }
+
+    private static func isTextVR(_ vr: VR.VR) -> Bool {
+        switch vr {
+        case .AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UI, .UR, .UT:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private static func usesTextValueDelimiter(_ vr: VR.VR) -> Bool {
+        switch vr {
+        case .LT, .ST, .UR, .UT:
+            return false
+        default:
+            return isTextVR(vr)
+        }
+    }
     
     
     public var isEditable:Bool  {
@@ -444,12 +507,7 @@ public class DataElement : DicomObject {
     
     
     public var isMultiple:Bool  {
-        if let string = self.value as? String {
-            if string.range(of:"\\") != nil {
-                return true
-            }
-        }
-        return false
+        (textValues?.count ?? 0) > 1
     }
     
     /**
@@ -460,12 +518,9 @@ public class DataElement : DicomObject {
     public var values:[DataValue] {
         if self.isMultiple {
             if self.dataValues.count == 0 {
-                if let string = self.value as? String {
-                    let slice = string.components(separatedBy: "\\")
-                    var index = 0
-                    for string in slice {
+                if let textValues {
+                    for (index, string) in textValues.enumerated() {
                         self.dataValues.append(DataValue(string, atIndex:index))
-                        index += 1
                     }
                 }
             }
