@@ -33,7 +33,8 @@ public enum DICOMCapabilities {
         DICOMRLECodec.transferSyntaxUID, DICOMDeflatedFrameCodec.transferSyntaxUID,
         DICOMJPEGLosslessCodec.processFourteen, DICOMJPEGLosslessCodec.firstOrderPrediction,
         DICOMJPEGBaselineCodec.baseline, DICOMJPEGBaselineCodec.extended,
-        DICOMJPEGLSCodec.lossless, DICOMJPEGLSCodec.nearLossless
+        DICOMJPEGLSCodec.lossless, DICOMJPEGLSCodec.nearLossless,
+        DICOMJPEG2000Codec.lossless, DICOMJPEG2000Codec.lossy
     ]
 
     public static func transferSyntax(_ uid: String) -> TransferSyntaxCapability {

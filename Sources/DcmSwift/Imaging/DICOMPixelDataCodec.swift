@@ -45,7 +45,7 @@ public enum DICOMCodecRegistry {
     private static var registered: [any DICOMPixelDataDecoder] = []
     private static let builtIn: [any DICOMPixelDataDecoder] = [
         DICOMRLECodec(), DICOMDeflatedFrameCodec(), DICOMJPEGLosslessCodec(), DICOMJPEGBaselineCodec(),
-        DICOMJPEGHierarchicalCodec(), DICOMJPEGLSCodec(),
+        DICOMJPEGHierarchicalCodec(), DICOMJPEGLSCodec(), DICOMJPEG2000Codec(),
     ]
 
     public static func register(_ decoder: any DICOMPixelDataDecoder) {
