@@ -66,7 +66,26 @@ corpus:
 
 The qualification suite recursively discovers `.dcm` and `.dicomdir` files.
 Its absence does not reduce or skip mandatory unit coverage; it only leaves
-this separate qualification run unavailable.
+this separate qualification run unavailable. Set
+`DCMSWIFT_REQUIRE_INTEROP_CORPUS=1` to make a missing corpus fail the run
+instead of skipping it.
+
+GitLab CI always runs this suite on Linux, macOS, and the iOS Simulator. Each
+job downloads the confidential corpus from the project's private Generic
+Package Registry (`dcmswift-dicom-corpus`, version `DCM_CORPUS_VERSION`),
+verifies it against `DCM_CORPUS_SHA256`, and caches it per version. The iOS job
+forwards the variables to the simulator with the `TEST_RUNNER_` prefix. To
+publish a new corpus version, upload the archive with a token that has the
+`api` scope, then update both variables in `.gitlab-ci.yml`:
+
+    COPYFILE_DISABLE=1 tar --no-xattrs --exclude .DS_Store \
+      -czf dcmswift-dicom-corpus.tar.gz \
+      -s ',^Tests/DcmSwiftTests/Resources,dcmswift-dicom-corpus,' \
+      Tests/DcmSwiftTests/Resources
+    shasum -a 256 dcmswift-dicom-corpus.tar.gz
+    curl --fail --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+      --upload-file dcmswift-dicom-corpus.tar.gz \
+      "$GITLAB_URL/api/v4/projects/rw%2Fdcmswift/packages/generic/dcmswift-dicom-corpus/<version>/dcmswift-dicom-corpus.tar.gz"
 
 ## Disclaimer
 
