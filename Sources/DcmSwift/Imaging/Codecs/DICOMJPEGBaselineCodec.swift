@@ -11,6 +11,13 @@ import Foundation
 /// The retired progressive Huffman syntaxes (Processes 6, 8, 10, and 12) use
 /// the same decoder so that older files remain readable.
 public struct DICOMJPEGBaselineCodec: DICOMPixelDataDecoder {
+    /// Chroma sampling used by the sequential JPEG encoder.
+    public enum Subsampling: Sendable {
+        case s444
+        case s422
+        case s420
+    }
+
     public static let baseline = "1.2.840.10008.1.2.4.50"
     public static let extended = "1.2.840.10008.1.2.4.51"
     /// Retired: Spectral Selection, Non-Hierarchical (Process 6 & 8).
@@ -22,6 +29,20 @@ public struct DICOMJPEGBaselineCodec: DICOMPixelDataDecoder {
     }
 
     public init() {}
+
+    /// Encodes one native unsigned monochrome or RGB frame as sequential
+    /// Huffman JPEG. Eight-bit samples use Baseline Process 1; twelve-bit
+    /// samples use Extended Process 2. The returned photometric
+    /// interpretation is the value that describes the compressed frame.
+    public func encode(
+        _ frame: Data, description: DICOMPixelDescription,
+        quality: Int = 90, subsampling: Subsampling = .s422,
+        restartInterval: Int = 0
+    ) throws -> (data: Data, photometric: DICOMPhotometricInterpretation) {
+        try JPEGDCTEncoder(
+            frame: frame, description: description, quality: quality,
+            subsampling: subsampling, restartInterval: restartInterval).encode()
+    }
 
     public func decode(_ encodedFrame: Data, description: DICOMPixelDescription) throws -> DICOMDecodedFrame {
         let bytes = [UInt8](encodedFrame)

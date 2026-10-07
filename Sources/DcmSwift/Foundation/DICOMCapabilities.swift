@@ -31,7 +31,8 @@ public enum DICOMCapabilities {
     /// Syntaxes with a built-in frame encoder.
     private static let encodableUIDs: Set<String> = [
         DICOMRLECodec.transferSyntaxUID, DICOMDeflatedFrameCodec.transferSyntaxUID,
-        DICOMJPEGLosslessCodec.processFourteen, DICOMJPEGLosslessCodec.firstOrderPrediction
+        DICOMJPEGLosslessCodec.processFourteen, DICOMJPEGLosslessCodec.firstOrderPrediction,
+        DICOMJPEGBaselineCodec.baseline, DICOMJPEGBaselineCodec.extended
     ]
 
     public static func transferSyntax(_ uid: String) -> TransferSyntaxCapability {

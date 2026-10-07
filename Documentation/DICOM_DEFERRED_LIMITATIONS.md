@@ -49,14 +49,15 @@ conformance without that evidence.
 - Implement JPEG-LS in Swift, and JPEG 2000, HTJ2K, and JPEG XL through
   vendored reference implementations first, with reliable, high-performance
   Swift implementations as a later goal. RLE Lossless, Deflated Image Frame
-  Compression, JPEG Lossless, and JPEG Baseline/Extended decoding are
-  implemented. MPEG, AVC, and HEVC are outside the planned scope.
+  Compression, JPEG Lossless, and JPEG Baseline/Extended decoding and encoding
+  are implemented. MPEG, AVC, and HEVC are outside the planned scope.
 - Retired JPEG Transfer Syntaxes must stay readable. The progressive Huffman
   syntaxes (.53, .55) decode; arithmetic coding (.52, .54, .56, .58) and the
   hierarchical processes (.59 to .66) are not decoded yet.
-- JPEG Baseline/Extended has no encoder yet, and decodes at about 40
-  megapixels per second, well below SIMD libraries; entropy decoding and SIMD
-  work remain. YCbCr frames are always converted to RGB.
+- JPEG Baseline/Extended encoding currently accepts unsigned MONOCHROME1/2 and
+  RGB frames only. Encoding and decoding remain below SIMD-library throughput;
+  streaming coefficient storage, entropy acceleration, and SIMD work remain.
+  Decoded YCbCr frames are always converted to RGB.
 - JPEG Lossless decoding rejects subsampled components, restart intervals that
   start inside a line, and DNL markers. Encoded streams were verified with
   libjpeg-turbo 3.2.0, including restart intervals and point transforms.
