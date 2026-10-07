@@ -26,7 +26,7 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         // JPEG Baseline decodes, but is not negotiated for DIMSE.
         let jpegBaseline = TransferSyntax.JPEGLossy8bit
         XCTAssertTrue(TransferSyntax(jpegBaseline)!.capability.canDecodePixelData)
-        XCTAssertFalse(TransferSyntax(jpegBaseline)!.capability.canEncodePixelData)
+        XCTAssertTrue(TransferSyntax(jpegBaseline)!.capability.canEncodePixelData)
         XCTAssertFalse(TransferSyntax(jpegBaseline)!.capability.canNegotiateForDIMSE)
     }
 

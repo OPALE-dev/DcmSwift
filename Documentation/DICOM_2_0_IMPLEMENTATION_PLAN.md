@@ -64,6 +64,10 @@ Current progress in that order:
 - native Pixel Data is decoded and rendered portably (grayscale pipeline,
   RGB, YBR, Palette Color, multi-frame, functional groups) and matches pydicom
   stored and Modality values on the interoperability corpus;
+- JPEG Baseline and Extended frames decode at 8/12 bits, including progressive
+  and retired Huffman syntaxes, and encode unsigned monochrome or RGB input
+  through the IJG integer FDCT, quantization, chroma-subsampling, restart, and
+  optimized-Huffman pipeline verified against libjpeg-turbo;
 - every Specific Character Set Defined Term, including ISO 2022 Code
   Extensions, GB18030-2022, and GBK, reads and writes with platform-independent
   tables and PS3.5 Annex H-K vectors;

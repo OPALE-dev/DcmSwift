@@ -90,6 +90,136 @@ final class DcmSwiftJPEGBaselineTests: XCTestCase {
         XCTAssertEqual(decoded.data, try resource(fixture.name, "ref"))
     }
 
+    func testEncoderRoundTripsSamplingModesAndRestartMarkers() throws {
+        let width = 17, height = 13
+        let pixels = (0..<(width * height)).flatMap { pixel -> [UInt8] in
+            let x = pixel % width, y = pixel / width
+            return [UInt8((x * 13 + y * 7) & 255), UInt8((x * 3 + y * 19) & 255),
+                    UInt8((x * 23 + y * 5) & 255)]
+        }
+        let description = DICOMPixelDescription(
+            rows: height, columns: width, samplesPerPixel: 3, photometricInterpretation: .rgb,
+            bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: false,
+            planarConfiguration: 0, numberOfFrames: 1)
+        let cases: [(DICOMJPEGBaselineCodec.Subsampling, Int, Int, DICOMPhotometricInterpretation)] = [
+            (.s444, 1, 1, .ybrFull), (.s422, 2, 1, .ybrFull422), (.s420, 2, 2, .ybrFull422),
+        ]
+        for (subsampling, horizontal, vertical, photometric) in cases {
+            let encoded = try DICOMJPEGBaselineCodec().encode(
+                Data(pixels), description: description, quality: 90,
+                subsampling: subsampling, restartInterval: 1)
+            XCTAssertEqual(encoded.photometric, photometric)
+            let stream = try JPEGStream([UInt8](encoded.data))
+            XCTAssertEqual(stream.frame.process, 0)
+            XCTAssertEqual(stream.frame.components.map(\.horizontalSampling), [horizontal, 1, 1])
+            XCTAssertEqual(stream.frame.components.map(\.verticalSampling), [vertical, 1, 1])
+            XCTAssertEqual(stream.scans.first?.restartInterval, 1)
+            let decodedDescription = DICOMPixelDescription(
+                rows: height, columns: width, samplesPerPixel: 3, photometricInterpretation: photometric,
+                bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: false,
+                planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
+            let decoded = try DICOMJPEGBaselineCodec().decode(encoded.data, description: decodedDescription)
+            XCTAssertEqual(decoded.data.count, pixels.count)
+            XCTAssertEqual(decoded.description.photometricInterpretation, .rgb)
+        }
+    }
+
+    #if os(macOS) || os(Linux)
+    func testEncoderMatchesLibjpegTurboIntegerPipelineWhenAvailable() throws {
+        let candidates = ["/opt/homebrew/bin/cjpeg", "/usr/local/bin/cjpeg", "/usr/bin/cjpeg"]
+        guard let cjpeg = candidates.first(where: FileManager.default.isExecutableFile(atPath:)) else {
+            throw XCTSkip("cjpeg is not installed")
+        }
+        let width = 17, height = 13
+        let pixels = (0..<(width * height)).flatMap { pixel -> [UInt8] in
+            let x = pixel % width, y = pixel / width
+            return [UInt8((x * 13 + y * 7) & 255), UInt8((x * 3 + y * 19) & 255),
+                    UInt8((x * 23 + y * 5) & 255)]
+        }
+        let description = DICOMPixelDescription(
+            rows: height, columns: width, samplesPerPixel: 3, photometricInterpretation: .rgb,
+            bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: false,
+            planarConfiguration: 0, numberOfFrames: 1)
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dcmswift-jpeg-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let ppm = directory.appendingPathComponent("input.ppm")
+        try Data("P6\n\(width) \(height)\n255\n".utf8 + pixels).write(to: ppm)
+
+        let cases: [(DICOMJPEGBaselineCodec.Subsampling, String)] = [
+            (.s444, "1x1,1x1,1x1"), (.s422, "2x1,1x1,1x1"), (.s420, "2x2,1x1,1x1"),
+        ]
+        for quality in [50, 90] {
+            for (subsampling, sample) in cases {
+                let referenceURL = directory.appendingPathComponent("reference-\(quality)-\(sample).jpg")
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: cjpeg)
+                process.arguments = ["-quality", "\(quality)", "-sample", sample, "-dct", "int",
+                                     "-outfile", referenceURL.path, ppm.path]
+                try process.run()
+                process.waitUntilExit()
+                XCTAssertEqual(process.terminationStatus, 0)
+
+                let encoded = try DICOMJPEGBaselineCodec().encode(
+                    Data(pixels), description: description, quality: quality, subsampling: subsampling)
+                let encodedDescription = DICOMPixelDescription(
+                    rows: height, columns: width, samplesPerPixel: 3,
+                    photometricInterpretation: encoded.photometric,
+                    bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: false,
+                    planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
+                let ours = try DICOMJPEGBaselineCodec().decode(encoded.data, description: encodedDescription)
+                let reference = try DICOMJPEGBaselineCodec().decode(
+                    Data(contentsOf: referenceURL), description: encodedDescription)
+                XCTAssertEqual(ours.data, reference.data, "quality \(quality), sampling \(sample)")
+            }
+        }
+    }
+    #endif
+
+    func testEncoderRejectsUnsupportedInputs() throws {
+        let codec = DICOMJPEGBaselineCodec()
+        let signed = DICOMPixelDescription(
+            rows: 1, columns: 1, samplesPerPixel: 1, photometricInterpretation: .monochrome2,
+            bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: true,
+            planarConfiguration: 0, numberOfFrames: 1)
+        XCTAssertThrowsError(try codec.encode(Data([0]), description: signed))
+        let palette = DICOMPixelDescription(
+            rows: 1, columns: 1, samplesPerPixel: 1, photometricInterpretation: .paletteColor,
+            bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: false,
+            planarConfiguration: 0, numberOfFrames: 1)
+        XCTAssertThrowsError(try codec.encode(Data([0]), description: palette))
+        XCTAssertThrowsError(try codec.encode(Data([0]), description: palette, quality: 0))
+    }
+
+    func testExtendedEncoderRoundTripsTwelveBitMonochrome() throws {
+        let width = 19, height = 11
+        var values = [UInt16]()
+        for index in 0..<(width * height) {
+            values.append(UInt16((index * 37 + (index / width) * 113) & 0xFFF))
+        }
+        var bytes = [UInt8]()
+        for value in values { bytes += [UInt8(value & 0xFF), UInt8(value >> 8)] }
+        let description = DICOMPixelDescription(
+            rows: height, columns: width, samplesPerPixel: 1, photometricInterpretation: .monochrome2,
+            bitsAllocated: 16, bitsStored: 12, highBit: 11, isSigned: false,
+            planarConfiguration: 0, numberOfFrames: 1)
+        for quality in [1, 90, 100] {
+            let encoded = try DICOMJPEGBaselineCodec().encode(
+                Data(bytes), description: description, quality: quality, restartInterval: 2)
+            let stream = try JPEGStream([UInt8](encoded.data))
+            XCTAssertEqual(stream.frame.process, 1)
+            XCTAssertEqual(stream.frame.precision, 12)
+            XCTAssertEqual(encoded.photometric, .monochrome2)
+            if quality == 1 {
+                XCTAssertTrue(stream.scans[0].quantizationTables[0]!.contains { $0 > 255 })
+            }
+            let decoded = try DICOMJPEGBaselineCodec().decode(
+                encoded.data, description: description.decodedFrame())
+            XCTAssertEqual(decoded.data.count, bytes.count)
+        }
+    }
+
     func testInvalidStreamsAreRejected() throws {
         let fixture = try XCTUnwrap(try fixtures().first { $0.name == "gray_23x17_q50" })
         let stream = try resource(fixture.name, "jpg")
