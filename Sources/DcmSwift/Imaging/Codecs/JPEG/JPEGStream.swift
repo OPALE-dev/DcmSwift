@@ -48,8 +48,25 @@ struct JPEGStream {
         let entropyCodedData: ArraySlice<UInt8>
     }
 
+    /// One frame of a hierarchical stream (T.81 Annex J) with its scans and
+    /// the EXP marker that precedes it.
+    struct HierarchicalFrame {
+        let frame: Frame
+        let scans: [Scan]
+        let expandHorizontally: Bool
+        let expandVertically: Bool
+
+        /// SOF5-7 and SOF13-15 code differences from the expanded reference.
+        var isDifferential: Bool { [5, 6, 7, 13, 14, 15].contains(frame.process) }
+    }
+
+    /// The first (or only) frame and its scans.
     let frame: Frame
     let scans: [Scan]
+    /// The DHP marker's final image description, for hierarchical streams.
+    let hierarchy: Frame?
+    /// Every frame in order; a single element for non-hierarchical streams.
+    let frames: [HierarchicalFrame]
 
     init(_ bytes: [UInt8]) throws {
         func fail(_ reason: String) -> DICOMCodecError { .corruptedData("JPEG \(reason)") }
@@ -58,6 +75,10 @@ struct JPEGStream {
         var position = 2
         var frame: Frame?
         var scans: [Scan] = []
+        var hierarchy: Frame?
+        var frames: [HierarchicalFrame] = []
+        var expansion = (horizontal: false, vertical: false)
+        var pendingExpansion = (horizontal: false, vertical: false)
         var dcTables: [Int: JPEGHuffmanTable] = [:]
         var acTables: [Int: JPEGHuffmanTable] = [:]
         var quantizationTables: [Int: [Int]] = [:]
@@ -88,8 +109,45 @@ struct JPEGStream {
             position += length
 
             switch marker {
+            case 0xDE:
+                // DHP: the hierarchical image description (T.81 B.3.2).
+                guard hierarchy == nil, frame == nil else { throw fail("DHP marker is misplaced") }
+                guard segment.count >= 6 else { throw fail("DHP segment is truncated") }
+                let count = Int(bytes[segment.lowerBound + 5])
+                guard count >= 1, segment.count == 6 + 3 * count else { throw fail("DHP segment is invalid") }
+                hierarchy = Frame(
+                    process: 0xFF,
+                    precision: Int(bytes[segment.lowerBound]),
+                    lines: uint16(segment.lowerBound + 1),
+                    samplesPerLine: uint16(segment.lowerBound + 3),
+                    components: (0..<count).map { index in
+                        let base = segment.lowerBound + 6 + 3 * index
+                        return Component(
+                            identifier: bytes[base],
+                            horizontalSampling: Int(bytes[base + 1] >> 4),
+                            verticalSampling: Int(bytes[base + 1] & 0x0F),
+                            quantizationTable: Int(bytes[base + 2]))
+                    })
+
+            case 0xDF:
+                // EXP: expansion of the reference for the next frame (B.3.3).
+                guard hierarchy != nil, segment.count == 1 else { throw fail("EXP marker is invalid") }
+                let value = bytes[segment.lowerBound]
+                guard value >> 4 <= 1, value & 0x0F <= 1 else { throw fail("EXP expansion factors are invalid") }
+                pendingExpansion = (value >> 4 == 1, value & 0x0F == 1)
+
             case 0xC0...0xCF where marker != 0xC4 && marker != 0xC8 && marker != 0xCC:
-                guard frame == nil else { throw fail("has several frame headers") }
+                if let current = frame {
+                    // Only hierarchical streams carry several frames.
+                    guard hierarchy != nil else { throw fail("has several frame headers") }
+                    guard !scans.isEmpty else { throw fail("frame has no scan") }
+                    frames.append(HierarchicalFrame(
+                        frame: current, scans: scans,
+                        expandHorizontally: expansion.horizontal, expandVertically: expansion.vertical))
+                    scans = []
+                }
+                expansion = pendingExpansion
+                pendingExpansion = (false, false)
                 guard segment.count >= 6 else { throw fail("frame header is truncated") }
                 let count = Int(bytes[segment.lowerBound + 5])
                 guard count >= 1, segment.count == 6 + 3 * count else { throw fail("frame header is invalid") }
@@ -222,8 +280,20 @@ struct JPEGStream {
 
         guard let frame else { throw fail("has no frame header") }
         guard !scans.isEmpty else { throw fail("has no scan") }
-        self.frame = frame
-        self.scans = scans
+        frames.append(HierarchicalFrame(
+            frame: frame, scans: scans,
+            expandHorizontally: expansion.horizontal, expandVertically: expansion.vertical))
+        if hierarchy == nil {
+            guard !frames[0].isDifferential else { throw fail("differential frame outside a hierarchical stream") }
+        } else {
+            guard !frames[0].isDifferential, frames.dropFirst().allSatisfy(\.isDifferential) else {
+                throw fail("hierarchical frames must start non-differential and continue differential")
+            }
+        }
+        self.frame = frames[0].frame
+        self.scans = frames[0].scans
+        self.hierarchy = hierarchy
+        self.frames = frames
     }
 
     /// The index of the first marker that ends the entropy-coded segment:
