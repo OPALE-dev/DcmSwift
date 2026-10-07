@@ -87,6 +87,11 @@ non-empty referencing Sequence and both Type 1 UIDs in each Item. Scope of Inven
 outer Sequence cardinality, RELATIONAL and TIMEZONE_ADJUST dependencies, and
 the cardinality of present matching Sequences. Conditions that depend on
 knowing which matching operations were applied remain outside this claim.
+Optional Icon Image Keys enforce the F.7 single-Item and restricted Image Pixel
+rules, including required attributes, monochrome or palette encoding, bit/high
+bit/unsigned representation constraints, native Pixel Data length, and presence
+of palette descriptors and data. Palette LUT content consistency and external
+viewer qualification remain deferred.
 
 ## Network support
 

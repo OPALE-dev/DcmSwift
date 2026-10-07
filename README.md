@@ -246,6 +246,12 @@ Scope of Inventory validates its zero-or-one Item constraint,
 extended-matching dependencies, and matching Sequence cardinalities. Other
 included-macro conditions and nested semantics remain incremental work.
 
+Optional Icon Image Keys are validated against PS3.3 F.7: exactly one Item,
+mandatory Image Pixel attributes, permitted monochrome/palette encodings,
+1- or 8-bit unsigned samples, geometry and high-bit consistency, native Pixel
+Data length, and required palette descriptors/data. Palette LUT value semantics
+and independent display interoperability remain unqualified.
+
 For example, an RT Dose record definition can be added to a Series record's
 `children` array with:
 

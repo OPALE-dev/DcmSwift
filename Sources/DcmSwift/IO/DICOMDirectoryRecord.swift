@@ -422,6 +422,9 @@ extension DicomDir {
     ) {
         for element in elements {
             guard let sequence = element as? DataSequence else { continue }
+            if sequence.name == "IconImageSequence" {
+                validateIconImageSequence(sequence, results: &results)
+            }
             if DICOMDirectoryRecordSchemas.sopInstanceReferenceSequenceNames.contains(sequence.name) {
                 validateSOPInstanceReferenceSequence(sequence, results: &results)
             }
@@ -434,6 +437,140 @@ extension DicomDir {
                 validateIncludedMacros(item.elements, results: &results)
             }
         }
+    }
+
+    private func validateIconImageSequence(
+        _ sequence:DataSequence,
+        results:inout [ValidationResult]
+    ) {
+        guard sequence.items.count == 1 else {
+            results.append(ValidationResult(
+                sequence,
+                message: "Icon Image Sequence requires exactly one Item",
+                severity: .Error
+            ))
+            return
+        }
+        let item = sequence.items[0]
+        let required = [
+            "SamplesPerPixel", "PhotometricInterpretation", "Rows", "Columns",
+            "BitsAllocated", "BitsStored", "HighBit", "PixelRepresentation",
+            "PixelData"
+        ]
+        for name in required {
+            appendRequiredMacroValue(
+                name,
+                reason: "Icon Image Item requires Type 1 key \(name)",
+                item: item,
+                results: &results
+            )
+        }
+
+        if let samples = directoryUInt16(item, name: "SamplesPerPixel"), samples != 1 {
+            appendIconError(item, "SamplesPerPixel shall be 1", results: &results)
+        }
+        let photometric = normalizedDirectoryString(item.element(withName: "PhotometricInterpretation"))
+        if let photometric,
+           !["MONOCHROME1", "MONOCHROME2", "PALETTE COLOR"].contains(photometric) {
+            appendIconError(
+                item,
+                "PhotometricInterpretation shall be MONOCHROME1, MONOCHROME2, or PALETTE COLOR",
+                results: &results
+            )
+        }
+        if let rows = directoryUInt16(item, name: "Rows"), rows == 0 {
+            appendIconError(item, "Rows shall be greater than zero", results: &results)
+        }
+        if let columns = directoryUInt16(item, name: "Columns"), columns == 0 {
+            appendIconError(item, "Columns shall be greater than zero", results: &results)
+        }
+        if let bitsAllocated = directoryUInt16(item, name: "BitsAllocated"),
+           bitsAllocated != 1 && bitsAllocated != 8 {
+            appendIconError(item, "BitsAllocated shall be 1 or 8", results: &results)
+        }
+        if let bitsStored = directoryUInt16(item, name: "BitsStored"),
+           bitsStored != 1 && bitsStored != 8 {
+            appendIconError(item, "BitsStored shall be 1 or 8", results: &results)
+        }
+        if let bitsStored = directoryUInt16(item, name: "BitsStored"),
+           let highBit = directoryUInt16(item, name: "HighBit"),
+           bitsStored == 0 || highBit != bitsStored - 1 {
+            appendIconError(item, "HighBit shall equal BitsStored minus one", results: &results)
+        }
+        if let representation = directoryUInt16(item, name: "PixelRepresentation"),
+           representation != 0 {
+            appendIconError(item, "PixelRepresentation shall be unsigned (0)", results: &results)
+        }
+        if item.element(withName: "PlanarConfiguration") != nil {
+            appendIconError(item, "PlanarConfiguration shall not be present", results: &results)
+        }
+        if let aspectRatio = normalizedDirectoryString(item.element(withName: "PixelAspectRatio")),
+           aspectRatio != "1\\1" {
+            appendIconError(item, "PixelAspectRatio shall be 1\\1 when present", results: &results)
+        }
+        if photometric == "PALETTE COLOR" {
+            if directoryUInt16(item, name: "BitsAllocated") != 8 {
+                appendIconError(
+                    item,
+                    "PALETTE COLOR requires BitsAllocated of 8",
+                    results: &results
+                )
+            }
+            for name in [
+                "RedPaletteColorLookupTableDescriptor",
+                "GreenPaletteColorLookupTableDescriptor",
+                "BluePaletteColorLookupTableDescriptor",
+                "RedPaletteColorLookupTableData",
+                "GreenPaletteColorLookupTableData",
+                "BluePaletteColorLookupTableData"
+            ] {
+                appendRequiredMacroValue(
+                    name,
+                    reason: "PALETTE COLOR Icon Image Item requires \(name)",
+                    item: item,
+                    results: &results
+                )
+            }
+        }
+        validateIconPixelDataLength(item, results: &results)
+    }
+
+    private func validateIconPixelDataLength(
+        _ item:DataItem,
+        results:inout [ValidationResult]
+    ) {
+        guard let rows = directoryUInt16(item, name: "Rows"), rows > 0,
+              let columns = directoryUInt16(item, name: "Columns"), columns > 0,
+              let bitsAllocated = directoryUInt16(item, name: "BitsAllocated"),
+              bitsAllocated == 1 || bitsAllocated == 8,
+              let pixelData = item.element(withName: "PixelData"),
+              pixelData.length >= 0 else { return }
+        let bitCount = UInt64(rows) * UInt64(columns) * UInt64(bitsAllocated)
+        let unpaddedByteCount = (bitCount + 7) / 8
+        let expectedByteCount = unpaddedByteCount + (unpaddedByteCount % 2)
+        if UInt64(pixelData.length) != expectedByteCount {
+            appendIconError(
+                pixelData,
+                "PixelData length \(pixelData.length) does not match the expected \(expectedByteCount) bytes",
+                results: &results
+            )
+        }
+    }
+
+    private func appendIconError(
+        _ source:DataElement,
+        _ detail:String,
+        results:inout [ValidationResult]
+    ) {
+        results.append(ValidationResult(
+            source,
+            message: "Icon Image \(detail)",
+            severity: .Error
+        ))
+    }
+
+    private func directoryUInt16(_ item:DataItem, name:String) -> UInt16? {
+        return item.element(withName: name)?.value as? UInt16
     }
 
     private func validateSOPInstanceReferenceSequence(
@@ -745,9 +882,13 @@ extension DicomDir {
         if let sequence = element as? DataSequence {
             return sequence.items.isEmpty
         }
-        if let value = element.value as? String {
+        switch element.vr {
+        case .AE, .AS, .CS, .DS, .IS, .LO, .LT, .PN, .SH, .ST, .UC, .UI,
+             .UR, .UT:
+            guard let value = element.value as? String else { return true }
             return value.trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters)).isEmpty
+        default:
+            return element.length == 0
         }
-        return element.length == 0
     }
 }

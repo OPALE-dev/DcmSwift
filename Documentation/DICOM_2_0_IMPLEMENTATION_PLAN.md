@@ -76,6 +76,8 @@ Current progress in that order:
   Sequences validate non-empty cardinality and both mandatory UIDs;
 - Scope of Inventory validates its outer cardinality, locally determinable
   extended-matching dependencies, and present matching Sequence cardinalities;
+- Icon Image Keys validate PS3.3 F.7 structure, restricted pixel attributes,
+  native byte length, and palette attribute presence;
 - every current PS3.3 2026d Table F.4-1 Directory Record Type now has an
   extensible public identifier and a lossless generic record view; unconditional
   top-level Type 1 and Type 2 keys are represented for every current F.5 record
