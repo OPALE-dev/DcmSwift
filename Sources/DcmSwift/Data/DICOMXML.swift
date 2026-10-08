@@ -144,7 +144,7 @@ public enum DICOMXML {
         let parser = XMLParser(data: data)
         parser.delegate = reader
         parser.shouldProcessNamespaces = true
-        guard parser.parse(), let root = reader.root else {
+        guard parser.parse(), reader.isComplete, let root = reader.root else {
             throw DICOMJSONError(reader.error ?? "invalid XML: \(parser.parserError?.localizedDescription ?? "no NativeDicomModel")")
         }
         guard root.name == "NativeDicomModel" else { throw DICOMJSONError("the root element is \(root.name)") }
@@ -170,6 +170,9 @@ public enum DICOMXML {
         var root: Node?
         var stack: [Node] = []
         var error: String?
+        /// The root element ended: libxml2 (Linux) reports success on some
+        /// truncated documents.
+        var isComplete = false
 
         func parser(_ parser: XMLParser, didStartElement name: String, namespaceURI: String?, qualifiedName: String?,
                     attributes: [String: String] = [:]) {
@@ -190,6 +193,7 @@ public enum DICOMXML {
 
         func parser(_ parser: XMLParser, didEndElement name: String, namespaceURI: String?, qualifiedName: String?) {
             stack.removeLast()
+            if stack.isEmpty { isComplete = true }
         }
 
         func parser(_ parser: XMLParser, foundCharacters string: String) {
