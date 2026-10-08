@@ -170,6 +170,7 @@ on every platform.
 | IOD validation (PS3.3) | <ul><li><code>DICOMIODValidator</code>, <code>DcmValidate</code>, and <code>DcmServer --validate</code></li><li>Reports nothing dicom-validator does not, on the pydicom test files and the local corpus</li></ul> |
 | Encapsulated documents (PS3.3 A.45, A.85) | <ul><li><code>DICOMEncapsulatedDocument</code> and <code>DcmDocument</code>: PDF, CDA, STL, OBJ, MTL</li><li>Exchanged with DCMTK both ways; the instances made pass DcmValidate and dicom-validator</li></ul> |
 | Waveforms (PS3.3 C.10.9) | <ul><li><code>DICOMWaveform</code> and <code>DcmWaveform</code>: multiplex groups, channels, every sample interpretation including G.711 mu-law and A-law</li><li>Samples and values equal to those of pydicom on its ECG and on files of every interpretation</li></ul> |
+| Radiotherapy (PS3.3 A.18 to A.20) | <ul><li><code>DICOMRTStructureSet</code>, <code>DICOMRTDose</code>, <code>DICOMRTPlan</code>, and <code>DcmRT</code>: ROIs and contours, dose grids and DVHs, prescriptions and beams</li><li>Equal to dicompyler-core on the pydicom test files and the local corpus</li></ul> |
 | Terminology (PS3.16) | <ul><li>Coding Schemes, DCM codes, and the 1,467 Context Groups of 2026d, with versions and included groups</li><li>Identical to the FHIR value sets NEMA publishes for the edition</li></ul> |
 | Robustness | <ul><li>Mutation fuzzing of the parser and pixel decoders, also run under AddressSanitizer</li><li>Reproducers kept as regression fixtures</li></ul> |
 
@@ -201,6 +202,7 @@ Every tool documents its options with `--help`.
 | [DcmSign](Sources/DcmSwift/DcmSwift.docc/Commands/DcmSign.md) | Sign files and verify their Digital Signatures |
 | [DcmDocument](Sources/DcmSwift/DcmSwift.docc/Commands/DcmDocument.md) | Wrap PDF, CDA, STL, OBJ, and MTL documents in DICOM, or extract them |
 | [DcmWaveform](Sources/DcmSwift/DcmSwift.docc/Commands/DcmWaveform.md) | Print the channels of a waveform instance or export their samples |
+| [DcmRT](Sources/DcmSwift/DcmSwift.docc/Commands/DcmRT.md) | Print RT Structure Sets, Doses, and Plans |
 | [DcmAnonymize](Sources/DcmSwift/DcmSwift.docc/Commands/DcmAnonymize.md) | De-identify files with the PS3.15 Basic Profile and its options |
 | [DcmIzer](Sources/DcmSwift/DcmSwift.docc/Commands/DcmIzer.md) | Wrap a JPEG, PNG, or TIFF image in a DICOM file |
 | [DcmSR](Sources/DcmSwift/DcmSwift.docc/Commands/DcmSR.md) | Print a Structured Report tree or render it as HTML |

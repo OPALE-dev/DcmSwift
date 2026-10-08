@@ -23,6 +23,7 @@ revision.
 - <doc:DcmSign> signs files and verifies their Digital Signatures.
 - <doc:DcmDocument> wraps PDF, CDA, STL, OBJ, and MTL documents in DICOM, or extracts them.
 - <doc:DcmWaveform> prints the channels of a waveform instance or exports their samples.
+- <doc:DcmRT> prints RT Structure Sets, Doses, and Plans.
 - <doc:DcmAnonymize> de-identifies files with the PS3.15 Basic Profile and its options.
 - <doc:DcmIzer> demonstrates wrapping an ordinary image in a DICOM file.
 - <doc:DcmSR> prints structured-report trees or renders them as HTML.

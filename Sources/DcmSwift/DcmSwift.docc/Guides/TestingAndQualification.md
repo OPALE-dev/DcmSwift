@@ -207,6 +207,15 @@ interpretation it makes:
 python3 Scripts/crosscheck/waveforms.py .build/debug /path/to/files
 ```
 
+## Radiotherapy
+
+`Scripts/crosscheck/rt_dicompyler.py` compares DcmRT with dicompyler-core,
+which needs pydicom 2 (`pip install "pydicom<3" dicompyler-core`):
+
+```sh
+python3 Scripts/crosscheck/rt_dicompyler.py .build/debug /path/to/files
+```
+
 ## Network interoperability
 
 `Scripts/interop` drives pynetdicom 3 against DcmSwift:

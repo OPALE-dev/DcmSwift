@@ -301,6 +301,19 @@ Samples and values equal pydicom's multiplex_array on its 12-lead ECG and on
 files of every interpretation, Big Endian included, where pydicom 3.0 reads
 the samples as Little Endian and its values are corrected first.
 
+## Radiotherapy (PS3.3 A.18 to A.20)
+
+| Object | Read |
+| --- | --- |
+| RT Structure Set | ROIs: number, name, description, Frame of Reference, generation algorithm, display color, interpreted type; contours: geometric type, points, referenced images |
+| RT Dose | Units, type, summation, grid geometry, Grid Frame Offset Vector, dose values (stored values × Dose Grid Scaling) for native and compressed Pixel Data; DVHs with their ROIs, type, units, and bins |
+| RT Plan | Label, geometry, prescription (Target Prescription Dose), fraction groups, beams with their control points (values carried over from the previous control point) and metersets |
+
+On the pydicom test files and the local corpus, ROIs, contour points, dose
+grids and values, DVHs, prescriptions, and beam metersets equal those of
+dicompyler-core. The older `DicomRT`, `Dose`, `Plan`, and `StructureSet`
+helpers remain for existing code. Making RT objects is not done.
+
 ## Character sets
 
 Text decoding follows Specific Character Set (0008,0005). Every Defined Term of
