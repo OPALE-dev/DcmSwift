@@ -216,6 +216,16 @@ which needs pydicom 2 (`pip install "pydicom<3" dicompyler-core`):
 python3 Scripts/crosscheck/rt_dicompyler.py .build/debug /path/to/files
 ```
 
+## Segmentations and Parametric Maps
+
+`Scripts/crosscheck/seg_highdicom.py` reads Segmentations and a Parametric
+Map that highdicom makes, compares with pydicom, then has highdicom and
+dicom-validator check a Segmentation DcmSeg makes (`pip install highdicom`):
+
+```sh
+python3 Scripts/crosscheck/seg_highdicom.py .build/debug /path/to/standard /path/to/ct-series
+```
+
 ## Network interoperability
 
 `Scripts/interop` drives pynetdicom 3 against DcmSwift:

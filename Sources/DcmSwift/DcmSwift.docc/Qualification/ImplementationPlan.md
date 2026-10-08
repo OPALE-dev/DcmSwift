@@ -256,8 +256,9 @@ Images test material).
   openssl);
 - [ ] semantic APIs: encapsulated documents done (PDF, CDA, STL, OBJ, MTL,
   exchanged with DCMTK), waveforms read (checked against pydicom), and
-  radiotherapy read (checked against dicompyler-core); Structured Reports,
-  segmentations, and parametric maps remain;
+  radiotherapy read (checked against dicompyler-core), Segmentations read and
+  made and Parametric Maps read (checked against highdicom); Structured
+  Reports remain;
 - [x] declarative IOD/module validation from PS3.3, separate from dictionary and
   lexical validity: `DICOMIODValidator`, `DcmValidate`, and a receive policy,
   with the conditions that test attributes, checked against dicom-validator;

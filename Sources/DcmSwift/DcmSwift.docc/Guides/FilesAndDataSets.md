@@ -146,6 +146,19 @@ let dose = try DICOMRTDose(dataSet: dataSet)?.dose(frame: 0)     // Gy, row by r
 let beams = DICOMRTPlan(dataSet: dataSet)?.beams                // control points, metersets
 ```
 
+## Segmentations and Parametric Maps
+
+``DICOMSegmentation`` reads segments and the mask of each frame, and makes
+BINARY Segmentations of source images; ``DICOMParametricMap`` reads
+real-world values:
+
+```swift
+let segmentation = DICOMSegmentation(dataSet: dataSet)
+let mask = try segmentation?.mask(frame: 0)         // 0 or 1, row by row
+let made = try DICOMSegmentation.binary(sources: images, segments: descriptions, masks: masks)
+let values = try DICOMParametricMap(dataSet: map)?.values(frame: 0)
+```
+
 ## IOD validation
 
 ``DICOMIODValidator`` checks a data set against the IOD of its SOP Class, as

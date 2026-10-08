@@ -314,6 +314,20 @@ grids and values, DVHs, prescriptions, and beam metersets equal those of
 dicompyler-core. The older `DicomRT`, `Dose`, `Plan`, and `StructureSet`
 helpers remain for existing code. Making RT objects is not done.
 
+## Segmentations and Parametric Maps (PS3.3 A.51, A.75)
+
+| Object | Support |
+| --- | --- |
+| Segmentation, reading | BINARY (bits packed across frames), FRACTIONAL with its maximum and type, LABELMAP; segments with their codes and algorithm; per frame, the segment, source images, and position, from the Per-Frame or Shared Functional Groups; native and compressed Pixel Data |
+| Segmentation, making | BINARY Segmentations of single-frame source images of one series: Segment Sequence, Derivation Image with spatial locations preserved, Plane Position and Orientation, Pixel Measures, Dimension Index by segment and position, Common Instance Reference |
+| Parametric Map, reading | Float and Double Float Pixel Data, or integer Pixel Data, through the Real World Value Mapping (slope, intercept, units) of each frame |
+
+On Segmentations highdicom makes (BINARY with two segments, FRACTIONAL, RLE
+compressed) and a Parametric Map, masks, segments, and values equal pydicom's.
+highdicom reads DcmSwift's Segmentations back with the masks on the right
+source images; dicom-validator finds nothing in them it does not also report
+in highdicom's (it finds the Functional Group Sequences unexpected).
+
 ## Character sets
 
 Text decoding follows Specific Character Set (0008,0005). Every Defined Term of
