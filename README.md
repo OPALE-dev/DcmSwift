@@ -182,7 +182,8 @@ on every platform.
 | TLS (PS3.15 B.12, B.13) | <ul><li>TLS 1.2 and 1.3 with swift-nio-ssl (BoringSSL); ECDHE with AEAD suites only</li><li>Server verification with host name; mutual authentication; peer certificate given to services</li><li>Checked against Python <code>ssl</code> (OpenSSL) through pynetdicom</li></ul> |
 | DICOMweb Studies Service (PS3.18 10) | <ul><li>QIDO-RS, WADO-RS (instances, metadata, frames, Pixel Data, rendered, thumbnails), STOW-RS, Retrieve Capabilities</li><li>User agent on AsyncHTTPClient, origin server on SwiftNIO over HTTP/1.1 or HTTPS</li><li>Server checked with dicomweb-client, client with Orthanc and its DICOMweb plugin</li></ul> |
 | De-identification (PS3.15 E) | <ul><li><code>DICOMDeidentifier</code> and <code>DcmAnonymize</code>: Basic Application Level Confidentiality Profile with the Retain and Clean options</li><li>Same table as the 2026c one of dicom-anonymizer but one row added in 2026d; same outcomes on the pydicom test files and the local corpus</li></ul> |
-| Audit and other security profiles | Not implemented |
+| Audit trail (PS3.15 A.5 to A.7) | <ul><li><code>DICOMAuditMessage</code> for the fifteen messages of A.5.3; <code>DcmServer --audit</code> over syslog TLS or UDP</li><li>Messages validated against the A.5.1 schema and parsed by an independent RFC 5424 parser</li></ul> |
+| Signatures and encrypted attributes | Not implemented |
 
 ## Command-line tools
 

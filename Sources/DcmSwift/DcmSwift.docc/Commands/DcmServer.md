@@ -39,6 +39,15 @@ IOD in PS3.3:
 Instances of a SOP Class without an IOD in PS3.3, such as a retired one, are
 stored either way.
 
+`--audit` sends audit messages (PS3.15 A.5) to syslog collectors, over TLS or
+UDP: start and stop, instances received and sent, queries, retrievals,
+rejected associations, and user logins.
+
+```sh
+DcmServer -s ./archive --audit tls://audit.example.org --audit-tls-ca ca.pem
+DcmServer -s ./archive --audit udp://127.0.0.1:514
+```
+
 This is a demonstrator and interoperability tool. Production deployment still
 requires access control, durable indexing, audit logging, monitoring, backup,
 and an operational security review.
