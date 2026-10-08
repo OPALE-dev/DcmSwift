@@ -1,5 +1,6 @@
 stages:
   - test
+  - documentation
 
 variables:
   # Confidential interoperability corpus published in this project's Generic
@@ -8,6 +9,9 @@ variables:
   DCM_CORPUS_SHA256: "58faeb873998b4ffbc8a8fea72f83d5407134c6aebd2804266a6667601410616"
   # Fail, rather than skip, the corpus tests when the corpus is unavailable.
   DCMSWIFT_REQUIRE_INTEROP_CORPUS: "1"
+  # Override with an empty value when GitLab Pages serves this project from a
+  # unique domain or custom domain root.
+  DOCS_BASE_PATH: "DcmSwift"
 
 .interop-corpus:
   cache:
@@ -96,3 +100,28 @@ ios-package:
   after_script:
     # Runs even when the tests fail, so failures reach the Tests tab.
     - test -d .reports/ios.xcresult && xcrun python3 Scripts/xcresult-junit.py .reports/ios.xcresult .reports/ios-junit.xml
+
+documentation-check:
+  stage: documentation
+  image: swift:6.1
+  tags:
+    - deploy
+  script:
+    - Scripts/documentation/build.sh .build/documentation-check "$DOCS_BASE_PATH"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
+
+pages:
+  stage: documentation
+  image: swift:6.1
+  tags:
+    - deploy
+  script:
+    - Scripts/documentation/build.sh public "$DOCS_BASE_PATH"
+  artifacts:
+    paths:
+      - public
+  pages: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
