@@ -109,10 +109,10 @@ struct DcmServer: AsyncParsableCommand {
         if let storageDirectory {
             let directory = URL(fileURLWithPath: storageDirectory, isDirectory: true)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let archive = DirectoryArchive(directory: directory)
+            let archive = DICOMDirectoryArchive(directory: directory)
             let indexed = await archive.scan()
             print("\(indexed) instances in \(directory.path)")
-            let services = ArchiveServices(archive: archive, destinations: try destinations())
+            let services = DICOMDirectoryArchiveServices(archive: archive, destinations: try destinations())
             server = try DICOMServer(
                 configuration: configuration, storage: services, query: services, retrieve: services,
                 storageCommitment: services)

@@ -37,8 +37,9 @@ public final class DICOMDataSetPayload: @unchecked Sendable {
         self.length = length
     }
 
-    fileprivate init(temporaryFile: URL, length: Int) {
-        storage = .file(temporaryFile, offset: 0, owned: true)
+    /// Bytes of a temporary file, removed with this payload.
+    init(temporaryFile: URL, offset: UInt64 = 0, length: Int) {
+        storage = .file(temporaryFile, offset: offset, owned: true)
         self.length = length
     }
 
@@ -228,13 +229,16 @@ public struct DICOMMessageAssembler {
 }
 
 /// Collects data set fragments, in memory then in a temporary file.
-private final class DataSetSink {
+final class DataSetSink {
     private let memoryLimit: Int
     private let maximumLength: Int
     private let directory: URL
     private var memory = Data()
     private var file: (url: URL, handle: DICOMPOSIXFile)?
-    private var length = 0
+    private(set) var length = 0
+    /// The first bytes received, at most `headLength`, kept in memory.
+    private(set) var head = Data()
+    static let headLength = 1 << 16
 
     init(memoryLimit: Int, maximumLength: Int, directory: URL) {
         self.memoryLimit = memoryLimit
@@ -255,6 +259,7 @@ private final class DataSetSink {
             throw DICOMPDUError(.invalidPDUParameterValue, "data set longer than \(maximumLength) bytes")
         }
         length += data.count
+        if head.count < Self.headLength { head.append(data.prefix(Self.headLength - head.count)) }
         if file == nil, memory.count + data.count <= memoryLimit {
             memory.append(data)
             return
@@ -270,10 +275,17 @@ private final class DataSetSink {
     }
 
     func finish() throws -> DICOMDataSetPayload {
-        guard let file else { return DICOMDataSetPayload(data: memory) }
+        try finish(skipping: 0)
+    }
+
+    /// The bytes received after the first `offset` ones, such as the data
+    /// set of a Part 10 file after its File Meta Information.
+    func finish(skipping offset: Int) throws -> DICOMDataSetPayload {
+        precondition(offset <= length)
+        guard let file else { return DICOMDataSetPayload(data: Data(memory.dropFirst(offset))) }
         try file.handle.close()
         self.file = nil
-        return DICOMDataSetPayload(temporaryFile: file.url, length: length)
+        return DICOMDataSetPayload(temporaryFile: file.url, offset: UInt64(offset), length: length - offset)
     }
 }
 

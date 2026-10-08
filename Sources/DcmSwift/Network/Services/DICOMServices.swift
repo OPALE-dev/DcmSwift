@@ -28,7 +28,8 @@ public struct DICOMReceivedInstance: Sendable {
     /// The AE that asked for this instance with C-MOVE, if any.
     public let moveOriginatorAETitle: String?
     public let moveOriginatorMessageID: UInt16?
-    /// The sender's AE title.
+    /// The sender's AE title; empty when the instance did not come over
+    /// DIMSE, such as one received by STOW-RS.
     public let sourceAETitle: String
 
     /// Decodes the data set.
@@ -45,7 +46,7 @@ public struct DICOMReceivedInstance: Sendable {
             let file = try DICOMPOSIXFile.create(partial)
             try file.write(DICOMPart10Header.encodeMetaInformation(
                 sopClassUID: sopClassUID, sopInstanceUID: sopInstanceUID, transferSyntaxUID: transferSyntaxUID,
-                sourceAETitle: sourceAETitle))
+                sourceAETitle: sourceAETitle.isEmpty ? nil : sourceAETitle))
             for chunk in try payload.chunks(of: 1 << 20) { try file.write(chunk) }
             try file.close()
             if FileManager.default.fileExists(atPath: url.path) {
