@@ -4,6 +4,7 @@ Send one or more C-ECHO requests to a remote DICOM Application Entity.
 
 ```sh
 DcmEcho PACS pacs.example.org 11112
+DcmEcho PACS pacs.example.org 11112 --repeat 3
 DcmEcho PACS pacs.example.org 2762 --tls --repeat 5
 ```
 

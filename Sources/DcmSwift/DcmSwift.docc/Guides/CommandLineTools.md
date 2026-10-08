@@ -7,9 +7,11 @@ Build every product in release mode:
 
 ```sh
 swift build -c release
+.build/release/DcmPrint /my/dicom/file.dcm
 ```
 
-The resulting binaries are under `.build/release`. Every command supports
+The resulting binaries are under `.build/release`; `swift build` puts debug
+builds under `.build/debug`. Every command supports
 `--help`; that output is the authoritative option reference for the checked-out
 revision.
 
@@ -29,5 +31,35 @@ revision.
 - <doc:DcmServer> provides verification, storage, query/retrieve, and Storage
   Commitment services over a directory.
 
-The networking programs return a nonzero status when association or DIMSE
-operations fail, making them suitable for scripts and demonstrations.
+The networking programs exit with status 1 when the association or any
+operation fails, making them suitable for scripts and demonstrations.
+
+## Network options
+
+These options are shared by the networking programs:
+
+| Option | Tools | Meaning |
+| --- | --- | --- |
+| `-c`, `--calling-aet` | SCU tools | Local AE title (default `DCMCLIENT`) |
+| `-v`, `--verbose` | All | Log association and DIMSE details |
+| `--timeout` | All | Seconds to connect, and for ARTIM (default 30) |
+| `--idle-timeout` | All | Seconds without data before aborting; 0 disables it (default 120) |
+| `--max-pdu` | All | Maximum Length Received, in bytes (default 65536) |
+
+TLS options for the SCU tools:
+
+| Option | Meaning |
+| --- | --- |
+| `--tls` | Connect with TLS 1.2 or later |
+| `--tls-ca` | PEM CA certificates trusted for the server (default: the system's) |
+| `--tls-certificate`, `--tls-key` | Client certificate chain and private key |
+| `--tls-no-hostname-check` | Verify the server certificate but not its host name |
+
+TLS options for <doc:DcmServer>:
+
+| Option | Meaning |
+| --- | --- |
+| `--tls-certificate`, `--tls-key` | Accept TLS connections only |
+| `--tls-client-ca` | Require client certificates signed by these CAs |
+| `--destination-tls` | Reach C-MOVE destinations with TLS |
+| `--destination-tlsca`, `--destination-tls-certificate`, `--destination-tls-key` | Trust and credentials for C-MOVE destinations |

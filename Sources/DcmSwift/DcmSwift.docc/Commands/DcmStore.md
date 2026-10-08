@@ -5,6 +5,7 @@ Send DICOM files to a Storage SCP. Directories are traversed recursively.
 ```sh
 DcmStore PACS pacs.example.org 11112 image.dcm
 DcmStore PACS pacs.example.org 2762 study/ --tls --commit
+DcmStore PACS pacs.example.org 11112 /data/study --commit
 ```
 
 Each instance is proposed in its current transfer syntax and may be converted

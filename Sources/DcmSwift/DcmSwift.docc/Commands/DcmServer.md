@@ -6,6 +6,7 @@ directory.
 ```sh
 DcmServer --aet DCMSERVER --port 11112
 DcmServer --aet ARCHIVE --storage-directory ./archive --port 11112
+DcmServer -a DCMSERVER -p 11112 -s /data/archive --destination VIEWER=10.0.0.5:104
 ```
 
 Without `--storage-directory`, only C-ECHO is served. With a storage directory,
