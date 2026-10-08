@@ -88,7 +88,7 @@ automated tests that support the claim, and what remains to be qualified.
 | Parser robustness | PS3.5, PS3.10 | Fuzzed | <ul><li><code>DcmSwiftFuzzTests</code> (also under AddressSanitizer)</li><li><code>DcmSwiftParserCompatibilityTests</code></li></ul> | Coverage-guided fuzzing |
 | Native DICOM Model XML | PS3.19 A.1, used by PS3.18 | Implemented | <ul><li><code>DcmSwiftXMLTests</code></li><li><code>Scripts/crosscheck/native_xml.py</code>: schema validation and comparison with pydicom</li></ul> | DICOMweb use |
 | Audit, signatures, encryption | PS3.15 | Not implemented | none | ATNA, digital signatures, encrypted attributes |
-| IOD and module validation | PS3.3, PS3.4 Annex B | Partial | <ul><li><code>DcmSwiftIODValidationTests</code></li><li><code>Scripts/crosscheck/dicom_validator.py</code>: nothing reported that dicom-validator 0.9.0 does not, on 194 files</li></ul> | Conditions of Types 1C and 2C and of modules; Context Groups |
+| IOD and module validation | PS3.3, PS3.4 Annex B | Partial | <ul><li><code>DcmSwiftIODValidationTests</code></li><li><code>Scripts/crosscheck/dicom_validator.py</code>: nothing reported that dicom-validator 0.9.0 does not, on 194 files, but for its Pixel Data gap</li></ul> | Conditions in prose; Context Groups; attributes not allowed |
 | Context Groups and terminology | PS3.16 Section 8, Annexes B and D | Implemented | <ul><li><code>DcmSwiftTerminologyTests</code></li><li><code>Scripts/crosscheck/nema_valuesets.py</code>: the 1,434 groups NEMA publishes as FHIR value sets for 2026d, identical in version, codes with included groups resolved, and meanings</li></ul> | Templates (Annex A); applying groups in IOD validation |
 
 ## Corpus policy
