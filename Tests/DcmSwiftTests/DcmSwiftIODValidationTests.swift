@@ -4,11 +4,12 @@ import XCTest
 /// IOD validation (PS3.3): the specification generated from the 2026d
 /// DocBook, the validator, and the receive policy of the archive services.
 final class DcmSwiftIODValidationTests: XCTestCase {
-    private let secondaryCapture = "1.2.840.10008.5.1.4.1.1.7"
+    static let secondaryCapture = "1.2.840.10008.5.1.4.1.1.7"
+    private var secondaryCapture: String { Self.secondaryCapture }
 
     /// A Secondary Capture Image with every attribute its mandatory modules
     /// require, Pixel Data included.
-    private func secondaryCaptureImage() -> DataSet {
+    static func secondaryCaptureImage() -> DataSet {
         let dataSet = DataSet()
         let values: [(String, Any)] = [
             ("SOPClassUID", secondaryCapture), ("SOPInstanceUID", "1.2.826.0.1.3680043.10.1.1"),
@@ -45,14 +46,14 @@ final class DcmSwiftIODValidationTests: XCTestCase {
     }
 
     func testCompleteInstanceIsValid() {
-        let report = DICOMIODValidator().validate(secondaryCaptureImage())
+        let report = DICOMIODValidator().validate(Self.secondaryCaptureImage())
         XCTAssertTrue(report.isValid, report.findings.map(\.description).joined(separator: "\n"))
         XCTAssertEqual(report.sopClassUID, secondaryCapture)
         XCTAssertTrue(report.checkedModules.contains("SC Equipment"))
     }
 
     func testMissingEmptyAndUnexpectedValuesAreReported() throws {
-        let dataSet = secondaryCaptureImage()
+        let dataSet = Self.secondaryCaptureImage()
         _ = dataSet.remove(dataElement: try XCTUnwrap(dataSet.element(forTagName: "PatientID")))
         _ = dataSet.remove(dataElement: try XCTUnwrap(dataSet.element(forTagName: "ConversionType")))
         _ = dataSet.set(value: "", forTagName: "Modality")
@@ -74,7 +75,7 @@ final class DcmSwiftIODValidationTests: XCTestCase {
     }
 
     func testSequenceItemsAreValidated() throws {
-        let dataSet = secondaryCaptureImage()
+        let dataSet = Self.secondaryCaptureImage()
         // Source Image Sequence (General Reference, a user-optional module):
         // its Items need the Referenced SOP Class and Instance UIDs.
         let sequence = DataSequence(withTag: try XCTUnwrap(DicomSpec.shared.dataTag(forName: "SourceImageSequence")))
@@ -134,7 +135,7 @@ final class DcmSwiftIODValidationTests: XCTestCase {
     }
 
     func testConditionalTypesAreRequiredWhenTheirConditionHolds() throws {
-        let dataSet = secondaryCaptureImage()
+        let dataSet = Self.secondaryCaptureImage()
         _ = dataSet.remove(dataElement: try XCTUnwrap(dataSet.element(forTagName: "PixelData")))
         let missing = DICOMIODValidator().validate(dataSet).findings
         XCTAssertEqual(missing.map(\.path), [["7FE00010"]], missing.map(\.description).joined(separator: "\n"))
@@ -148,7 +149,7 @@ final class DcmSwiftIODValidationTests: XCTestCase {
 
         // Planar Configuration (0028,0006) is required when Samples per
         // Pixel (0028,0002) has a Value greater than 1.
-        let color = secondaryCaptureImage()
+        let color = Self.secondaryCaptureImage()
         _ = color.set(value: UInt16(3), forTagName: "SamplesPerPixel")
         _ = color.set(value: "RGB", forTagName: "PhotometricInterpretation")
         XCTAssertTrue(DICOMIODValidator().validate(color).findings.contains { $0.path == ["00280006"] })
@@ -158,7 +159,7 @@ final class DcmSwiftIODValidationTests: XCTestCase {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dcmswift-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let incomplete = secondaryCaptureImage()
+        let incomplete = Self.secondaryCaptureImage()
         _ = incomplete.remove(dataElement: try XCTUnwrap(incomplete.element(forTagName: "ConversionType")))
         func received(_ dataSet: DataSet) throws -> DICOMReceivedInstance {
             let item = try DICOMRetrieveItem(dataSet: dataSet)
@@ -168,7 +169,7 @@ final class DcmSwiftIODValidationTests: XCTestCase {
                 moveOriginatorMessageID: nil, sourceAETitle: "TEST")
         }
         let instance = try received(incomplete)
-        let validDataSet = secondaryCaptureImage()
+        let validDataSet = Self.secondaryCaptureImage()
         _ = validDataSet.set(value: "1.2.826.0.1.3680043.10.1.4", forTagName: "SOPInstanceUID")
         let valid = try received(validDataSet)
         let context = DICOMwebRequestContext(baseURI: "/dicomweb")

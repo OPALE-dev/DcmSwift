@@ -32,6 +32,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.103.0"),
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.29.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.0"),
+        .package(url: "https://github.com/apple/swift-crypto.git", "3.0.0"..<"6.0.0"),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.36.2"),
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0")
     ],
@@ -123,6 +124,7 @@ let package = Package(
                 .product(name: "NIOSSL", package: "swift-nio-ssl"),
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "Logging", package: "swift-log"),
+                .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "Html", package: "swift-html")
             ],
             resources: [
@@ -130,6 +132,7 @@ let package = Package(
                 .process("Resources/dicom-command-dictionary-2026d.json"),
                 .process("Resources/dicom-terminology-2026d.json"),
                 .process("Resources/dicom-iods-2026d.json"),
+                .process("Resources/dicom-deidentification-2026d.json"),
                 .copy("Resources/CharacterSets")
             ]),
         .executableTarget(
