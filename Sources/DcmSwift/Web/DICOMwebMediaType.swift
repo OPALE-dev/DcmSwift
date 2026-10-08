@@ -364,7 +364,7 @@ public enum DICOMwebContentNegotiation {
     ) -> Outcome {
         guard let header else { return .notAcceptable }
         let requested = (query + header).map(\.range).filter { !$0.isRange || $0.isMultipartRelated }
-        if requested.contains(where: isDICOM) && requested.contains(where: { !isDICOM($0) && !isGeneric($0) }) {
+        if requested.contains(where: isDICOM) && requested.contains(where: isRenderedOnly) {
             return .badRequest("DICOM and rendered media types cannot be requested together")
         }
         for list in [query, header] {
@@ -406,9 +406,12 @@ public enum DICOMwebContentNegotiation {
         return part.type == "application" && ["dicom", "dicom+json", "dicom+xml"].contains(part.subtype)
     }
 
-    /// Media types that may be either Bulk Data or rendered.
-    private static func isGeneric(_ type: DICOMwebMediaType) -> Bool {
+    /// Rendered Media Types of PS3.18 Table 8.7.4-1 that are not also Bulk
+    /// Data media types (image/jpeg, for example, is both). Other types, such
+    /// as application/json, are neither and are simply not supported.
+    static func isRenderedOnly(_ type: DICOMwebMediaType) -> Bool {
         let part = type.relatedType ?? type
-        return part.isRange || part.type == "image" || part.type == "video" || part == .octetStream
+        return ["text/html", "text/plain", "text/xml", "text/rtf", "application/pdf", "image/gif", "image/png",
+                "image/jph"].contains(part.essence)
     }
 }

@@ -322,7 +322,10 @@ public struct DICOMwebOriginServer: Sendable {
         var type = DICOMwebMediaType.dicom
         if syntaxes.count == 1 { type = type.with("transfer-syntax", syntaxes.first) }
         headers["Content-Type"] = DICOMwebMediaType.multipartRelated(type, boundary: writer.boundary).description
-        let length = parts.reduce(close.count) { $0 + ($1.0?.count ?? 0) + $1.1.count + $1.2.length }
+        var length = close.count
+        for (header, meta, payload) in parts {
+            length += (header?.count ?? 0) + meta.count + payload.length
+        }
         return DICOMwebHTTPResponse(status: 200, headers: headers, body: request.method == "HEAD" ? .empty
             : .stream(Self.stream(parts, trailer: close), length: length))
     }
@@ -533,7 +536,10 @@ public struct DICOMwebOriginServer: Sendable {
         into response: inout DICOMwebStoreResponse
     ) async {
         let header: DICOMPart10Header
-        do { header = try DICOMPart10Header.parse(sink.head, totalLength: UInt64(sink.length), name: "a part") } catch {
+        do {
+            header = try DICOMPart10Header.parse(sink.head, totalLength: UInt64(sink.length), name: "a part",
+                                                 requiresSOPIdentification: false)
+        } catch {
             response.otherFailures.append(DICOMwebStoreResponse.cannotUnderstand)
             return
         }
@@ -545,11 +551,22 @@ public struct DICOMwebOriginServer: Sendable {
                 return
             }
             let payload = try sink.finish(skipping: Int(header.dataSetOffset))
+            let parsed = try DICOMDataSetCoding.decode(payload.data(), transferSyntax: header.transferSyntaxUID)
+            // The data set identifies the instance; File Meta Information that
+            // disagrees with it is not trusted (PS3.10 7.1).
+            let sopClass = parsed.string(forTag: "SOPClassUID").flatMap { $0.isEmpty ? nil : $0 } ?? header.sopClassUID
+            let sopInstance = parsed.string(forTag: "SOPInstanceUID").flatMap { $0.isEmpty ? nil : $0 } ?? header.sopInstanceUID
+            reference = DICOMwebStoreResponse.Reference(sopClassUID: sopClass, sopInstanceUID: sopInstance)
+            guard !sopClass.isEmpty, !sopInstance.isEmpty else {
+                reference.reason = DICOMwebStoreResponse.cannotUnderstand
+                response.failed.append(reference)
+                return
+            }
             let instance = DICOMReceivedInstance(
-                sopClassUID: header.sopClassUID, sopInstanceUID: header.sopInstanceUID,
+                sopClassUID: sopClass, sopInstanceUID: sopInstance,
                 transferSyntaxUID: header.transferSyntaxUID, payload: payload, moveOriginatorAETitle: nil,
                 moveOriginatorMessageID: nil, sourceAETitle: "")
-            let dataSet = try instance.dataSet()
+            let dataSet = parsed
             let study = dataSet.string(forTag: "StudyInstanceUID") ?? ""
             if let target = resource.study, target != study {
                 reference.reason = DICOMwebStoreResponse.studyInstanceUIDMismatch
@@ -567,7 +584,7 @@ public struct DICOMwebOriginServer: Sendable {
                 return
             }
             let series = dataSet.string(forTag: "SeriesInstanceUID") ?? ""
-            reference.retrieveURL = "\(context.baseURI)/studies/\(study)/series/\(series)/instances/\(header.sopInstanceUID)"
+            reference.retrieveURL = "\(context.baseURI)/studies/\(study)/series/\(series)/instances/\(sopInstance)"
             response.stored.append(reference)
         } catch {
             reference.reason = DICOMwebStoreResponse.processingFailure

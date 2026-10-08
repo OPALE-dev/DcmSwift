@@ -26,7 +26,12 @@ public struct DICOMPart10Header: Equatable, Sendable {
 
     /// Reads the header from the first bytes of a Part 10 file, at least its
     /// preamble and File Meta Information, of `totalLength` bytes in all.
-    public static func parse(_ head: Data, totalLength size: UInt64, name: String = "the data") throws -> DICOMPart10Header {
+    /// Without `requiresSOPIdentification`, missing Media Storage SOP Class
+    /// and Instance UIDs are empty, for callers that read them from the data
+    /// set instead.
+    public static func parse(
+        _ head: Data, totalLength size: UInt64, name: String = "the data", requiresSOPIdentification: Bool = true
+    ) throws -> DICOMPart10Header {
         let bytes = [UInt8](head)
         guard bytes.count >= 132, bytes[128..<132].elementsEqual(Array("DICM".utf8)) else {
             throw DICOMCommandError("\(name) is not a DICOM Part 10 file")
@@ -64,7 +69,9 @@ public struct DICOMPart10Header: Equatable, Sendable {
             position = valueStart + length
         }
         let offset = end ?? position
-        guard let sopClass = values[0x0002], let sopInstance = values[0x0003], let syntax = values[0x0010] else {
+        guard let syntax = values[0x0010],
+              let sopClass = values[0x0002] ?? (requiresSOPIdentification ? nil : ""),
+              let sopInstance = values[0x0003] ?? (requiresSOPIdentification ? nil : "") else {
             throw DICOMCommandError("incomplete File Meta Information in \(name)")
         }
         guard UInt64(offset) <= size else { throw DICOMCommandError("File Meta Information overruns \(name)") }

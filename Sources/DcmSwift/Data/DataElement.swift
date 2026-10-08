@@ -30,6 +30,9 @@ public class DataElement : DicomObject {
     public var tag:DataTag
     private var storedData:Data?
     public internal(set) var bulkDataReference:DICOMBulkDataReference?
+    /// The Bulk Data URI of a value that was not loaded, such as one in
+    /// DICOMweb metadata (PS3.18 F.2.6).
+    public internal(set) var bulkDataURI:String?
 
     /// Accessing `data` preserves the historical API and materializes lazy
     /// file-backed Bulk Data on first access. Use `loadData()` when errors must

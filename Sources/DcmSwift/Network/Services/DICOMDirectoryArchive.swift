@@ -54,10 +54,12 @@ public actor DICOMDirectoryArchive {
         for key in indexedKeys {
             if let values = dataSet.textValues(forTag: key) { attributes[key] = values.joined(separator: "\\") }
         }
-        attributes["SOPInstanceUID"] = header.sopInstanceUID
-        attributes["SOPClassUID"] = header.sopClassUID
-        return Record(url: url, sopClassUID: header.sopClassUID, transferSyntaxUID: header.transferSyntaxUID,
-                      attributes: attributes)
+        // The data set's UIDs prevail over File Meta Information that
+        // disagrees with them.
+        if attributes["SOPInstanceUID"]?.isEmpty ?? true { attributes["SOPInstanceUID"] = header.sopInstanceUID }
+        if attributes["SOPClassUID"]?.isEmpty ?? true { attributes["SOPClassUID"] = header.sopClassUID }
+        return Record(url: url, sopClassUID: attributes["SOPClassUID"] ?? header.sopClassUID,
+                      transferSyntaxUID: header.transferSyntaxUID, attributes: attributes)
     }
 
     /// Writes a received instance and indexes it.
