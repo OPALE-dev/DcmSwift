@@ -178,6 +178,27 @@ public struct DICOMwebMediaType: Hashable, Sendable, CustomStringConvertible {
         }
     }
 
+    /// The Transfer Syntax selected by this media type when it has no
+    /// transfer-syntax parameter: the default of PS3.18 Tables 8.7.3-2,
+    /// 8.7.3-4, and 8.7.3-5, or nil for media types without one.
+    public var defaultTransferSyntax: String? {
+        switch essence {
+        case "application/dicom", "application/octet-stream": return TransferSyntax.explicitVRLittleEndian
+        case "image/jpeg": return "1.2.840.10008.1.2.4.70"
+        case "application/x-deflate": return "1.2.840.10008.1.2.8.1"
+        case "image/dicom-rle": return "1.2.840.10008.1.2.5"
+        case "image/jls": return "1.2.840.10008.1.2.4.80"
+        case "image/jp2": return "1.2.840.10008.1.2.4.90"
+        case "image/jpx": return "1.2.840.10008.1.2.4.92"
+        case "image/jphc": return "1.2.840.10008.1.2.4.201"
+        case "image/jxl": return "1.2.840.10008.1.2.4.110"
+        case "video/mpeg": return "1.2.840.10008.1.2.4.101"
+        case "video/mp4": return "1.2.840.10008.1.2.4.102"
+        case "video/h265": return "1.2.840.10008.1.2.4.107"
+        default: return nil
+        }
+    }
+
     // MARK: Lexical helpers
 
     /// Splits on a separator outside quoted strings.
@@ -297,9 +318,11 @@ public struct DICOMwebAcceptRange: Hashable, Sendable, CustomStringConvertible {
             guard syntax == candidateSyntax else { return nil }
             score += 2
         case nil:
-            // Wildcard ranges such as image/* leave the choice to the server.
-            if !range.isRange && (range.relatedType?.isRange ?? false) == false,
-               let candidateSyntax, let defaultTransferSyntax, candidateSyntax != defaultTransferSyntax {
+            // Wildcard ranges such as image/* leave the choice to the server;
+            // otherwise the media type's default Transfer Syntax applies.
+            let part = candidate.relatedType ?? candidate
+            if !range.isRange && (range.relatedType?.isRange ?? false) == false, let candidateSyntax,
+               let defaultSyntax = part.defaultTransferSyntax ?? defaultTransferSyntax, candidateSyntax != defaultSyntax {
                 return nil
             }
         }

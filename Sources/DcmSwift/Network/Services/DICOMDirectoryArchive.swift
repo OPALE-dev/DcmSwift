@@ -1,15 +1,16 @@
-import DcmSwift
 import Foundation
 
 /// The instances of a directory, indexed by the attributes of the
-/// Query/Retrieve information models (PS3.4 C.6).
-actor DirectoryArchive {
-    struct Record: Sendable {
-        var url: URL
-        var sopClassUID: String
-        var transferSyntaxUID: String
+/// Query/Retrieve information models (PS3.4 C.6). It backs the storage,
+/// query, retrieval, and Storage Commitment services of `DcmServer`, over
+/// DIMSE and DICOMweb.
+public actor DICOMDirectoryArchive {
+    public struct Record: Sendable {
+        public var url: URL
+        public var sopClassUID: String
+        public var transferSyntaxUID: String
         /// Indexed attributes, by keyword.
-        var attributes: [String: String]
+        public var attributes: [String: String]
     }
 
     /// Unique keys and indexed attributes per level (PS3.4 C.6.1.1, C.6.2.1).
@@ -18,19 +19,20 @@ actor DirectoryArchive {
         ("STUDY", "StudyInstanceUID", ["StudyInstanceUID", "StudyDate", "StudyTime", "AccessionNumber", "StudyID",
                                        "StudyDescription", "ReferringPhysicianName"]),
         ("SERIES", "SeriesInstanceUID", ["SeriesInstanceUID", "Modality", "SeriesNumber", "SeriesDescription"]),
-        ("IMAGE", "SOPInstanceUID", ["SOPInstanceUID", "SOPClassUID", "InstanceNumber"]),
+        ("IMAGE", "SOPInstanceUID", ["SOPInstanceUID", "SOPClassUID", "InstanceNumber", "Rows", "Columns",
+                                     "BitsAllocated", "NumberOfFrames"]),
     ]
     static let indexedKeys = levels.flatMap(\.keys)
 
-    let directory: URL
+    public let directory: URL
     private var records: [String: Record] = [:]
 
-    init(directory: URL) {
+    public init(directory: URL) {
         self.directory = directory
     }
 
     /// Indexes the Part 10 files of the directory; returns their number.
-    func scan() -> Int {
+    public func scan() -> Int {
         let enumerator = FileManager.default.enumerator(
             at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])
         while let url = enumerator?.nextObject() as? URL {
@@ -59,7 +61,7 @@ actor DirectoryArchive {
     }
 
     /// Writes a received instance and indexes it.
-    func store(_ instance: DICOMReceivedInstance) throws {
+    public func store(_ instance: DICOMReceivedInstance) throws {
         guard DICOMUniqueIdentifier.isValid(instance.sopInstanceUID) else {
             throw DICOMCommandError("invalid SOP Instance UID")
         }
@@ -71,13 +73,13 @@ actor DirectoryArchive {
     }
 
     /// The record of an instance.
-    func record(_ sopInstanceUID: String) -> Record? {
+    public func record(_ sopInstanceUID: String) -> Record? {
         records[sopInstanceUID]
     }
 
     /// The groups of records at `level` matching `identifier`, each the
-    /// records of one patient, study, series, or instance.
-    func match(_ identifier: DataSet, level: String) throws -> [[Record]] {
+    /// records of one patient, study, series, or instance, in a stable order.
+    public func match(_ identifier: DataSet, level: String) throws -> [[Record]] {
         guard let depth = Self.levels.firstIndex(where: { $0.level == level }) else {
             throw DICOMCommandError("unknown Query/Retrieve Level \(level)")
         }
@@ -102,44 +104,28 @@ actor DirectoryArchive {
         }
         return order.map { groups[$0]! }
     }
-}
 
-/// Storage, query, retrieval, and Storage Commitment over a
-/// `DirectoryArchive`.
-struct ArchiveServices: DICOMStorageService, DICOMQueryService, DICOMRetrieveService, DICOMStorageCommitmentService {
-    let archive: DirectoryArchive
-    let destinations: [String: DICOMRemoteNode]
-
-    func store(_ instance: DICOMReceivedInstance, context: DICOMServiceContext) async throws -> DICOMStatus {
-        try await archive.store(instance)
-        return .success
-    }
-
-    func find(
-        _ identifier: DataSet, informationModel: String, context: DICOMServiceContext
-    ) async throws -> AsyncThrowingStream<DataSet, Error> {
+    /// The matches of a C-FIND identifier, with its return keys filled.
+    public func find(_ identifier: DataSet) throws -> [DataSet] {
         let level = identifier.string(forTag: "QueryRetrieveLevel") ?? ""
-        let groups = try await archive.match(identifier, level: level)
+        let groups = try match(identifier, level: level)
         let requested = identifier.allElements.map(\.name)
-        return AsyncThrowingStream { continuation in
-            for group in groups {
-                let match = DataSet()
-                for keyword in requested {
-                    if let value = Self.value(of: keyword, in: group, level: level) {
-                        _ = match.set(value: value, forTagName: keyword)
-                    } else if let element = identifier.element(forTagName: keyword), element.vr != .SQ {
-                        // Unsupported keys are returned empty.
-                        _ = match.set(value: "", forTagName: keyword)
-                    }
+        return groups.map { group in
+            let match = DataSet()
+            for keyword in requested {
+                if let value = Self.value(of: keyword, in: group, level: level) {
+                    _ = match.set(value: value, forTagName: keyword)
+                } else if let element = identifier.element(forTagName: keyword), element.vr != .SQ {
+                    // Unsupported keys are returned empty.
+                    _ = match.set(value: "", forTagName: keyword)
                 }
-                continuation.yield(match)
             }
-            continuation.finish()
+            return match
         }
     }
 
     /// A return key: an indexed attribute or a count of the group.
-    static func value(of keyword: String, in group: [DirectoryArchive.Record], level: String) -> String? {
+    static func value(of keyword: String, in group: [Record], level: String) -> String? {
         switch keyword {
         case "QueryRetrieveLevel": return level
         case "SpecificCharacterSet": return nil
@@ -157,20 +143,51 @@ struct ArchiveServices: DICOMStorageService, DICOMQueryService, DICOMRetrieveSer
             return group.first?.attributes[keyword]
         }
     }
+}
 
-    func retrieve(
+/// Storage, query, retrieval, and Storage Commitment over a
+/// `DICOMDirectoryArchive`, for DIMSE and for DICOMweb.
+public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryService, DICOMRetrieveService,
+    DICOMStorageCommitmentService, DICOMwebSearchService, DICOMwebRetrieveService, DICOMwebStoreService {
+    public let archive: DICOMDirectoryArchive
+    /// C-MOVE destinations and Storage Commitment SCUs, by AE title.
+    public let destinations: [String: DICOMRemoteNode]
+
+    public init(archive: DICOMDirectoryArchive, destinations: [String: DICOMRemoteNode] = [:]) {
+        self.archive = archive
+        self.destinations = destinations
+    }
+
+    // MARK: DIMSE
+
+    public func store(_ instance: DICOMReceivedInstance, context: DICOMServiceContext) async throws -> DICOMStatus {
+        try await archive.store(instance)
+        return .success
+    }
+
+    public func find(
+        _ identifier: DataSet, informationModel: String, context: DICOMServiceContext
+    ) async throws -> AsyncThrowingStream<DataSet, Error> {
+        let matches = try await archive.find(identifier)
+        return AsyncThrowingStream { continuation in
+            for match in matches { continuation.yield(match) }
+            continuation.finish()
+        }
+    }
+
+    public func retrieve(
         _ identifier: DataSet, informationModel: String, context: DICOMServiceContext
     ) async throws -> [DICOMRetrieveItem] {
         let level = identifier.string(forTag: "QueryRetrieveLevel") ?? ""
         return try await archive.match(identifier, level: level).joined().map { try DICOMRetrieveItem(file: $0.url) }
     }
 
-    func destination(for aeTitle: String) async -> DICOMRemoteNode? {
+    public func destination(for aeTitle: String) async -> DICOMRemoteNode? {
         destinations[aeTitle]
     }
 
     /// Commits the instances in the directory (PS3.4 J.3.3.2).
-    func commit(
+    public func commit(
         _ request: DICOMStorageCommitmentRequest, context: DICOMServiceContext
     ) async throws -> DICOMStorageCommitmentResult {
         var result = DICOMStorageCommitmentResult(
@@ -189,5 +206,43 @@ struct ArchiveServices: DICOMStorageService, DICOMQueryService, DICOMRetrieveSer
             }
         }
         return result
+    }
+
+    // MARK: DICOMweb
+
+    public func search(
+        _ identifier: DataSet, level: DICOMwebSearchLevel, query: DICOMwebSearchQuery, context: DICOMwebRequestContext
+    ) async throws -> [DataSet] {
+        try await archive.find(identifier)
+    }
+
+    public func instances(
+        study: String, series: String?, instance: String?, context: DICOMwebRequestContext
+    ) async throws -> [DICOMRetrieveItem] {
+        let identifier = DataSet()
+        _ = identifier.set(value: study, forTagName: "StudyInstanceUID")
+        if let series { _ = identifier.set(value: series, forTagName: "SeriesInstanceUID") }
+        if let instance { _ = identifier.set(value: instance, forTagName: "SOPInstanceUID") }
+        let level = instance != nil ? "IMAGE" : series != nil ? "SERIES" : "STUDY"
+        let records = try await archive.match(identifier, level: level).joined()
+        // Instances in series and instance number order.
+        func key(_ record: DICOMDirectoryArchive.Record) -> (Int, Int, String) {
+            let series: Int = Int(record.attributes["SeriesNumber"] ?? "") ?? 0
+            let instance: Int = Int(record.attributes["InstanceNumber"] ?? "") ?? 0
+            return (series, instance, record.url.path)
+        }
+        let ordered = records.sorted { key($0) < key($1) }
+        return try ordered.map { try DICOMRetrieveItem(file: $0.url) }
+    }
+
+    public func store(
+        _ instance: DICOMReceivedInstance, context: DICOMwebRequestContext
+    ) async throws -> DICOMwebStoreResult {
+        do {
+            try await archive.store(instance)
+            return .stored
+        } catch {
+            return .failed(DICOMwebStoreResponse.processingFailure)
+        }
     }
 }

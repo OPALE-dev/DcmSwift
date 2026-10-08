@@ -21,9 +21,15 @@ public struct DICOMPart10Header: Equatable, Sendable {
             if chunk.isEmpty { break }
             head.append(chunk)
         }
+        return try parse(head, totalLength: size, name: url.lastPathComponent)
+    }
+
+    /// Reads the header from the first bytes of a Part 10 file, at least its
+    /// preamble and File Meta Information, of `totalLength` bytes in all.
+    public static func parse(_ head: Data, totalLength size: UInt64, name: String = "the data") throws -> DICOMPart10Header {
         let bytes = [UInt8](head)
         guard bytes.count >= 132, bytes[128..<132].elementsEqual(Array("DICM".utf8)) else {
-            throw DICOMCommandError("\(url.lastPathComponent) is not a DICOM Part 10 file")
+            throw DICOMCommandError("\(name) is not a DICOM Part 10 file")
         }
         func u16(_ at: Int) -> Int { Int(bytes[at]) | Int(bytes[at + 1]) << 8 }
         func u32(_ at: Int) -> Int { u16(at) | u16(at + 2) << 16 }
@@ -46,7 +52,7 @@ public struct DICOMPart10Header: Equatable, Sendable {
                 valueStart = position + 8
             }
             guard length >= 0, valueStart + length <= bytes.count else {
-                throw DICOMCommandError("truncated File Meta Information in \(url.lastPathComponent)")
+                throw DICOMCommandError("truncated File Meta Information in \(name)")
             }
             if element == 0x0000, length == 4 {
                 end = valueStart + 4 + u32(valueStart)
@@ -59,9 +65,9 @@ public struct DICOMPart10Header: Equatable, Sendable {
         }
         let offset = end ?? position
         guard let sopClass = values[0x0002], let sopInstance = values[0x0003], let syntax = values[0x0010] else {
-            throw DICOMCommandError("incomplete File Meta Information in \(url.lastPathComponent)")
+            throw DICOMCommandError("incomplete File Meta Information in \(name)")
         }
-        guard UInt64(offset) <= size else { throw DICOMCommandError("File Meta Information overruns \(url.lastPathComponent)") }
+        guard UInt64(offset) <= size else { throw DICOMCommandError("File Meta Information overruns \(name)") }
         return DICOMPart10Header(
             sopClassUID: sopClass, sopInstanceUID: sopInstance, transferSyntaxUID: syntax,
             dataSetOffset: UInt64(offset), dataSetLength: Int(size - UInt64(offset)))
