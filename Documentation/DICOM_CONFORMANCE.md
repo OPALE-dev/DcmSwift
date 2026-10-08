@@ -162,6 +162,13 @@ sockets.
 | Query | <code>find(_:)</code>: an <code>AsyncSequence</code> of matches; stopping early sends C-CANCEL | <ul><li><code>DICOMQueryService</code>, Patient Root, Study Root, Patient/Study Only (retired)</li><li><code>DICOMQueryMatching</code>: PS3.4 C.2.2.2 matching</li></ul> |
 | Retrieve | <ul><li><code>move(_:destination:)</code>, <code>get(_:)</code>, with progress</li><li>Task cancellation sends C-CANCEL</li></ul> | <ul><li><code>DICOMRetrieveService</code>, with Composite Instance Root</li><li>C-MOVE through a new association to the destination, C-GET on the same association</li><li>Sub-operation counts and Failed SOP Instance UID List</li></ul> |
 
+### DIMSE-N services (PS3.7 10) and Storage Commitment (PS3.4 J)
+
+| Service | SCU | SCP |
+| --- | --- | --- |
+| DIMSE-N | <ul><li><code>nGet</code>, <code>nSet</code>, <code>nAction</code>, <code>nCreate</code>, <code>nDelete</code></li><li><code>nEventReport</code> from the side that is SCP of the SOP class</li><li>Meta SOP Classes through the <code>abstractSyntax</code> parameter</li></ul> | <ul><li><code>DICOMNormalizedService</code> per SOP Class UID, on server and client associations</li><li>Errors become Processing Failure (0110H); unknown actions and events No Such Action/Event Type</li><li>N-EVENT-REPORT also accepted from a requestor that did not negotiate the SCP role</li></ul> |
+| Storage Commitment Push Model | <ul><li><code>requestStorageCommitment</code> (N-ACTION, Action Type 1, well-known instance)</li><li><code>storageCommitmentResult</code> and <code>commit</code> wait for the result on the association</li><li><code>DICOMStorageCommitmentReceiver</code> for results on new associations</li></ul> | <ul><li><code>DICOMStorageCommitmentService</code></li><li>N-ACTION answered at once; result by N-EVENT-REPORT, Event Type 1 or 2 with Failure Reasons</li><li>Same association while open, else a new one under the same AE title proposing the SCP role (J.3.3.2)</li></ul> |
+
 Statuses are modelled per service (`DICOMStatus` with categories), and a
 service error answers with a failure status without ending the association.
 `TransferSyntaxCapability.canNegotiateForDIMSE` is true for every transfer
@@ -171,7 +178,11 @@ syntax that encodes a data set.
 
 `DcmEcho`, `DcmStore`, `DcmFind`, and `DcmServer` use this stack. `DcmServer`
 with a storage directory is a small archive: storage SCP, then C-FIND, C-MOVE,
-and C-GET over the instances in that directory (README, Network tools).
+C-GET, and Storage Commitment over the instances in that directory (README,
+Network tools). It commits an instance whose file is present with the
+referenced SOP class, and reports others as No Such SOP Instance (0112H) or
+Class/Instance Conflict (0119H). `DcmStore --commit` waits for the result on
+the association it stored on.
 
 ## Character sets
 

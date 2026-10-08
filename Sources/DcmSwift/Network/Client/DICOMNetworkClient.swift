@@ -108,10 +108,12 @@ public final class DICOMClient: Sendable {
     /// - Parameters:
     ///   - roleSelections: SCP roles to propose, for C-GET.
     ///   - storage: receives the C-STORE requests of C-GET sub-operations.
+    ///   - normalized: receives DIMSE-N requests and notifications from the
+    ///     acceptor, by SOP Class UID.
     public func withAssociation<Result>(
         to remote: DICOMRemoteNode, presentationContexts: [DICOMPresentationContextProposal],
         roleSelections: [DICOMRoleSelection] = [], userIdentity: DICOMUserIdentity? = nil,
-        storage: DICOMStorageService? = nil,
+        storage: DICOMStorageService? = nil, normalized: [String: DICOMNormalizedService] = [:],
         _ body: (DICOMAssociation) async throws -> Result
     ) async throws -> Result {
         if remote.useTLS, sslContext == nil {
@@ -150,7 +152,7 @@ public final class DICOMClient: Sendable {
         }
 
         let channel = asyncChannel.channel
-        let dispatcher = DICOMRequestDispatcher(verification: false, storage: storage)
+        let dispatcher = DICOMRequestDispatcher(verification: false, storage: storage, normalized: normalized)
         return try await asyncChannel.executeThenClose { inbound, outbound in
             let established = DICOMEstablishment()
             return try await withThrowingTaskGroup(of: Void.self) { group in

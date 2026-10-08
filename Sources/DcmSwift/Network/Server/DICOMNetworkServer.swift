@@ -65,9 +65,10 @@ public struct DICOMServerConfiguration: Sendable {
     }
 }
 
-/// An association acceptor (SCP) for verification, storage, query, and
-/// retrieval. `run` serves until its task is cancelled; each association
-/// runs in its own child task, so a failing peer never affects others.
+/// An association acceptor for verification, storage, query, retrieval,
+/// Storage Commitment, and DIMSE-N services. `run` serves until its task is
+/// cancelled; each association runs in its own child task, so a failing
+/// peer never affects others.
 public final class DICOMServer: Sendable {
     public let configuration: DICOMServerConfiguration
     private let group: EventLoopGroup
@@ -76,21 +77,31 @@ public final class DICOMServer: Sendable {
     private let policy: DICOMAcceptorPolicy
     private let active = NIOLockedValueBox(0)
 
+    /// - Parameters:
+    ///   - storageCommitment: the Storage Commitment SCP.
+    ///   - storageCommitmentReceiver: receives Storage Commitment results as
+    ///     the SCU, from SCPs that answer on a new association.
+    ///   - normalized: DIMSE-N services by SOP Class (or Meta SOP Class) UID.
     public init(
         configuration: DICOMServerConfiguration, storage: DICOMStorageService? = nil,
         query: DICOMQueryService? = nil, retrieve: DICOMRetrieveService? = nil,
+        storageCommitment: DICOMStorageCommitmentService? = nil,
+        storageCommitmentReceiver: DICOMStorageCommitmentReceiver? = nil,
+        normalized: [String: DICOMNormalizedService] = [:],
         eventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup.singleton
     ) throws {
         self.configuration = configuration
         group = eventLoopGroup
         sslContext = try configuration.tls.map { try NIOSSLContext(configuration: $0.configuration) }
-        let moveClient = retrieve == nil ? nil : try DICOMClient(
+        let outgoingClient = retrieve == nil && storageCommitment == nil ? nil : try DICOMClient(
             configuration: DICOMClientConfiguration(
                 aeTitle: configuration.aeTitle, limits: configuration.limits, timeouts: configuration.timeouts,
                 tls: configuration.clientTLS, logger: configuration.logger),
             eventLoopGroup: eventLoopGroup)
         dispatcher = DICOMRequestDispatcher(
-            verification: true, storage: storage, query: query, retrieve: retrieve, moveClient: moveClient)
+            verification: true, storage: storage, query: query, retrieve: retrieve, normalized: normalized,
+            storageCommitment: storageCommitment, commitmentReceiver: storageCommitmentReceiver,
+            outgoingClient: outgoingClient)
 
         var syntaxes: [String: DICOMAbstractSyntaxSupport] = [
             DICOMSOPClass.verification: DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes),
@@ -115,6 +126,19 @@ public final class DICOMServer: Sendable {
                           DICOMSOPClass.compositeInstanceRootGet] {
                 syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes)
             }
+        }
+        // DIMSE-N: this side performs operations, and receives notifications
+        // from requestors granted the SCP role.
+        for sopClass in normalized.keys {
+            syntaxes[sopClass] = DICOMAbstractSyntaxSupport(
+                transferSyntaxes: configuration.transferSyntaxes, scpRole: true, scuRole: true)
+        }
+        if storageCommitment != nil || storageCommitmentReceiver != nil {
+            // A receiver also accepts SCPs that send results without
+            // proposing their role (PS3.4 J.3.3.2 requires it).
+            syntaxes[DICOMSOPClass.storageCommitmentPushModel] = DICOMAbstractSyntaxSupport(
+                transferSyntaxes: configuration.transferSyntaxes, scpRole: true,
+                scuRole: storageCommitmentReceiver != nil)
         }
         policy = DICOMAcceptorPolicy(
             aeTitle: configuration.aeTitle, abstractSyntaxes: syntaxes,

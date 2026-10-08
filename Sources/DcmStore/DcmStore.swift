@@ -27,8 +27,18 @@ struct DcmStore: AsyncParsableCommand {
     @Argument(help: "Files and directories to send.")
     var paths: [String]
 
+    @Flag(name: .long, help: "Request Storage Commitment for the stored files, and wait for the result on the association.")
+    var commit = false
+
+    @Option(name: .long, help: "Seconds to wait for the Storage Commitment result.")
+    var commitTimeout = 30
+
     @OptionGroup var network: NetworkOptions
     @OptionGroup var tls: ClientTLSOptions
+
+    func validate() throws {
+        guard commitTimeout > 0 else { throw ValidationError("--commit-timeout must be positive") }
+    }
 
     func run() async throws {
         var items: [(path: String, item: DICOMRetrieveItem)] = []
@@ -50,21 +60,30 @@ struct DcmStore: AsyncParsableCommand {
             aeTitle: remote.callingAET, limits: network.limits, timeouts: network.timeouts,
             tls: try tls.configuration(), logger: network.logger(label: "dcmstore")))
         var stored = 0, warnings = 0, failed = 0
-        for batch in Self.batches(items) {
+        var requested = 0, uncommitted = 0
+        for batch in Self.batches(items, limit: commit ? 127 : 128) {
+            var contexts = DICOMPresentationContextProposal.proposals(for: batch.map(\.item))
+            if commit {
+                contexts.append(DICOMPresentationContextProposal(
+                    id: UInt8(2 * contexts.count + 1), abstractSyntax: DICOMSOPClass.storageCommitmentPushModel,
+                    transferSyntaxes: DICOMTransferSyntaxes.uncompressed))
+            }
             do {
                 try await client.withAssociation(
-                    to: remote.node(tls: tls.tls),
-                    presentationContexts: DICOMPresentationContextProposal.proposals(for: batch.map(\.item))
+                    to: remote.node(tls: tls.tls), presentationContexts: contexts
                 ) { association in
+                    var sent: [DICOMSOPReference] = []
                     for (path, item) in batch {
                         do {
                             let status = try await association.store(item)
                             switch status.category {
                             case .success:
                                 stored += 1
+                                sent.append(item.reference)
                                 if network.verbose { print("stored \(path)") }
                             case .warning:
                                 warnings += 1
+                                sent.append(item.reference)
                                 print("stored \(path) with warning \(status)")
                             default:
                                 failed += 1
@@ -76,6 +95,11 @@ struct DcmStore: AsyncParsableCommand {
                             printError("failed \(path): the remote AE accepted no context for its SOP class and transfer syntax")
                         }
                     }
+                    if commit, !sent.isEmpty {
+                        let references = Array(Set(sent))
+                        requested += references.count
+                        uncommitted += try await requestCommitment(references, on: association)
+                    }
                 }
             } catch {
                 printError("C-STORE \(remote.description) failed: \(error.commandLineDescription)")
@@ -84,8 +108,31 @@ struct DcmStore: AsyncParsableCommand {
         }
         print("C-STORE \(remote.description): \(stored + warnings) of \(items.count) stored"
               + (warnings > 0 ? ", \(warnings) with warnings" : "") + (failed > 0 ? ", \(failed) failed" : "")
-              + (skipped > 0 ? ", \(skipped) non-DICOM files skipped" : ""))
-        if failed > 0 { throw ExitCode.failure }
+              + (skipped > 0 ? ", \(skipped) non-DICOM files skipped" : "")
+              + (requested == 0 ? "" : uncommitted == 0 ? ", all committed" : ", \(uncommitted) of \(requested) not committed"))
+        if failed > 0 || uncommitted > 0 { throw ExitCode.failure }
+    }
+
+    /// Requests Storage Commitment and waits for the result; returns the
+    /// number of instances not committed.
+    func requestCommitment(_ references: [DICOMSOPReference], on association: DICOMAssociation) async throws -> Int {
+        let transaction: String
+        do {
+            transaction = try await association.requestStorageCommitment(references)
+        } catch DICOMNetworkError.noPresentationContext {
+            printError("the remote AE does not accept Storage Commitment")
+            return references.count
+        }
+        guard let result = await association.storageCommitmentResult(
+            transactionUID: transaction, timeout: .seconds(Int64(commitTimeout))) else {
+            printError("no Storage Commitment result for \(transaction) within \(commitTimeout) s")
+            return references.count
+        }
+        for failure in result.failed {
+            printError("not committed \(failure.reference.sopInstanceUID): failure reason "
+                       + String(format: "%04XH", failure.reason))
+        }
+        return references.count - result.committed.count
     }
 
     /// Regular files under the paths, directories searched recursively,
@@ -114,9 +161,11 @@ struct DcmStore: AsyncParsableCommand {
         return files
     }
 
-    /// Splits the items so that each association needs at most 128
-    /// presentation contexts (PS3.8 9.3.2.2).
-    static func batches(_ items: [(path: String, item: DICOMRetrieveItem)]) -> [[(path: String, item: DICOMRetrieveItem)]] {
+    /// Splits the items so that each association needs at most `limit` of
+    /// the 128 presentation contexts (PS3.8 9.3.2.2).
+    static func batches(
+        _ items: [(path: String, item: DICOMRetrieveItem)], limit: Int
+    ) -> [[(path: String, item: DICOMRetrieveItem)]] {
         // Contexts follow `proposals(for:)`: one per SOP class, plus one per
         // compressed transfer syntax of that class.
         let uncompressed = Set(DICOMTransferSyntaxes.uncompressed + [
@@ -130,7 +179,7 @@ struct DcmStore: AsyncParsableCommand {
                 needed.insert(entry.item.sopClassUID + " " + entry.item.transferSyntaxUID)
             }
             let added = needed.subtracting(contexts)
-            if !current.isEmpty, contexts.count + added.count > 128 {
+            if !current.isEmpty, contexts.count + added.count > limit {
                 batches.append(current)
                 current = []
                 contexts = []

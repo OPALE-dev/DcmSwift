@@ -70,6 +70,8 @@ automated tests that support the claim, and what remains to be qualified.
 | C-ECHO, C-STORE | PS3.4 A, B | SCU and SCP | <ul><li><code>testEchoAndRelease</code></li><li><code>testStoreKeepsTheSentEncoding</code></li><li><code>testStoreConvertsOnAnUncompressedContextOfTheClass</code></li><li><code>Scripts/interop</code> with pynetdicom</li></ul> | DCMTK, dcm4che |
 | C-FIND, C-CANCEL | PS3.4 C.4.1 | SCU and SCP | <ul><li><code>testFindStreamsMatchesAndCancels</code></li><li><code>testQueryMatching</code></li></ul> | Sequence and PN component matching |
 | C-MOVE, C-GET | PS3.4 C.4.2, C.4.3 | SCU and SCP | <code>testMoveSendsToTheDestinationAndGetToTheRequestor</code> | More than 128 contexts in C-MOVE |
+| DIMSE-N | PS3.7 10 | SCU and SCP | <ul><li><code>testNormalizedCommandSetsMatchPynetdicom</code></li><li><code>testNormalizedOperationsReachTheService</code></li><li><code>testEventReportsNeedTheSCPRole</code></li></ul> | SOP-class-specific services |
+| Storage Commitment Push Model | PS3.4 J | SCU and SCP | <ul><li><code>testStorageCommitmentResultOnTheSameAssociation</code></li><li><code>testStorageCommitmentResultOnANewAssociation</code></li><li><code>testStorageCommitmentRequestsAreValidated</code></li><li><code>testStorageCommitmentDataSetsRoundTrip</code></li><li><code>Scripts/interop/commitment.py</code> with pynetdicom</li></ul> | DCMTK, dcm4che |
 | Robustness | PS3.8 9.1 | Implemented | <ul><li><code>testRejectionsAndLimits</code></li><li><code>testMisbehavingPeersDoNotDisturbTheServer</code></li><li><code>testAbortReachesThePeerAndTheServerRecovers</code></li><li><code>testIdleTimeoutAbortsAWaitingOperation</code></li></ul> | Live-association fuzzing |
 
 ### Experimental or not implemented
