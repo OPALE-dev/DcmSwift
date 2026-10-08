@@ -235,7 +235,7 @@ Images test material).
 | ☐ | Presentation States | <ul><li>Grayscale Softcopy Presentation State: VOI, spatial transformation, displayed area, graphic and text annotations, compound graphics</li><li>Color, Pseudo-color, and Blending Presentation States</li><li>Variable Modality LUT Presentation State</li></ul> | PS3.3 C.11.10 to C.11.15; PS3.4 Annex N |
 | ☐ | Color management | <ul><li>ICC profiles to PCS-Values</li><li>Supplemental and Enhanced Palette Color LUTs</li></ul> | PS3.3 C.11.15, C.7.6.19, C.7.6.23; PS3.4 N.2.1 |
 | ☐ | Quantitative data | Real World Value Mapping | PS3.3 C.7.6.16.2.11 |
-| ✓ | Rendered image export | Portable 8-bit PNG, quality-controlled JPEG, uncompressed TIFF, and lossless PGM/PPM for independent medical-imaging/tooling exchange; high-bit-depth export follows grayscale pipeline completion, and rendered exports are not DICOM replacements | PS3.4 Annex N; TIFF 6.0; ISO/IEC 10918-1 |
+| ✓ | Rendered image export | Portable 8-bit PNG, quality-controlled JPEG, uncompressed TIFF, and lossless PGM/PPM for independent medical-imaging/tooling exchange, exposed by the single-file and batch `DcmConvert` demonstrator; high-bit-depth export follows grayscale pipeline completion, and rendered exports are not DICOM replacements | PS3.4 Annex N; TIFF 6.0; ISO/IEC 10918-1 |
 | ☐ | Performance | Vectorized rendering and multi-frame (cine) streaming | — |
 
 ## Phase 4 — Web, security, and advanced objects

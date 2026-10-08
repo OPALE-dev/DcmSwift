@@ -30,7 +30,8 @@ implemented.
 Linux is a required DcmSwift 2.0 platform, not a best-effort build target.
 Library code, command-line tools, and the platform-independent test suite must
 build and run on both Linux and Apple platforms; the library and its test suite
-must also build and run on iOS. Image rendering and PNG export are portable;
+must also build and run on iOS. Image rendering and PNG, JPEG, TIFF, and Netpbm
+export are portable;
 only the `CGImage`, `NSImage`, and `UIImage` conveniences are Apple-specific.
 
 ## Dependencies
@@ -105,8 +106,8 @@ DcmSwift mainly relies on Foundation in order to remain usable across common
 Swift toolchains.
 
 The runtime tag and UID registry is generated reproducibly from PS3.6 2026d. It
-currently contains 5,303 data-element entries and 1,990 UID entries. Command-set
-tags are provided by a bootstrap registry until PS3.7 generation is added.
+currently contains 5,303 data-element entries and 1,990 UID entries. Current
+Command Set fields are generated from PS3.7 2026d Table E.1-1.
 
 With `DicomFile`, DICOM Part 10 files can be read and written through the
 `DataSet` model. Malformed lengths are bounds-checked, File Meta Information is
@@ -555,6 +556,31 @@ To build release binaries:
 Binaries can be found in `.build/release` directory. For example:
 
     .build/release/DcmPrint /my/dicom/file.dcm
+
+### Image conversion with DcmConvert
+
+`DcmConvert` is a portable DICOM-to-image demonstrator. It exports every
+renderable frame as PNG, quality-controlled JPEG, uncompressed TIFF, or Netpbm
+(PGM for grayscale and PPM for RGB). A rendered image does not retain the full
+DICOM data set and is not a replacement for the source instance.
+
+Convert one image to a specific output file:
+
+    DcmConvert image.dcm image.png --format png
+
+Select one frame and an explicit grayscale window:
+
+    DcmConvert cine.dcm frame-12.jpg --format jpeg --frame 12 \
+      --quality 92 --window-center 40 --window-width 400
+
+Recursively convert a study while keeping its subdirectory layout:
+
+    DcmConvert /data/study /data/rendered --format tiff --recursive
+
+Without `--frame`, multi-frame instances produce numbered files such as
+`cine_0001.png`. Existing outputs are protected unless `--overwrite` is used.
+See [the complete DcmConvert guide](Documentation/DCMCONVERT.md) or run
+`DcmConvert --help` for all options.
 
 ### Network tools
 
