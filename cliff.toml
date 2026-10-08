@@ -1,0 +1,51 @@
+# git-cliff configuration (https://git-cliff.org).
+# Regenerate the changelog with:  git cliff -o CHANGELOG.md
+# Commit summaries are imperative English sentences (see CONTRIBUTING.md), so
+# they are grouped by their leading verb rather than by Conventional Commits.
+
+[changelog]
+header = """
+# Changelog
+
+All notable changes to DcmSwift are listed here, newest first. This file is
+generated from the commit history with [git-cliff](https://git-cliff.org); do
+not edit it by hand.
+"""
+body = """
+{% if version %}\
+## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+## [Unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim | upper_first }}
+{% for commit in commits %}
+- {{ commit.message | split(pat="\n") | first | trim }}\
+{% endfor %}
+{% endfor %}
+"""
+footer = ""
+trim = false
+# One blank line at most, and none at the end of the file.
+postprocessors = [
+  { pattern = "\n{3,}", replace = "\n\n" },
+  { pattern = "\n+$", replace = "" },
+]
+
+[git]
+conventional_commits = false
+filter_unconventional = false
+split_commits = false
+protect_breaking_commits = false
+tag_pattern = "v[0-9].*"
+sort_commits = "newest"
+commit_parsers = [
+  { message = "^Merge", skip = true },
+  { message = "^WIP", skip = true },
+  { message = "^(Add|Added|Implement|Support|Decode|Encode|Publish|Start|Init|Model)\\b", group = "<!-- 0 -->Added" },
+  { message = "^(Fix|Fixed|Correct)\\b", group = "<!-- 1 -->Fixed" },
+  { message = "^(Remove|Removed|Delete|Drop)\\b", group = "<!-- 3 -->Removed" },
+  { message = "^(Document|Comment|Comments|Documentation|Doc|Docs)\\b", group = "<!-- 4 -->Documentation" },
+  { message = "^(Test|Tests|Fuzz)\\b", group = "<!-- 5 -->Tests" },
+  { message = ".*", group = "<!-- 2 -->Changed" },
+]
