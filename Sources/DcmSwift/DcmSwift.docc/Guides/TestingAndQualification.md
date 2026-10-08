@@ -115,6 +115,19 @@ Orthanc with its DICOMweb plugin is the reference, run over an empty
 storage directory. The test leaves out empty attributes, which Orthanc drops,
 and files that reuse another file's SOP Instance UID.
 
+## Terminology
+
+`Scripts/generate-dicom-terminology.py` rebuilds the terminology resource
+from the PS3.16 DocBook; `--check` verifies that the bundled resource is up
+to date. `Scripts/crosscheck/nema_valuesets.py` compares it with the FHIR
+value sets NEMA publishes for the same edition, downloaded from
+`https://dicom.nema.org/medical/dicom/resources/valuesets/fhir/json/`:
+
+```sh
+python3 Scripts/generate-dicom-terminology.py part16.xml Sources/DcmSwift/Resources/dicom-terminology-2026d.json --check
+python3 Scripts/crosscheck/nema_valuesets.py Sources/DcmSwift/Resources/dicom-terminology-2026d.json /path/to/valuesets
+```
+
 ## Network interoperability
 
 `Scripts/interop` drives pynetdicom 3 against DcmSwift:

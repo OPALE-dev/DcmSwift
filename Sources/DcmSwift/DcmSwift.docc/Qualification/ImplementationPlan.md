@@ -254,7 +254,9 @@ Images test material).
   radiotherapy, waveforms, encapsulated documents, and parametric maps;
 - [ ] declarative IOD/module validation from PS3.3, separate from dictionary and
   lexical validity;
-- [ ] terminology/context-group handling from PS3.16 with version provenance.
+- [x] terminology/context-group handling from PS3.16 with version provenance:
+  Coding Schemes, DCM codes, and Context Groups of 2026d, identical to NEMA's
+  FHIR value sets; Templates follow with the Structured Report API.
 
 ## Release gates
 
