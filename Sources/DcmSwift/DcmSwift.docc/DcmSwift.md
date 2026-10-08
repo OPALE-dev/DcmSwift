@@ -39,6 +39,7 @@ and what remains deliberately limited.
 - <doc:DcmDocument>
 - <doc:DcmWaveform>
 - <doc:DcmRT>
+- <doc:DcmSeg>
 - <doc:DcmAnonymize>
 - <doc:DcmIzer>
 - <doc:DcmSR>
