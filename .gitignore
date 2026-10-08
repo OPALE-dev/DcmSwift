@@ -3,7 +3,6 @@
 /Packages
 /*.xcodeproj
 xcuserdata/
-docs/
 Tests/DcmSwiftTests/Resources/
 __MACOSX/
 .env
