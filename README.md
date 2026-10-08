@@ -172,6 +172,7 @@ on every platform.
 | Waveforms (PS3.3 C.10.9) | <ul><li><code>DICOMWaveform</code> and <code>DcmWaveform</code>: multiplex groups, channels, every sample interpretation including G.711 mu-law and A-law</li><li>Samples and values equal to those of pydicom on its ECG and on files of every interpretation</li></ul> |
 | Radiotherapy (PS3.3 A.18 to A.20) | <ul><li><code>DICOMRTStructureSet</code>, <code>DICOMRTDose</code>, <code>DICOMRTPlan</code>, and <code>DcmRT</code>: ROIs and contours, dose grids and DVHs, prescriptions and beams</li><li>Equal to dicompyler-core on the pydicom test files and the local corpus</li></ul> |
 | Segmentations and Parametric Maps (PS3.3 A.51, A.75) | <ul><li><code>DICOMSegmentation</code> (BINARY, FRACTIONAL, LABELMAP; making BINARY), <code>DICOMParametricMap</code>, and <code>DcmSeg</code></li><li>Read like pydicom on highdicom instances; DcmSwift Segmentations read back by highdicom</li></ul> |
+| Structured Reports (PS3.3 C.17, PS3.16 TID 1500) | <ul><li><code>DICOMStructuredReport</code>: every Value Type read and written; <code>DICOMMeasurementReport</code> and <code>DcmSR measure</code>: TID 1500</li><li>Trees equal to pydicom on 24 reports; DcmSwift reports read by highdicom, dsrdump, and dicom-validator</li></ul> |
 | Terminology (PS3.16) | <ul><li>Coding Schemes, DCM codes, and the 1,467 Context Groups of 2026d, with versions and included groups</li><li>Identical to the FHIR value sets NEMA publishes for the edition</li></ul> |
 | Robustness | <ul><li>Mutation fuzzing of the parser and pixel decoders, also run under AddressSanitizer</li><li>Reproducers kept as regression fixtures</li></ul> |
 
@@ -207,7 +208,7 @@ Every tool documents its options with `--help`.
 | [DcmSeg](Sources/DcmSwift/DcmSwift.docc/Commands/DcmSeg.md) | Print Segmentations and Parametric Maps, or make binary Segmentations |
 | [DcmAnonymize](Sources/DcmSwift/DcmSwift.docc/Commands/DcmAnonymize.md) | De-identify files with the PS3.15 Basic Profile and its options |
 | [DcmIzer](Sources/DcmSwift/DcmSwift.docc/Commands/DcmIzer.md) | Wrap a JPEG, PNG, or TIFF image in a DICOM file |
-| [DcmSR](Sources/DcmSwift/DcmSwift.docc/Commands/DcmSR.md) | Print a Structured Report tree or render it as HTML |
+| [DcmSR](Sources/DcmSwift/DcmSwift.docc/Commands/DcmSR.md) | Print a Structured Report tree as text, HTML, or JSON, or make a TID 1500 Measurement Report |
 | [DcmEcho](Sources/DcmSwift/DcmSwift.docc/Commands/DcmEcho.md) | Verification SCU |
 | [DcmStore](Sources/DcmSwift/DcmSwift.docc/Commands/DcmStore.md) | Storage SCU, with optional Storage Commitment |
 | [DcmFind](Sources/DcmSwift/DcmSwift.docc/Commands/DcmFind.md) | Query SCU (C-FIND) |

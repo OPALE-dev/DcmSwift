@@ -226,6 +226,16 @@ dicom-validator check a Segmentation DcmSeg makes (`pip install highdicom`):
 python3 Scripts/crosscheck/seg_highdicom.py .build/debug /path/to/standard /path/to/ct-series
 ```
 
+## Structured Reports
+
+`Scripts/crosscheck/sr_highdicom.py` has highdicom, dicom-validator, and
+dsrdump check a TID 1500 report DcmSR makes, then compares the content trees
+DcmSR reads with pydicom's, on a highdicom report and the SR files given:
+
+```sh
+python3 Scripts/crosscheck/sr_highdicom.py .build/debug /path/to/standard /path/to/ct-series /path/to/sr-files
+```
+
 ## Network interoperability
 
 `Scripts/interop` drives pynetdicom 3 against DcmSwift:

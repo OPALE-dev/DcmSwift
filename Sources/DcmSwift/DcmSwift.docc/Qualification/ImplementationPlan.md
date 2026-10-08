@@ -254,11 +254,12 @@ Images test material).
   A.5.1 schema); digital signatures done (Base RSA profile, exchanged with
   DCMTK dcmsign); encrypted attributes done (CMS envelopes exchanged with
   openssl);
-- [ ] semantic APIs: encapsulated documents done (PDF, CDA, STL, OBJ, MTL,
+- [x] semantic APIs: encapsulated documents done (PDF, CDA, STL, OBJ, MTL,
   exchanged with DCMTK), waveforms read (checked against pydicom), and
   radiotherapy read (checked against dicompyler-core), Segmentations read and
-  made and Parametric Maps read (checked against highdicom); Structured
-  Reports remain;
+  made and Parametric Maps read (checked against highdicom), and Structured
+  Reports read and written with TID 1500 (checked against highdicom,
+  dsrdump, and pydicom);
 - [x] declarative IOD/module validation from PS3.3, separate from dictionary and
   lexical validity: `DICOMIODValidator`, `DcmValidate`, and a receive policy,
   with the conditions that test attributes, checked against dicom-validator;

@@ -226,13 +226,15 @@ conformance without that evidence.
 - IOD validation (PS3.3) evaluates only the conditions that test attributes
   (about three in five), does not apply Defined Terms and Context Groups, and
   does not report attributes the IOD does not allow.
-- PS3.16: the Templates (TID) of Annex A are not modelled yet; they come
-  with the Structured Report API. Context Groups are not yet applied to the
+- PS3.16: of the Templates (TID) of Annex A, only TID 1500 and 1501 have a
+  builder; other templates are written through the content tree. Context Groups are not yet applied to the
   attributes and Content Items that reference them, which belongs to IOD
   validation.
-- Qualify Structured Reports, waveforms, presentation states, segmentations,
-  parametric maps, encapsulated documents, radiotherapy objects, and other
-  information objects individually.
+- Semantic APIs read Structured Reports, waveforms, segmentations, parametric
+  maps, encapsulated documents, and radiotherapy objects, each checked
+  against an independent tool; making them is limited to Structured Reports,
+  BINARY segmentations, and encapsulated documents. Presentation states and
+  the other information objects remain to be qualified individually.
 
 ## Network, web, and security
 
