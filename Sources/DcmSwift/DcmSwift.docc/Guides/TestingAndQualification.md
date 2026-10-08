@@ -197,6 +197,16 @@ extracts them:
 python3 Scripts/crosscheck/encapsulated_documents.py .build/debug /path/to/standard
 ```
 
+## Waveforms
+
+`Scripts/crosscheck/waveforms.py` compares DcmWaveform with pydicom's
+`multiplex_array` on the files given and on files of every sample
+interpretation it makes:
+
+```sh
+python3 Scripts/crosscheck/waveforms.py .build/debug /path/to/files
+```
+
 ## Network interoperability
 
 `Scripts/interop` drives pynetdicom 3 against DcmSwift:
