@@ -68,6 +68,22 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
     public static let explicitVRBigEndian = "1.2.840.10008.1.2.2"
     public static let deflatedExplicitVRLittleEndian = "1.2.840.10008.1.2.1.99"
 
+    /// JPIP Referenced Transfer Syntaxes (PS3.5 A.6, A.7, A.11, A.12): the
+    /// Pixel Data is replaced by a Pixel Data Provider URL.
+    public static let jpipReferenced = "1.2.840.10008.1.2.4.94"
+    public static let jpipReferencedDeflate = "1.2.840.10008.1.2.4.95"
+    public static let jpipHTJ2KReferenced = "1.2.840.10008.1.2.4.204"
+    public static let jpipHTJ2KReferencedDeflate = "1.2.840.10008.1.2.4.205"
+    public static let jpipReferencedSyntaxes: Set<String> = [
+        jpipReferenced, jpipReferencedDeflate, jpipHTJ2KReferenced, jpipHTJ2KReferencedDeflate,
+    ]
+
+    /// Whether the whole data set of this Transfer Syntax is deflated after
+    /// Explicit VR Little Endian encoding (PS3.5 A.5, A.7, A.12).
+    public static func deflatesDataSet(_ uid: String) -> Bool {
+        uid == deflatedExplicitVRLittleEndian || uid == jpipReferencedDeflate || uid == jpipHTJ2KReferencedDeflate
+    }
+
     
     
     /**

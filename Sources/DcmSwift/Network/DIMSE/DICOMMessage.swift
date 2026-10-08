@@ -294,7 +294,7 @@ public enum DICOMDataSetCoding {
     /// Encodes the data set elements (not the File Meta Information).
     public static func encode(_ dataset: DataSet, transferSyntax uid: String) throws -> Data {
         guard let syntax = TransferSyntax(uid) else { throw DICOMCommandError("unknown transfer syntax \(uid)") }
-        if uid == TransferSyntax.deflatedExplicitVRLittleEndian {
+        if TransferSyntax.deflatesDataSet(uid) {
             let explicit = dataset.DIMSEData(transferSyntax: TransferSyntax(TransferSyntax.explicitVRLittleEndian)!)
             return try DICOMDeflate.compress(explicit)
         }
@@ -308,7 +308,7 @@ public enum DICOMDataSetCoding {
         guard let syntax = TransferSyntax(uid) else { throw DICOMCommandError("unknown transfer syntax \(uid)") }
         var bytes = data
         var effective = syntax
-        if uid == TransferSyntax.deflatedExplicitVRLittleEndian {
+        if TransferSyntax.deflatesDataSet(uid) {
             bytes = try DICOMDeflate.decompress(data, maximumOutputLength: limits.maximumInflatedDataSetLength)
             effective = TransferSyntax(TransferSyntax.explicitVRLittleEndian)!
         }
