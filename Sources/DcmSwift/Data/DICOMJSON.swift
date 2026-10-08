@@ -358,7 +358,10 @@ public enum DICOMJSON {
         // Binary Value Fields, inline or by reference.
         var binary: Data?
         if let base64 = attribute["InlineBinary"] {
-            guard let text = base64 as? String, let data = Data(base64Encoded: text, options: .ignoreUnknownCharacters) else {
+            // Only whitespace is ignored: Foundation's .ignoreUnknownCharacters
+            // skips any invalid character on Linux.
+            guard let text = (base64 as? String)?.filter({ !$0.isWhitespace }),
+                  let data = Data(base64Encoded: text) else {
                 throw DICOMJSONError("\(key) InlineBinary is not base64")
             }
             binary = data
