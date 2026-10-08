@@ -186,6 +186,17 @@ DcmAnonymize restores the values of envelopes `openssl cms` makes:
 python3 Scripts/crosscheck/cms_openssl.py .build/debug /path/to/files
 ```
 
+## Encapsulated documents
+
+`Scripts/crosscheck/encapsulated_documents.py` wraps a PDF, a CDA, a binary
+STL, an OBJ, and an MTL document with DcmDocument, validates the instances,
+and extracts them with dcmdecap; then DCMTK wraps them and DcmDocument
+extracts them:
+
+```sh
+python3 Scripts/crosscheck/encapsulated_documents.py .build/debug /path/to/standard
+```
+
 ## Network interoperability
 
 `Scripts/interop` drives pynetdicom 3 against DcmSwift:

@@ -279,6 +279,17 @@ depend on conditions DcmValidate does not evaluate, mostly Patient Position
 "Required if Pixel Data Provider URL (0028,7FE0) is not present", which
 DcmValidate reports for the 50 pydicom DICOMDIR test files without one.
 
+## Encapsulated documents (PS3.3 A.45, A.85, C.24)
+
+| Content | Support |
+| --- | --- |
+| Reading | PDF, CDA, STL, OBJ, and MTL, with Encapsulated Document Length (0042,0015) to remove the padding |
+| Making | <ul><li>The modules of each IOD: Patient and General Study from a context instance or new, Encapsulated Document Series, General or Enhanced General Equipment, SC Equipment or Manufacturing 3D Model, Frame of Reference for STL and OBJ</li><li>HL7 Instance Identifier from the CDA's id; binary STL only</li></ul> |
+
+DCMTK's pdf2dcm, cda2dcm, stl2dcm, and dcmencap documents are extracted
+byte for byte, dcmdecap extracts DcmSwift's, and both DcmValidate and
+dicom-validator accept DcmSwift's instances.
+
 ## Character sets
 
 Text decoding follows Specific Character Set (0008,0005). Every Defined Term of

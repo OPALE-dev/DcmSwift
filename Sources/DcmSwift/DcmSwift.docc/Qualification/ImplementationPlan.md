@@ -254,8 +254,9 @@ Images test material).
   A.5.1 schema); digital signatures done (Base RSA profile, exchanged with
   DCMTK dcmsign); encrypted attributes done (CMS envelopes exchanged with
   openssl);
-- [ ] semantic APIs for Structured Reports, segmentations,
-  radiotherapy, waveforms, encapsulated documents, and parametric maps;
+- [ ] semantic APIs: encapsulated documents done (PDF, CDA, STL, OBJ, MTL,
+  exchanged with DCMTK); Structured Reports, segmentations, radiotherapy,
+  waveforms, and parametric maps remain;
 - [x] declarative IOD/module validation from PS3.3, separate from dictionary and
   lexical validity: `DICOMIODValidator`, `DcmValidate`, and a receive policy,
   with the conditions that test attributes, checked against dicom-validator;
