@@ -53,6 +53,13 @@ runner with Xcode for macOS and the newest installed iOS Simulator runtime.
 | Reports | SwiftPM writes JUnit reports with `swift test --parallel --xunit-output`; `Scripts/xcresult-junit.py` converts the iOS result bundle; every job publishes them to the pipeline Tests tab |
 | Documentation | The DocC site is built with warnings as errors; see <doc:DocumentationWorkflow> |
 
+GitHub Actions runs the same Linux, macOS, and iOS jobs in
+`.github/workflows/ci.yml`, on `macos-26` runners for Apple platforms, and
+uploads the JUnit reports as artifacts. It fetches the corpus only when the
+`DCM_CORPUS_URL` and `DCM_CORPUS_TOKEN` secrets are set, through
+`Scripts/ci/fetch-interop-corpus.sh`, with the version and checksum declared
+in `.gitlab-ci.yml`; without them, the corpus suite is skipped.
+
 To publish a new corpus version, upload the archive with a token that has the
 `api` scope, then update both variables in `.gitlab-ci.yml`:
 

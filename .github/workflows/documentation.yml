@@ -3,8 +3,6 @@ name: Documentation
 on:
   pull_request:
   push:
-    branches:
-      - master
   workflow_dispatch:
 
 permissions:
@@ -24,13 +22,13 @@ jobs:
       - name: Build documentation
         run: Scripts/documentation/build.sh .build/documentation DcmSwift
       - name: Upload Pages artifact
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v4
         with:
           path: .build/documentation
 
   deploy:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: build
     runs-on: ubuntu-latest
     permissions:
