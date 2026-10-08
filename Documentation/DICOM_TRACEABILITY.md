@@ -81,7 +81,7 @@ automated tests that support the claim, and what remains to be qualified.
 | --- | --- | --- | --- | --- |
 | DICOM JSON | PS3.18 Annex F | Implemented | <ul><li><code>DcmSwiftJSONTests</code></li><li><code>Scripts/crosscheck/pydicom_json.py</code>: 144 of 147 pydicom test files and 51 of 51 local corpus files identical</li></ul> | DICOMweb use |
 | Parser robustness | PS3.5, PS3.10 | Fuzzed | <ul><li><code>DcmSwiftFuzzTests</code> (also under AddressSanitizer)</li><li><code>DcmSwiftParserCompatibilityTests</code></li></ul> | Coverage-guided fuzzing |
-| Native DICOM Model XML | PS3.19 Annex A, used by PS3.18 | Not conformant | none | Namespace, values, PN, SQ, bulk data, escaping |
+| Native DICOM Model XML | PS3.19 A.1, used by PS3.18 | Implemented | <ul><li><code>DcmSwiftXMLTests</code></li><li><code>Scripts/crosscheck/native_xml.py</code>: schema validation and comparison with pydicom</li></ul> | DICOMweb use |
 | Audit, signatures, encryption | PS3.15 | Not implemented | none | ATNA, digital signatures, encrypted attributes |
 | IOD and module validation | PS3.3 | Not implemented | none | Separate declarative validation layer |
 | Context Groups and terminology | PS3.16 | Not implemented | none | Versioned terminology layer |

@@ -11,7 +11,7 @@ import ArgumentParser
 
 
 struct DcmPrint: ParsableCommand {
-    @Option(name: .shortAndLong, help: "Output format of the dictionary (TEXT, XML, or JSON for the DICOM JSON Model)")
+    @Option(name: .shortAndLong, help: "Output format of the dictionary (TEXT, XML for the Native DICOM Model, or JSON for the DICOM JSON Model)")
     var format: String = "TEXT"
     
     @Flag(name: .shortAndLong, help: "Prettify the output string (apply to XML and JSON only)")
@@ -21,13 +21,24 @@ struct DcmPrint: ParsableCommand {
     var sourcePath: String
 
     mutating func run() throws {
-        if let dicomFile = DicomFile(forPath: sourcePath) {
+        guard let dicomFile = DicomFile(forPath: sourcePath), dicomFile.dataset != nil else {
+            Logger.error("Cannot read \(sourcePath) as DICOM")
+            throw ExitCode.failure
+        }
+        do {
             if let dataset = dicomFile.dataset {
                 if format == "TEXT" {
                     print(dataset.description)
                 }
                 else if format == "XML" {
-                    print(dataset.toXML(pretty))
+                    // The Native DICOM Model (PS3.19 A.1).
+                    do {
+                        let xml = try DICOMXML.encode(dataset, options: DICOMJSON.EncodingOptions(prettyPrinted: pretty))
+                        print(String(decoding: xml, as: UTF8.self), terminator: "")
+                    } catch {
+                        Logger.error("\(error)")
+                        DcmPrint.exit(withError: ExitCode.failure)
+                    }
                 }
                 else if format == "JSON" {
                     // The DICOM JSON Model (PS3.18 Annex F).
