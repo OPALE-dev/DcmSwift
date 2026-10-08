@@ -273,8 +273,12 @@ conformance without that evidence.
   optional Camellia and DHE ones. Certificate key sizes and signature hashes
   are not checked beyond BoringSSL's own rules, and revocation (CRL, OCSP) is
   not checked.
-- Security profiles still to implement: ATNA audit, digital signatures,
-  encrypted attributes, and de-identification profiles.
+- Security profiles still to implement: ATNA audit, digital signatures, and
+  encrypted attributes, including the Encrypted Attributes Data Set of
+  de-identification.
+- De-identification does not inspect Pixel Data (burned-in annotations) nor
+  clean free text by itself: the Clean options need a cleaner from the
+  application.
 
 ## Cross-platform implementation
 

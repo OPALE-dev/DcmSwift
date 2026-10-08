@@ -248,8 +248,9 @@ Images test material).
   A.7, A.11, A.12, 8.4.1): the Pixel Data Provider URL (0028,7FE0) is resolved
   with a JPIP client (ISO/IEC 15444-9) and the rebuilt codestreams are decoded
   with the JPEG 2000 codecs, checked against Kakadu's kdu_server;
-- [ ] security and audit (TLS profiles done in Phase 2): ATNA audit events,
-  digital signatures, encrypted attributes, and de-identification profiles;
+- [ ] security and audit (TLS profiles done in Phase 2): de-identification
+  done (Basic Profile and options, checked against dicom-anonymizer); ATNA
+  audit events, digital signatures, and encrypted attributes remain;
 - [ ] semantic APIs for Structured Reports, segmentations,
   radiotherapy, waveforms, encapsulated documents, and parametric maps;
 - [x] declarative IOD/module validation from PS3.3, separate from dictionary and
