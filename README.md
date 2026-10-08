@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/OPALE-dev/DcmSwift/actions/workflows/ci.yml/badge.svg)](https://github.com/OPALE-dev/DcmSwift/actions/workflows/ci.yml)
 [![Documentation](https://github.com/OPALE-dev/DcmSwift/actions/workflows/documentation.yml/badge.svg)](https://opale-dev.github.io/DcmSwift/documentation/dcmswift/)
-[![Swift 6.1+](https://img.shields.io/badge/Swift-6.1%2B-F05138?logo=swift&logoColor=white)](https://swift.org)
+[![Swift 6.2+](https://img.shields.io/badge/Swift-6.2%2B-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20iOS%20%7C%20Linux-lightgrey)](#requirements)
 [![DICOM 2026d](https://img.shields.io/badge/DICOM-2026d-blue)](https://www.dicomstandard.org/current)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](#license)
@@ -44,7 +44,7 @@ Preview the documentation, or build the static site:
 | Requirement | Details |
 | --- | --- |
 | Platforms | <ul><li>macOS 10.15 or later</li><li>iOS 13 or later</li><li>Linux</li></ul> |
-| Swift | 6.1 or later (Swift 5 language mode); CI uses Swift 6.1 on Linux and the current Xcode on macOS and iOS |
+| Swift | 6.2 or later (Swift 5 language mode), which the AsyncHTTPClient dependencies require; CI uses Swift 6.2 on Linux and the current Xcode on macOS and iOS |
 | System library | `zlib` development files (`zlib1g-dev` on Debian and Ubuntu) |
 
 Linux is a release platform, not a best-effort target: the library, the tools,

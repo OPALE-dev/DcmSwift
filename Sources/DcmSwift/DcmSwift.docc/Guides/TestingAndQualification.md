@@ -43,7 +43,7 @@ qualified.
 
 ## Continuous integration
 
-GitLab CI runs the package on Linux (official Swift 6.1 image), and on a macOS
+GitLab CI runs the package on Linux (official Swift 6.2 image), and on a macOS
 runner with Xcode for macOS and the newest installed iOS Simulator runtime.
 
 | Step | Behavior |
