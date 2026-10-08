@@ -205,9 +205,10 @@ conformance without that evidence.
 - DICOM JSON: private elements keep VR UN unless sent with a VR (no vendor
   dictionaries); the legacy `toJSON()` convenience output remains, distinct from
   `DICOMJSON`.
-- Implement the Native DICOM Model XML representation with the PS3.19
-  namespace, attributes, PN, SQ, InlineBinary, BulkData, escaping, empty values,
-  and round trips as used by PS3.18.
+- Native DICOM Model: trailing empty Person Name components cannot be written
+  (XML has one element per non-empty component), BulkData `uuid` references
+  are kept as URIs, and the legacy `toXML()` output remains alongside
+  `DICOMXML`.
 - Define lossless conversion boundaries between binary, JSON, and XML rather
   than assuming every representation preserves every original byte choice.
 

@@ -5,9 +5,9 @@ DcmSwift 2.0 effort prioritizes a safe, measurable implementation of the DICOM
 file format, then the network stack, alternate representations, and rendering.
 
 The binary file format, the codecs, the DICOM Upper Layer and DIMSE services
-with TLS, and the DICOM JSON Model are implemented with regression tests, fuzzing,
-and comparisons with independent toolkits; the Native DICOM Model XML and
-rendering follow.
+with TLS, and the DICOM JSON and Native DICOM Model XML representations are
+implemented with regression tests, fuzzing, and comparisons with independent
+toolkits; rendering follows.
 
 The legacy `Logger` writes to standard error by default, and to a file only when
 asked (`Logger.addDestination(.File)`).
@@ -214,7 +214,7 @@ on every platform.
 | DICOMDIR | <ul><li>Legacy Basic hierarchy</li><li>Generic record-tree read and write, with a lossless view of every current F.4-1 type</li><li>Validation of offsets, the record graph, selected F.5 keys, File-set IDs, and referenced Part 10 identities</li></ul> |
 | PS3.12 media profiles | Not yet qualified; Basic DICOMDIR support is not a media-profile claim |
 | DICOM JSON Model (PS3.18 F) | <ul><li><code>DICOMJSON</code> encode and decode, <code>DcmPrint -f JSON</code></li><li>Matches pydicom on 144 of its 147 readable test files and on the local corpus</li></ul> |
-| Native DICOM Model XML (PS3.19) | Convenience output, not yet conformant |
+| Native DICOM Model XML (PS3.19 A.1) | <ul><li><code>DICOMXML</code> encode and decode, <code>DcmPrint -f XML</code></li><li>Every output of the pydicom test files and local corpus validates against the normative schema and matches pydicom through the PS3.18 F.3 mapping</li></ul> |
 | Robustness | <ul><li>Mutation fuzzing of the parser and pixel decoders, also run under AddressSanitizer</li><li>Reproducers kept as regression fixtures</li></ul> |
 
 ### Networking and security

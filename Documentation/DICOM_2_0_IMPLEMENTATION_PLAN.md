@@ -61,7 +61,7 @@ Implementation order for the remaining Phase 1 work:
 5. [ ] rebuild and qualify DICOMDIR and media-file handling (DICOMDIR rebuilt;
    PS3.12 media-profile qualification remains);
 6. [x] implement the PS3.18 DICOM JSON model;
-7. [ ] implement the PS3.18 Native DICOM Model XML representation.
+7. [x] implement the PS3.18 Native DICOM Model XML representation.
 
 Progress so far:
 
@@ -181,7 +181,7 @@ representations are built on a stable, lossless Data Set model.
 
 - [x] add the PS3.18 DICOM JSON Model, including Value, InlineBinary,
   BulkDataURI, PN objects, and nulls;
-- [ ] add the PS3.19 Native DICOM Model XML;
+- [x] add the PS3.19 Native DICOM Model XML;
 - [x] rebuild DICOMDIR around PS3.10/PS3.12 record offset rules;
 - [x] validate File-set IDs and referenced file IDs;
 - [ ] qualify supported PS3.12 media profiles.

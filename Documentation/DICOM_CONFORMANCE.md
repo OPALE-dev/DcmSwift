@@ -77,7 +77,7 @@ abbreviate `1.2.840.10008.1.2.4`):
 | Basic DICOMDIR | <ul><li>Legacy PATIENT/STUDY/SERIES/IMAGE and generic typed record-tree read/write</li><li>Lossless view of all current F.4-1 types</li><li>Validation of serialized Item offsets, complete reachability, all unconditional top-level F.5 keys, common Type 1C keys, File-set/File IDs, the consistency flag, and referenced Part 10 identities</li></ul> |
 | PS3.12 media profiles | Not qualified; no media-profile conformance claim |
 | DICOM JSON Model | PS3.18 Annex F, encode and decode (see below) |
-| Native DICOM Model XML | Existing convenience output is not PS3.19 conformant |
+| Native DICOM Model XML | PS3.19 A.1, encode and decode (see below) |
 
 Known UIDs are not automatically supported. `TransferSyntaxCapability` is the
 authoritative programmatic statement for structural I/O, Pixel Data
@@ -85,7 +85,14 @@ preservation, codec operations, and DIMSE negotiation.
 
 The next file-core priorities are remaining semantic VR validation, broader
 DICOMDIR Directory Record coverage, and PS3.12 media-profile qualification.
-The Native DICOM Model XML representation (PS3.19) follows.
+### Native DICOM Model (PS3.19 A.1)
+
+| Rule | Behavior |
+| --- | --- |
+| Document | <ul><li>UTF-8, namespace <code>http://dicom.nema.org/PS3.19/models/NativeDICOM</code>, <code>xml:space="preserve"</code> as A.1.4 requires (the normative schema omits it)</li><li>Attributes in tag order, with <code>keyword</code> for dictionary attributes; Group Lengths left out</li></ul> |
+| Values | <ul><li>Same value rules as DICOM JSON, through the PS3.18 F.3 mapping</li><li>Numbered Value, Item, and PersonName elements; empty Values as empty elements</li><li>Person Names split into FamilyName, GivenName, MiddleName, NamePrefix, NameSuffix</li><li>IS and DS as written</li></ul> |
+| Private elements | <code>gggg00ee</code> tags with <code>privateCreator</code>; Private Creator elements implied, blocks reassigned in order of appearance on decoding |
+| Decoding | Foundation <code>XMLParser</code> (FoundationXML on Linux); numbers may be out of order; CDATA accepted; repeated or invalid numbers, unknown namespaces, and malformed attributes rejected |
 
 ### DICOM JSON Model (PS3.18 Annex F)
 
