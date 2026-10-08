@@ -357,10 +357,29 @@ pydicom test files and the local corpus (196 files, 3,908 attribute outcomes)
 end the same, dicom-anonymizer resolving compound actions without the IOD.
 De-identification adds no IOD finding on those files.
 
+### Audit trail (PS3.15 A.5 to A.7)
+
+`DICOMAuditMessage` builds the fifteen audit messages of A.5.3 as XML of the
+DICOM Audit Message Schema (A.5.1); `DICOMAuditSyslogSender` sends them to a
+syslog collector.
+
+| Requirement | Behavior |
+| --- | --- |
+| Message format | <ul><li>Every message of A.5.3, with the event, participants, roles, and objects of its table; code meanings from PS3.16</li><li>No empty element or attribute; EventDateTime in UTC with fractional seconds</li><li>DICOM applications identified by process, with their AE titles as <code>AETITLES=</code> (A.5.2.1)</li></ul> |
+| Events detected by DcmServer | <ul><li>Application Activity: start and stop, including on SIGINT and SIGTERM</li><li>DICOM Instances Transferred: each instance received by C-STORE or STOW-RS, created or read (already held), and instances sent by WADO-RS</li><li>Query: C-FIND, with the identifier in its Transfer Syntax, and QIDO-RS</li><li>Begin Transferring DICOM Instances: C-MOVE and C-GET</li><li>Security Alert, Node Authentication: rejected associations</li><li>User Authentication, Login: associations with a user identity</li></ul> |
+| Transport | <ul><li>SYSLOG-TLS (RFC 5425, A.6), with the TLS profile of B.12, port 6514 by default</li><li>SYSLOG-UDP (RFC 5426, A.7), port 514 by default</li><li>RFC 5424 messages: PRI 85 (facility 10, severity 5), MSGID DICOM+RFC3881, no structured data, the XML in UTF-8 with its byte order mark</li></ul> |
+| Configuration | <code>DcmServer --audit tls://host[:port] --audit udp://host[:port]</code>, <code>--audit-tls-ca</code>, <code>--audit-tls-certificate</code>, <code>--audit-tls-key</code>, <code>--audit-source-id</code>; in the library, <code>DICOMServerConfiguration.audit</code> and <code>DICOMDirectoryArchiveServices(audit:)</code> |
+| Extensions and size | No schema extension. TLS messages have no size limit; UDP messages longer than a datagram are truncated by the network |
+| Not done | Receiving audit messages; buffering messages while a collector is unreachable (they are logged as errors) |
+
+`Scripts/crosscheck/audit_syslog.py` runs DcmServer against a TLS and UDP
+collector: every message it sends, from storage, query, retrieval, a
+rejected association, start, and stop, is parsed by syslog-rfc5424-parser
+and accepted by the schema of A.5.1 read from the DocBook.
+
 ### Other security profiles
 
-No audit trail (ATNA), digital signature, or encrypted-attribute conformance
-is claimed. User Identity negotiation is
+No digital signature or encrypted-attribute conformance is claimed. User Identity negotiation is
 passed to an application hook (`DICOMServerConfiguration.authenticate`), which
 decides on acceptance. Applications embedding DcmSwift remain responsible for
 access control, persistence, and audit.

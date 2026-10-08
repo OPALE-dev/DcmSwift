@@ -155,6 +155,17 @@ python3 Scripts/generate-dicom-deidentification.py part15.xml Sources/DcmSwift/R
 python3 Scripts/crosscheck/dicom_anonymizer.py Sources/DcmSwift/Resources/dicom-deidentification-2026d.json .build/debug/DcmAnonymize /path/to/files
 ```
 
+## Audit trail
+
+`Scripts/crosscheck/audit_syslog.py` starts DcmServer with a syslog
+collector over TLS and UDP, stores, queries, and retrieves an instance, has
+an association rejected, stops the server, and checks every message
+received (`pip install rnc2rng lxml syslog-rfc5424-parser pynetdicom`):
+
+```sh
+python3 Scripts/crosscheck/audit_syslog.py part15.xml .build/debug image.dcm
+```
+
 ## Network interoperability
 
 `Scripts/interop` drives pynetdicom 3 against DcmSwift:
