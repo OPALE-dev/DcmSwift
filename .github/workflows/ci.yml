@@ -27,7 +27,7 @@ jobs:
   swift-package:
     name: Linux
     runs-on: ubuntu-latest
-    container: swift:6.1
+    container: swift:6.2
     steps:
       - uses: actions/checkout@v6
       - name: Fetch interoperability corpus
@@ -88,7 +88,7 @@ jobs:
           # xcodebuild forwards TEST_RUNNER_-prefixed variables to the test process.
           TEST_RUNNER_DCMSWIFT_INTEROP_CORPUS="${DCMSWIFT_INTEROP_CORPUS:-}" \
           TEST_RUNNER_DCMSWIFT_REQUIRE_INTEROP_CORPUS="${DCMSWIFT_REQUIRE_INTEROP_CORPUS:-}" \
-          xcodebuild test -scheme DcmSwift-Package \
+          xcodebuild test -scheme DcmSwift-Package -quiet \
             -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
             -derivedDataPath .derived-data \
             -resultBundlePath .reports/ios.xcresult

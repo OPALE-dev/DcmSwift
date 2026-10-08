@@ -51,7 +51,7 @@ variables:
 swift-package:
   stage: test
   extends: [.interop-corpus, .junit-reports]
-  image: swift:6.1
+  image: swift:6.2
   tags:
     - deploy
   script:
@@ -93,7 +93,7 @@ ios-package:
     - >-
       TEST_RUNNER_DCMSWIFT_INTEROP_CORPUS="$DCMSWIFT_INTEROP_CORPUS"
       TEST_RUNNER_DCMSWIFT_REQUIRE_INTEROP_CORPUS="$DCMSWIFT_REQUIRE_INTEROP_CORPUS"
-      xcodebuild test -scheme DcmSwift-Package
+      xcodebuild test -scheme DcmSwift-Package -quiet
       -destination "platform=iOS Simulator,id=$SIMULATOR_ID"
       -derivedDataPath .derived-data
       -resultBundlePath .reports/ios.xcresult
@@ -103,7 +103,7 @@ ios-package:
 
 documentation-check:
   stage: documentation
-  image: swift:6.1
+  image: swift:6.2
   tags:
     - deploy
   script:
@@ -114,7 +114,7 @@ documentation-check:
 
 pages:
   stage: documentation
-  image: swift:6.1
+  image: swift:6.2
   tags:
     - deploy
   script:
