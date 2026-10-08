@@ -23,7 +23,8 @@ let package = Package(
         .executable(name: "DcmSR", targets: ["DcmSR"]),
         .executable(name: "DcmIzer", targets: ["DcmIzer"]),
         .executable(name: "DcmConvert", targets: ["DcmConvert"]),
-        .executable(name: "DcmValidate", targets: ["DcmValidate"])
+        .executable(name: "DcmValidate", targets: ["DcmValidate"]),
+        .executable(name: "DcmSign", targets: ["DcmSign"])
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -33,6 +34,8 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.29.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.0"),
         .package(url: "https://github.com/apple/swift-crypto.git", "3.0.0"..<"6.0.0"),
+        .package(url: "https://github.com/apple/swift-certificates.git", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-asn1.git", from: "1.0.0"),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.36.2"),
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0")
     ],
@@ -125,6 +128,9 @@ let package = Package(
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "Crypto", package: "swift-crypto"),
+                .product(name: "_CryptoExtras", package: "swift-crypto"),
+                .product(name: "X509", package: "swift-certificates"),
+                .product(name: "SwiftASN1", package: "swift-asn1"),
                 .product(name: "Html", package: "swift-html")
             ],
             resources: [
@@ -219,9 +225,22 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             exclude: ["README.md"]),
+        .executableTarget(
+            name: "DcmSign",
+            dependencies: [
+                "DcmSwift",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ],
+            exclude: ["README.md"]),
         .testTarget(
             name: "DcmSwiftTests",
-            dependencies: ["DcmSwift", "CZlib"],
+            dependencies: [
+                "DcmSwift", "CZlib",
+                .product(name: "Crypto", package: "swift-crypto"),
+                .product(name: "_CryptoExtras", package: "swift-crypto"),
+                .product(name: "X509", package: "swift-certificates"),
+                .product(name: "SwiftASN1", package: "swift-asn1"),
+            ],
             exclude: ["Resources"],
             resources: [.process("CIResources")]
         )
