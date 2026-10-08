@@ -161,6 +161,30 @@ public class DicomImage {
         return try renderedImage(forFrame: frame, options: options).pngData()
     }
 
+    /// Baseline JPEG encoding of a rendered frame on every platform.
+    public func jpegData(
+        forFrame frame: Int = 0, quality: Int = 90,
+        options: DICOMRenderingOptions = DICOMRenderingOptions()
+    ) throws -> Data {
+        try renderedImage(forFrame: frame, options: options).jpegData(quality: quality)
+    }
+
+    /// Uncompressed baseline TIFF encoding of a rendered frame.
+    public func tiffData(
+        forFrame frame: Int = 0,
+        options: DICOMRenderingOptions = DICOMRenderingOptions()
+    ) throws -> Data {
+        try renderedImage(forFrame: frame, options: options).tiffData()
+    }
+
+    /// Lossless PGM or PPM encoding of a rendered frame.
+    public func pnmData(
+        forFrame frame: Int = 0,
+        options: DICOMRenderingOptions = DICOMRenderingOptions()
+    ) throws -> Data {
+        try renderedImage(forFrame: frame, options: options).pnmData()
+    }
+
 
     // MARK: - CoreGraphics
 
@@ -252,14 +276,51 @@ public class DicomImage {
      rendered are skipped and logged.
      */
     public func toPNG(path: String, baseName: String?) {
+        exportFrames(path: path, baseName: baseName, extension: "png") { try pngData(forFrame: $0) }
+    }
+
+    /// Writes every rendered frame as a quality-controlled baseline JPEG.
+    public func toJPEG(path: String, baseName: String?, quality: Int = 90) {
+        exportFrames(path: path, baseName: baseName, extension: "jpg") {
+            try jpegData(forFrame: $0, quality: quality)
+        }
+    }
+
+    /// Writes every rendered frame as an uncompressed baseline TIFF.
+    public func toTIFF(path: String, baseName: String?) {
+        exportFrames(path: path, baseName: baseName, extension: "tiff") { try tiffData(forFrame: $0) }
+    }
+
+    /// Writes every rendered frame as lossless PGM (grayscale) or PPM (RGB).
+    public func toPNM(path: String, baseName: String?) {
+        exportFrames(path: path, baseName: baseName) { frame in
+            let image = try renderedImage(forFrame: frame)
+            return (image.pnmData(), image.format == .gray8 ? "pgm" : "ppm")
+        }
+    }
+
+    private func exportFrames(
+        path: String, baseName: String?, extension fileExtension: String,
+        encode: (Int) throws -> Data
+    ) {
+        exportFrames(path: path, baseName: baseName) { frame in
+            (try encode(frame), fileExtension)
+        }
+    }
+
+    private func exportFrames(
+        path: String, baseName: String?,
+        encode: (Int) throws -> (Data, String)
+    ) {
         let baseFilename = (baseName ?? UID.generate()) + "_"
         for frame in 0..<numberOfFrames {
-            let url = URL(fileURLWithPath: path)
-                .appendingPathComponent(baseFilename + String(frame) + ".png")
             do {
-                try pngData(forFrame: frame).write(to: url)
+                let (data, actualExtension) = try encode(frame)
+                let url = URL(fileURLWithPath: path)
+                    .appendingPathComponent(baseFilename + String(frame) + "." + actualExtension)
+                try data.write(to: url)
             } catch {
-                Logger.error("Cannot write PNG frame \(frame): \(error)")
+                Logger.error("Cannot export frame \(frame): \(error)")
             }
         }
     }

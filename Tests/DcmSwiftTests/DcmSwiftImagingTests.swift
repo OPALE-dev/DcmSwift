@@ -294,6 +294,37 @@ final class DcmSwiftImagingTests: XCTestCase {
         XCTAssertEqual(Array(inflated.prefix(Int(inflatedLength))), rows.flatMap { $0 })
     }
 
+    func testJPEGExportUsesThePortableBaselineEncoder() throws {
+        let pixels = (0..<(16 * 16)).map { UInt8($0 & 0xFF) }
+        let image = DICOMRenderedImage(width: 16, height: 16, format: .gray8, pixels: pixels)
+        let jpeg = try image.jpegData(quality: 95)
+        XCTAssertEqual(Array(jpeg.prefix(2)), [0xFF, 0xD8])
+        XCTAssertEqual(Array(jpeg.suffix(2)), [0xFF, 0xD9])
+        let description = DICOMPixelDescription(
+            rows: 16, columns: 16, samplesPerPixel: 1, photometricInterpretation: .monochrome2,
+            bitsAllocated: 8, bitsStored: 8, highBit: 7, isSigned: false,
+            planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
+        XCTAssertEqual(try DICOMJPEGBaselineCodec().decode(jpeg, description: description).data.count, pixels.count)
+        XCTAssertThrowsError(try image.jpegData(quality: 0))
+    }
+
+    func testTIFFAndNetpbmExportsAreLossless() {
+        let gray = DICOMRenderedImage(width: 2, height: 2, format: .gray8, pixels: [0, 85, 170, 255])
+        let pgm = [UInt8](gray.pnmData())
+        XCTAssertEqual(String(decoding: pgm.prefix(11), as: UTF8.self), "P5\n2 2\n255\n")
+        XCTAssertEqual(Array(pgm.suffix(4)), gray.pixels)
+
+        let rgb = DICOMRenderedImage(width: 2, height: 1, format: .rgb8, pixels: [1, 2, 3, 4, 5, 6])
+        let ppm = [UInt8](rgb.pnmData())
+        XCTAssertEqual(String(decoding: ppm.prefix(11), as: UTF8.self), "P6\n2 1\n255\n")
+        XCTAssertEqual(Array(ppm.suffix(6)), rgb.pixels)
+
+        let tiff = [UInt8](rgb.tiffData())
+        XCTAssertEqual(Array(tiff.prefix(8)), [0x49, 0x49, 0x2A, 0, 8, 0, 0, 0])
+        XCTAssertEqual(UInt16(tiff[8]) | UInt16(tiff[9]) << 8, 10)
+        XCTAssertEqual(Array(tiff.suffix(rgb.pixels.count)), rgb.pixels)
+    }
+
 #if canImport(ImageIO)
     func testPNGDecodesWithImageIO() throws {
         let image = DICOMRenderedImage(width: 2, height: 2, format: .gray8, pixels: [0, 85, 170, 255])
@@ -304,6 +335,15 @@ final class DcmSwiftImagingTests: XCTestCase {
         XCTAssertEqual(decoded.bitsPerPixel, 8)
         let bytes = try XCTUnwrap(decoded.dataProvider?.data as Data?)
         XCTAssertEqual(Array(bytes.prefix(2)) + Array(bytes.dropFirst(decoded.bytesPerRow).prefix(2)), [0, 85, 170, 255])
+    }
+
+    func testTIFFDecodesWithImageIO() throws {
+        let image = DICOMRenderedImage(width: 2, height: 1, format: .rgb8, pixels: [1, 2, 3, 4, 5, 6])
+        let source = try XCTUnwrap(CGImageSourceCreateWithData(image.tiffData() as CFData, nil))
+        let decoded = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
+        XCTAssertEqual(decoded.width, 2)
+        XCTAssertEqual(decoded.height, 1)
+        XCTAssertEqual(decoded.bitsPerComponent, 8)
     }
 #endif
 

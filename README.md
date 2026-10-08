@@ -192,7 +192,7 @@ Other codecs can be registered through `DICOMCodecRegistry`.
 | Color | RGB, YBR_FULL, YBR_FULL_422, Palette Color (including segmented) |
 | Samples | 1 to 32 bits, float and double, Big Endian |
 | Frames | Multi-frame images and functional groups |
-| Export | PNG on every platform; JPEG, TIFF, and PGM/PPM planned in Phase 3 |
+| Export | Portable 8-bit PNG, quality-controlled JPEG, uncompressed TIFF, and lossless PGM/PPM on every platform |
 
 ### Character sets
 
