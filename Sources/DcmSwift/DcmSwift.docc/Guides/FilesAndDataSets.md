@@ -124,6 +124,18 @@ try report.dataSet(context: imageOfTheStudy).writePart10(to: url)
 let extracted = DICOMEncapsulatedDocument(dataSet: dataSet)?.document
 ```
 
+## Waveforms
+
+``DICOMWaveform`` reads the multiplex groups of the Waveform Sequence: channels
+with their source, sensitivity, and units, samples, and values in the channel
+units:
+
+```swift
+for group in try DICOMWaveform.groups(in: dataSet) {
+    let leadII = group.values(channel: 1)   // microvolts for an ECG
+}
+```
+
 ## IOD validation
 
 ``DICOMIODValidator`` checks a data set against the IOD of its SOP Class, as

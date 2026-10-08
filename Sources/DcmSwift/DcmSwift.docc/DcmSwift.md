@@ -37,6 +37,7 @@ and what remains deliberately limited.
 - <doc:DcmValidate>
 - <doc:DcmSign>
 - <doc:DcmDocument>
+- <doc:DcmWaveform>
 - <doc:DcmAnonymize>
 - <doc:DcmIzer>
 - <doc:DcmSR>

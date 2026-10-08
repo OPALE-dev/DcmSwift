@@ -290,6 +290,17 @@ DCMTK's pdf2dcm, cda2dcm, stl2dcm, and dcmencap documents are extracted
 byte for byte, dcmdecap extracts DcmSwift's, and both DcmValidate and
 dicom-validator accept DcmSwift's instances.
 
+## Waveforms (PS3.3 C.10.9)
+
+| Content | Support |
+| --- | --- |
+| Reading | <ul><li>Every multiplex group: label, sampling frequency, originality, time offset</li><li>Channels: label, source, sensitivity and units, correction factor, baseline, skews, bits stored</li><li>Every Waveform Sample Interpretation: SB, UB, SS, US, SL, UL, SV, UV, and MB and AB decoded with ITU-T G.711; Little and Big Endian</li><li>Values: sample × sensitivity × correction + baseline (C.10.9.1.4)</li></ul> |
+| Not done | Making waveform instances; Waveform Annotation and Waveform Presentation Group modules beyond reading them as attributes |
+
+Samples and values equal pydicom's multiplex_array on its 12-lead ECG and on
+files of every interpretation, Big Endian included, where pydicom 3.0 reads
+the samples as Little Endian and its values are corrected first.
+
 ## Character sets
 
 Text decoding follows Specific Character Set (0008,0005). Every Defined Term of
