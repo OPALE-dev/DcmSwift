@@ -146,6 +146,25 @@ final class DcmSwiftWebServerTests: XCTestCase {
         return try DICOMwebMultipart.parse(response.body, boundary: try XCTUnwrap(type.boundary))
     }
 
+    /// A preamble and File Meta Information holding only the Transfer Syntax.
+    static func metaWithTransferSyntaxOnly() -> Data {
+        var elements = Data()
+        func element(_ number: UInt8, _ vr: String, _ value: [UInt8]) {
+            elements.append(contentsOf: [0x02, 0x00, number, 0x00] + Array(vr.utf8))
+            if vr == "OB" {
+                elements.append(contentsOf: [0, 0, UInt8(value.count), 0, 0, 0])
+            } else {
+                elements.append(contentsOf: [UInt8(value.count), 0])
+            }
+            elements.append(contentsOf: value)
+        }
+        element(0x01, "OB", [0, 1])
+        element(0x10, "UI", Array("1.2.840.10008.1.2.1".utf8) + [0])
+        var data = Data(count: 128) + Data("DICM".utf8)
+        data.append(contentsOf: [0x02, 0x00, 0x00, 0x00, 0x55, 0x4C, 0x04, 0x00, UInt8(elements.count), 0, 0, 0])
+        return data + elements
+    }
+
     // MARK: Store (PS3.18 10.5, Annex I)
 
     func testStoreReturnsTheStoreInstancesResponseModule() async throws {
@@ -183,6 +202,16 @@ final class DcmSwiftWebServerTests: XCTestCase {
         let module2 = try DICOMwebStoreResponse(dataSet: try DICOMXML.decode(xml.body))
         XCTAssertEqual(module2.stored.map(\.sopInstanceUID), [Self.ctInstance])
 
+        // File Meta Information without Media Storage UIDs: the data set
+        // identifies the instance.
+        let mr = try Self.mrPart10()
+        let header = try DICOMPart10Header.parse(mr, totalLength: UInt64(mr.count))
+        let anonymous = try await request(
+            "POST", "/dicomweb/studies", accept: "application/dicom+json",
+            contentType: "multipart/related; type=\"application/dicom\"; boundary=b",
+            body: DICOMwebMultipart.Writer.encode(
+                [(part, Self.metaWithTransferSyntaxOnly() + mr.dropFirst(Int(header.dataSetOffset)))], boundary: "b"))
+        XCTAssertEqual(anonymous.status, 200, String(decoding: anonymous.body, as: UTF8.self))
         let unsupported = try await request("POST", "/dicomweb/studies", accept: "application/dicom+json",
                                         contentType: "application/dicom", body: try Self.mrPart10())
         XCTAssertEqual(unsupported.status, 415)

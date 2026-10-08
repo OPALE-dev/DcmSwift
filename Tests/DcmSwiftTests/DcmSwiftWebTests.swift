@@ -82,6 +82,11 @@ final class DcmSwiftWebTests: XCTestCase {
         guard case .badRequest = select("application/dicom, text/html") else {
             return XCTFail("DICOM and rendered media types together are a bad request")
         }
+        // application/json is neither DICOM nor rendered: it is ignored, as
+        // dicomweb-client sends it after application/dicom+json.
+        XCTAssertEqual(DICOMwebContentNegotiation.select(
+            header: DICOMwebAcceptRange.parse("application/dicom+json, application/json"),
+            supported: [.dicomJSON], defaultType: .dicomJSON), .selected(.dicomJSON))
         // The accept Query Parameter takes precedence over the header.
         XCTAssertEqual(DICOMwebContentNegotiation.select(
             query: DICOMwebAcceptRange.parse("multipart/related; type=\"application/dicom\"; transfer-syntax=\(stored)"),

@@ -48,11 +48,16 @@ public enum DICOMJSON {
 
     public struct DecodingOptions {
         /// Fetches the Value Field a Bulk Data URI designates; without it,
-        /// a BulkDataURI is an error.
+        /// a BulkDataURI is an error unless `keepsBulkDataURIs` is set.
         public var loadBulkData: ((String) throws -> Data)?
+        /// Leaves Bulk Data unloaded: the element has no value and keeps the
+        /// URI in `bulkDataURI`, such as DICOMweb metadata whose Pixel Data
+        /// is retrieved separately.
+        public var keepsBulkDataURIs: Bool
 
-        public init(loadBulkData: ((String) throws -> Data)? = nil) {
+        public init(loadBulkData: ((String) throws -> Data)? = nil, keepsBulkDataURIs: Bool = false) {
             self.loadBulkData = loadBulkData
+            self.keepsBulkDataURIs = keepsBulkDataURIs
         }
     }
 
@@ -201,6 +206,10 @@ public enum DICOMJSON {
             if !sequence.items.isEmpty {
                 attribute["Value"] = try sequence.items.map { try attributes($0.elements, options: options) }
             }
+            return attribute
+        }
+        if let uri = element.bulkDataURI, element.data?.isEmpty ?? true {
+            attribute["BulkDataURI"] = uri
             return attribute
         }
         guard element.length > 0, let data = element.data, !data.isEmpty else { return attribute }
@@ -367,8 +376,17 @@ public enum DICOMJSON {
             binary = data
         } else if let uri = attribute["BulkDataURI"] {
             guard let text = uri as? String else { throw DICOMJSONError("\(key) BulkDataURI is not a string") }
-            guard let load = options.loadBulkData else { throw DICOMJSONError("\(key) refers to bulk data \(text)") }
-            binary = try load(text)
+            if let load = options.loadBulkData {
+                binary = try load(text)
+            } else if options.keepsBulkDataURIs {
+                let element = DataElement(withTag: tag, dataset: dataSet, parent: parent)
+                element.vr = vr
+                element.characterSet = characterSet
+                element.bulkDataURI = text
+                return element
+            } else {
+                throw DICOMJSONError("\(key) refers to bulk data \(text)")
+            }
         }
 
         if tag.code == "7fe00010", let bytes = binary, let pixels = try encapsulatedPixels(bytes, tag: tag) {

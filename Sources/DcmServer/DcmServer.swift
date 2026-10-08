@@ -21,7 +21,9 @@ struct DcmServer: AsyncParsableCommand {
             there as <SOPInstanceUID>.dcm, in their received transfer syntax, and the Part 10 files found \
             there at start-up and received later answer C-FIND, C-MOVE, and C-GET. Storage Commitment \
             commits the instances present in the directory; results go on the requesting association, \
-            or to the --destination of the requestor's AE title once it is released.
+            or to the --destination of the requestor's AE title once it is released. With --http-port, \
+            the same directory is also served over DICOMweb (QIDO-RS, WADO-RS, STOW-RS), with TLS when \
+            --tls-certificate is given.
             """)
 
     @Option(name: .shortAndLong, help: "Local AE title.")
@@ -35,6 +37,15 @@ struct DcmServer: AsyncParsableCommand {
 
     @Option(name: .shortAndLong, help: "Directory where instances are stored and retrieved from.")
     var storageDirectory: String?
+
+    @Option(name: .long, help: "Port of the DICOMweb service over the storage directory (default: none).")
+    var httpPort: Int?
+
+    @Option(name: .long, help: "Path of the DICOMweb service.")
+    var httpBasePath = "/dicomweb"
+
+    @Option(name: .long, help: "Scheme and authority of the DICOMweb service in Retrieve URLs, such as https://pacs.example.org (default: from the Host header).")
+    var httpPublicOrigin: String?
 
     @Option(name: .long, help: "A C-MOVE destination or Storage Commitment SCU, as AET=host:port; repeatable.")
     var destination: [String] = []
@@ -71,6 +82,10 @@ struct DcmServer: AsyncParsableCommand {
         if !destination.isEmpty, storageDirectory == nil {
             throw ValidationError("--destination needs --storage-directory")
         }
+        if let httpPort {
+            guard storageDirectory != nil else { throw ValidationError("--http-port needs --storage-directory") }
+            guard (0...65535).contains(httpPort) else { throw ValidationError("invalid HTTP port \(httpPort)") }
+        }
         if !destinationTLS, destinationTLSCA != nil || destinationTLSCertificate != nil || destinationTLSKey != nil {
             throw ValidationError("destination TLS options need --destination-tls")
         }
@@ -106,6 +121,7 @@ struct DcmServer: AsyncParsableCommand {
         configuration.logger.logLevel = network.verbose ? .debug : .info
 
         let server: DICOMServer
+        var web: DICOMwebServer?
         if let storageDirectory {
             let directory = URL(fileURLWithPath: storageDirectory, isDirectory: true)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -116,13 +132,38 @@ struct DcmServer: AsyncParsableCommand {
             server = try DICOMServer(
                 configuration: configuration, storage: services, query: services, retrieve: services,
                 storageCommitment: services)
+            if let httpPort {
+                var network = DICOMwebServerNetworkConfiguration(
+                    host: host, port: httpPort, tls: try tls.configuration(), publicOrigin: httpPublicOrigin, logger: logger)
+                network.logger.logLevel = configuration.logger.logLevel
+                web = try DICOMwebServer(
+                    origin: DICOMwebOriginServer(configuration: .init(basePath: httpBasePath),
+                                                 search: services, retrieve: services, store: services),
+                    network: network)
+            }
         } else {
             server = try DICOMServer(configuration: configuration)
         }
         let banner = "\(configuration.aeTitle) listening on \(configuration.host)"
         let secure = configuration.tls != nil ? " (TLS)" : ""
-        try await server.run { port in
-            print("\(banner):\(port)\(secure)")
+        let basePath = httpBasePath
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask {
+                try await server.run { port in
+                    print("\(banner):\(port)\(secure)")
+                }
+            }
+            if let web {
+                group.addTask {
+                    try await web.run { port in
+                        let scheme = web.network.tls != nil ? "https" : "http"
+                        print("DICOMweb at \(scheme)://\(web.network.host):\(port)\(basePath)")
+                    }
+                }
+            }
+            // The first service to stop stops the other.
+            try await group.next()
+            group.cancelAll()
         }
     }
 }
