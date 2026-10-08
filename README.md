@@ -183,7 +183,8 @@ on every platform.
 | DICOMweb Studies Service (PS3.18 10) | <ul><li>QIDO-RS, WADO-RS (instances, metadata, frames, Pixel Data, rendered, thumbnails), STOW-RS, Retrieve Capabilities</li><li>User agent on AsyncHTTPClient, origin server on SwiftNIO over HTTP/1.1 or HTTPS</li><li>Server checked with dicomweb-client, client with Orthanc and its DICOMweb plugin</li></ul> |
 | De-identification (PS3.15 E) | <ul><li><code>DICOMDeidentifier</code> and <code>DcmAnonymize</code>: Basic Application Level Confidentiality Profile with the Retain and Clean options</li><li>Same table as the 2026c one of dicom-anonymizer but one row added in 2026d; same outcomes on the pydicom test files and the local corpus</li></ul> |
 | Audit trail (PS3.15 A.5 to A.7) | <ul><li><code>DICOMAuditMessage</code> for the fifteen messages of A.5.3; <code>DcmServer --audit</code> over syslog TLS or UDP</li><li>Messages validated against the A.5.1 schema and parsed by an independent RFC 5424 parser</li></ul> |
-| Signatures and encrypted attributes | Not implemented |
+| Digital Signatures (PS3.15 C) | <ul><li><code>DICOMDigitalSigner</code>, <code>DICOMSignatureVerification</code>, and <code>DcmSign</code>: Base RSA profile, at the top level and in Sequence Items</li><li>Signatures checked by DCMTK dcmsign, and dcmsign signatures checked by DcmSwift, on the pydicom test files and the local corpus</li></ul> |
+| Encrypted attributes (PS3.3 C.12.1.1.4) | <ul><li><code>DICOMEncryptedAttributes</code>; <code>DcmAnonymize --encrypt-for</code> and <code>--restore-with</code></li><li>CMS envelopes exchanged with <code>openssl cms</code> both ways</li></ul> |
 
 ## Command-line tools
 
@@ -195,6 +196,7 @@ Every tool documents its options with `--help`.
 | [DcmPrint](Sources/DcmSwift/DcmSwift.docc/Commands/DcmPrint.md) | Print a data set as text, DICOM JSON, or Native DICOM Model XML |
 | [DcmConvert](Sources/DcmSwift/DcmSwift.docc/Commands/DcmConvert.md) | Export frames as PNG, JPEG, TIFF, or PGM/PPM |
 | [DcmValidate](Sources/DcmSwift/DcmSwift.docc/Commands/DcmValidate.md) | Validate files against the IODs of PS3.3 |
+| [DcmSign](Sources/DcmSwift/DcmSwift.docc/Commands/DcmSign.md) | Sign files and verify their Digital Signatures |
 | [DcmAnonymize](Sources/DcmSwift/DcmSwift.docc/Commands/DcmAnonymize.md) | De-identify files with the PS3.15 Basic Profile and its options |
 | [DcmIzer](Sources/DcmSwift/DcmSwift.docc/Commands/DcmIzer.md) | Wrap a JPEG, PNG, or TIFF image in a DICOM file |
 | [DcmSR](Sources/DcmSwift/DcmSwift.docc/Commands/DcmSR.md) | Print a Structured Report tree or render it as HTML |

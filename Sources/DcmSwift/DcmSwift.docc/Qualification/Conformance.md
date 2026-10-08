@@ -377,9 +377,45 @@ collector: every message it sends, from storage, query, retrieval, a
 rejected association, start, and stop, is parsed by syslog-rfc5424-parser
 and accepted by the schema of A.5.1 read from the DocBook.
 
+### Digital Signatures (PS3.15 Annex C, PS3.3 C.12.1.1.3)
+
+`DICOMDigitalSigner` creates, and `DICOMSignatureVerification` verifies,
+Digital Signatures of the Base RSA Digital Signature Profile (C.1).
+
+| Requirement | Behavior |
+| --- | --- |
+| Signing | <ul><li>RSA PKCS #1 v1.5 with SHA-1, SHA-256 (default), SHA-384, or SHA-512; an X.509 certificate, X509_1993_SIG</li><li>At the top level or in a Sequence Item, of chosen Data Elements or of all that may be signed</li><li>Explicit VR Little Endian MAC calculation, or the Transfer Syntax of encapsulated Pixel Data</li><li>Optional Digital Signature Purpose Code Sequence</li></ul> |
+| Verification | <ul><li>Every signature, at any depth, with RIPEMD-160, MD5, SHA-1, SHA-256, SHA-384, or SHA-512, as C.1 requires of validators</li><li>Reports the signer, the signed Data Elements, and valid, invalid, or unverifiable</li></ul> |
+| Profiles | Signing every Data Element that may be signed covers the minimum attributes of the Creator (C.2) and Authorization (C.3) profiles; the SR profile (C.4) is not enforced |
+| Not done | Certified timestamps; checking certificates against trusted authorities or revocation lists; signing with RIPEMD-160 or MD5 |
+
+On the pydicom test files and the local corpus (1,436 checks), signatures
+are exchanged both ways with DCMTK 3.7.0's dcmsign, and both reject a changed
+file. Where they disagree, on 8 files with large Sequences or Implicit VR,
+an independent reading of the MAC rules over the raw bytes, with pydicom,
+sides with DcmSwift. Before signing, DcmSwift trims the excess padding of
+text values, which DCMTK drops when it reads them.
+
+### Encrypted attributes (PS3.3 C.12.1.1.4, PS3.15 E.1.1)
+
+`DICOMEncryptedAttributes` writes and reads the Encrypted Attributes
+Sequence (0400,0500); `DICOMDeidentifier.encryptionRecipients` uses it to keep
+the original values of de-identified attributes.
+
+| Requirement | Behavior |
+| --- | --- |
+| Content | An Encrypted Attributes Data Set: the Modified Attributes Sequence (0400,0550) with one Item holding every top-level attribute removed or changed, wholly, in Explicit VR Little Endian |
+| Envelope | CMS Enveloped-data (RFC 5652): AES-256-CBC content encryption (RFC 3565); RSA key transport, PKCS #1 v1.5 (RFC 3370) or RSAES-OAEP (RFC 3560), one recipient per certificate, identified by issuer and serial number |
+| Reading | AES-128, AES-192, or AES-256-CBC; PKCS #1 v1.5 or OAEP key transport; DER or BER (indefinite lengths); several Items overlaid |
+| Not done | Triple-DES content encryption, key agreement, and symmetric key-encryption keys |
+
+`openssl cms` opens the envelopes DcmAnonymize writes, and DcmAnonymize opens
+those `openssl cms` makes, with both key transports.
+
 ### Other security profiles
 
-No digital signature or encrypted-attribute conformance is claimed. User Identity negotiation is
+The Attribute Confidentiality Profiles other than the Basic Application
+Level Confidentiality Profile are not claimed. User Identity negotiation is
 passed to an application hook (`DICOMServerConfiguration.authenticate`), which
 decides on acceptance. Applications embedding DcmSwift remain responsible for
 access control, persistence, and audit.

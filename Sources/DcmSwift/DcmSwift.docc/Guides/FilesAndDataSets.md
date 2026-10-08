@@ -141,7 +141,23 @@ let report = deidentifier.deidentify(dataSet)
 ```
 
 Instances de-identified with the same key get the same replacement UIDs and
-date shift. <doc:DcmAnonymize> does the same from the command line.
+date shift. With `encryptionRecipients`, the original values are kept
+encrypted for them in the Encrypted Attributes Sequence;
+``DICOMEncryptedAttributes`` decrypts or restores them. <doc:DcmAnonymize> does the same from the command line.
+
+## Digital Signatures
+
+``DICOMDigitalSigner`` signs a data set, or a Sequence Item, with the Base RSA
+Digital Signature Profile of PS3.15; ``DICOMSignatureVerification`` verifies
+every signature of a data set:
+
+```swift
+let signer = try DICOMDigitalSigner(privateKeyPEM: key, certificatePEM: certificate)
+try signer.sign(dataSet)
+for result in DICOMSignatureVerification.verify(dataSet) {
+    print(result.status, result.signer ?? "")   // valid CN=...
+}
+```
 
 ## Other helpers
 
