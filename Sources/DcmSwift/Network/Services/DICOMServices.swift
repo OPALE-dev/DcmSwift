@@ -49,11 +49,7 @@ public struct DICOMReceivedInstance: Sendable {
                 sourceAETitle: sourceAETitle.isEmpty ? nil : sourceAETitle))
             for chunk in try payload.chunks(of: 1 << 20) { try file.write(chunk) }
             try file.close()
-            if FileManager.default.fileExists(atPath: url.path) {
-                _ = try FileManager.default.replaceItemAt(url, withItemAt: partial)
-            } else {
-                try FileManager.default.moveItem(at: partial, to: url)
-            }
+            try DICOMPOSIXFile.rename(partial, replacing: url)
         } catch {
             try? FileManager.default.removeItem(at: partial)
             throw error

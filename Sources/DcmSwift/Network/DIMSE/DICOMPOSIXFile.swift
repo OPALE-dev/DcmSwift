@@ -77,6 +77,18 @@ final class DICOMPOSIXFile {
         guard result == 0 else { throw Self.error("close") }
     }
 
+    /// Moves a file in place of another, atomically, with rename(2). Unlike
+    /// FileManager.replaceItemAt, it behaves the same on Darwin and Linux.
+    static func rename(_ source: URL, replacing destination: URL) throws {
+        let result = source.withUnsafeFileSystemRepresentation { from in
+            destination.withUnsafeFileSystemRepresentation { to in
+                guard let from, let to else { return Int32(-1) }
+                return renameFile(from, to)
+            }
+        }
+        guard result == 0 else { throw error("rename \(source.path) to \(destination.path)") }
+    }
+
     private static func error(_ operation: String) -> DICOMCommandError {
         DICOMCommandError("cannot \(operation): \(String(cString: strerror(errno)))")
     }
@@ -119,5 +131,15 @@ private func closeDescriptor(_ descriptor: Int32) -> Int32 {
     return Glibc.close(descriptor)
     #else
     return Musl.close(descriptor)
+    #endif
+}
+
+private func renameFile(_ source: UnsafePointer<CChar>, _ destination: UnsafePointer<CChar>) -> Int32 {
+    #if canImport(Darwin)
+    return Darwin.rename(source, destination)
+    #elseif canImport(Glibc)
+    return Glibc.rename(source, destination)
+    #else
+    return Musl.rename(source, destination)
     #endif
 }
