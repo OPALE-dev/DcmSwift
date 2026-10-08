@@ -74,6 +74,21 @@ struct DcmServer: AsyncParsableCommand {
     @Option(name: .long, help: "PEM private key of --destination-tls-certificate.")
     var destinationTLSKey: String?
 
+    @Option(name: .long, help: "Syslog collector of audit messages (PS3.15 A.5), as tls://host[:6514] or udp://host[:514]; repeatable.")
+    var audit: [String] = []
+
+    @Option(name: .customLong("audit-tls-ca"), help: "PEM file of the CA certificates trusted for tls:// audit collectors (default: the system's).")
+    var auditTLSCA: String?
+
+    @Option(name: .long, help: "PEM certificate chain presented to tls:// audit collectors.")
+    var auditTLSCertificate: String?
+
+    @Option(name: .long, help: "PEM private key of --audit-tls-certificate.")
+    var auditTLSKey: String?
+
+    @Option(name: .long, help: "AuditSourceID of the audit messages (default: the AE title).")
+    var auditSourceID: String?
+
     @OptionGroup var network: NetworkOptions
     @OptionGroup var tls: ServerTLSOptions
 
@@ -92,6 +107,32 @@ struct DcmServer: AsyncParsableCommand {
         if !destinationTLS, destinationTLSCA != nil || destinationTLSCertificate != nil || destinationTLSKey != nil {
             throw ValidationError("destination TLS options need --destination-tls")
         }
+        _ = try auditCollectors()
+    }
+
+    /// The collectors of --audit, as (TLS, host, port).
+    func auditCollectors() throws -> [(tls: Bool, host: String, port: Int?)] {
+        try audit.map { value in
+            guard let components = URLComponents(string: value), let scheme = components.scheme,
+                  ["tls", "udp"].contains(scheme), let host = components.host, !host.isEmpty else {
+                throw ValidationError("--audit expects tls://host[:port] or udp://host[:port], not \(value)")
+            }
+            return (scheme == "tls", host, components.port)
+        }
+    }
+
+    func auditRecorder() throws -> DICOMAuditRecorder? {
+        let collectors = try auditCollectors()
+        guard !collectors.isEmpty else { return nil }
+        return DICOMAuditRecorders(try collectors.map { collector in
+            let transport: DICOMAuditSyslogSender.Transport = collector.tls
+                ? .tls(try DICOMTLSConfiguration.client(
+                    pemTrustRootsFile: auditTLSCA, pemCertificateChainFile: auditTLSCertificate,
+                    pemPrivateKeyFile: auditTLSKey))
+                : .udp
+            return DICOMAuditSyslogSender(host: collector.host, port: collector.port, transport: transport,
+                                          appName: "DcmServer")
+        })
     }
 
     func destinations() throws -> [String: DICOMRemoteNode] {
@@ -122,6 +163,10 @@ struct DcmServer: AsyncParsableCommand {
                 pemPrivateKeyFile: destinationTLSKey) : nil,
             logger: logger)
         configuration.logger.logLevel = network.verbose ? .debug : .info
+        let audit = try auditRecorder()
+        let auditSource = DICOMAuditSource(id: auditSourceID ?? aet)
+        configuration.audit = audit
+        configuration.auditSource = auditSource
 
         let server: DICOMServer
         var web: DICOMwebServer?
@@ -132,7 +177,8 @@ struct DcmServer: AsyncParsableCommand {
             let indexed = await archive.scan()
             print("\(indexed) instances in \(directory.path)")
             let services = DICOMDirectoryArchiveServices(
-                archive: archive, destinations: try destinations(), validation: validationPolicy)
+                archive: archive, destinations: try destinations(), validation: validationPolicy, audit: audit,
+                auditSource: auditSource)
             server = try DICOMServer(
                 configuration: configuration, storage: services, query: services, retrieve: services,
                 storageCommitment: services)
@@ -151,24 +197,52 @@ struct DcmServer: AsyncParsableCommand {
         let banner = "\(configuration.aeTitle) listening on \(configuration.host)"
         let secure = configuration.tls != nil ? " (TLS)" : ""
         let basePath = httpBasePath
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            group.addTask {
-                try await server.run { port in
-                    print("\(banner):\(port)\(secure)")
-                }
-            }
-            if let web {
+        let application = DICOMAuditMessage.ActiveParticipant.application(aeTitles: [aet], isRequestor: false)
+        let user = DICOMAuditMessage.ActiveParticipant(userID: NSUserName(), isRequestor: true)
+        await audit?.record(.applicationActivity(started: true, application: application, launchers: [user],
+                                                 source: auditSource))
+        func stopped() async {
+            await audit?.record(.applicationActivity(started: false, application: application, launchers: [user],
+                                                     source: auditSource))
+        }
+        // SIGINT and SIGTERM stop the services, so that the stop is audited.
+        let services = Task {
+            try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask {
-                    try await web.run { port in
-                        let scheme = web.network.tls != nil ? "https" : "http"
-                        print("DICOMweb at \(scheme)://\(web.network.host):\(port)\(basePath)")
+                    try await server.run { port in
+                        print("\(banner):\(port)\(secure)")
                     }
                 }
+                if let web {
+                    group.addTask {
+                        try await web.run { port in
+                            let scheme = web.network.tls != nil ? "https" : "http"
+                            print("DICOMweb at \(scheme)://\(web.network.host):\(port)\(basePath)")
+                        }
+                    }
+                }
+                // The first service to stop stops the other.
+                try await group.next()
+                group.cancelAll()
             }
-            // The first service to stop stops the other.
-            try await group.next()
-            group.cancelAll()
         }
+        var signals: [DispatchSourceSignal] = []
+        for number in [SIGINT, SIGTERM] {
+            signal(number, SIG_IGN)
+            let source = DispatchSource.makeSignalSource(signal: number)
+            source.setEventHandler { services.cancel() }
+            source.resume()
+            signals.append(source)
+        }
+        defer { signals.forEach { $0.cancel() } }
+        do {
+            try await services.value
+        } catch is CancellationError {
+        } catch {
+            await stopped()
+            throw error
+        }
+        await stopped()
     }
 }
 

@@ -40,7 +40,7 @@ struct DICOMRequestDispatcher: Sendable {
             callingAETitle: association.negotiated.callingAETitle, calledAETitle: association.negotiated.calledAETitle,
             remoteAddress: association.remoteAddress, userIdentity: association.negotiated.userIdentity,
             presentationContext: context, peerCertificate: runtime.peerCertificate,
-            cancelled: { await runtime.isCancelled(id) })
+            moveDestination: command.moveDestination, cancelled: { await runtime.isCancelled(id) })
 
         func respond(_ status: DICOMStatus, comment: String? = nil, dataSet: DICOMDataSetPayload? = nil,
                      progress: DICOMRetrieveProgress? = nil) async {
