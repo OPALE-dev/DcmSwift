@@ -10,6 +10,8 @@ public struct DICOMServiceContext: Sendable {
     public let presentationContext: DICOMAcceptedPresentationContext
     /// The certificate the peer presented over TLS, for access control.
     public var peerCertificate: NIOSSLCertificate? = nil
+    /// The Move Destination (0000,0600) of a C-MOVE request.
+    public var moveDestination: String? = nil
     let cancelled: @Sendable () async -> Bool
 
     /// Whether the requestor cancelled the operation (C-CANCEL).

@@ -33,6 +33,10 @@ public struct DICOMServerConfiguration: Sendable {
     public var maximumOperationsPerformed: UInt16
     /// Decides on the user identity (see `DICOMAcceptorPolicy`).
     public var authenticate: (@Sendable (DICOMUserIdentity?) -> [UInt8]?)?
+    /// Receives Security Alert messages for rejected associations and User
+    /// Authentication messages for user identities (PS3.15 A.5.3).
+    public var audit: DICOMAuditRecorder?
+    public var auditSource: DICOMAuditSource?
     public var logger: Logging.Logger
 
     public init(
@@ -44,6 +48,7 @@ public struct DICOMServerConfiguration: Sendable {
         storageTransferSyntaxes: [String] = DICOMTransferSyntaxes.storage,
         storageSOPClasses: [String] = DICOMSOPClass.allStorage, maximumOperationsPerformed: UInt16 = 1,
         authenticate: (@Sendable (DICOMUserIdentity?) -> [UInt8]?)? = nil,
+        audit: DICOMAuditRecorder? = nil, auditSource: DICOMAuditSource? = nil,
         logger: Logging.Logger = Logging.Logger(label: "DcmSwift.network.server")
     ) {
         self.aeTitle = aeTitle
@@ -61,6 +66,8 @@ public struct DICOMServerConfiguration: Sendable {
         self.storageSOPClasses = storageSOPClasses
         self.maximumOperationsPerformed = maximumOperationsPerformed
         self.authenticate = authenticate
+        self.audit = audit
+        self.auditSource = auditSource
         self.logger = logger
     }
 }
@@ -258,11 +265,33 @@ public final class DICOMServer: Sendable {
         switch answer {
         case .failure(let reject):
             logger.info("rejecting \(request.callingAETitle) at \(channel.remoteAddress?.description ?? "?"): \(reject.reason)")
+            if let audit = configuration.audit {
+                let host = DICOMAuditMessage.host(of: channel.remoteAddress?.description)
+                let source = configuration.auditSource ?? DICOMAuditSource(id: configuration.aeTitle)
+                await audit.record(.securityAlert(
+                    type: .dcm("110126"),
+                    reporters: [.application(aeTitles: [configuration.aeTitle], isRequestor: false)],
+                    performers: [.node(aeTitle: request.callingAETitle, host: host, isRequestor: true)],
+                    subjects: [(id: host ?? request.callingAETitle, isURI: false,
+                                description: "Association from \(request.callingAETitle) to \(request.calledAETitle) rejected: \(reject.reason)")],
+                    source: source))
+            }
             for case .send(let pdu) in machine.handle(.associateRejectPrimitive(reject)) { try? await outbound.write(pdu) }
             await Self.awaitClose(&iterator, channel: channel, artim: configuration.timeouts.artim)
         case .success(let (accept, negotiated)):
             for case .send(let pdu) in machine.handle(.associateAcceptPrimitive(accept)) { try await outbound.write(pdu) }
             logger.info("association with \(request.callingAETitle) at \(channel.remoteAddress?.description ?? "?"): \(negotiated.presentationContexts.count) contexts")
+            if let audit = configuration.audit, let identity = negotiated.userIdentity {
+                let host = DICOMAuditMessage.host(of: channel.remoteAddress?.description)
+                await audit.record(.userAuthentication(
+                    login: true,
+                    user: DICOMAuditMessage.ActiveParticipant(
+                        userID: identity.primaryFieldDescription, alternativeUserID: "AETITLES=\(request.callingAETitle)",
+                        isRequestor: true, networkAccessPointID: host ?? "unknown",
+                        networkAccessPointType: host.map(DICOMAuditMessage.NetworkAccessPointType.of) ?? .machineName),
+                    authenticator: .application(aeTitles: [configuration.aeTitle], isRequestor: false),
+                    source: configuration.auditSource ?? DICOMAuditSource(id: configuration.aeTitle)))
+            }
             let runtime = DICOMAssociationRuntime(
                 machine: machine, negotiated: negotiated, outbound: outbound, channel: channel,
                 limits: configuration.limits, timeouts: configuration.timeouts, logger: logger,

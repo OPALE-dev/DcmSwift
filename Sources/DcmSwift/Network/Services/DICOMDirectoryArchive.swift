@@ -156,12 +156,49 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
     public let destinations: [String: DICOMRemoteNode]
     /// What to do with received instances that do not conform to their IOD.
     public let validation: DICOMIODValidationPolicy
+    /// Receives the audit messages of storage, query, and retrieval (PS3.15
+    /// A.5.3): DICOM Instances Transferred, Query, Begin Transferring DICOM
+    /// Instances.
+    public let audit: DICOMAuditRecorder?
+    public let auditSource: DICOMAuditSource
 
     public init(archive: DICOMDirectoryArchive, destinations: [String: DICOMRemoteNode] = [:],
-                validation: DICOMIODValidationPolicy = .off) {
+                validation: DICOMIODValidationPolicy = .off, audit: DICOMAuditRecorder? = nil,
+                auditSource: DICOMAuditSource = DICOMAuditSource(id: "DcmSwift")) {
         self.archive = archive
         self.destinations = destinations
         self.validation = validation
+        self.audit = audit
+        self.auditSource = auditSource
+    }
+
+    // MARK: Audit
+
+    /// DICOM Instances Transferred for a received instance: created when the
+    /// archive did not hold it, read otherwise.
+    private func auditReceived(_ instance: DICOMReceivedInstance, existed: Bool, stored: Bool,
+                               sender: DICOMAuditMessage.ActiveParticipant,
+                               receiver: DICOMAuditMessage.ActiveParticipant) async {
+        guard let audit else { return }
+        let objects = (try? instance.dataSet()).map(DICOMAuditMessage.objects(of:))
+            ?? (.study(uid: "unknown", sopClasses: [.init(uid: instance.sopClassUID, numberOfInstances: 1)]),
+                .patient(id: "unknown", name: "unknown"))
+        await audit.record(.instancesTransferred(
+            action: existed ? .read : .create, sender: sender, receiver: receiver, studies: [objects.study],
+            patient: objects.patient, source: auditSource, outcome: stored ? .success : .minorFailure))
+    }
+
+    private func local(_ aeTitle: String, isRequestor: Bool = false) -> DICOMAuditMessage.ActiveParticipant {
+        .application(aeTitles: [aeTitle], isRequestor: isRequestor)
+    }
+
+    private func remote(_ context: DICOMServiceContext) -> DICOMAuditMessage.ActiveParticipant {
+        .node(aeTitle: context.callingAETitle, host: DICOMAuditMessage.host(of: context.remoteAddress), isRequestor: true)
+    }
+
+    private func remote(_ context: DICOMwebRequestContext) -> DICOMAuditMessage.ActiveParticipant {
+        let host = DICOMAuditMessage.host(of: context.remoteAddress)
+        return .node(aeTitle: "", host: host, isRequestor: true)
     }
 
     /// Validates a received instance as the policy says; true when it is to
@@ -177,8 +214,21 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
     // MARK: DIMSE
 
     public func store(_ instance: DICOMReceivedInstance, context: DICOMServiceContext) async throws -> DICOMStatus {
-        guard let warn = admit(instance) else { return .storageDataSetDoesNotMatchSOPClass }
-        try await archive.store(instance)
+        let existed = audit != nil ? await archive.record(instance.sopInstanceUID) != nil : false
+        guard let warn = admit(instance) else {
+            await auditReceived(instance, existed: existed, stored: false, sender: remote(context),
+                                receiver: local(context.calledAETitle))
+            return .storageDataSetDoesNotMatchSOPClass
+        }
+        do {
+            try await archive.store(instance)
+        } catch {
+            await auditReceived(instance, existed: existed, stored: false, sender: remote(context),
+                                receiver: local(context.calledAETitle))
+            throw error
+        }
+        await auditReceived(instance, existed: existed, stored: true, sender: remote(context),
+                            receiver: local(context.calledAETitle))
         return warn ? .storageDataSetDoesNotMatchSOPClassWarning : .success
     }
 
@@ -186,6 +236,13 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
         _ identifier: DataSet, informationModel: String, context: DICOMServiceContext
     ) async throws -> AsyncThrowingStream<DataSet, Error> {
         let matches = try await archive.find(identifier)
+        if let audit {
+            let syntax = context.presentationContext.transferSyntax
+            await audit.record(.query(
+                issuer: remote(context), responder: local(context.calledAETitle), sopClassUID: informationModel,
+                query: (try? DICOMDataSetCoding.encode(identifier, transferSyntax: syntax)) ?? Data(),
+                transferSyntaxUID: syntax, source: auditSource))
+        }
         return AsyncThrowingStream { continuation in
             for match in matches { continuation.yield(match) }
             continuation.finish()
@@ -196,7 +253,25 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
         _ identifier: DataSet, informationModel: String, context: DICOMServiceContext
     ) async throws -> [DICOMRetrieveItem] {
         let level = identifier.string(forTag: "QueryRetrieveLevel") ?? ""
-        return try await archive.match(identifier, level: level).joined().map { try DICOMRetrieveItem(file: $0.url) }
+        let records = Array(try await archive.match(identifier, level: level).joined())
+        if let audit, !records.isEmpty {
+            // C-MOVE sends to the Move Destination, C-GET to the requestor.
+            let receiver: DICOMAuditMessage.ActiveParticipant
+            var others: [DICOMAuditMessage.ActiveParticipant] = []
+            if let destination = context.moveDestination {
+                receiver = .node(aeTitle: destination, host: destinations[destination]?.host, isRequestor: false)
+                others = [remote(context)]
+            } else {
+                receiver = remote(context)
+            }
+            let objects = DICOMAuditMessage.objects(of: records)
+            let patients = objects.filter { $0.idType == .patientNumber }
+            await audit.record(.beginTransferring(
+                sender: local(context.calledAETitle), receiver: receiver, others: others,
+                studies: objects.filter { $0.idType != .patientNumber },
+                patient: patients.first ?? .patient(id: "unknown", name: "unknown"), source: auditSource))
+        }
+        return try records.map { try DICOMRetrieveItem(file: $0.url) }
     }
 
     public func destination(for aeTitle: String) async -> DICOMRemoteNode? {
@@ -230,7 +305,16 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
     public func search(
         _ identifier: DataSet, level: DICOMwebSearchLevel, query: DICOMwebSearchQuery, context: DICOMwebRequestContext
     ) async throws -> [DataSet] {
-        try await archive.find(identifier)
+        let matches = try await archive.find(identifier)
+        if let audit {
+            // QIDO-RS searches the Study Root information model.
+            await audit.record(.query(
+                issuer: remote(context), responder: local(auditSource.id),
+                sopClassUID: "1.2.840.10008.5.1.4.1.2.2.1",
+                query: (try? DICOMDataSetCoding.encode(identifier, transferSyntax: TransferSyntax.explicitVRLittleEndian)) ?? Data(),
+                transferSyntaxUID: TransferSyntax.explicitVRLittleEndian, source: auditSource))
+        }
+        return matches
     }
 
     public func instances(
@@ -249,19 +333,35 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
             return (series, instance, record.url.path)
         }
         let ordered = records.sorted { key($0) < key($1) }
+        if let audit, !ordered.isEmpty {
+            // WADO-RS sends copies to the user agent.
+            let objects = DICOMAuditMessage.objects(of: ordered)
+            let patients = objects.filter { $0.idType == .patientNumber }
+            await audit.record(.instancesTransferred(
+                action: .read, sender: local(auditSource.id), receiver: remote(context),
+                studies: objects.filter { $0.idType != .patientNumber },
+                patient: patients.first ?? .patient(id: "unknown", name: "unknown"), source: auditSource))
+        }
         return try ordered.map { try DICOMRetrieveItem(file: $0.url) }
     }
 
     public func store(
         _ instance: DICOMReceivedInstance, context: DICOMwebRequestContext
     ) async throws -> DICOMwebStoreResult {
+        let existed = audit != nil ? await archive.record(instance.sopInstanceUID) != nil : false
         guard let warn = admit(instance) else {
+            await auditReceived(instance, existed: existed, stored: false, sender: remote(context),
+                                receiver: local(auditSource.id))
             return .failed(DICOMwebStoreResponse.dataSetDoesNotMatchSOPClass)
         }
         do {
             try await archive.store(instance)
+            await auditReceived(instance, existed: existed, stored: true, sender: remote(context),
+                                receiver: local(auditSource.id))
             return warn ? .storedWithWarning(DICOMwebStoreResponse.dataSetDoesNotMatchSOPClassWarning) : .stored
         } catch {
+            await auditReceived(instance, existed: existed, stored: false, sender: remote(context),
+                                receiver: local(auditSource.id))
             return .failed(DICOMwebStoreResponse.processingFailure)
         }
     }
