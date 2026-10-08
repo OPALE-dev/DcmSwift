@@ -242,9 +242,22 @@ conformance without that evidence.
   duplicate Transaction UIDs are left to the service.
 - A Storage Commitment result that cannot be delivered (no destination, or
   the SCU unreachable) is logged, not queued for a later retry.
-- Implement PS3.18 DICOMweb services and media types: QIDO-RS, WADO-RS,
-  STOW-RS, UPS-RS where in scope, multipart streaming, rendered retrieval,
-  bulk data, and standard error responses.
+- DICOMweb (PS3.18): the Studies Service is implemented. Still missing:
+  - the Worklist (UPS-RS), Non-Patient Instance, Storage Commitment, MWL, and
+    MPPS services, and WebSocket notifications;
+  - STOW-RS of metadata with separate Bulk Data, and of compressed images
+    supplied as image/jpeg or other Bulk Data media types (10.5.2);
+  - the study, series, and instance Bulk Data resources: metadata references
+    only Pixel Data, through the Pixel Data resource, and keeps other binary
+    values inline;
+  - rendered image/gif (required for REST origin servers), video, and the
+    MPR and 3D volume resources; burned-in annotations and ICC profiles are
+    answered with 299 Warnings;
+  - character set transcoding (Accept-Charset, the charset parameter), fuzzy,
+    empty-value, and multiple-value matching, Prior Record Key paging, HTTP
+    Range, HTTP/2, and authentication or access control;
+  - the search matches only the attributes the archive indexes; others are
+    returned empty.
 - TLS: BoringSSL has no CCM suites, so a server does not offer every suite B.13
   lists (TLS_ECDHE_ECDSA_WITH_AES_*_CCM*, TLS_AES_128_CCM*_SHA256), nor the
   optional Camellia and DHE ones. Certificate key sizes and signature hashes

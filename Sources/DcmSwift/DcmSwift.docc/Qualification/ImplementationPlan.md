@@ -240,8 +240,10 @@ Images test material).
 
 ## Phase 4 — Web, security, and advanced objects
 
-- [ ] DICOMweb: QIDO-RS, WADO-RS, STOW-RS, media types, multipart streaming,
-  rendered retrieval, and standard error payloads;
+- [x] DICOMweb Studies Service: QIDO-RS, WADO-RS, STOW-RS, media types,
+  multipart streaming, rendered retrieval, and standard error payloads, as
+  user agent and origin server, checked against dicomweb-client and Orthanc;
+  other PS3.18 services and the items of the limitations register remain;
 - [ ] JPIP Referenced Pixel Data (.94, .95, and HTJ2K .204, .205; PS3.5 A.6,
   A.7, 8.2.10): resolve Pixel Data Provider URL (0028,7FE0) with a JPIP client
   (ISO/IEC 15444-9), then decode with the JPEG 2000 codecs; these syntaxes are

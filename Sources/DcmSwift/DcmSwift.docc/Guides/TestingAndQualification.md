@@ -82,6 +82,24 @@ curl --fail --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
 | --- | --- |
 | `pydicom_json.py DCMPRINT [--pydicom-testdata] [PATH...]` | `DcmPrint -f JSON` against pydicom's `to_json_dict`, after normalization |
 | `native_xml.py DCMPRINT [--pydicom-testdata] [PATH...]` | `DcmPrint -f XML` against the normative PS3.19 schema, and against pydicom through the PS3.18 F.3 mapping; needs `rnc2rng` and `lxml` |
+| `dicomweb_client.py BASE_URL [--pydicom-testdata] [PATH...]` | The DICOMweb origin server of `DcmServer --http-port` against dicomweb-client: STOW-RS, QIDO-RS, then instances, metadata, frames, and rendered images compared with pydicom |
+
+## DICOMweb user agent
+
+`DcmSwiftWebInteropTests` stores files with `DICOMwebClient` in an
+independent origin server and checks search, retrieval, metadata, frames, and
+rendering against DcmSwift's reading of the files. It runs when both
+variables are set:
+
+```sh
+DCMSWIFT_DICOMWEB_ORACLE=http://127.0.0.1:8042/dicom-web \
+DCMSWIFT_DICOMWEB_FILES=/path/to/files \
+  swift test --filter DcmSwiftWebInteropTests
+```
+
+Orthanc with its DICOMweb plugin is the reference, run over an empty
+storage directory. The test leaves out empty attributes, which Orthanc drops,
+and files that reuse another file's SOP Instance UID.
 
 ## Network interoperability
 

@@ -204,9 +204,34 @@ service error answers with a failure status without ending the association.
 `TransferSyntaxCapability.canNegotiateForDIMSE` is true for every transfer
 syntax that encodes a data set.
 
+### DICOMweb Studies Service (PS3.18 10)
+
+DcmSwift is a user agent (`DICOMwebClient`) and a native origin server
+(`DICOMwebOriginServer`, served over HTTP/1.1 or HTTPS by `DICOMwebServer`).
+
+| Transaction | Origin server | User agent |
+| --- | --- | --- |
+| Search (QIDO-RS, 10.6) | <ul><li>All six search resources, hierarchical and relational</li><li><code>application/dicom+json</code> (default) and <code>multipart/related; type="application/dicom+xml"</code></li><li>Attribute matching through the C-FIND rules of PS3.4 C.2.2.2, UID lists, sequence attributes, <code>includefield</code></li><li><code>limit</code> and <code>offset</code>, at most 1000 matches per response by default, with the 299 Warning of further results</li><li>Fuzzy, empty-value, and multiple-value matching are not supported: the request is answered with the 299 Warnings of 8.3.4</li><li>Retrieve URL added to every match</li></ul> | <code>search(_:study:series:query:)</code> |
+| Retrieve (WADO-RS, 10.4) | <ul><li>Study, series, and instance resources as <code>multipart/related; type="application/dicom"</code>, and <code>application/dicom</code> for one instance</li><li>Selected Transfer Syntax per part (8.7.8): as stored with <code>*</code> or its UID, otherwise Explicit VR Little Endian; lossless encapsulated syntaxes are decompressed, possibly lossy ones are returned as stored (8.7.3.4)</li><li>Metadata in JSON or XML, Pixel Data referenced by a Bulk Data URI to the Pixel Data resource</li><li>Frames and Pixel Data, uncompressed (<code>application/octet-stream</code>) or as the stored compressed frames (Table 8.7.3-5)</li><li>Rendered and thumbnail resources in <code>image/jpeg</code> and <code>image/png</code>, with the <code>window</code>, <code>viewport</code>, and <code>quality</code> parameters; Structured Reports in <code>text/html</code> and <code>text/plain</code></li></ul> | <code>instances</code>, <code>metadata</code>, <code>frames</code>, <code>rendered</code> |
+| Store (STOW-RS, 10.5) | <ul><li><code>/studies</code> and <code>/studies/{study}</code> with <code>multipart/related; type="application/dicom"</code>, parts streamed to disk</li><li>The data set identifies each instance when its File Meta Information disagrees or lacks the Media Storage UIDs</li><li>Store Instances Response Module (Annex I) in JSON or XML; 200, 202, or 409</li><li>Implementation-specific Failure Reason C409H: Study Instance UID differs from the Target Resource</li></ul> | <code>store(files:study:)</code> streams files; <code>store(_:study:)</code> sends data sets |
+| Retrieve Capabilities (8.9) | OPTIONS on the Base URI returns a WADL description of the supported resources (Annex H) | <code>capabilities()</code> |
+
+| Common behavior | Support |
+| --- | --- |
+| Content negotiation (8.7) | <ul><li>Accept header and <code>accept</code> Query Parameter with qvalues, wildcards, and <code>transfer-syntax</code> parameters</li><li>406 without an Accept header or acceptable type; 400 when DICOM and rendered-only media types are mixed</li><li>Default Transfer Syntax per media type (Tables 8.7.3-2, 8.7.3-4, 8.7.3-5)</li></ul> |
+| Errors (8.5, 8.6.3) | Status Reports in <code>text/html</code>; 404, 405 with Allow, 406, 413, 415, 501 |
+| Transport | HTTP/1.1 with keep-alive; request payloads read as they are consumed; responses streamed with Content-Length or chunked coding; TLS with the configuration of the DIMSE profiles; a configurable public origin for Retrieve URLs behind a proxy |
+
+Not supported yet: other PS3.18 services (Worklist/UPS-RS, Non-Patient
+Instance, Storage Commitment, MWL, MPPS), metadata with Bulk Data in STOW-RS,
+the generic Bulk Data resources, rendered GIF, MPR and 3D rendering,
+annotations, ICC profiles, character set transcoding, HTTP Range, and access
+control; see the limitations register.
+
 ### Tools
 
-`DcmEcho`, `DcmStore`, `DcmFind`, and `DcmServer` use this stack. `DcmServer`
+`DcmEcho`, `DcmStore`, `DcmFind`, and `DcmServer` use this stack; with
+`--http-port`, `DcmServer` also serves its directory over DICOMweb. `DcmServer`
 with a storage directory is a small archive: storage SCP, then C-FIND, C-MOVE,
 C-GET, and Storage Commitment over the instances in that directory (README,
 Network tools). It commits an instance whose file is present with the
