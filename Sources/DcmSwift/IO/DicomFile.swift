@@ -53,6 +53,7 @@ public class DicomFile {
     public init?(withDataset dataset: DataSet, hasPreamble:Bool) {
         self.dataset = dataset
         self.hasPreamble = hasPreamble
+        dataset.hasPreamble = hasPreamble
     }
     
     /**
