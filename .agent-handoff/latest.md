@@ -1,4 +1,4 @@
-# Handoff Packet (updated 2026-10-07, after JPEG 2000 Part 2)
+# Handoff Packet (updated 2026-10-08, after fuzzing, DICOM JSON, Native XML)
 
 Repo: /Users/nark/Development/Opale/Swift/DcmSwift, branch `codex/dcmswift-2.0`.
 JPEG XL is committed as `5371911`; structured Person Name and multi-valued text
@@ -151,38 +151,69 @@ updated this file. The previous Codex → Claude handoff is archived in
 ### Conventions reminder
 Docs as several short tables with HTML lists in cells (memory: feedback-docs-lists); never `rm` with wildcards; commit message style with trailer; before each commit run release build, `swift test --parallel`, iOS xcodebuild with a fresh derivedDataPath.
 
-## Network rewrite (Claude, in progress, 2026-10-07)
-New code in `Sources/DcmSwift/Network/` (old `Networking/` still present, to
-migrate then delete; beware case-insensitive object-file collisions: never
-name a new file like an old one, e.g. DICOMAssociation.swift vs
-DicomAssociation.swift).
+## Network rewrite (Claude, 2026-10-07/08)
+Code in `Sources/DcmSwift/Network/`; the legacy `Networking/` is deleted
+(8ba63d5). Beware case-insensitive object-file collisions when naming files.
 - Done and tested: PDU model/codec/framing (byte-exact with pynetdicom),
-  PS3.8 state machine (all 494 table cells), negotiation (roles, async
-  window, user identity, proposed-order TS for storage), DIMSE commands
-  (byte-exact with pynetdicom), statuses, fragmentation/reassembly with
-  spill-to-disk (POSIX file I/O), runtime actor (send lock, response queues
-  with back-pressure, C-CANCEL, release/abort/ARTIM), DICOMClient
-  (withAssociation scope: echo/store(file|dataset|item)/find(AsyncSequence,
-  early stop = C-CANCEL)/move/get), DICOMServer (NIOAsyncChannel, discarding
-  task group, max associations -> RJ transient, TLS via swift-nio-ssl, idle
-  timeout, storage/query/retrieve service protocols, C-MOVE through an
-  outgoing association, C-GET on the same association).
-- Tests: DcmSwiftNetwork{PDU,StateMachine,Negotiation,DIMSE,Integration}Tests.
-- Interop scripts: `Scripts/interop/scu.py` (pynetdicom SCU vs our server:
-  ALL OK) and `scp.py` (pynetdicom SCP vs our client: OK except the MR RLE
-  context, which pynetdicom did not accept: investigate). Run with a venv
-  holding pynetdicom 3.0.4 + pydicom 3; see the removed ZZ test in git
-  history of this session for the Swift driver (start server port 0, run
-  script with port).
-- TODO next: TLS loopback test (generate test certs), N-services (storage
-  commitment), migrate DcmEcho/DcmStore/DcmFind/DcmServer to the new API and
-  delete `Networking/`, docs (README, CONFORMANCE network section,
-  LIMITATIONS, TRACEABILITY, PLAN Phase 2 checkboxes), Linux CI run, iOS run.
+  PS3.8 state machine (494 cells), negotiation, DIMSE commands, statuses,
+  fragmentation with spill-to-disk, runtime actor, DICOMClient
+  (echo/store/find/move/get + nGet/nSet/nAction/nCreate/nDelete/nEventReport),
+  DICOMServer (storage/query/retrieve/storageCommitment/normalized services).
+- Tools (8ba63d5): DcmEcho, DcmStore (--commit), DcmFind, DcmServer
+  (directory archive: storage, C-FIND/MOVE/GET, Storage Commitment) on an
+  internal `DcmNetworkCommand` target (shared options, TLS from PEM).
+  `DICOMQueryMatching` (PS3.4 C.2.2.2) is in the library.
+- DIMSE-N + Storage Commitment Push Model (ea48439): result on the same
+  association, else new association with SCP role selection to
+  `destination(for:)`. Requestor release now waits for peer requests in
+  progress; a finished request reads as cancelled for services.
+- TLS (415aa20): PS3.15 B.12 profile + B.13 algorithm restrictions (B.9 is
+  retired in 2026d), `DICOMNetworkError.tls`, peer certificate exposed,
+  fixtures from `Scripts/generate-tls-test-certificates.sh` in CIResources.
+- Interop (pynetdicom 3.0.4 venv: `python3 -m venv x && x/bin/pip install
+  pynetdicom==3.0.4 pydicom numpy`): `Scripts/interop/scu.py` (vs DcmServer
+  -a SCP -s DIR --destination SCP=127.0.0.1:PORT), `scp.py` (for the SCU
+  tools), `commitment.py scu|scp`, `tls.py scu|scp`. All OK on 2026-10-08.
+  pydicom's rtplan.dcm has different SOP Instance UIDs in its meta and data
+  set: use the File Meta UID.
+- Tests: 263 macOS, 260 iOS (4 skipped). Linux not run locally (no Docker);
+  run GitLab CI after pushing.
+- Remaining network items: DCMTK/dcm4che peers, live-association fuzzing,
+  C-MOVE SCP with more than 128 contexts, SOP-specific N services (MPPS,
+  UPS, Print), audit (ATNA).
+
+## Step 6 (Claude, 2026-10-08)
+- Fuzzing: `DcmSwiftFuzzTests` (env DCMSWIFT_FUZZ_ITERATIONS/SEED/CRASH_FILE).
+  ASan works only through xcodebuild: `TEST_RUNNER_DCMSWIFT_FUZZ_ITERATIONS=3000
+  xcodebuild test -scheme DcmSwift-Package -destination 'platform=macOS'
+  -enableAddressSanitizer YES -only-testing:DcmSwiftTests/DcmSwiftFuzzTests/...`
+  (swift test --sanitize=address is blocked by macOS policy). 3000/seed clean.
+  Reproducers: CIResources/fuzz-dataset-*.bin, fuzz-codec-*.bin.
+- `DICOMJSON` (PS3.18 F) and `DICOMXML` (PS3.19 A.1, built on the JSON object
+  via F.3). DcmPrint -f JSON|XML.
+- Cross-checks (venv: pynetdicom pydicom numpy rnc2rng lxml):
+  `Scripts/crosscheck/pydicom_json.py .build/debug/DcmPrint --pydicom-testdata`
+  (144/147) and `native_xml.py` (145/145 schema-valid); local corpus 51/51.
+  These found parser fixes (preamble, implicit-labelled-explicit, UN sequences,
+  implicit ambiguous VRs, gzip trailer).
+- Legacy Logger now logs to stderr, file output opt-in. The user's
+  ~/Documents/DcmSwift.log and ~/Documents/xctest.log were written by older
+  test runs (not deleted).
+- CI: pipeline 3561 (415aa20) failed on Linux only: Swift 6.1 type-check
+  timeout in DICOMCommand, fixed in 713010a. Check with
+  `-warn-long-expression-type-checking=150` before pushing.
+- Step 6 follow-up completed on 2026-10-08: PS3.7 E.1-1 command fields are
+  generated, per-VR lexical validation and Extended Offset Table validation
+  are covered, and unknown/private bytes plus Part 10 preambles round-trip.
+  The public pydicom corpus found and fixed long Explicit-VR values, OD header,
+  no-meta syntax detection, preamble, and group-order defects. DCMTK/GDCM
+  write comparison still requires those independent tools.
 
 ## Next
-- finish the network work above;
-- then 6: fuzzing, DCMTK/pydicom cross-checks, PS3.18 JSON / PS3.19 XML;
-- then 7: rendering and presentation (plan Phase 3).
+- push the qualified commits and check GitLab CI, Linux especially;
+- install DCMTK/GDCM for the remaining independent file/network comparisons;
+- continue with rendering and presentation (plan Phase 3), including JPEG,
+  TIFF, and PGM/PPM rendered-image export.
 
 ## Conventions and methods that work
 - Every codec is checked against an independent reference **before** committing:

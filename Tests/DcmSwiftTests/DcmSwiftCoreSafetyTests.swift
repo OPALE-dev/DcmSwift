@@ -5,7 +5,9 @@ import XCTest
 final class DcmSwiftCoreSafetyTests: XCTestCase {
     func testRuntimeDictionaryComesFromDICOM2026d() {
         XCTAssertEqual(DicomSpec.shared.dictionaryEdition, "2026d")
+        XCTAssertEqual(DicomSpec.shared.commandDictionaryEdition, "2026d")
         XCTAssertEqual(DicomSpec.shared.nameForTag(withCode: "00100010"), "PatientName")
+        XCTAssertEqual(DicomSpec.shared.nameForTag(withCode: "00001031"), "MoveOriginatorMessageID")
         XCTAssertNotNil(DicomSpec.shared.dataTag(forName: "LongCodeValue"))
     }
 

@@ -75,7 +75,8 @@ conformance without that evidence.
     and reversible JPEG recompression streams, but no external DICOM JPEG XL
     corpus is currently qualified.
 - JPEG 2000 limits:
-  - JPIP (.94, .95) is preserved but not resolved;
+  - JPIP Referenced (.94, .95, .204, .205) is preserved but its Pixel Data
+    Provider URL is not resolved (planned in Phase 4);
   - the Part 2 encoder handles grayscale frames only and writes one wavelet
     collection per codestream (no array-based transforms); its PSNR target
     applies to the codestream components and is approximate;

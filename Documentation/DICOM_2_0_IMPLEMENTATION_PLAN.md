@@ -26,9 +26,8 @@ Every supported feature must state its level explicitly:
 Deliverables:
 
 - [x] generate the tag and UID registry from PS3.6 2026d;
-- [x] keep command-set tags from PS3.7 as a documented bootstrap until a PS3.7
-  generator replaces them;
-- [ ] replace that bootstrap with a PS3.7 command-set generator;
+- [x] generate current command-set tags from PS3.7 Table E.1-1, retaining the
+  retired legacy fields only as a documented fallback;
 - [x] expose transfer-syntax capabilities independently of UID discovery;
 - [x] publish a living Conformance Statement with explicit limitations;
 - [x] add a traceability matrix linking capabilities to normative parts and tests;
@@ -54,8 +53,8 @@ Implementation order for the remaining Phase 1 work:
 
 1. [x] keep the capability matrix, Conformance Statement, and tests synchronized
    (ongoing with every change);
-2. [x] complete binary and multi-valued VR handling plus VR/VM validation
-   (per-VR lexical validation remains in 1.6);
+2. [x] complete binary and multi-valued VR handling plus VR/VM and per-VR
+   lexical validation;
 3. [x] introduce lazy Bulk Data access;
 4. [x] implement Deflated Explicit VR Little Endian;
 5. [ ] rebuild and qualify DICOMDIR and media-file handling (DICOMDIR rebuilt;
@@ -119,8 +118,8 @@ Progress so far:
   identity tuples, extended character sets used by record keys, verified SR
   documents, Hanging Protocol Definition Items, Related General SOP Class UID,
   and selected keys conditioned by the referenced SOP Instance;
-- [ ] broader Directory Record coverage and PS3.12 media-profile qualification are
-  still required before starting the planned JSON and XML work.
+- [ ] broader Directory Record coverage and PS3.12 media-profile qualification
+  remain separate media work; JSON and XML are already implemented.
 
 JSON and XML work deliberately follows the binary core so that alternate
 representations are built on a stable, lossless Data Set model.
@@ -152,7 +151,7 @@ representations are built on a stable, lossless Data Set model.
 - [x] enforce transfer-syntax read/write capabilities;
 - [x] add Deflated Explicit VR Little Endian;
 - [x] preserve encapsulated fragments and extended offset tables;
-- [ ] validate Extended Offset Table and its lengths against the fragments;
+- [x] validate Extended Offset Table and its lengths against the fragments;
 - add codecs behind optional capability providers (`DICOMCodecRegistry`)
   without coupling the core parser to them:
   - [x] RLE Lossless and Deflated Image Frame Compression;
@@ -173,9 +172,8 @@ representations are built on a stable, lossless Data Set model.
 - [x] validate delimiters and nesting depth and impose configurable resource limits;
 - [x] expose bulk data lazily to avoid mandatory full-file loading;
 - [x] implement private creator block resolution and retain unknown private values;
-- [ ] preserve original bytes when semantic decoding is unavailable (unknown
-  values are kept as UN; byte-preserving editing guarantees and their tests
-  remain).
+- [x] preserve original bytes when semantic decoding is unavailable, including
+  unknown/private UN values, non-decodable text, and nested values;
 
 ### 1.5 DICOM JSON, Native DICOM Model XML, and media files
 
@@ -191,12 +189,11 @@ implementation order.
 
 ### 1.6 Validation and interoperability
 
-- [ ] validate VR, VM, retired status, UID syntax, dates/times, and required file
-  meta attributes without confusing dictionary validity with IOD validity
-  (File Meta and numeric VM checks done; per-VR lexical rules remain);
-- [ ] add IOD/module validation from PS3.3 as a separate layer;
-- [ ] test byte-exact round trips for all native transfer syntaxes (round trips
-  exist; byte-exact comparison with an external corpus remains);
+- [x] validate VR, VM, retired status, UID syntax, dates/times, and required file
+  meta attributes without confusing dictionary validity with IOD validity;
+- ~~add IOD/module validation from PS3.3 as a separate layer~~ (moved to Phase 4);
+- [x] test byte-exact round trips for native transfer syntaxes on the local and
+  public pydicom corpora, with intentional normalization reported separately;
 - [ ] compare reads and writes with at least DCMTK and pydicom/GDCM (reads are
   compared with pydicom through DICOM JSON; pixel data and character sets are
   checked against pydicom and DCMTK vectors);
@@ -238,16 +235,23 @@ Images test material).
 | ☐ | Presentation States | <ul><li>Grayscale Softcopy Presentation State: VOI, spatial transformation, displayed area, graphic and text annotations, compound graphics</li><li>Color, Pseudo-color, and Blending Presentation States</li><li>Variable Modality LUT Presentation State</li></ul> | PS3.3 C.11.10 to C.11.15; PS3.4 Annex N |
 | ☐ | Color management | <ul><li>ICC profiles to PCS-Values</li><li>Supplemental and Enhanced Palette Color LUTs</li></ul> | PS3.3 C.11.15, C.7.6.19, C.7.6.23; PS3.4 N.2.1 |
 | ☐ | Quantitative data | Real World Value Mapping | PS3.3 C.7.6.16.2.11 |
+| ☐ | Rendered image export | Portable PNG plus JPEG (quality-controlled), TIFF (lossless 8/16-bit grayscale and RGB), and PGM/PPM for independent medical-imaging/tooling exchange; preserve metadata only when the target format supports it and document that export is not a DICOM replacement | PS3.4 Annex N; TIFF 6.0; ISO/IEC 10918-1 |
 | ☐ | Performance | Vectorized rendering and multi-frame (cine) streaming | — |
 
 ## Phase 4 — Web, security, and advanced objects
 
 - [ ] DICOMweb: QIDO-RS, WADO-RS, STOW-RS, media types, multipart streaming,
   rendered retrieval, and standard error payloads;
+- [ ] JPIP Referenced Pixel Data (.94, .95, and HTJ2K .204, .205; PS3.5 A.6,
+  A.7, 8.2.10): resolve Pixel Data Provider URL (0028,7FE0) with a JPIP client
+  (ISO/IEC 15444-9), then decode with the JPEG 2000 codecs; these syntaxes are
+  only preserved and negotiated today;
 - [ ] security and audit (TLS profiles done in Phase 2): ATNA audit events,
   digital signatures, encrypted attributes, and de-identification profiles;
 - [ ] semantic APIs for Structured Reports, segmentations,
   radiotherapy, waveforms, encapsulated documents, and parametric maps;
+- [ ] declarative IOD/module validation from PS3.3, separate from dictionary and
+  lexical validity;
 - [ ] terminology/context-group handling from PS3.16 with version provenance.
 
 ## Release gates

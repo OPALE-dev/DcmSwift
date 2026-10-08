@@ -106,9 +106,23 @@ public class DicomInputStream: OffsetInputStream {
             vrMethod = .Explicit
         } else {
             if enforceVR == true {
-                // except for old ACR-NEMA file
-                dataset.transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian)
-                vrMethod = .Implicit
+                // A data set without File Meta Information: Implicit VR
+                // Little Endian (the default, and old ACR-NEMA files) unless
+                // the first element carries a VR code, and Big Endian when
+                // its group reads that way (e.g. 00 08 for 0008).
+                let head = [UInt8](preambleData?.prefix(6) ?? Data())
+                let explicitVR = head.count == 6 && head[4...5].allSatisfy({ (0x41...0x5A).contains($0) })
+                    && DicomSpec.vr(for: String(decoding: head[4...5], as: UTF8.self)) != nil
+                if explicitVR {
+                    let bigEndian = head[0] == 0 && head[1] != 0
+                    byteOrder = bigEndian ? .BigEndian : .LittleEndian
+                    dataset.transferSyntax = TransferSyntax(
+                        bigEndian ? TransferSyntax.explicitVRBigEndian : TransferSyntax.explicitVRLittleEndian)
+                    vrMethod = .Explicit
+                } else {
+                    dataset.transferSyntax = TransferSyntax(TransferSyntax.implicitVRLittleEndian)
+                    vrMethod = .Implicit
+                }
             }
             
             // reset stream and offset using backstream
@@ -120,6 +134,9 @@ public class DicomInputStream: OffsetInputStream {
                                 
         // preambule processing is done
         dataset.hasPreamble = hasPreamble
+        if hasPreamble, let preambleData, preambleData.prefix(128).contains(where: { $0 != 0 }) {
+            dataset.preamble = preambleData.prefix(128)
+        }
         dataset.vrMethod = vrMethod
         dataset.byteOrder = byteOrder
         var fileMetaEndOffset: Int? = nil

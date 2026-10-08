@@ -120,4 +120,19 @@ final class DcmSwiftParserCompatibilityTests: XCTestCase {
             XCTAssertEqual(try read(bytes).string(forTag: "PatientName"), "Doe^Jane", "\(extra) bytes")
         }
     }
+
+    func testDataSetsWithoutFileMetaInformationAreDetected() throws {
+        for (explicit, bigEndian) in [(true, false), (true, true), (false, false)] {
+            var writer = Writer(explicit: explicit, bigEndian: bigEndian)
+            basic(&writer)
+            writer.us(0x0028, 0x0010, [512])
+            // Long enough for the 132 bytes probed for a preamble.
+            writer.text(0x0028, 0x0004, "CS", "MONOCHROME2")
+            writer.text(0x0040, 0xA160, "UT", String(repeating: "x", count: 120))
+            let dataSet = try XCTUnwrap(try DicomInputStream(data: Data(writer.bytes)).readDataset())
+            XCTAssertFalse(dataSet.hasPreamble)
+            XCTAssertEqual(dataSet.string(forTag: "PatientName"), "Doe^Jane", "\(explicit) \(bigEndian)")
+            XCTAssertEqual(dataSet.unsignedInteger16(forTag: "Rows"), 512, "\(explicit) \(bigEndian)")
+        }
+    }
 }
