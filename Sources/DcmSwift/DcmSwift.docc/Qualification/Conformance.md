@@ -328,6 +328,19 @@ highdicom reads DcmSwift's Segmentations back with the masks on the right
 source images; dicom-validator finds nothing in them it does not also report
 in highdicom's (it finds the Functional Group Sequences unexpected).
 
+## Structured Reports (PS3.3 C.17, PS3.16 TID 1500)
+
+| Content | Support |
+| --- | --- |
+| Reading | Every SR SOP Class: the document flags and template, and the content tree with every Value Type (CONTAINER, TEXT, CODE, NUM with units or qualifier, DATETIME, DATE, TIME, UIDREF, PNAME, COMPOSITE, IMAGE, WAVEFORM, SCOORD, SCOORD3D, TCOORD), by-reference relationships, observation date times and UIDs; TABLE read as attributes |
+| Writing | The same tree, as a Comprehensive 3D SR by default, with the Patient and Study of a context instance and its Current Requested Procedure Evidence |
+| Templates | TID 1500 Measurement Report with language, person observer, procedure reported, Image Library, and TID 1501 Measurement Groups (tracking identifier and UID, finding, finding site, TID 300 measurements); other templates through the content tree |
+
+highdicom reads the TID 1500 reports DcmSwift makes, with their Measurement
+Groups and measurements; dicom-validator and DCMTK's dsrdump find no error
+in them. On a highdicom report with a planar ROI and on the SR files of
+pydicom and the local corpus (24 reports), the content trees equal pydicom's.
+
 ## Character sets
 
 Text decoding follows Specific Character Set (0008,0005). Every Defined Term of
