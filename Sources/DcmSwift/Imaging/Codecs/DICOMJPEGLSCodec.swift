@@ -106,6 +106,8 @@ public struct DICOMJPEGLSCodec: DICOMPixelDataDecoder {
     /// interchange stream with default coding parameters.
     ///
     /// - Parameters:
+    ///   - frame: Native little endian frame bytes.
+    ///   - description: Pixel layout and sample description of `frame`.
     ///   - near: The maximum absolute error, 0 for lossless coding
     ///     (1.2.840.10008.1.2.4.80); positive values require
     ///     1.2.840.10008.1.2.4.81.

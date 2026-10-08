@@ -73,6 +73,7 @@ public class StructureSet {
      ```
      
      - Parameters:
+        - dicomRT: the DICOM RT Structure Set file to inspect
         - observationNumber: the ID of the `DataItem` to get
      - Returns: the `DataItem` found, or `nil` if not found
      */
@@ -98,6 +99,7 @@ public class StructureSet {
      ```
      
      - Parameters:
+        - dicomRT: the DICOM RT Structure Set file to inspect
         - roiNumber: the ID of the `DataItem` to get
      - Returns: the `DataItem` found, or `nil` if not found
      */

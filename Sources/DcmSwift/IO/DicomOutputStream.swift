@@ -61,6 +61,8 @@ public class DicomOutputStream {
      
      - Parameters:
         - dataset: the `DataSet` to write
+        - vrMethod: optional explicit or implicit VR override
+        - byteOrder: optional big or little endian override
      - Throws: StreamError.cannotOpenStream, StreamError.cannotWriteStream
      - Returns: a boolean indicating success
      */

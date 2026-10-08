@@ -39,6 +39,7 @@ public class Plan {
      ```
      
      - Parameters:
+        - dicomRT: the DICOM RT Plan file to inspect
         - forSequence: name of the sequence to look the item for
         - withNumber: the ID of the item to look for
      - Returns: the `DataItem` identified by `withNumber`, or `nil`

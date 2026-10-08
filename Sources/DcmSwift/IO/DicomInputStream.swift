@@ -59,6 +59,7 @@ public class DicomInputStream: OffsetInputStream {
      - Parameters:
         - headerOnly: only read the header. Default is set to false
         - withoutPixelData: avoid reading the pixel data
+        - enforceVR: reject invalid explicit Value Representation codes
      - Throws: StreamError.notDicomFile, StreamError.cannotReadStream
      - Returns: the `DataSet` read from the stream
      */
