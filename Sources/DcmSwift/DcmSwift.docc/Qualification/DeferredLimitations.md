@@ -226,8 +226,10 @@ conformance without that evidence.
 - Build PS3.3 IOD/module validation as a separate layer with SOP Class and
   conditional-attribute logic. Dictionary VR/VM validation is not IOD
   validation.
-- Add PS3.16 Context Group and terminology support with edition and version
-  provenance.
+- PS3.16: the Templates (TID) of Annex A are not modelled yet; they come
+  with the Structured Report API. Context Groups are not yet applied to the
+  attributes and Content Items that reference them, which belongs to IOD
+  validation.
 - Qualify Structured Reports, waveforms, presentation states, segmentations,
   parametric maps, encapsulated documents, radiotherapy objects, and other
   information objects individually.

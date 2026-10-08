@@ -98,6 +98,20 @@ contains 5,303 data-element entries and 1,990 UID entries. Command Set fields
 are generated from PS3.7 2026d Table E.1-1. A UID in the registry does not mean
 that the corresponding feature is implemented; see <doc:Conformance>.
 
+## Coded concepts
+
+``DICOMTerminology`` holds the PS3.16 Coding Schemes, DICOM codes, and
+Context Groups:
+
+```swift
+let terminology = DICOMTerminology.shared
+let regions = terminology.codes(in: 4031)            // Common Anatomic Region, with included groups
+if let item = dataSet.sequence(forTagName: "AnatomicRegionSequence")?.items.first,
+   let code = DICOMCode(item: item) {
+    print(terminology.membership(of: code, in: 4031)) // member, allowedByExtension, ...
+}
+```
+
 ## Other helpers
 
 The library also provides helpers for DICOM dates, times, UIDs, tags, VRs,

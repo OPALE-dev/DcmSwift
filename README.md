@@ -167,6 +167,7 @@ on every platform.
 | PS3.12 media profiles | Not yet qualified; Basic DICOMDIR support is not a media-profile claim |
 | DICOM JSON Model (PS3.18 F) | <ul><li><code>DICOMJSON</code> encode and decode, <code>DcmPrint -f JSON</code></li><li>Matches pydicom on 144 of its 147 readable test files and on the local corpus</li></ul> |
 | Native DICOM Model XML (PS3.19 A.1) | <ul><li><code>DICOMXML</code> encode and decode, <code>DcmPrint -f XML</code></li><li>Every output of the pydicom test files and local corpus validates against the normative schema and matches pydicom through the PS3.18 F.3 mapping</li></ul> |
+| Terminology (PS3.16) | <ul><li>Coding Schemes, DCM codes, and the 1,467 Context Groups of 2026d, with versions and included groups</li><li>Identical to the FHIR value sets NEMA publishes for the edition</li></ul> |
 | Robustness | <ul><li>Mutation fuzzing of the parser and pixel decoders, also run under AddressSanitizer</li><li>Reproducers kept as regression fixtures</li></ul> |
 
 ### Networking and security

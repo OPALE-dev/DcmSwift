@@ -240,6 +240,23 @@ referenced SOP class, and reports others as No Such SOP Instance (0112H) or
 Class/Instance Conflict (0119H). `DcmStore --commit` waits for the result on
 the association it stored on.
 
+## Terminology (PS3.16)
+
+`DICOMTerminology` holds the Content Mapping Resource of PS3.16 2026d,
+generated from the DocBook by `Scripts/generate-dicom-terminology.py`.
+
+| Content | Support |
+| --- | --- |
+| Coding Schemes (Table 8-1) | 66 schemes with their designator, UID, name, and organization |
+| DICOM Controlled Terminology (Table D-1) | 5,164 DCM codes with their meaning and retirement |
+| Context Groups (Annex B) | <ul><li>1,467 groups with keyword, extensibility, version, and UID</li><li>16,581 codes, with their Coding Scheme Version when PS3.16 gives one, and the included groups</li><li>Groups defined by a rule, such as all LOINC document names, keep their definition</li></ul> |
+| Membership | A code belongs to a group when its scheme and value appear in the group or in a group it includes; extensible groups allow other codes; rule-based groups are undetermined |
+
+PS3.16 2026d gives some codes several meanings within one group: synonyms
+such as Buttock and Gluteal region, but also apparent errors, such as MDC
+2:15880 for both Bazett and Framingham in CID 3227. Both rows are kept, and
+the first is the group's meaning, as in NEMA's value sets.
+
 ## Character sets
 
 Text decoding follows Specific Character Set (0008,0005). Every Defined Term of
@@ -306,8 +323,9 @@ access control, persistence, and audit.
 ## Validation boundaries
 
 Dictionary lookup and binary parsing do not establish IOD conformance. Full
-PS3.3 module/IOD validation, PS3.16 context-group validation, and application
-profile validation remain separate future layers. A successfully parsed file
+PS3.3 module/IOD validation, the use of PS3.16 Context Groups in that
+validation, and application profile validation remain separate future
+layers. A successfully parsed file
 must therefore not be reported as clinically or semantically conformant solely
 on that basis.
 
