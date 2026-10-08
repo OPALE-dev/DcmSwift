@@ -106,10 +106,14 @@ public final class DICOMClient: Sendable {
     /// Opens an association, runs `body`, then releases it.
     ///
     /// - Parameters:
+    ///   - remote: the called Application Entity and network endpoint.
+    ///   - presentationContexts: abstract and transfer syntaxes to propose.
     ///   - roleSelections: SCP roles to propose, for C-GET.
+    ///   - userIdentity: optional user identity negotiation item.
     ///   - storage: receives the C-STORE requests of C-GET sub-operations.
     ///   - normalized: receives DIMSE-N requests and notifications from the
     ///     acceptor, by SOP Class UID.
+    ///   - body: asynchronous work to run on the established association.
     public func withAssociation<Result>(
         to remote: DICOMRemoteNode, presentationContexts: [DICOMPresentationContextProposal],
         roleSelections: [DICOMRoleSelection] = [], userIdentity: DICOMUserIdentity? = nil,

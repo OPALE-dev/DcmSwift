@@ -78,10 +78,15 @@ public final class DICOMServer: Sendable {
     private let active = NIOLockedValueBox(0)
 
     /// - Parameters:
+    ///   - configuration: local AE, listener, security, and protocol limits.
+    ///   - storage: the Storage SCP service.
+    ///   - query: the Query SCP service.
+    ///   - retrieve: the C-GET and C-MOVE retrieval service.
     ///   - storageCommitment: the Storage Commitment SCP.
     ///   - storageCommitmentReceiver: receives Storage Commitment results as
     ///     the SCU, from SCPs that answer on a new association.
     ///   - normalized: DIMSE-N services by SOP Class (or Meta SOP Class) UID.
+    ///   - eventLoopGroup: NIO event loops used by the listener and associations.
     public init(
         configuration: DICOMServerConfiguration, storage: DICOMStorageService? = nil,
         query: DICOMQueryService? = nil, retrieve: DICOMRetrieveService? = nil,

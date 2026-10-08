@@ -29,7 +29,9 @@ public class PixelDataAccess {
      Returns the pixel as Signed 32 bits integer
      
      - Parameters:
+        - pixelDataElement: the Pixel Data element
         - pixelNumber: the pixel to get
+        - byteOrder: byte order of the stored pixel value
      */
     public static func getPixelSigned32(pixelDataElement: DataElement, pixelNumber: Int, byteOrder: ByteOrder) -> Int32? {
         return pixelBytes(pixelDataElement, pixelNumber: pixelNumber, width: 4)?.toInt32(byteOrder: byteOrder)

@@ -520,7 +520,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /**
      Check if the given Transfer Syntax is supported
      by the spec
-     - Parameter transferSyntax: DICOM Transfer Syntax
+     - Parameter ts: DICOM Transfer Syntax
      - Returns: true if the TS is supported by the spec
      */
     public func isSupported(transferSyntax ts:String) -> Bool {
@@ -542,7 +542,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /**
      Check if the given SOP Class is supported
      by the spec
-     - Parameter sopClass: DICOM SOP Class
+     - Parameter sc: DICOM SOP Class
      - Returns: true if the SOP is supported by the spec
      */
     public func isSupported(sopClass sc:String) -> Bool {
@@ -566,7 +566,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /**
     Check if the given Transfer Syntax is retired
     by the spec
-    - Parameter transferSyntax: DICOM SOP Class
+    - Parameter sc: DICOM Transfer Syntax
     - Returns: true if the SOP is retired by the spec
     */
     public func isRetired(transferSyntax sc:String) -> Bool {
@@ -584,7 +584,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /**
     Check if the given SOP Class is retired
     by the spec
-    - Parameter sopClass: DICOM SOP Class
+    - Parameter sc: DICOM SOP Class
     - Returns: true if theSOP Class is retired by the spec
     */
     public func isRetired(sopClass sc:String) -> Bool {
@@ -602,7 +602,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /**
     Check if the given Data Tag is retired
     by the spec
-    - Parameter tag: DICOM DataTag Class
+    - Parameter dataTag: DICOM DataTag Class
     - Returns: true if the Data Tag is retired by the spec
     */
     public func isRetired(tag dataTag:DataTag) -> Bool {

@@ -103,7 +103,7 @@ public class DicomFile {
      
      - Parameter path: Path where to write the file
      - Parameter inVrMethod: the VR method used to write the file (explicit vs. implicit)
-     - Parameter byteOrder: the endianess used to write the file (big vs. little endian)
+     - Parameter inByteOrder: the endianess used to write the file (big vs. little endian)
      
      - Returns: true if the file was successfully written
      */

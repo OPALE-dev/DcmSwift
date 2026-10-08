@@ -307,9 +307,10 @@ public class DateRange : CustomStringConvertible {
     /**
      Create a DICOM Date Range for DICOM date strings
      
-     - parameter dicomStartDate: DICOM Date string, required for both .afterDate and .betweenDate
-     - parameter dicomEndDate: DICOM Date string, required for both .priorDate and .betweenDate
-     - parameter rangeType: DateRangeType: priorDate, afterDate, betweenDate
+     - parameter dicomStart: DICOM Date string, required for both .after and .between
+     - parameter dicomEnd: DICOM Date string, required for both .prior and .between
+     - parameter range: Range: prior, after, or between
+     - parameter type: type of DICOM date value
      - returns: DateRange object
      
      DICOM Date string will be automatically formatted to Date objects

@@ -87,6 +87,8 @@ public struct DICOMJPEGLosslessCodec: DICOMPixelDataDecoder {
     /// optimized Huffman table (T.81 Annex K.2).
     ///
     /// - Parameters:
+    ///   - frame: Native little endian frame bytes.
+    ///   - description: Pixel layout and sample description of `frame`.
     ///   - predictor: Selection Value 1...7; 1 is required for
     ///     1.2.840.10008.1.2.4.70.
     ///   - pointTransform: Low bits discarded before coding; 0 keeps the
