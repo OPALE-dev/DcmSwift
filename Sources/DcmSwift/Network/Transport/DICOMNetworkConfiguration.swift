@@ -128,6 +128,44 @@ public struct DICOMTLSConfiguration: Sendable {
         }
         return DICOMTLSConfiguration(configuration: configuration)
     }
+
+    /// A client from PEM files: `trustRootsFile` replaces the system's
+    /// roots; a certificate chain and its key make it present a client
+    /// certificate.
+    public static func client(
+        pemTrustRootsFile: String?, pemCertificateChainFile: String? = nil, pemPrivateKeyFile: String? = nil,
+        verification: CertificateVerification = .fullVerification
+    ) throws -> DICOMTLSConfiguration {
+        let (chain, key) = try identity(pemCertificateChainFile, pemPrivateKeyFile, required: false)
+        return client(
+            trustRoots: try pemTrustRootsFile.map { .certificates(try NIOSSLCertificate.fromPEMFile($0)) } ?? .default,
+            certificateChain: chain, privateKey: key, verification: verification)
+    }
+
+    /// A server from PEM files; `clientTrustRootsFile` requires client
+    /// certificates issued by those roots.
+    public static func server(
+        pemCertificateChainFile: String, pemPrivateKeyFile: String, pemClientTrustRootsFile: String? = nil
+    ) throws -> DICOMTLSConfiguration {
+        let (chain, key) = try identity(pemCertificateChainFile, pemPrivateKeyFile, required: true)
+        return server(
+            certificateChain: chain, privateKey: key!,
+            clientTrustRoots: try pemClientTrustRootsFile.map { .certificates(try NIOSSLCertificate.fromPEMFile($0)) })
+    }
+
+    private static func identity(
+        _ chainFile: String?, _ keyFile: String?, required: Bool
+    ) throws -> ([NIOSSLCertificate], NIOSSLPrivateKey?) {
+        guard let chainFile, let keyFile else {
+            if required || chainFile != nil || keyFile != nil {
+                throw DICOMNetworkError.invalidState("a TLS certificate chain needs its private key, and conversely")
+            }
+            return ([], nil)
+        }
+        let chain = try NIOSSLCertificate.fromPEMFile(chainFile)
+        guard !chain.isEmpty else { throw DICOMNetworkError.invalidState("no certificate in \(chainFile)") }
+        return (chain, try NIOSSLPrivateKey(file: keyFile, format: .pem))
+    }
 }
 
 /// A remote application entity.

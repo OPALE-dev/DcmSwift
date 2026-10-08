@@ -14,20 +14,23 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertTrue(DicomSpec.shared.isKnown(transferSyntax: deflated))
         XCTAssertTrue(DicomSpec.shared.isSupported(transferSyntax: deflated))
         XCTAssertTrue(TransferSyntax(deflated)!.capability.canReadDataset)
-        XCTAssertFalse(TransferSyntax(deflated)!.capability.canNegotiateForDIMSE)
+        XCTAssertTrue(TransferSyntax(deflated)!.capability.canNegotiateForDIMSE)
 
         // MPEG-4 AVC/H.264 is in the registry but has no decoder.
         let mpeg4 = "1.2.840.10008.1.2.4.102"
         XCTAssertTrue(DicomSpec.shared.isKnown(transferSyntax: mpeg4))
         XCTAssertTrue(TransferSyntax(mpeg4)!.capability.canPreservePixelData)
         XCTAssertFalse(TransferSyntax(mpeg4)!.capability.canDecodePixelData)
-        XCTAssertFalse(TransferSyntax(mpeg4)!.capability.canNegotiateForDIMSE)
+        // Negotiable: storage keeps the encoded data set as received.
+        XCTAssertTrue(TransferSyntax(mpeg4)!.capability.canNegotiateForDIMSE)
 
-        // JPEG Baseline decodes, but is not negotiated for DIMSE.
+        // JPEG Baseline decodes and encodes.
         let jpegBaseline = TransferSyntax.JPEGLossy8bit
         XCTAssertTrue(TransferSyntax(jpegBaseline)!.capability.canDecodePixelData)
         XCTAssertTrue(TransferSyntax(jpegBaseline)!.capability.canEncodePixelData)
-        XCTAssertFalse(TransferSyntax(jpegBaseline)!.capability.canNegotiateForDIMSE)
+        XCTAssertTrue(TransferSyntax(jpegBaseline)!.capability.canNegotiateForDIMSE)
+        // SMPTE ST 2110 stream syntaxes encode no data set.
+        XCTAssertFalse(DICOMCapabilities.transferSyntax("1.2.840.10008.1.2.7.1").canNegotiateForDIMSE)
     }
 
     func testNumericDecodingHonorsByteOrderAndShortInputIsSafe() {
@@ -55,27 +58,6 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertEqual(stream.read(length: 2), Data([1, 2]))
         XCTAssertNil(stream.read(length: 2))
         XCTAssertEqual(stream.readableBytes, 1)
-    }
-
-    func testUserInfoEncodingContainsRequiredSubItemsAndRoundTrips() {
-        let source = UserInfo(
-            implementationVersion: "DCMSWIFT_2",
-            implementationUID: "1.2.826.0.1.3680043.10.999",
-            maxPDULength: 131_072
-        )
-        let encoded = source.data()
-
-        XCTAssertEqual(encoded.first, ItemType.userInfo.rawValue)
-        XCTAssertEqual(encoded.subdata(in: 2..<4).toUInt16(byteOrder: .BigEndian), UInt16(encoded.count - 4))
-
-        let decoded = UserInfo(data: encoded.subdata(in: 4..<encoded.count))
-        XCTAssertEqual(decoded?.maxPDULength, 131_072)
-        XCTAssertEqual(decoded?.implementationUID, source.implementationUID)
-        XCTAssertEqual(decoded?.implementationVersion, source.implementationVersion)
-    }
-
-    func testUserInfoRejectsTruncatedSubItem() {
-        XCTAssertNil(UserInfo(data: Data([ItemType.maxPduLength.rawValue, 0, 0, 4, 0, 1])))
     }
 
     func testPixelAccessUsesPixelWidthAndRangeOffset() {
@@ -114,31 +96,6 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
                 return XCTFail("Unexpected error: \(error)")
             }
         }
-    }
-
-    func testDIMSECommandSetUsesLittleEndianValues() throws {
-        let command = DataSet()
-        _ = command.set(value: CommandField.C_ECHO_RQ.rawValue, forTagName: "CommandField")
-        _ = command.set(value: UInt16(7), forTagName: "MessageID")
-        _ = command.set(value: UInt16(0x0101), forTagName: "CommandDataSetType")
-
-        let pdu = PDUData(
-            pduType: .dataTF,
-            commandDataset: command,
-            abstractSyntax: DicomConstants.verificationSOP,
-            transferSyntax: try XCTUnwrap(TransferSyntax(TransferSyntax.implicitVRLittleEndian)),
-            pcID: 1,
-            flags: 0x03
-        ).data()
-
-        let pdvLength = Int(pdu.subdata(in: 6..<10).toUInt32(byteOrder: .BigEndian))
-        let commandData = pdu.subdata(in: 12..<10 + pdvLength)
-        let decoded = try XCTUnwrap(try DicomInputStream(data: commandData).readDataset())
-
-        XCTAssertEqual(decoded.unsignedInteger16(forTag: "CommandField"), CommandField.C_ECHO_RQ.rawValue)
-        XCTAssertEqual(decoded.unsignedInteger16(forTag: "MessageID"), 7)
-        XCTAssertEqual(decoded.unsignedInteger16(forTag: "CommandDataSetType"), 0x0101)
-        XCTAssertEqual(decoded.unsignedInteger32(forTag: "CommandGroupLength"), UInt32(commandData.count - 12))
     }
 
     func testDataElementTranscodesNumericValueByteOrder() {

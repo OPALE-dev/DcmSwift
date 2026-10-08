@@ -141,28 +141,42 @@ let package = Package(
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
+        // Options shared by the network tools; not a product.
+        .target(
+            name: "DcmNetworkCommand",
+            dependencies: [
+                "DcmSwift",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .product(name: "Logging", package: "swift-log"),
+                .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "NIOSSL", package: "swift-nio-ssl")
+            ]),
         .executableTarget(
             name: "DcmServer",
             dependencies: [
                 "DcmSwift",
+                "DcmNetworkCommand",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
         .executableTarget(
             name: "DcmEcho",
             dependencies: [
                 "DcmSwift",
+                "DcmNetworkCommand",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
         .executableTarget(
             name: "DcmStore",
             dependencies: [
                 "DcmSwift",
+                "DcmNetworkCommand",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
         .executableTarget(
             name: "DcmFind",
             dependencies: [
                 "DcmSwift",
+                "DcmNetworkCommand",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
         .executableTarget(

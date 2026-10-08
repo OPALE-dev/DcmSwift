@@ -31,7 +31,7 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Implicit VR Little Endian | Structural read and write |
 | Explicit VR Little Endian | Structural read and write |
 | Explicit VR Big Endian (retired) | Structural read and write for interoperability |
-| Deflated Explicit VR Little Endian | <ul><li>Part 10 read/write using raw RFC 1951 Deflate</li><li>Decompressed size is bounded</li><li>DIMSE negotiation not claimed</li></ul> |
+| Deflated Explicit VR Little Endian | <ul><li>Part 10 read/write using raw RFC 1951 Deflate</li><li>Decompressed size is bounded</li><li>Negotiated on DIMSE associations; network data sets inflated and deflated in memory</li></ul> |
 
 ### Data elements
 
@@ -84,7 +84,6 @@ preservation, codec operations, and DIMSE negotiation.
 
 The next file-core priorities are remaining semantic VR validation, broader
 DICOMDIR Directory Record coverage, and PS3.12 media-profile qualification.
-Deflated DIMSE negotiation remains separate network work.
 PS3.18 JSON and XML representations follow those binary-format milestones.
 
 The Basic DICOMDIR implementation uses Explicit VR Little Endian, defined
@@ -139,16 +138,40 @@ viewer qualification remain deferred.
 
 ## Network support
 
-The network implementation is experimental and is not yet advertised as a
-conformant Application Entity. C-ECHO has the most complete path. C-STORE and
-C-FIND contain partial SCU/SCP building blocks. C-MOVE, C-GET, C-CANCEL,
-Storage Commitment, role selection, extended negotiation, robust
-fragmentation/reassembly, and a complete association-state test matrix are not
-implemented or not qualified.
+The network stack (`Sources/DcmSwift/Network`) is built on SwiftNIO with
+`NIOAsyncChannel`; the PS3.8 state machine is a value type tested without
+sockets.
 
-No network transfer syntax is considered negotiable unless its capability has
-`canNegotiateForDIMSE == true`. This flag does not by itself claim that every
-DIMSE service is implemented.
+### Upper Layer (PS3.8)
+
+| Area | Behavior |
+| --- | --- |
+| PDUs | <ul><li>All seven PDU types and every item and sub-item of PS3.8 9.3 and PS3.7 D.3.3</li><li>Unknown User Information sub-items preserved</li><li>Byte-exact with pynetdicom 3.0.4 encodings</li></ul> |
+| Framing and limits | <ul><li>PDU lengths checked from the header, before buffering</li><li>Maximum Length Received enforced on both sides</li><li>Bounded A-ASSOCIATE PDUs and command sets</li></ul> |
+| State machine | <ul><li>States Sta1 to Sta13, events and actions of Table 9-10</li><li>All 494 cells tested</li><li>ARTIM (PS3.8 9.1.5), plus an idle timeout</li></ul> |
+| Negotiation | <ul><li>Odd, unique presentation-context IDs; per-context results</li><li>SCP/SCU Role Selection (D.3.3.4)</li><li>Asynchronous Operations Window (D.3.3.3), never above the proposal</li><li>User Identity (D.3.3.7), accepted through a hook</li><li>Called and calling AE title policies, association limit (transient rejection)</li></ul> |
+| Messages | <ul><li>Command and data fragmentation within the peer's maximum length, fragments of one message contiguous</li><li>Reassembly with ordering checks; data sets above a memory limit spilled to a temporary file</li></ul> |
+| Release and abort | <ul><li>Release waits for operations in progress</li><li>Abort on protocol errors, timeouts, errors in the requestor's scope, and task cancellation</li></ul> |
+
+### DIMSE-C services (PS3.7 9, PS3.4)
+
+| Service | SCU | SCP |
+| --- | --- | --- |
+| Verification | <code>echo()</code> | Always served |
+| Storage | <ul><li><code>store(_:)</code> from a file (streamed), a data set, or encoded bytes</li><li>Sent as encoded, or converted between uncompressed syntaxes</li></ul> | <ul><li><code>DICOMStorageService</code></li><li>Every storage SOP class of PS3.4 B.5, retired ones included</li><li>Every transfer syntax that encodes a data set, kept as received; the requestor's order of preference is followed</li></ul> |
+| Query | <code>find(_:)</code>: an <code>AsyncSequence</code> of matches; stopping early sends C-CANCEL | <ul><li><code>DICOMQueryService</code>, Patient Root, Study Root, Patient/Study Only (retired)</li><li><code>DICOMQueryMatching</code>: PS3.4 C.2.2.2 matching</li></ul> |
+| Retrieve | <ul><li><code>move(_:destination:)</code>, <code>get(_:)</code>, with progress</li><li>Task cancellation sends C-CANCEL</li></ul> | <ul><li><code>DICOMRetrieveService</code>, with Composite Instance Root</li><li>C-MOVE through a new association to the destination, C-GET on the same association</li><li>Sub-operation counts and Failed SOP Instance UID List</li></ul> |
+
+Statuses are modelled per service (`DICOMStatus` with categories), and a
+service error answers with a failure status without ending the association.
+`TransferSyntaxCapability.canNegotiateForDIMSE` is true for every transfer
+syntax that encodes a data set.
+
+### Tools
+
+`DcmEcho`, `DcmStore`, `DcmFind`, and `DcmServer` use this stack. `DcmServer`
+with a storage directory is a small archive: storage SCP, then C-FIND, C-MOVE,
+and C-GET over the instances in that directory (README, Network tools).
 
 ## Character sets
 

@@ -122,7 +122,13 @@ public final class DICOMAssociation: Sendable {
     /// The context to send an item on and its bytes in that context's
     /// transfer syntax.
     func prepare(_ item: DICOMRetrieveItem) throws -> (DICOMAcceptedPresentationContext, DICOMDataSetPayload) {
-        let context = try context(for: item.sopClassUID, preferring: [item.transferSyntaxUID])
+        // The item's own syntax, else, for an uncompressed item, any
+        // uncompressed one: another context of the class may hold a
+        // compressed syntax the item cannot be converted to.
+        let fallbacks = Self.isUncompressed(item.transferSyntaxUID)
+            ? [TransferSyntax.explicitVRLittleEndian, TransferSyntax.implicitVRLittleEndian,
+               TransferSyntax.deflatedExplicitVRLittleEndian, TransferSyntax.explicitVRBigEndian] : []
+        let context = try context(for: item.sopClassUID, preferring: [item.transferSyntaxUID] + fallbacks)
         if context.transferSyntax == item.transferSyntaxUID { return (context, item.payload) }
         guard Self.isUncompressed(item.transferSyntaxUID), Self.isUncompressed(context.transferSyntax) else {
             throw DICOMNetworkError.noPresentationContext(abstractSyntax: item.sopClassUID)

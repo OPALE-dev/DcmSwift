@@ -142,8 +142,8 @@ conformance without that evidence.
 - Inflation and serialization currently operate on the complete Data Set in
   memory, subject to an inflation limit. Add bounded streaming inflate/deflate.
 - Qualify files produced by, and consumed by, independent implementations.
-- Deflated transfer syntax is not advertised for DIMSE negotiation; network
-  negotiation and PDV streaming remain separate work.
+- On the network, deflated data sets are inflated and deflated in memory;
+  streaming PDVs through Deflate remains to do.
 
 ## DICOMDIR, file-sets, and media profiles
 
@@ -222,12 +222,17 @@ conformance without that evidence.
 
 ## Network, web, and security
 
-- Complete PS3.8 association state, negotiation items, roles, asynchronous
-  operations, identity, fragmentation/reassembly, maximum PDU enforcement,
-  release, abort, timeouts, and independent-peer tests.
-- Complete PS3.7 C-ECHO, C-STORE, C-FIND, C-MOVE, C-GET, C-CANCEL and required
-  DIMSE-N services as explicit SCU/SCP capabilities with service-specific
-  status handling.
+- Network qualification so far is pynetdicom 3.0.4 in both directions and the
+  loopback tests; DCMTK and dcm4che peers, and fuzzing of live associations,
+  remain to do.
+- Extended Negotiation (D.3.3.5) and SOP Class Common Extended Negotiation
+  (D.3.3.6) items are carried but no service interprets them.
+- C-MOVE and the tools propose at most 128 presentation contexts per
+  association: `DcmStore` splits its files into several associations, the
+  C-MOVE SCP does not yet.
+- The `DcmServer` archive keeps its index in memory and matches the
+  attributes of PS3.4 C.6 key tables only; it is a tool, not a PACS.
+- DIMSE-N services and Storage Commitment are not implemented.
 - Implement PS3.18 DICOMweb services and media types: QIDO-RS, WADO-RS,
   STOW-RS, UPS-RS where in scope, multipart streaming, rendered retrieval,
   bulk data, and standard error responses.

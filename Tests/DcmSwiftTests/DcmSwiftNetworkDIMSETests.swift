@@ -212,4 +212,34 @@ final class DcmSwiftNetworkDIMSETests: XCTestCase {
             XCTAssertEqual(decoded.integer16(forTag: "Rows"), 512, uid)
         }
     }
+
+    /// C-FIND matching (PS3.4 C.2.2.2).
+    func testQueryMatching() {
+        typealias M = DICOMQueryMatching
+        // Universal, single value, wildcard.
+        XCTAssertTrue(M.matches("CT", key: "", keyword: "Modality"))
+        XCTAssertTrue(M.matches("CT", key: "*", keyword: "Modality"))
+        XCTAssertTrue(M.matches("CT", key: "CT", keyword: "Modality"))
+        XCTAssertFalse(M.matches("CT", key: "MR", keyword: "Modality"))
+        XCTAssertFalse(M.matches("ct", key: "CT", keyword: "Modality"))
+        XCTAssertTrue(M.matches("ABC123", key: "A?C*", keyword: "PatientID"))
+        XCTAssertTrue(M.matches("ABC", key: "*A*B*C*", keyword: "PatientID"))
+        XCTAssertFalse(M.matches("ABD", key: "A?C", keyword: "PatientID"))
+        XCTAssertTrue(M.wildcard("", pattern: "*"))
+        XCTAssertFalse(M.wildcard("", pattern: "?"))
+        // Person names ignore case.
+        XCTAssertTrue(M.matches("Doe^Jane", key: "DOE*", keyword: "PatientName"))
+        XCTAssertFalse(M.matches("Roe^Jane", key: "DOE*", keyword: "PatientName"))
+        // List of UID.
+        XCTAssertTrue(M.matches("1.2.3", key: "1.2.4\\1.2.3", keyword: "StudyInstanceUID"))
+        XCTAssertFalse(M.matches("1.2.3", key: "1.2.4\\1.2.30", keyword: "StudyInstanceUID"))
+        // Ranges.
+        XCTAssertTrue(M.matches("20240115", key: "20240101-20240131", keyword: "StudyDate"))
+        XCTAssertFalse(M.matches("20240215", key: "20240101-20240131", keyword: "StudyDate"))
+        XCTAssertTrue(M.matches("20240215", key: "20240101-", keyword: "StudyDate"))
+        XCTAssertTrue(M.matches("20231231", key: "-20240101", keyword: "StudyDate"))
+        XCTAssertFalse(M.matches("", key: "20240101-", keyword: "StudyDate"))
+        XCTAssertTrue(M.matches("20240131235959", key: "20240101-20240131", keyword: "AcquisitionDateTime"))
+        XCTAssertTrue(M.matches("101500", key: "1000-1100", keyword: "StudyTime"))
+    }
 }
