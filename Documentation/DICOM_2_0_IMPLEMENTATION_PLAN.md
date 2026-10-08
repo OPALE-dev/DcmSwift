@@ -60,7 +60,7 @@ Implementation order for the remaining Phase 1 work:
 4. [x] implement Deflated Explicit VR Little Endian;
 5. [ ] rebuild and qualify DICOMDIR and media-file handling (DICOMDIR rebuilt;
    PS3.12 media-profile qualification remains);
-6. [ ] implement the PS3.18 DICOM JSON model;
+6. [x] implement the PS3.18 DICOM JSON model;
 7. [ ] implement the PS3.18 Native DICOM Model XML representation.
 
 Progress so far:
@@ -179,8 +179,9 @@ representations are built on a stable, lossless Data Set model.
 
 ### 1.5 DICOM JSON, Native DICOM Model XML, and media files
 
-- [ ] replace the current convenience JSON/XML output with PS3.18-conformant
-  models, including Value, InlineBinary, BulkDataURI, PN objects, and nulls;
+- [x] add the PS3.18 DICOM JSON Model, including Value, InlineBinary,
+  BulkDataURI, PN objects, and nulls;
+- [ ] add the PS3.19 Native DICOM Model XML;
 - [x] rebuild DICOMDIR around PS3.10/PS3.12 record offset rules;
 - [x] validate File-set IDs and referenced file IDs;
 - [ ] qualify supported PS3.12 media profiles.
@@ -196,9 +197,10 @@ implementation order.
 - [ ] add IOD/module validation from PS3.3 as a separate layer;
 - [ ] test byte-exact round trips for all native transfer syntaxes (round trips
   exist; byte-exact comparison with an external corpus remains);
-- [ ] compare reads and writes with at least DCMTK and pydicom/GDCM (pixel data
-  and character sets are checked against pydicom and DCMTK vectors);
-- [ ] fuzz the parser and retain every crash or corruption case as a regression.
+- [ ] compare reads and writes with at least DCMTK and pydicom/GDCM (reads are
+  compared with pydicom through DICOM JSON; pixel data and character sets are
+  checked against pydicom and DCMTK vectors);
+- [x] fuzz the parser and retain every crash or corruption case as a regression.
 
 Phase 1 is complete only when malformed input cannot crash the parser, supported
 native transfer syntaxes round-trip without semantic loss, supported character

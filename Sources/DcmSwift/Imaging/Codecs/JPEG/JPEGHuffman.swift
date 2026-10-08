@@ -24,6 +24,11 @@ struct JPEGHuffmanTable {
                 valuePointer[length] = index
                 minimumCode[length] = code
                 for _ in 0..<count {
+                    // Codes are canonical: each must fit in its length, which
+                    // also keeps lookup indices in range.
+                    guard code < 1 << length else {
+                        throw DICOMCodecError.corruptedData("Huffman table is over-subscribed")
+                    }
                     if length <= Self.lookupBits {
                         let shift = Self.lookupBits - length
                         for suffix in 0..<(1 << shift) {
@@ -35,8 +40,6 @@ struct JPEGHuffmanTable {
                 }
                 maximumCode[length] = code - 1
             }
-            // Codes are canonical: every code must fit in its length.
-            guard code <= 1 << length else { throw DICOMCodecError.corruptedData("Huffman table is over-subscribed") }
             code <<= 1
         }
         maximumCode[17] = Int.max

@@ -719,7 +719,7 @@ public class DataElement : DicomObject {
         return data.chunked(into: width).map(decode)
     }
 
-    private func encodedValueData(byteOrder targetByteOrder: ByteOrder) -> Data {
+    func encodedValueData(byteOrder targetByteOrder: ByteOrder) -> Data {
         guard byteOrder != targetByteOrder else { return data }
 
         let wordSize: Int

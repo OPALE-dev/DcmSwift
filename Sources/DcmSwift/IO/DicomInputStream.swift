@@ -21,6 +21,11 @@ public class DicomInputStream: OffsetInputStream {
     private var decodedItemCount        = 0
     private var decodedFragmentCount    = 0
     private var sequenceDepth           = 0
+    /// The next element is the first after the File Meta Information:
+    /// files labelled Explicit VR but encoded Implicit VR are detected there.
+    private var checksImplicitVR        = false
+    /// Set when that detection switched the data set to Implicit VR.
+    private var detectedImplicitVR      = false
     
     /**
      Init a DicomInputStream with a file path
@@ -72,8 +77,10 @@ public class DicomInputStream: OffsetInputStream {
         // try to read 128 00H + DCIM magic world
         let preambleData = read(length: 132)
         
-        // no DCIM preamble found
-        if preambleData == nil || preambleData?.toHex().lowercased() != DicomConstants.dicomPreamble.lowercased() {
+        // A Part 10 file: any 128-byte preamble (PS3.10 7.1 leaves its content
+        // to the application, e.g. a TIFF header), then "DICM".
+        let isPart10 = preambleData.map { $0.count == 132 && $0.suffix(4).elementsEqual(Array("DICM".utf8)) } ?? false
+        if !isPart10 {
             // print("no DCIM preamble found, try to read dataset anyway")
             hasPreamble = false
             
@@ -120,7 +127,12 @@ public class DicomInputStream: OffsetInputStream {
     
         // read elements to fill the dataset
         while(stream.hasBytesAvailable && offset < total && !dataset.isCorrupted) {
+            // Fewer bytes than a tag: trailing padding, ignored.
+            if total - offset < 4 { break }
+            let elementStart = offset
             var order = byteOrder
+            checksImplicitVR = hasPreamble && vrMethod == .Explicit && !shouldInflateDataSet
+                && fileMetaEndOffset == offset
             
             // The group length excludes the 12-byte (0002,0000) element itself.
             // Until it is known, the first Part 10 element is always Little Endian.
@@ -128,7 +140,14 @@ public class DicomInputStream: OffsetInputStream {
                 order = .LittleEndian
             }
             
-            if let newElement = readDataElement(dataset: dataset, parent: nil, vrMethod: vrMethod, order: order) {
+            let readElement = readDataElement(dataset: dataset, parent: nil, vrMethod: vrMethod, order: order)
+            checksImplicitVR = false
+            if detectedImplicitVR {
+                detectedImplicitVR = false
+                vrMethod = .Implicit
+                dataset.vrMethod = .Implicit
+            }
+            if let newElement = readElement {
                 // header only option
                 if headerOnly && newElement.tag.group != DicomConstants.metaInformationGroup {
                     break
@@ -198,6 +217,9 @@ public class DicomInputStream: OffsetInputStream {
                 } else {
                     throw StreamError.datasetIsCorrupted(message: "Dataset is corrupted")
                 }
+            } else if offset <= elementStart {
+                // Nothing could be read: stop instead of retrying forever.
+                throw StreamError.datasetIsCorrupted(message: "Unreadable data element at offset \(elementStart)")
             }
         }
 
@@ -236,11 +258,11 @@ public class DicomInputStream: OffsetInputStream {
         - vrMethod: is the VR explicit (written in the data) or implicit (not written in the data) ?
      - Returns: the value representation of the element, or nil
      */
-    private func readVR(element:DataElement, vrMethod:VRMethod = .Explicit) -> VR.VR? {
+    private func readVR(element:DataElement, vrMethod:VRMethod = .Explicit, prefetched:Data? = nil) -> VR.VR? {
         var vr:VR.VR? = nil
         
         if vrMethod == .Explicit {
-            guard let data = self.read(length: 2) else {
+            guard let data = prefetched ?? self.read(length: 2) else {
                 return nil
             }
 
@@ -255,6 +277,19 @@ public class DicomInputStream: OffsetInputStream {
             vr = element.tag.isPrivateCreator
                 ? .LO
                 : DicomSpec.shared.vrForTag(withCode: element.tagCode())
+            let candidates = DicomSpec.shared.vrsForTag(withCode: element.tagCode())
+            if candidates.count > 1 {
+                if candidates.contains(.OW), !candidates.contains(.SS) {
+                    // Pixel Data and other OB/OW data are OW in Implicit VR
+                    // (PS3.5 A.1).
+                    vr = .OW
+                } else {
+                    // US or SS (or OW) follows Pixel Representation (0028,0103).
+                    let signed = element.dataset?.allElements.last(where: { $0.tagCode() == "00280103" })
+                        .flatMap { $0.data.count >= 2 ? $0.data.toUInt16(byteOrder: $0.byteOrder) : nil } == 1
+                    vr = signed ? .SS : .US
+                }
+            }
         }
         
         if element.element == "0000" {
@@ -411,19 +446,54 @@ public class DicomInputStream: OffsetInputStream {
         element.byteOrder       = element.group == "0002" ? .LittleEndian : order
         element.vrOffset        = offset
         
-        guard let vr = readVR(element:element, vrMethod: element.vrMethod) else {
-            let message = "Fatal, invalid or truncated Explicit VR header for \(tag) at offset \(element.vrOffset)"
-            return readError(forLength: 0, element: element, message: message)
+        // Some writers label Implicit VR data sets as Explicit VR: when the
+        // first element after the File Meta Information has no VR code, its
+        // bytes start a 32-bit length (pydicom and DCMTK read such files the
+        // same way).
+        var prefetchedVR: Data?
+        var headerRead = false
+        if checksImplicitVR, element.group != "0002", element.vrMethod == .Explicit {
+            guard let vrBytes = read(length: 2) else {
+                return readError(forLength: 0, element: element, message: "Fatal, truncated header for \(tag)")
+            }
+            if vrBytes.allSatisfy({ (0x41...0x5A).contains($0) }), DicomSpec.vr(for: vrBytes.toString()) != nil {
+                prefetchedVR = vrBytes
+            } else {
+                guard let rest = read(length: 2) else {
+                    return readError(forLength: 0, element: element, message: "Fatal, truncated header for \(tag)")
+                }
+                let bytes = [UInt8](vrBytes + rest)
+                let length = UInt32(bytes[0]) | UInt32(bytes[1]) << 8 | UInt32(bytes[2]) << 16 | UInt32(bytes[3]) << 24
+                Logger.warning("The data set is labelled Explicit VR but encoded in Implicit VR; reading it as Implicit VR")
+                detectedImplicitVR = true
+                self.vrMethod = .Implicit
+                element.vrMethod = .Implicit
+                element.vr = readVR(element: element, vrMethod: .Implicit) ?? .UN
+                element.lengthOffset = offset - 4
+                element.length = length == 0xFFFF_FFFF ? -1 : Int(length)
+                headerRead = true
+            }
         }
-        
-        element.vr              = vr
-        element.lengthOffset    = offset
-        guard let decodedLength = readLength(vrMethod: element.vrMethod, vr: element.vr, order: element.byteOrder) else {
-            let message = "Fatal, truncated value length for \(tag) at offset \(offset)"
-            return readError(forLength: 0, element: element, message: message)
+
+        if !headerRead {
+            guard let vr = readVR(element:element, vrMethod: element.vrMethod, prefetched: prefetchedVR) else {
+                let message = "Fatal, invalid or truncated Explicit VR header for \(tag) at offset \(element.vrOffset)"
+                return readError(forLength: 0, element: element, message: message)
+            }
+            element.vr              = vr
+            element.lengthOffset    = offset
+            guard let decodedLength = readLength(vrMethod: element.vrMethod, vr: element.vr, order: element.byteOrder) else {
+                let message = "Fatal, truncated value length for \(tag) at offset \(offset)"
+                return readError(forLength: 0, element: element, message: message)
+            }
+            element.length          = decodedLength
         }
-        element.length          = decodedLength
         element.dataOffset      = offset
+        // Encapsulated Pixel Data is OB (PS3.5 A.4), whatever Implicit VR
+        // suggested.
+        if element.tagCode() == "7fe00010", element.length == -1, element.vr == .OW, element.vrMethod == .Implicit {
+            element.vr = .OB
+        }
         
         
         // check for invalid length
@@ -463,20 +533,27 @@ public class DicomInputStream: OffsetInputStream {
                 guard readValue(for: element) else { return nil }
             }
         }
-        else if element.vr == .SQ {
-            guard let sequence = readDataSequence(
+        else if element.vr == .SQ || (element.vr == .UN && element.length == -1) {
+            // An UN element of undefined length (or an unknown one in Implicit
+            // VR) holds a Sequence in Implicit VR Little Endian (PS3.5 6.2.2).
+            let isUnknownSequence = element.vr == .UN
+            let savedVRMethod = self.vrMethod
+            if isUnknownSequence { self.vrMethod = .Implicit }
+            let read = readDataSequence(
                 tag: element.tag,
                 length: Int(element.length),
-                byteOrder: order,
+                byteOrder: isUnknownSequence ? .LittleEndian : order,
                 parent: parent
-            ) else {
+            )
+            self.vrMethod = savedVRMethod
+            guard let sequence = read else {
                 Logger.error("Cannot read Sequence \(tag) at \(self.offset)")
                 return nil
             }
                         
             sequence.parent         = element
-            sequence.vr             = element.vr
-            sequence.vrMethod       = element.vrMethod
+            sequence.vr             = .SQ
+            sequence.vrMethod       = isUnknownSequence ? .Implicit : element.vrMethod
             sequence.startOffset    = element.startOffset
             sequence.dataOffset     = element.dataOffset
             sequence.lengthOffset   = element.lengthOffset

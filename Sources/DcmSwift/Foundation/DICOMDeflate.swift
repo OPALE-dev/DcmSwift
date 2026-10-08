@@ -95,10 +95,29 @@ enum DICOMDeflate {
 
         let remaining = Int(stream.avail_in)
         if remaining > 0 {
-            guard remaining == 1, input.last == 0 else {
+            let trailer = [UInt8](input.suffix(remaining))
+            if remaining == 1, trailer[0] == 0 {
+                // Padding to an even length (PS3.5 A.5).
+            } else if remaining == 8 && isGzipTrailer(trailer, of: output)
+                        || remaining == 9 && trailer[8] == 0 && isGzipTrailer(Array(trailer[0..<8]), of: output)
+                        || remaining == 9 && trailer[0] == 0 && isGzipTrailer(Array(trailer[1...]), of: output) {
+                // Some writers leave the gzip CRC-32 and size after the raw
+                // stream; they match the inflated data, so it is complete.
+                Logger.warning("Raw Deflate stream followed by a gzip trailer")
+            } else {
                 throw StreamError.cannotReadStream(message: "Unexpected bytes after raw Deflate stream")
             }
         }
         return output
+    }
+
+    private static func isGzipTrailer(_ trailer: [UInt8], of output: Data) -> Bool {
+        func u32(_ at: Int) -> UInt32 {
+            UInt32(trailer[at]) | UInt32(trailer[at + 1]) << 8 | UInt32(trailer[at + 2]) << 16 | UInt32(trailer[at + 3]) << 24
+        }
+        let checksum = output.withUnsafeBytes { bytes in
+            UInt32(crc32(0, bytes.bindMemory(to: Bytef.self).baseAddress, uInt(bytes.count)))
+        }
+        return u32(0) == checksum && u32(4) == UInt32(truncatingIfNeeded: output.count)
     }
 }

@@ -30,9 +30,11 @@ conformance without that evidence.
   relationship to encapsulated Pixel Data fragments.
 - Add byte-preserving editing guarantees for values whose semantics are not
   understood, including explicit tests for unusual private and retired data.
-- Add independent DCMTK, pydicom, and/or GDCM byte-exchange qualification and
-  a retained fuzzing corpus. The existing internal corpus is not independent
-  interoperability evidence.
+- Reads are compared with pydicom through the DICOM JSON Model
+  (`Scripts/crosscheck/pydicom_json.py`); DCMTK and GDCM comparisons, and
+  comparisons of written files, remain to do.
+- Fuzzing is in-process mutation fuzzing (`DcmSwiftFuzzTests`), not
+  coverage-guided: libFuzzer is not available in the Apple toolchain.
 
 ## Bulk Data and Pixel Data
 
@@ -200,9 +202,9 @@ conformance without that evidence.
 
 ## Alternate representations
 
-- Replace convenience JSON output with the PS3.18 DICOM JSON Model, including
-  Value, PN objects, SQ items, JSON null, number/string rules, InlineBinary,
-  BulkDataURI, empty values, ordering, and round trips.
+- DICOM JSON: private elements keep VR UN unless sent with a VR (no vendor
+  dictionaries); the legacy `toJSON()` convenience output remains, distinct from
+  `DICOMJSON`.
 - Implement the Native DICOM Model XML representation with the PS3.19
   namespace, attributes, PN, SQ, InlineBinary, BulkData, escaping, empty values,
   and round trips as used by PS3.18.

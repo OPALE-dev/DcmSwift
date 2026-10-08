@@ -79,7 +79,8 @@ automated tests that support the claim, and what remains to be qualified.
 
 | Capability | Normative source | Status | Current evidence | Remaining qualification |
 | --- | --- | --- | --- | --- |
-| DICOM JSON | PS3.18 Annex F | Not conformant | none | Value, PN, SQ, null, InlineBinary, BulkDataURI |
+| DICOM JSON | PS3.18 Annex F | Implemented | <ul><li><code>DcmSwiftJSONTests</code></li><li><code>Scripts/crosscheck/pydicom_json.py</code>: 144 of 147 pydicom test files and 51 of 51 local corpus files identical</li></ul> | DICOMweb use |
+| Parser robustness | PS3.5, PS3.10 | Fuzzed | <ul><li><code>DcmSwiftFuzzTests</code> (also under AddressSanitizer)</li><li><code>DcmSwiftParserCompatibilityTests</code></li></ul> | Coverage-guided fuzzing |
 | Native DICOM Model XML | PS3.19 Annex A, used by PS3.18 | Not conformant | none | Namespace, values, PN, SQ, bulk data, escaping |
 | Audit, signatures, encryption | PS3.15 | Not implemented | none | ATNA, digital signatures, encrypted attributes |
 | IOD and module validation | PS3.3 | Not implemented | none | Separate declarative validation layer |
@@ -93,6 +94,6 @@ Qualification uses three complementary categories:
 2. byte-preserving round trips over the repository's existing sample corpus;
 3. independent comparison with DCMTK and pydicom or GDCM.
 
-The first two categories currently exist. The independent comparison suite and
-fuzzing corpus remain release gates and must not be inferred from the current
-test count.
+All three exist: comparison with pydicom covers reading, through the DICOM JSON
+Model; DCMTK and GDCM, and comparisons of written files, remain release gates.
+Fuzzing reproducers are kept as <code>fuzz-*.bin</code> fixtures.
