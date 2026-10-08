@@ -77,10 +77,26 @@ public struct DICOMEncapsulatedPixelData {
                 throw DICOMPixelDataError.invalidAttribute(
                     "ExtendedOffsetTable", "\(offsets.count) offsets and \(lengths.count) lengths for \(frames) frames")
             }
+            // One and only one Fragment per frame, in order, the first at 0.
+            guard fragments.count == frames else {
+                throw DICOMPixelDataError.invalidAttribute(
+                    "ExtendedOffsetTable", "\(fragments.count) Fragments for \(frames) frames, one per frame required")
+            }
+            guard offsets.first == 0, zip(offsets, offsets.dropFirst()).allSatisfy({ $0 < $1 }) else {
+                throw DICOMPixelDataError.invalidAttribute("ExtendedOffsetTable", "offsets do not increase from 0")
+            }
             frameFragments = try offsets.enumerated().map { frame, offset in
-                guard let index = fragmentIndex[offset], lengths[frame] <= fragments[index].length else {
+                guard let index = fragmentIndex[offset], index == frame else {
                     throw DICOMPixelDataError.invalidAttribute(
-                        "ExtendedOffsetTable", "frame \(frame) does not match a Fragment")
+                        "ExtendedOffsetTable", "frame \(frame) offset \(offset) is not the Item Tag of its Fragment")
+                }
+                // The frame's length excludes at most the Fragment's padding
+                // byte (PS3.3 C.7.6.3.1.8).
+                let padding = fragments[index].length - lengths[frame]
+                guard lengths[frame] > 0, padding == 0 || padding == 1 else {
+                    throw DICOMPixelDataError.invalidAttribute(
+                        "ExtendedOffsetTableLengths",
+                        "frame \(frame) length \(lengths[frame]) does not fit its Fragment of \(fragments[index].length) bytes")
                 }
                 return index..<(index + 1)
             }

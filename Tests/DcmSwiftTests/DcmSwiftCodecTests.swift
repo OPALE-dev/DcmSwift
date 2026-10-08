@@ -128,6 +128,32 @@ final class DcmSwiftCodecTests: XCTestCase {
         XCTAssertThrowsError(try DICOMEncapsulatedPixelData(dataset: wrong))
     }
 
+    /// PS3.3 C.7.6.3.1.8: one Fragment per frame, offsets increasing from 0,
+    /// lengths that differ from their Fragment by padding only, and both
+    /// tables present.
+    func testExtendedOffsetTableIsValidatedAgainstTheFragments() throws {
+        let fragments = [Data([1, 2, 3, 0]), Data([4, 5])]
+        func image(_ offsets: [UInt64]?, _ lengths: [UInt64]?, fragments: [Data] = fragments, frames: Int = 2) -> DataSet {
+            let dataset = encapsulatedImage(frames: frames, fragments: fragments, offsetTable: [])
+            if let offsets { addOV("ExtendedOffsetTable", offsets, to: dataset) }
+            if let lengths { addOV("ExtendedOffsetTableLengths", lengths, to: dataset) }
+            return dataset
+        }
+        XCTAssertNoThrow(try DICOMEncapsulatedPixelData(dataset: image([0, 12], [4, 2])))
+        let invalid: [(String, DataSet)] = [
+            ("lengths missing", image([0, 12], nil)),
+            ("first offset not 0", image([12, 0], [2, 3])),
+            ("frames swapped", image([0, 12].reversed(), [3, 2])),
+            ("more than padding", image([0, 12], [2, 2])),
+            ("longer than the Fragment", image([0, 12], [5, 2])),
+            ("empty frame", image([0, 12], [3, 0])),
+            ("two Fragments for one frame", image([0], [6], frames: 1)),
+        ]
+        for (name, dataset) in invalid {
+            XCTAssertThrowsError(try DICOMEncapsulatedPixelData(dataset: dataset), name)
+        }
+    }
+
     // MARK: Rendering encapsulated images
 
     func testRLEImageRendersAfterAPart10RoundTrip() throws {

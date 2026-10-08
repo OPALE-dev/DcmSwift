@@ -180,7 +180,7 @@ image are decoded by component collection. UIDs starting with a dot abbreviate
 | HTJ2K | .4.201, .4.202, .4.203 | ✓ | ✓ | Decoded by OpenJPEG, encoded by OpenJPH; cross-checked in both directions |
 | JPEG XL | .4.110, .4.111, .4.112 | ✓ | ✓ | libjxl and imagecodecs; recompressed JPEG rebuilt bit for bit |
 | JPEG 2000 Part 2 multi-component | .4.92, .4.93 | ✓ | ✓ | Kakadu 8.4.1 in both directions; lossless cases bit-exact, lossy within 1 |
-| JPIP | .4.94, .4.95 | | | Not yet supported |
+| JPIP Referenced | .4.94, .4.95, .4.204, .4.205 | | | Preserved and negotiated; pixel retrieval through JPIP planned (Phase 4) |
 
 Other codecs can be registered through `DICOMCodecRegistry`.
 
@@ -192,7 +192,7 @@ Other codecs can be registered through `DICOMCodecRegistry`.
 | Color | RGB, YBR_FULL, YBR_FULL_422, Palette Color (including segmented) |
 | Samples | 1 to 32 bits, float and double, Big Endian |
 | Frames | Multi-frame images and functional groups |
-| Export | PNG on every platform |
+| Export | PNG on every platform; JPEG, TIFF, and PGM/PPM planned in Phase 3 |
 
 ### Character sets
 

@@ -571,83 +571,41 @@ public class DataElement : DicomObject {
         // write tag code
         data.append(self.tag.data(withByteOrder: inByteOrder))
         
+        // In Explicit VR, a value too long for a 16-bit length is written as
+        // UN, whose Value is then encoded in Little Endian (PS3.5 6.2.2).
+        var writtenVR = self.vr
+        if inVrMethod == .Explicit, !Self.longExplicitVRs.contains(vr), length > 0xFFFF {
+            writtenVR = .UN
+        }
+
         // write VR (only explicit)
         if inVrMethod == .Explicit  {
-            let vrData = "\(self.vr)".data(using: .ascii)
-            data.append(vrData!)
-            
-            if self.vr == .SQ {
-                data.append(byte: 0x00, count: 2)
-            }
-            else if self.vr == .OB ||
-                self.vr == .OW ||
-                self.vr == .OF ||
-                self.vr == .OL ||
-                self.vr == .OV ||
-                self.vr == .SQ ||
-                self.vr == .SV ||
-                self.vr == .UC ||
-                self.vr == .UT ||
-                self.vr == .UN ||
-                self.vr == .UR ||
-                self.vr == .UV {
+            data.append("\(writtenVR)".data(using: .ascii)!)
+            if Self.longExplicitVRs.contains(writtenVR) {
                 data.append(byte: 0x00, count: 2)
             }
         }
-        
-        
+
         // write length
-        if self.vr == .SQ {
+        if writtenVR == .SQ {
             data.append(uint32: UInt32(bitPattern: Int32(self.length)), bigEndian: inByteOrder == .BigEndian)
         }
-        else if self.vr == .OB ||
-            self.vr == .OW ||
-            self.vr == .OF ||
-            self.vr == .OL ||
-            self.vr == .OV ||
-            self.vr == .SV ||
-            self.vr == .UC ||
-            self.vr == .UT ||
-            self.vr == .UN ||
-            self.vr == .UR ||
-            self.vr == .UV {
+        else if inVrMethod == .Implicit || Self.longExplicitVRs.contains(writtenVR) {
             if self.length >= 0 {
-                let intLength = UInt32(self.length)
-                var convertedNumber = inByteOrder == .LittleEndian ?
-                    intLength.littleEndian : intLength.bigEndian
-                
-                let lengthData = Data(bytes: &convertedNumber, count: 4)
-                data.append(lengthData)
+                data.append(uint32: UInt32(self.length), bigEndian: inByteOrder == .BigEndian)
             }
-                // negative length indicate sequence here
-            else if self.length == -1 {
-                // if OB/OW is a Pixel Sequence
-                if let _ = self as? PixelSequence {
-                    //print(pixelSequence)
-                    data.append(byte: 0xff, count: 4)
-                }
+            // A negative length is an undefined length: encapsulated Pixel Data.
+            else if self.length == -1, self is PixelSequence {
+                data.append(byte: 0xff, count: 4)
             }
         }
         else {
-            if inVrMethod == .Explicit {
-                // we only take care of endianneess with Explicit
-                let intLength = UInt16(self.length)
-                var convertedNumber = inByteOrder == .LittleEndian ?
-                    intLength.littleEndian : intLength.bigEndian
-                
-                withUnsafePointer(to: &convertedNumber) {
-                    data.append(UnsafeRawPointer($0).assumingMemoryBound(to: UInt8.self), count: 2)
-                }
-            }
-            else if inVrMethod == .Implicit {
-                data.append(uint32: UInt32(bitPattern: Int32(self.length)), bigEndian: inByteOrder == .BigEndian)
-            }
+            data.append(uint16: UInt16(self.length), bigEndian: inByteOrder == .BigEndian)
         }
-        
-        
+
         // write value
         if self.data != nil {
-            data.append(encodedValueData(byteOrder: inByteOrder))
+            data.append(encodedValueData(byteOrder: writtenVR == .UN && vr != .UN ? .LittleEndian : inByteOrder))
         }
         
         return data
@@ -718,6 +676,10 @@ public class DataElement : DicomObject {
         guard vr == expectedVR, let data, data.count.isMultiple(of: width) else { return nil }
         return data.chunked(into: width).map(decode)
     }
+
+    /// VRs with a 32-bit length after two reserved bytes in Explicit VR
+    /// (PS3.5 7.1.2).
+    static let longExplicitVRs: Set<VR.VR> = [.OB, .OD, .OF, .OL, .OV, .OW, .SQ, .SV, .UC, .UN, .UR, .UT, .UV]
 
     func encodedValueData(byteOrder targetByteOrder: ByteOrder) -> Data {
         guard byteOrder != targetByteOrder else { return data }

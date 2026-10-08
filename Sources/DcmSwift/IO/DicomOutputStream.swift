@@ -125,7 +125,8 @@ public class DicomOutputStream {
         
         if dataset.hasPreamble {
             // 128 bytes preamble
-            try write(data: Data(repeating: 0x00, count: 128))
+            let preamble = dataset.preamble.flatMap { $0.count == 128 ? $0 : nil } ?? Data(repeating: 0x00, count: 128)
+            try write(data: preamble)
             
             // DICM magic word
             try write(data: DicomConstants.dicomMagicWord.data(using: .ascii)!)

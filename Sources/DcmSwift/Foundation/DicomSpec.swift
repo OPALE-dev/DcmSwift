@@ -26,6 +26,11 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         let uids: [UIDEntry]
     }
 
+    private struct CommandDictionaryResource: Decodable {
+        let edition: String
+        let tags: [TagEntry]
+    }
+
     private struct TagEntry: Decodable {
         let group: String
         let element: String
@@ -76,6 +81,8 @@ public class DicomSpec: NSObject, XMLParserDelegate {
 
     /// Edition of PS3.6 used to populate the runtime dictionary.
     public private(set) var dictionaryEdition = "unknown"
+    /// Edition of PS3.7 used for the current Command Set fields.
+    public private(set) var commandDictionaryEdition = "legacy-fallback"
     
     private var xmlParser: XMLParser?
     
@@ -92,8 +99,8 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     private override init() {
         super.init()
         
-        // PS3.6 does not contain the command group dictionary from PS3.7, so
-        // retain the small legacy bootstrap dictionary and overlay 2026d data.
+        // Retain the legacy dictionary as a fallback, then overlay the generated
+        // PS3.6 registry and PS3.7 Command Set fields.
         if let data = xmlSpec.data(using: .utf8) {
             let parser = XMLParser(data: data)
             parser.delegate = self
@@ -102,6 +109,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         }
         self.dictionaryEdition = "2017c-fallback"
         _ = loadBundledDictionary()
+        _ = loadBundledCommandDictionary()
         
         self.sopPairs = [
             DicomConstants.verificationSOP: [
@@ -165,6 +173,24 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         for attributes in uids.values {
             if attributes["type"] == "SOP Class" { sopClassesArray.append(attributes) }
             if attributes["type"] == "Transfer Syntax" { transferSyntaxArray.append(attributes) }
+        }
+        return true
+    }
+
+    private func loadBundledCommandDictionary() -> Bool {
+        guard let url = Bundle.module.url(forResource: "dicom-command-dictionary-2026d", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let resource = try? JSONDecoder().decode(CommandDictionaryResource.self, from: data) else {
+            return false
+        }
+        commandDictionaryEdition = resource.edition
+        for entry in resource.tags {
+            let attributes = [
+                "group": entry.group, "element": entry.element, "name": entry.name,
+                "keyword": entry.keyword, "vr": entry.vr, "vm": entry.vm
+            ]
+            tags[entry.group + entry.element] = attributes
+            tagsByName[entry.keyword] = attributes
         }
         return true
     }
@@ -688,15 +714,28 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             results.append(ValidationResult(element, message: "Invalid VR length of \(element.vr) element [\(element.name)] (\(element.length) is not a multiple of \(fixedWidth))", severity: .Error))
         }
         
-        // check max VR length
-        let maximumLength = DicomSpec.maxLengthOf(vr: element.vr)
-        if maximumLength != 0, let text = element.value as? String {
-            for component in text.components(separatedBy: "\\") where component.count > maximumLength {
-                results.append(ValidationResult(element, message: "Invalid max VR length of \(element.vr) element [\(element.name)] (\(component.count) > \(maximumLength))", severity: .Warning))
+        // Lexical rules of each Value (PS3.5 Table 6.2-1).
+        if element.length > 0, !(element is DataSequence) {
+            switch element.vr {
+            case .AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UI, .UR, .UT:
+                if let values = element.textValues {
+                    for (index, value) in values.enumerated() {
+                        guard let problem = DICOMValueValidation.problem(with: value, vr: element.vr) else { continue }
+                        // ACR-NEMA formats stay readable: a warning.
+                        let severity: ValidationResult.Severity = problem.hasSuffix("not compliant") ? .Warning : .Error
+                        results.append(ValidationResult(
+                            element, message: "Value \(index + 1) of \(element.name) is invalid for \(element.vr): \(problem)",
+                            severity: severity))
+                    }
+                } else {
+                    results.append(ValidationResult(
+                        element, message: "\(element.name) cannot be decoded in its Specific Character Set", severity: .Error))
+                }
+            default:
                 break
             }
         }
-        
+
         // check if tag is retired
         if self.isRetired(tag: element.tag) {
             results.append(ValidationResult(element, message: "Tag \(element.tag) \(element.name) is retired", severity: .Notice))

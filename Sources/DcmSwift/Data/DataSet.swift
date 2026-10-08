@@ -26,6 +26,9 @@ public class DataSet: DicomObject {
     public var byteOrder:ByteOrder                  = .LittleEndian
     public var forceExplicit:Bool                   = false
     public var hasPreamble:Bool                     = false
+    /// The 128-byte preamble as read, kept when the file is written (e.g. a
+    /// TIFF header in a dual-format file, PS3.10 7.1).
+    public var preamble:Data?
     public var isCorrupted:Bool                     = false
     public private(set) var characterSet:DICOMCharacterSet = .defaultRepertoire
     
@@ -79,8 +82,9 @@ public class DataSet: DicomObject {
         // be sure element are sorted properly before write
         sortElements()
 
-        // append meta header elements as binary data
-        for element in allElements {
+        // The File Meta Information first, whatever the tags of the data set
+        // (a file may hold elements of the illegal groups 0000 or 0001).
+        for element in metaInformationHeaderElements + datasetElements {
             var finalVR     = element.vrMethod
             var finalOrder  = element.byteOrder
 
@@ -111,8 +115,9 @@ public class DataSet: DicomObject {
         // be sure element are sorted properly before write
         sortElements()
 
-        // append meta header elements as binary data
-        for element in allElements {
+        // The File Meta Information first, whatever the tags of the data set
+        // (a file may hold elements of the illegal groups 0000 or 0001).
+        for element in metaInformationHeaderElements + datasetElements {
             var finalVR     = transferSyntax.vrMethod
             var finalOrder  = transferSyntax.byteOrder
             
