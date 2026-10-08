@@ -223,9 +223,9 @@ conformance without that evidence.
 
 ## Semantic conformance beyond encoding
 
-- Build PS3.3 IOD/module validation as a separate layer with SOP Class and
-  conditional-attribute logic. Dictionary VR/VM validation is not IOD
-  validation.
+- IOD validation (PS3.3) does not evaluate the conditions of Types 1C and
+  2C nor of conditional modules, does not apply Defined Terms and Context
+  Groups, and does not report attributes the IOD does not allow.
 - PS3.16: the Templates (TID) of Annex A are not modelled yet; they come
   with the Structured Report API. Context Groups are not yet applied to the
   attributes and Content Items that reference them, which belongs to IOD

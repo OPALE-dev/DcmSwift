@@ -112,6 +112,24 @@ if let item = dataSet.sequence(forTagName: "AnatomicRegionSequence")?.items.firs
 }
 ```
 
+## IOD validation
+
+``DICOMIODValidator`` checks a data set against the IOD of its SOP Class, as
+PS3.3 2026d defines it. It is separate from parsing: a file that does not
+conform is still read.
+
+```swift
+let report = DICOMIODValidator().validate(dataSet)
+for finding in report.findings {
+    print(finding)  // Patient: (0010,0020) is missing (Type 2) [PS3.3 Table C.7-1]
+}
+```
+
+Each ``DICOMIODFinding`` gives its kind, the path of tags from the top-level
+attribute, the module, and the PS3.3 table. <doc:DcmValidate> does the same
+from the command line; ``DICOMIODValidationPolicy`` applies it to received
+instances.
+
 ## Other helpers
 
 The library also provides helpers for DICOM dates, times, UIDs, tags, VRs,

@@ -252,8 +252,9 @@ Images test material).
   digital signatures, encrypted attributes, and de-identification profiles;
 - [ ] semantic APIs for Structured Reports, segmentations,
   radiotherapy, waveforms, encapsulated documents, and parametric maps;
-- [ ] declarative IOD/module validation from PS3.3, separate from dictionary and
-  lexical validity;
+- [x] declarative IOD/module validation from PS3.3, separate from dictionary and
+  lexical validity: `DICOMIODValidator`, `DcmValidate`, and a receive policy,
+  checked against dicom-validator; conditions of Types 1C and 2C follow;
 - [x] terminology/context-group handling from PS3.16 with version provenance:
   Coding Schemes, DCM codes, and Context Groups of 2026d, identical to NEMA's
   FHIR value sets; Templates follow with the Structured Report API.

@@ -128,6 +128,19 @@ python3 Scripts/generate-dicom-terminology.py part16.xml Sources/DcmSwift/Resour
 python3 Scripts/crosscheck/nema_valuesets.py Sources/DcmSwift/Resources/dicom-terminology-2026d.json /path/to/valuesets
 ```
 
+## IOD validation
+
+`Scripts/generate-dicom-iods.py` rebuilds the IOD resource from the PS3.3
+and PS3.4 DocBook; `--check` verifies that the bundled resource is up to date.
+`Scripts/crosscheck/dicom_validator.py` compares the findings of DcmValidate
+with those of dicom-validator 0.9.0 (`pip install dicom-validator`), which
+reads the same DocBook from its `-src` folder:
+
+```sh
+python3 Scripts/generate-dicom-iods.py part03.xml part04.xml Sources/DcmSwift/Resources/dicom-iods-2026d.json --check
+python3 Scripts/crosscheck/dicom_validator.py .build/debug/DcmValidate /path/to/standard /path/to/files
+```
+
 ## Network interoperability
 
 `Scripts/interop` drives pynetdicom 3 against DcmSwift:

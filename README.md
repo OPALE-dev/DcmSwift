@@ -167,6 +167,7 @@ on every platform.
 | PS3.12 media profiles | Not yet qualified; Basic DICOMDIR support is not a media-profile claim |
 | DICOM JSON Model (PS3.18 F) | <ul><li><code>DICOMJSON</code> encode and decode, <code>DcmPrint -f JSON</code></li><li>Matches pydicom on 144 of its 147 readable test files and on the local corpus</li></ul> |
 | Native DICOM Model XML (PS3.19 A.1) | <ul><li><code>DICOMXML</code> encode and decode, <code>DcmPrint -f XML</code></li><li>Every output of the pydicom test files and local corpus validates against the normative schema and matches pydicom through the PS3.18 F.3 mapping</li></ul> |
+| IOD validation (PS3.3) | <ul><li><code>DICOMIODValidator</code>, <code>DcmValidate</code>, and <code>DcmServer --validate</code></li><li>Reports nothing dicom-validator does not, on the pydicom test files and the local corpus</li></ul> |
 | Terminology (PS3.16) | <ul><li>Coding Schemes, DCM codes, and the 1,467 Context Groups of 2026d, with versions and included groups</li><li>Identical to the FHIR value sets NEMA publishes for the edition</li></ul> |
 | Robustness | <ul><li>Mutation fuzzing of the parser and pixel decoders, also run under AddressSanitizer</li><li>Reproducers kept as regression fixtures</li></ul> |
 
@@ -191,6 +192,7 @@ Every tool documents its options with `--help`.
 | --- | --- |
 | [DcmPrint](Sources/DcmSwift/DcmSwift.docc/Commands/DcmPrint.md) | Print a data set as text, DICOM JSON, or Native DICOM Model XML |
 | [DcmConvert](Sources/DcmSwift/DcmSwift.docc/Commands/DcmConvert.md) | Export frames as PNG, JPEG, TIFF, or PGM/PPM |
+| [DcmValidate](Sources/DcmSwift/DcmSwift.docc/Commands/DcmValidate.md) | Validate files against the IODs of PS3.3 |
 | [DcmAnonymize](Sources/DcmSwift/DcmSwift.docc/Commands/DcmAnonymize.md) | Write an anonymized copy of a file |
 | [DcmIzer](Sources/DcmSwift/DcmSwift.docc/Commands/DcmIzer.md) | Wrap a JPEG, PNG, or TIFF image in a DICOM file |
 | [DcmSR](Sources/DcmSwift/DcmSwift.docc/Commands/DcmSR.md) | Print a Structured Report tree or render it as HTML |

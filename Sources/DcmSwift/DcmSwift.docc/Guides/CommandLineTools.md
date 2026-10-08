@@ -19,6 +19,7 @@ revision.
 
 - <doc:DcmPrint> prints data sets as text, Native DICOM Model XML, or DICOM JSON.
 - <doc:DcmConvert> renders DICOM frames as PNG, JPEG, TIFF, PGM, or PPM.
+- <doc:DcmValidate> validates files against the IODs of PS3.3.
 - <doc:DcmAnonymize> writes an anonymized copy of an instance.
 - <doc:DcmIzer> demonstrates wrapping an ordinary image in a DICOM file.
 - <doc:DcmSR> prints structured-report trees or renders them as HTML.
