@@ -154,17 +154,32 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
     public let archive: DICOMDirectoryArchive
     /// C-MOVE destinations and Storage Commitment SCUs, by AE title.
     public let destinations: [String: DICOMRemoteNode]
+    /// What to do with received instances that do not conform to their IOD.
+    public let validation: DICOMIODValidationPolicy
 
-    public init(archive: DICOMDirectoryArchive, destinations: [String: DICOMRemoteNode] = [:]) {
+    public init(archive: DICOMDirectoryArchive, destinations: [String: DICOMRemoteNode] = [:],
+                validation: DICOMIODValidationPolicy = .off) {
         self.archive = archive
         self.destinations = destinations
+        self.validation = validation
+    }
+
+    /// Validates a received instance as the policy says; true when it is to
+    /// be stored with a warning, false when it conforms, and nil when it is
+    /// refused.
+    private func admit(_ instance: DICOMReceivedInstance) -> Bool? {
+        guard let report = validation.report(for: instance) else { return false }
+        Logger.warning("\(instance.sopInstanceUID) does not conform to the \(report.iod ?? "IOD"): "
+            + report.findings.map(\.description).joined(separator: "; "))
+        return validation == .reject ? nil : true
     }
 
     // MARK: DIMSE
 
     public func store(_ instance: DICOMReceivedInstance, context: DICOMServiceContext) async throws -> DICOMStatus {
+        guard let warn = admit(instance) else { return .storageDataSetDoesNotMatchSOPClass }
         try await archive.store(instance)
-        return .success
+        return warn ? .storageDataSetDoesNotMatchSOPClassWarning : .success
     }
 
     public func find(
@@ -240,9 +255,12 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
     public func store(
         _ instance: DICOMReceivedInstance, context: DICOMwebRequestContext
     ) async throws -> DICOMwebStoreResult {
+        guard let warn = admit(instance) else {
+            return .failed(DICOMwebStoreResponse.dataSetDoesNotMatchSOPClass)
+        }
         do {
             try await archive.store(instance)
-            return .stored
+            return warn ? .storedWithWarning(DICOMwebStoreResponse.dataSetDoesNotMatchSOPClassWarning) : .stored
         } catch {
             return .failed(DICOMwebStoreResponse.processingFailure)
         }
