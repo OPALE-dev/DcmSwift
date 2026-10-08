@@ -1,4 +1,4 @@
-# Handoff Packet (updated 2026-10-08, after fuzzing, DICOM JSON, Native XML)
+# Handoff Packet (updated 2026-10-08, after the DocC documentation migration)
 
 Repo: /Users/nark/Development/Opale/Swift/DcmSwift, branch `codex/dcmswift-2.0`.
 JPEG XL is committed as `5371911`; structured Person Name and multi-valued text
@@ -209,8 +209,25 @@ Code in `Sources/DcmSwift/Network/`; the legacy `Networking/` is deleted
   no-meta syntax detection, preamble, and group-order defects. DCMTK/GDCM
   write comparison still requires those independent tools.
 
+## Documentation (Claude, 2026-10-08)
+- Swift-DocC is the only documentation system; Jazzy and SwiftDoc were removed
+  at the user's request (no Ruby toolchain, no second renderer).
+- Sources: public `///` comments plus the catalog `Sources/DcmSwift/DcmSwift.docc`
+  (`Guides/`, `Commands/` one article per executable, `Qualification/` with
+  Conformance, Traceability, DeferredLimitations, ImplementationPlan, moved from
+  the former `Documentation/` folder). Each executable target has a short
+  `README.md`, excluded in `Package.swift`.
+- `Scripts/documentation/build.sh [output] [base-path]` builds the static site
+  with `--warnings-as-errors`; `preview.sh` serves it. Output must not exist yet.
+- CI: GitLab `documentation-check` (branches, MRs) and `pages` (default branch,
+  `DOCS_BASE_PATH=DcmSwift`) on the `deploy` runner; GitHub Actions
+  `.github/workflows/documentation.yml` builds on PRs and deploys Pages on
+  master. Neither has run yet.
+- Commits eb05a18, 2063c22, 1dd5e4f (unpushed). DocC build verified locally.
+
 ## Next
-- push the qualified commits and check GitLab CI, Linux especially;
+- push the qualified commits and check GitLab CI (Linux and the new
+  documentation jobs); enable GitLab/GitHub Pages if not yet enabled;
 - install DCMTK/GDCM for the remaining independent file/network comparisons;
 - continue with rendering and presentation (plan Phase 3), including JPEG,
   TIFF, and PGM/PPM rendered-image export.
@@ -224,7 +241,7 @@ Code in `Sources/DcmSwift/Network/`; the legacy `Networking/` is deleted
 - **Known divergence:** pylibjpeg gets the point transform wrong for JPEG Lossless (2^(P−1) instead of 2^(P−Pt−1)). libjpeg-turbo is the reference there.
 - The corpus is local only (`Tests/DcmSwiftTests/Resources`, confidential, git-ignored). Run: `DCMSWIFT_REQUIRE_INTEROP_CORPUS=1 DCMSWIFT_INTEROP_CORPUS=$PWD/Tests/DcmSwiftTests/Resources swift test --filter 'DcmSwiftTests.DcmSwiftTests/testExternalDICOMCorpus'`.
 - Small synthetic fixtures go in `Tests/DcmSwiftTests/CIResources` (`.process`, flat names like `jpeg-*.jpg/.ref`).
-- For every change, update together: `README.md` and `Documentation/DICOM_CONFORMANCE.md`, `DICOM_DEFERRED_LIMITATIONS.md`, `DICOM_TRACEABILITY.md` (test names), `DICOM_2_0_IMPLEMENTATION_PLAN.md`.
+- For every change, update together: `README.md` and, in `Sources/DcmSwift/DcmSwift.docc/Qualification/`, `Conformance.md`, `DeferredLimitations.md`, `Traceability.md` (test names), `ImplementationPlan.md`; then check `Scripts/documentation/build.sh`.
 - **Before each commit:**
   - `swift build -c release`;
   - `swift test --parallel` (that's how CI runs it);
