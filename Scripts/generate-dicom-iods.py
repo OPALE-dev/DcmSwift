@@ -104,6 +104,147 @@ def condition(description: str) -> str | None:
     return match.group(1) if match else None
 
 
+CONDITION_TAG = re.compile(r"\(([0-9A-Fa-f]{4}),([0-9A-Fa-f]{4})\)")
+JOINER = re.compile(r"(,\s*(?:and|or)\s+|,\s+|\s+(?:and|or)\s+)")
+VALUE = r'(?:"[^"]+"(?:\s*\([^)]*\))?|[A-Z0-9][A-Z0-9_ .\-]*?)'
+
+
+NAME_WORDS = {"of", "in", "to", "the", "for", "a", "an", "on", "by", "with", "per", "from", "at", "as", "this"}
+
+
+def is_name(text: str) -> bool:
+    """Whether text is an attribute name, such as "Number of Frames", and not
+    prose, such as "the Patient is a non-human organism and if"."""
+    words = text.split()
+    return bool(words) and all(re.fullmatch(r"[A-Z0-9][\w'’/&\-]*", word) or word in NAME_WORDS for word in words)
+
+
+def parse_values(text: str) -> list[str] | None:
+    """"YES", "MODULATED or MODULATED_SPEC", "A, B, or C", or quoted UIDs
+    followed by their name in parentheses."""
+    parts = re.split(r",\s*or\s+|,\s+|\s+or\s+", text.strip())
+    values = []
+    for part in parts:
+        part = part.strip()
+        quoted = re.fullmatch(r'"([^"]+)"(?:\s*\([^)]*\))?', part)
+        if quoted:
+            values.append(quoted.group(1))
+        elif re.fullmatch(r"[A-Z0-9][A-Z0-9_ .\-]*", part):
+            values.append(part)
+        else:
+            return None
+    return values or None
+
+
+def parse_predicate(text: str) -> dict[str, object] | None:
+    """A test on one attribute, such as "is present" or "Value 1 is ORIGINAL"."""
+    text = text.strip().lstrip(",").strip().rstrip(".").strip()
+    text = re.sub(r"^(?:is|are) present in this (?:Sequence )?Item$", "is present", text)
+    text = re.sub(r"^Value is ", "is ", text)
+    text = re.sub(r"^is present with (?:a )?Value (?:of )?", "is ", text)
+    text = re.sub(r"^equals other than ", "is not ", text)
+    if re.fullmatch(r"(?:is|are) empty|is present and empty", text):
+        return {"test": "empty"}
+    if re.fullmatch(r"(?:is|are) not present or (?:has zero Items|is empty)", text):
+        return {"test": "absentOrEmpty"}
+    match = re.fullmatch(r"(?:is absent|is not present),? or (?:is present and )?has the Value (.+)", text)
+    if match:
+        values = parse_values(match.group(1))
+        return {"test": "absentOrEquals", "values": values} if values else None
+    if re.fullmatch(r"(?:is|are) present", text):
+        return {"test": "present"}
+    if re.fullmatch(r"(?:is|are) (?:not present|absent)", text):
+        return {"test": "absent"}
+    if re.fullmatch(r"(?:is present and )?(?:has|have) a Value|is present with a Value|is non-zero length|"
+                    r"is present and is not empty|is not empty", text):
+        return {"test": "hasValue"}
+    if re.fullmatch(r"(?:is present and )?(?:has a )?non-zero(?: value)?|is present and has a non-zero value|"
+                    r"is non-zero|is not zero|is greater than 0|is present and is not zero", text):
+        return {"test": "nonzero"}
+    match = re.fullmatch(r"(?:has a Value|is) greater than (\d+)", text)
+    if match:
+        return {"test": "greater", "values": [match.group(1)]}
+    index = 0
+    match = re.match(r"Value (\d+)(?: of this [A-Za-z ]+?)? ", text)
+    if match:
+        index = int(match.group(1)) - 1
+        text = text[match.end():]
+    negated = False
+    for pattern, negation in ((r"(?:is not|does not equal|is other than|is not equal to|!=) ", True),
+                              (r"(?:is present and (?:the Value is|has the Value|has a Value of|equals) |"
+                               r"has a Value of |has the Value |has the value |equals |is equal to |= |is |are )", False)):
+        match = re.match(pattern, text)
+        if match:
+            negated = negation
+            text = text[match.end():]
+            break
+    else:
+        return None
+    values = parse_values(text)
+    if values is None:
+        return None
+    test: dict[str, object] = {"test": "notEquals" if negated else "equals", "values": values}
+    if index:
+        test["index"] = index
+    return test
+
+
+def parse_condition(sentence: str) -> dict[str, object] | None:
+    """A condition as tests on attributes joined by "and" or by "or", or
+    None when it is not of that form."""
+    text = re.sub(r"^(?:(?:Required|Shall be present|Required only|Present) (?:if|when|only if)|if and only if|if) ", "",
+                  sentence.strip())
+    if text == sentence.strip():
+        return None
+    # Only the condition itself, without what follows it.
+    text = re.split(r";|\.\s|, otherwise|\s+[Oo]therwise|\s+[Mm]ay be present|\s+U\s*-", text)[0].strip().rstrip(".")
+    text = re.sub(r"\bthe Value of ", "", text)
+    tags = list(CONDITION_TAG.finditer(text))
+    if not tags:
+        return None
+    if not is_name(text[:tags[0].start()]):
+        return None
+    terms: list[dict[str, object]] = []
+    pending: list[str] = []
+    connectives: set[str] = set()
+    for index, match in enumerate(tags):
+        tag = (match.group(1) + match.group(2)).upper()
+        pending.append(tag)
+        end = tags[index + 1].start() if index + 1 < len(tags) else len(text)
+        middle = text[match.end():end]
+        if index + 1 < len(tags):
+            joiners = list(JOINER.finditer(middle))
+            if not joiners:
+                return None
+            joiner = joiners[-1]
+            predicate, word = middle[:joiner.start()], joiner.group(1)
+            if not is_name(middle[joiner.end():]):
+                return None
+        else:
+            predicate, word = middle, ""
+        connective = "and" if "and" in word else "or" if "or" in word else "list" if word else ""
+        if not predicate.strip():
+            # A list of attributes sharing the predicate that follows.
+            if connective in ("and", "or"):
+                connectives.add(connective)
+            continue
+        test = parse_predicate(predicate)
+        if test is None:
+            return None
+        # "A or B are not present" is ambiguous: neither, or not both.
+        if len(pending) > 1 and "or" in connectives and test["test"] == "absent":
+            return None
+        terms += [{"tag": tag, **test} for tag in pending]
+        pending = []
+        if connective in ("and", "or"):
+            connectives.add(connective)
+        elif connective == "list":
+            return None
+    if pending or len(connectives) > 1:
+        return None
+    return {"any" if connectives == {"or"} else "all": terms}
+
+
 def include_condition(cell: ET.Element) -> str | None:
     """The text after the included table's reference, when it states a
     condition."""
@@ -148,6 +289,9 @@ def attribute_tables(root: ET.Element) -> dict[str, dict[str, object]]:
                     rest = include_condition(own[0])
                     if rest:
                         entry["condition"] = rest
+                        parsed = parse_condition(rest)
+                        if parsed:
+                            entry["when"] = parsed
                     cids = [int(link[len("sect_CID_"):]) for cell in own[1:] for link in links(cell)
                             if link.startswith("sect_CID_")]
                     if cids:
@@ -172,6 +316,9 @@ def attribute_tables(root: ET.Element) -> dict[str, dict[str, object]]:
                     sentence = condition(text(cells[description]))
                     if sentence:
                         attribute["condition"] = sentence
+                        parsed = parse_condition(sentence)
+                        if parsed:
+                            attribute["when"] = parsed
             entries.append(attribute)
         caption = table.find(f"{DB}caption")
         tables[(table.get(XML_ID) or "")[len("table_"):]] = {"name": text(caption), "entries": entries}
@@ -230,6 +377,9 @@ def iod_tables(root: ET.Element, sections: dict[str, str]) -> dict[str, dict[str
                 entry = {"name": text(cells[group_macro]), **entry}
             if use.startswith("C"):
                 entry["condition"] = use.split("-", 1)[-1].strip()
+                parsed = parse_condition(entry["condition"])
+                if parsed:
+                    entry["when"] = parsed
             entries.append(entry)
         if not entries:
             continue
