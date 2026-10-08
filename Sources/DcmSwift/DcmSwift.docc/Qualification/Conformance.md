@@ -334,10 +334,33 @@ offered.
 C-MOVE destinations and Storage Commitment SCUs are reached with
 `DICOMServerConfiguration.clientTLS` when their node uses TLS.
 
+### De-identification (PS3.15 Annex E)
+
+`DICOMDeidentifier` and `DcmAnonymize` de-identify with the Basic Application
+Level Confidentiality Profile, from Tables E.1-1 and E.3.10-1 of PS3.15 2026d
+read by `Scripts/generate-dicom-deidentification.py`.
+
+| Requirement | Behavior |
+| --- | --- |
+| Attributes | <ul><li>The 657 rows of Table E.1-1, wherever the attributes appear, in Sequence Items too</li><li>Repeating groups: curves (50xx), overlay data and comments (60xx)</li><li>Group 0004 and group lengths removed</li></ul> |
+| Actions | <ul><li>D: dummy value of the VR; Z: empty; X: removed; K: kept; U: UID replaced</li><li>X/Z, X/D, Z/D, X/Z/D, X/Z/U*: D for Type 1, Z for Type 2, X otherwise, from the Type in the IOD of the SOP Class (PS3.3)</li><li>A Sequence given a dummy keeps its Items, whose attributes are de-identified</li></ul> |
+| UIDs | 2.25 UIDs from 128 bits of HMAC-SHA-256 of the original under a key: consistent for every instance de-identified with the same key, File Meta Information included |
+| Private attributes | <ul><li>Removed</li><li>Retain Safe Private: the 479 attributes of Table E.3.10-1 kept, by Private Creator, with their Private Creator</li></ul> |
+| Options | <ul><li>Retain Safe Private, UIDs, Device Identity, Institution Identity, Patient Characteristics, Longitudinal Full Dates, Longitudinal Modified Dates (dates shifted by a number of days)</li><li>Clean Descriptors, Structured Content, Graphics: through a cleaner the application provides; without it, the Basic Profile's action applies</li><li>When several selected options act on an attribute, K wins over C: PS3.15 does not order them</li></ul> |
+| Records | Patient Identity Removed (0012,0062) YES; De-identification Method (0012,0063); De-identification Method Code Sequence (0012,0064) with the CID 7050 codes of the profile and options; Longitudinal Temporal Information Modified (0028,0303) |
+| File Meta Information | Replaced with a description of DcmSwift, keeping the Transfer Syntax; the preamble is zeroed |
+| Not claimed | <ul><li>Clean Pixel Data and Clean Recognizable Visual Features: Pixel Data is not inspected</li><li>The Encrypted Attributes Data Set</li></ul> |
+
+The table matches the 2026c edition of Kitware's dicom-anonymizer except for
+one attribute added in 2026d, (3004,007F). De-identified by both tools, the
+pydicom test files and the local corpus (196 files, 3,908 attribute outcomes)
+end the same, dicom-anonymizer resolving compound actions without the IOD.
+De-identification adds no IOD finding on those files.
+
 ### Other security profiles
 
-No audit trail (ATNA), digital signature, encrypted-attribute, or
-de-identification-profile conformance is claimed. User Identity negotiation is
+No audit trail (ATNA), digital signature, or encrypted-attribute conformance
+is claimed. User Identity negotiation is
 passed to an application hook (`DICOMServerConfiguration.authenticate`), which
 decides on acceptance. Applications embedding DcmSwift remain responsible for
 access control, persistence, and audit.

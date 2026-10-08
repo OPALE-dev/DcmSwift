@@ -141,6 +141,20 @@ python3 Scripts/generate-dicom-iods.py part03.xml part04.xml Sources/DcmSwift/Re
 python3 Scripts/crosscheck/dicom_validator.py .build/debug/DcmValidate /path/to/standard /path/to/files
 ```
 
+## De-identification
+
+`Scripts/generate-dicom-deidentification.py` rebuilds the de-identification
+resource from the PS3.15 DocBook; `--check` verifies that the bundled
+resource is up to date. `Scripts/crosscheck/dicom_anonymizer.py` compares it
+with Kitware's dicom-anonymizer (`pip install dicom-anonymizer`): the actions
+of its 2026c table, then the outcome of every attribute of each file
+de-identified by both tools:
+
+```sh
+python3 Scripts/generate-dicom-deidentification.py part15.xml Sources/DcmSwift/Resources/dicom-deidentification-2026d.json --check
+python3 Scripts/crosscheck/dicom_anonymizer.py Sources/DcmSwift/Resources/dicom-deidentification-2026d.json .build/debug/DcmAnonymize /path/to/files
+```
+
 ## Network interoperability
 
 `Scripts/interop` drives pynetdicom 3 against DcmSwift:

@@ -1,9 +1,10 @@
 # DcmAnonymize
 
-Write an anonymized copy of a DICOM file:
+De-identify DICOM files with the Basic Application Level Confidentiality
+Profile of PS3.15:
 
 ```sh
-DcmAnonymize source.dcm anonymized.dcm
+DcmAnonymize study/ anonymized/ --key study.key
 ```
 
 See the [complete guide](../DcmSwift/DcmSwift.docc/Commands/DcmAnonymize.md).

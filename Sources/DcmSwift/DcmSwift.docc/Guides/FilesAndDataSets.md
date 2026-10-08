@@ -130,6 +130,19 @@ attribute, the module, and the PS3.3 table. <doc:DcmValidate> does the same
 from the command line; ``DICOMIODValidationPolicy`` applies it to received
 instances.
 
+## De-identification
+
+``DICOMDeidentifier`` applies the Basic Application Level Confidentiality
+Profile of PS3.15 Annex E, and its options, to a data set in place:
+
+```swift
+let deidentifier = try DICOMDeidentifier(options: [.retainLongitudinalModifiedDates], key: studyKey)
+let report = deidentifier.deidentify(dataSet)
+```
+
+Instances de-identified with the same key get the same replacement UIDs and
+date shift. <doc:DcmAnonymize> does the same from the command line.
+
 ## Other helpers
 
 The library also provides helpers for DICOM dates, times, UIDs, tags, VRs,
