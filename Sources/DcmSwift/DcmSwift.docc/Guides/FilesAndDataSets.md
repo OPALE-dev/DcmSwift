@@ -112,6 +112,18 @@ if let item = dataSet.sequence(forTagName: "AnatomicRegionSequence")?.items.firs
 }
 ```
 
+## Encapsulated documents
+
+``DICOMEncapsulatedDocument`` reads and makes instances of the Encapsulated
+PDF, CDA, STL, OBJ, and MTL IODs; `writePart10(to:)` writes any data set as a
+Part 10 file:
+
+```swift
+let report = DICOMEncapsulatedDocument(kind: .pdf, document: pdfData, title: "Discharge letter")
+try report.dataSet(context: imageOfTheStudy).writePart10(to: url)
+let extracted = DICOMEncapsulatedDocument(dataSet: dataSet)?.document
+```
+
 ## IOD validation
 
 ``DICOMIODValidator`` checks a data set against the IOD of its SOP Class, as

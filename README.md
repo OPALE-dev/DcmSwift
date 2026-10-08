@@ -168,6 +168,7 @@ on every platform.
 | DICOM JSON Model (PS3.18 F) | <ul><li><code>DICOMJSON</code> encode and decode, <code>DcmPrint -f JSON</code></li><li>Matches pydicom on 144 of its 147 readable test files and on the local corpus</li></ul> |
 | Native DICOM Model XML (PS3.19 A.1) | <ul><li><code>DICOMXML</code> encode and decode, <code>DcmPrint -f XML</code></li><li>Every output of the pydicom test files and local corpus validates against the normative schema and matches pydicom through the PS3.18 F.3 mapping</li></ul> |
 | IOD validation (PS3.3) | <ul><li><code>DICOMIODValidator</code>, <code>DcmValidate</code>, and <code>DcmServer --validate</code></li><li>Reports nothing dicom-validator does not, on the pydicom test files and the local corpus</li></ul> |
+| Encapsulated documents (PS3.3 A.45, A.85) | <ul><li><code>DICOMEncapsulatedDocument</code> and <code>DcmDocument</code>: PDF, CDA, STL, OBJ, MTL</li><li>Exchanged with DCMTK both ways; the instances made pass DcmValidate and dicom-validator</li></ul> |
 | Terminology (PS3.16) | <ul><li>Coding Schemes, DCM codes, and the 1,467 Context Groups of 2026d, with versions and included groups</li><li>Identical to the FHIR value sets NEMA publishes for the edition</li></ul> |
 | Robustness | <ul><li>Mutation fuzzing of the parser and pixel decoders, also run under AddressSanitizer</li><li>Reproducers kept as regression fixtures</li></ul> |
 
@@ -197,6 +198,7 @@ Every tool documents its options with `--help`.
 | [DcmConvert](Sources/DcmSwift/DcmSwift.docc/Commands/DcmConvert.md) | Export frames as PNG, JPEG, TIFF, or PGM/PPM |
 | [DcmValidate](Sources/DcmSwift/DcmSwift.docc/Commands/DcmValidate.md) | Validate files against the IODs of PS3.3 |
 | [DcmSign](Sources/DcmSwift/DcmSwift.docc/Commands/DcmSign.md) | Sign files and verify their Digital Signatures |
+| [DcmDocument](Sources/DcmSwift/DcmSwift.docc/Commands/DcmDocument.md) | Wrap PDF, CDA, STL, OBJ, and MTL documents in DICOM, or extract them |
 | [DcmAnonymize](Sources/DcmSwift/DcmSwift.docc/Commands/DcmAnonymize.md) | De-identify files with the PS3.15 Basic Profile and its options |
 | [DcmIzer](Sources/DcmSwift/DcmSwift.docc/Commands/DcmIzer.md) | Wrap a JPEG, PNG, or TIFF image in a DICOM file |
 | [DcmSR](Sources/DcmSwift/DcmSwift.docc/Commands/DcmSR.md) | Print a Structured Report tree or render it as HTML |
