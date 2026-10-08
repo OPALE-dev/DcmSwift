@@ -223,9 +223,9 @@ conformance without that evidence.
 
 ## Semantic conformance beyond encoding
 
-- IOD validation (PS3.3) does not evaluate the conditions of Types 1C and
-  2C nor of conditional modules, does not apply Defined Terms and Context
-  Groups, and does not report attributes the IOD does not allow.
+- IOD validation (PS3.3) evaluates only the conditions that test attributes
+  (about three in five), does not apply Defined Terms and Context Groups, and
+  does not report attributes the IOD does not allow.
 - PS3.16: the Templates (TID) of Annex A are not modelled yet; they come
   with the Structured Report API. Context Groups are not yet applied to the
   attributes and Content Items that reference them, which belongs to IOD

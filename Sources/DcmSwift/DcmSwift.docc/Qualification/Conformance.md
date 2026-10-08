@@ -266,14 +266,18 @@ generated with the SOP Class to IOD mapping of PS3.4 by
 | Content | Support |
 | --- | --- |
 | Specification | <ul><li>183 SOP Classes, mapped to 171 IODs</li><li>678 module and macro tables: 7,672 attributes, 849 lists of Enumerated Values, 1,339 inclusions</li><li>The Functional Group Macros of 32 enhanced multi-frame IODs</li></ul> |
-| Checked | <ul><li>Mandatory modules always; user-optional and conditional modules when one of their own attributes is present</li><li>Type 1 present and not empty, Type 2 present, Type 1C not empty when present</li><li>Sequence Items, at every depth, with the macros they include</li><li>Enumerated Values of single-valued attributes, hexadecimal ones such as 0001H included</li><li>Functional Group Macros in the Shared or every Per-Frame Functional Groups Sequence Item</li><li>Inclusions conditioned on a value, such as the Content Item macros of each Value Type</li></ul> |
-| Not checked yet | <ul><li>The conditions of Types 1C and 2C, so a required conditional attribute that is absent is not reported</li><li>The conditions of conditional modules</li><li>Defined Terms, Context Groups, and attributes not allowed by the IOD</li></ul> |
+| Checked | <ul><li>Mandatory modules always; user-optional and conditional modules when one of their own attributes is present, and conditional modules when their condition holds</li><li>Type 1 present and not empty, Type 2 present, Type 1C not empty when present</li><li>Types 1C and 2C present when their condition holds</li><li>Sequence Items, at every depth, with the macros they include</li><li>Enumerated Values of single-valued attributes, hexadecimal ones such as 0001H included</li><li>Functional Group Macros in the Shared or every Per-Frame Functional Groups Sequence Item</li><li>Inclusions conditioned on a value, such as the Content Item macros of each Value Type</li></ul> |
+| Conditions evaluated | <ul><li>Those that test attributes: present or absent, empty or not, non-zero, equal or not to one of several Values, Value N included, greater than a number, joined by "and" or by "or"</li><li>An attribute is looked up in the Item being checked, then at the top level</li><li>1,121 of the 1,894 conditions of Types 1C and 2C, 98 of the 499 conditions of modules and Functional Group Macros, and 10 of the 13 conditional inclusions</li></ul> |
+| Not checked yet | <ul><li>Conditions in prose, such as "Required if contrast media was used", or that test something other than an attribute's presence or Value: the attribute is then checked only when present</li><li>"Shall not be present otherwise"</li><li>Defined Terms, Context Groups, and attributes not allowed by the IOD</li></ul> |
 | Receive policy | `DICOMIODValidationPolicy`: off, warn (B007H), or reject (A900H), for C-STORE and STOW-RS; instances of SOP Classes without an IOD are not judged |
 
 On the pydicom test files and the local corpus, DcmValidate reports nothing
-that dicom-validator 0.9.0 does not: 194 files, 1,350 findings in common.
-dicom-validator also reports 67 findings that depend on conditions, mostly
-Patient Position (0018,5100), Type 2C.
+that dicom-validator 0.9.0 does not, but for one gap of that tool: 194 files,
+1,354 findings in common. dicom-validator also reports 63 findings that
+depend on conditions DcmValidate does not evaluate, mostly Patient Position
+(0018,5100), Type 2C. It never reports a missing Pixel Data, Type 1C,
+"Required if Pixel Data Provider URL (0028,7FE0) is not present", which
+DcmValidate reports for the 50 pydicom DICOMDIR test files without one.
 
 ## Character sets
 
@@ -341,9 +345,8 @@ access control, persistence, and audit.
 ## Validation boundaries
 
 Dictionary lookup and binary parsing do not establish IOD conformance, which
-`DICOMIODValidator` checks separately and partially: the conditions of Types
-1C and 2C, PS3.16 Context Groups, and application profiles are not validated
-yet. A successfully parsed file
+`DICOMIODValidator` checks separately and partially: conditions in prose,
+PS3.16 Context Groups, and application profiles are not validated yet. A successfully parsed file
 must therefore not be reported as clinically or semantically conformant solely
 on that basis.
 
