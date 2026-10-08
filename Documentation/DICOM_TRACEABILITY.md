@@ -72,6 +72,7 @@ automated tests that support the claim, and what remains to be qualified.
 | C-MOVE, C-GET | PS3.4 C.4.2, C.4.3 | SCU and SCP | <code>testMoveSendsToTheDestinationAndGetToTheRequestor</code> | More than 128 contexts in C-MOVE |
 | DIMSE-N | PS3.7 10 | SCU and SCP | <ul><li><code>testNormalizedCommandSetsMatchPynetdicom</code></li><li><code>testNormalizedOperationsReachTheService</code></li><li><code>testEventReportsNeedTheSCPRole</code></li></ul> | SOP-class-specific services |
 | Storage Commitment Push Model | PS3.4 J | SCU and SCP | <ul><li><code>testStorageCommitmentResultOnTheSameAssociation</code></li><li><code>testStorageCommitmentResultOnANewAssociation</code></li><li><code>testStorageCommitmentRequestsAreValidated</code></li><li><code>testStorageCommitmentDataSetsRoundTrip</code></li><li><code>Scripts/interop/commitment.py</code> with pynetdicom</li></ul> | DCMTK, dcm4che |
+| TLS transport | PS3.15 B.12, B.13 | Implemented | <ul><li><code>testProfileRestrictsVersionsAndCipherSuites</code></li><li><code>testEchoOverTLSVerifiesTheServer</code></li><li><code>testUntrustedWrongHostAndExpiredServersAreRefused</code></li><li><code>testTLSFailuresAreReportedAsTLSErrors</code></li><li><code>testProtocolVersionsAndCipherSuitesOutsideTheProfileAreRefused</code></li><li><code>testMutualAuthentication</code></li><li><code>testPlainPeersAndTLSServersDoNotMix</code></li><li><code>testMoveToATLSDestination</code></li><li><code>Scripts/interop/tls.py</code> with Python <code>ssl</code></li></ul> | CCM suites, revocation |
 | Robustness | PS3.8 9.1 | Implemented | <ul><li><code>testRejectionsAndLimits</code></li><li><code>testMisbehavingPeersDoNotDisturbTheServer</code></li><li><code>testAbortReachesThePeerAndTheServerRecovers</code></li><li><code>testIdleTimeoutAbortsAWaitingOperation</code></li></ul> | Live-association fuzzing |
 
 ### Experimental or not implemented
@@ -80,7 +81,7 @@ automated tests that support the claim, and what remains to be qualified.
 | --- | --- | --- | --- | --- |
 | DICOM JSON | PS3.18 Annex F | Not conformant | none | Value, PN, SQ, null, InlineBinary, BulkDataURI |
 | Native DICOM Model XML | PS3.19 Annex A, used by PS3.18 | Not conformant | none | Namespace, values, PN, SQ, bulk data, escaping |
-| TLS and DICOM security profiles | PS3.15 | Not implemented | none | Transport, identity, audit, signatures, encryption |
+| Audit, signatures, encryption | PS3.15 | Not implemented | none | ATNA, digital signatures, encrypted attributes |
 | IOD and module validation | PS3.3 | Not implemented | none | Separate declarative validation layer |
 | Context Groups and terminology | PS3.16 | Not implemented | none | Versioned terminology layer |
 

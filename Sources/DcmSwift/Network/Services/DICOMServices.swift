@@ -1,4 +1,5 @@
 import Foundation
+import NIOSSL
 
 /// What a service knows about the request it performs.
 public struct DICOMServiceContext: Sendable {
@@ -7,6 +8,8 @@ public struct DICOMServiceContext: Sendable {
     public let remoteAddress: String
     public let userIdentity: DICOMUserIdentity?
     public let presentationContext: DICOMAcceptedPresentationContext
+    /// The certificate the peer presented over TLS, for access control.
+    public var peerCertificate: NIOSSLCertificate? = nil
     let cancelled: @Sendable () async -> Bool
 
     /// Whether the requestor cancelled the operation (C-CANCEL).

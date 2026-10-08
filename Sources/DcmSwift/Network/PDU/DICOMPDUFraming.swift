@@ -27,6 +27,10 @@ public struct DICOMPDUFrameDecoder: NIOSingleStepByteToMessageDecoder {
         case 0x01, 0x02: limit = maximumAssociateLength
         case 0x04: limit = maximumDataLength
         case 0x03, 0x05, 0x06, 0x07: limit = 4
+        case 0x14...0x17 where buffer.getInteger(at: buffer.readerIndex + 1, as: UInt8.self) == 0x03:
+            // A TLS record (content type, then version 3.x) where a PDU,
+            // whose second byte is reserved as 0, was expected.
+            throw DICOMPDUError.tlsRecord
         default: throw DICOMPDUError(.unrecognizedPDU, "PDU type 0x\(String(type, radix: 16))")
         }
         guard UInt64(length) <= UInt64(limit) else {

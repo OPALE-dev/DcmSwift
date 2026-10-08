@@ -220,7 +220,7 @@ on every platform.
 | DIMSE-C (PS3.7, PS3.4) | <ul><li>C-ECHO, C-STORE, C-FIND, C-MOVE, C-GET, C-CANCEL</li><li>SCU and SCP, checked against pynetdicom 3.0.4 in both directions</li></ul> |
 | DIMSE-N (PS3.7 10) | <ul><li>N-EVENT-REPORT, N-GET, N-SET, N-ACTION, N-CREATE, N-DELETE, SCU and SCP</li><li>Services plugged in per SOP Class</li></ul> |
 | Storage Commitment (PS3.4 J) | <ul><li>Push Model SCU and SCP</li><li>Results on the same association or a new one with role selection</li><li>Checked against pynetdicom in both roles</li></ul> |
-| TLS (PS3.15 B.9) | Implemented with swift-nio-ssl; not yet qualified |
+| TLS (PS3.15 B.12, B.13) | <ul><li>TLS 1.2 and 1.3 with swift-nio-ssl (BoringSSL); ECDHE with AEAD suites only</li><li>Server verification with host name; mutual authentication; peer certificate given to services</li><li>Checked against Python <code>ssl</code> (OpenSSL) through pynetdicom</li></ul> |
 | Audit and other security profiles | Not implemented |
 
 See the [DcmSwift 2.0 implementation plan](Documentation/DICOM_2_0_IMPLEMENTATION_PLAN.md)
@@ -502,6 +502,15 @@ the instances through the `storage` service given to `withAssociation`.
     let server = try DICOMServer(
         configuration: DICOMServerConfiguration(aeTitle: "DCMSERVER", port: 11112), storage: Archive())
     try await server.run()   // until the task is cancelled
+
+For TLS, give the client a `DICOMTLSConfiguration` and mark the node
+`useTLS: true`; give the server one in `DICOMServerConfiguration.tls`:
+
+    let tls = try DICOMTLSConfiguration.client(
+        pemTrustRootsFile: "/etc/dicom/ca.pem",
+        pemCertificateChainFile: "/etc/dicom/client.pem", pemPrivateKeyFile: "/etc/dicom/client-key.pem")
+    let secureClient = try DICOMClient(configuration: DICOMClientConfiguration(aeTitle: "DCMCLIENT", tls: tls))
+    let secureRemote = DICOMRemoteNode(aeTitle: "PACS", host: "pacs.example.org", port: 2762, useTLS: true)
 
 `DICOMQueryService` and `DICOMRetrieveService` add C-FIND, C-MOVE, and C-GET;
 `DICOMQueryMatching` implements the PS3.4 C.2.2.2 matching rules.

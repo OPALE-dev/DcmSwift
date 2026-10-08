@@ -46,7 +46,7 @@ public struct NetworkOptions: ParsableArguments {
     }
 }
 
-/// TLS options of a requestor (PS3.15 B.9, BCP 195 profile).
+/// TLS options of a requestor (PS3.15 B.12 with the B.13 restrictions).
 public struct ClientTLSOptions: ParsableArguments {
     @Flag(name: .long, help: "Connect with TLS.")
     public var tls = false
@@ -85,7 +85,7 @@ public struct ClientTLSOptions: ParsableArguments {
 
 /// TLS options of an acceptor.
 public struct ServerTLSOptions: ParsableArguments {
-    @Option(name: .long, help: "PEM certificate chain: accept TLS connections only.")
+    @Option(name: .long, help: "PEM certificate chain: accept TLS connections only (port 2762 is registered for DICOM over TLS).")
     public var tlsCertificate: String?
 
     @Option(name: .long, help: "PEM private key of --tls-certificate.")

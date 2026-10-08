@@ -260,7 +260,8 @@ public final class DICOMServer: Sendable {
             logger.info("association with \(request.callingAETitle) at \(channel.remoteAddress?.description ?? "?"): \(negotiated.presentationContexts.count) contexts")
             let runtime = DICOMAssociationRuntime(
                 machine: machine, negotiated: negotiated, outbound: outbound, channel: channel,
-                limits: configuration.limits, timeouts: configuration.timeouts, logger: logger)
+                limits: configuration.limits, timeouts: configuration.timeouts, logger: logger,
+                peerCertificate: await DICOMChannel.peerCertificate(of: channel))
             await DICOMAssociationRuntime.serve(
                 runtime: runtime, association: DICOMAssociation(runtime: runtime), iterator: &iterator,
                 dispatcher: dispatcher)

@@ -195,7 +195,7 @@ public final class DICOMClient: Sendable {
         do {
             try await outbound.write(.associateRequest(request))
         } catch {
-            established.fail(DICOMNetworkError.connectionClosed)
+            established.fail(DICOMNetworkError.from(error))
             return
         }
 
@@ -211,8 +211,7 @@ public final class DICOMClient: Sendable {
         } catch {
             timer.cancel()
             channel.close(promise: nil)
-            established.fail(error is DICOMPDUError
-                ? DICOMNetworkError.protocolViolation("\(error)") : (error as? DICOMNetworkError ?? .connectionClosed))
+            established.fail(DICOMNetworkError.from(error))
             return
         }
         timer.cancel()
@@ -234,7 +233,8 @@ public final class DICOMClient: Sendable {
             }
             let runtime = DICOMAssociationRuntime(
                 machine: machine, negotiated: negotiated, outbound: outbound, channel: channel,
-                limits: configuration.limits, timeouts: configuration.timeouts, logger: configuration.logger)
+                limits: configuration.limits, timeouts: configuration.timeouts, logger: configuration.logger,
+                peerCertificate: await DICOMChannel.peerCertificate(of: channel))
             let association = DICOMAssociation(runtime: runtime)
             established.succeed(association)
             await DICOMAssociationRuntime.serve(
