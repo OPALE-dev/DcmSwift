@@ -132,6 +132,22 @@ final class DcmSwiftJPIPTests: XCTestCase {
         }
     }
 
+    /// A tile origin after the image would give no tile, or a negative
+    /// count, and tile indexes have 16 bits; such SIZ segments are rejected
+    /// (ISO/IEC 15444-1 A.4.2, A.5.1).
+    func testSIZWithTileOriginOutsideTheImageIsRejected() {
+        func siz(width: Int, x0: Int, tileWidth: Int, tileX0: Int) -> [UInt8] {
+            func u32(_ value: Int) -> [UInt8] { [24, 16, 8, 0].map { UInt8((value >> $0) & 0xFF) } }
+            var body: [UInt8] = [0, 0]
+            for value in [width, 64, x0, 0, tileWidth, 64, tileX0, 0] { body += u32(value) }
+            return body + [0, 1, 7, 1, 1]
+        }
+        XCTAssertNoThrow(try JPIPCodestream.SIZ(siz(width: 64, x0: 0, tileWidth: 64, tileX0: 0)))
+        XCTAssertThrowsError(try JPIPCodestream.SIZ(siz(width: 64, x0: 0, tileWidth: 32, tileX0: 200)))
+        XCTAssertThrowsError(try JPIPCodestream.SIZ(siz(width: 64, x0: 40, tileWidth: 32, tileX0: 0)))
+        XCTAssertThrowsError(try JPIPCodestream.SIZ(siz(width: 1 << 20, x0: 0, tileWidth: 1, tileX0: 0)), "too many tiles")
+    }
+
     func testIncompleteDataBinsAreRejected() throws {
         var stream = [UInt8](try resource("jpip-gray8", "jpp"))
         stream.removeLast(40)

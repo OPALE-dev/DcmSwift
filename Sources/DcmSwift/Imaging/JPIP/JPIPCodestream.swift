@@ -107,12 +107,17 @@ public enum JPIPCodestream {
             width = u32(2); height = u32(6); x0 = u32(10); y0 = u32(14)
             tileWidth = u32(18); tileHeight = u32(22); tileX0 = u32(26); tileY0 = u32(30)
             let count = Int(body[34]) << 8 | Int(body[35])
+            // ISO/IEC 15444-1 A.5.1: the first tile starts at or before the
+            // image and overlaps it, so every tile count is positive.
             guard count > 0, body.count >= 36 + 3 * count, tileWidth > 0, tileHeight > 0,
-                  width > x0, height > y0 else { throw JPIPError("invalid SIZ") }
+                  width > x0, height > y0, tileX0 <= x0, tileY0 <= y0,
+                  tileX0 + tileWidth > x0, tileY0 + tileHeight > y0 else { throw JPIPError("invalid SIZ") }
             components = (0..<count).map {
                 Component(precision: Int(body[36 + 3 * $0] & 0x7F) + 1, dx: Int(body[37 + 3 * $0]), dy: Int(body[38 + 3 * $0]))
             }
             guard components.allSatisfy({ $0.dx > 0 && $0.dy > 0 }) else { throw JPIPError("invalid SIZ subsampling") }
+            // Tile indexes (Isot, A.4.2) have 16 bits.
+            guard tileCount <= 65_535 else { throw JPIPError("too many tiles in SIZ") }
         }
     }
 
