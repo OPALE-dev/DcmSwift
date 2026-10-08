@@ -51,7 +51,7 @@ struct DcmServer: AsyncParsableCommand {
     @Flag(name: .long, help: "Reach C-MOVE destinations with TLS.")
     var destinationTLS = false
 
-    @Option(name: .long, help: "PEM file of the CA certificates trusted for C-MOVE destinations.")
+    @Option(name: .customLong("destination-tls-ca"), help: "PEM file of the CA certificates trusted for C-MOVE destinations.")
     var destinationTLSCA: String?
 
     @Option(name: .long, help: "PEM certificate chain presented to C-MOVE destinations.")

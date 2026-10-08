@@ -62,4 +62,4 @@ TLS options for <doc:DcmServer>:
 | `--tls-certificate`, `--tls-key` | Accept TLS connections only |
 | `--tls-client-ca` | Require client certificates signed by these CAs |
 | `--destination-tls` | Reach C-MOVE destinations with TLS |
-| `--destination-tlsca`, `--destination-tls-certificate`, `--destination-tls-key` | Trust and credentials for C-MOVE destinations |
+| `--destination-tls-ca`, `--destination-tls-certificate`, `--destination-tls-key` | Trust and credentials for C-MOVE destinations |
