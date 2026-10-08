@@ -200,7 +200,7 @@ public class DicomInputStream: OffsetInputStream {
                     dataset.transferSyntax = syntax
                     vrMethod = syntax.vrMethod
                     byteOrder = syntax.byteOrder
-                    shouldInflateDataSet = uid == TransferSyntax.deflatedExplicitVRLittleEndian
+                    shouldInflateDataSet = TransferSyntax.deflatesDataSet(uid)
                     
                     // update the dataset properties
                     dataset.vrMethod = vrMethod

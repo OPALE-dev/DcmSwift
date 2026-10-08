@@ -137,7 +137,7 @@ public class DicomOutputStream {
         // make sure element are in correct order
         dataset.sortElements()
 
-        if syntaxUID == TransferSyntax.deflatedExplicitVRLittleEndian {
+        if TransferSyntax.deflatesDataSet(syntaxUID) {
             let metaData = dataset.metaInformationHeaderElements.reduce(into: Data()) {
                 $0.append($1.toData(vrMethod: .Explicit, byteOrder: .LittleEndian))
             }
