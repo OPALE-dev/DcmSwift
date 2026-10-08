@@ -660,6 +660,10 @@ public class DataElement : DicomObject {
     
     
     
+    /// Updates the lengths of the enclosing Items and Sequences after the
+    /// Value changed.
+    func recalculateLengthsOfParents() { recalculateParentsLength() }
+
     // MARK: - Private
     private func recalculateParentsLength() {
         var p = self.parent
