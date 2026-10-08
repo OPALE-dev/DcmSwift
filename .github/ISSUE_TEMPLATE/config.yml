@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a vulnerability
+    url: https://github.com/OPALE-dev/DcmSwift/security/advisories/new
+    about: Report security issues privately, never in a public issue.
+  - name: Documentation
+    url: https://opale-dev.github.io/DcmSwift/documentation/dcmswift/
+    about: Guides, conformance statement, and API reference.
