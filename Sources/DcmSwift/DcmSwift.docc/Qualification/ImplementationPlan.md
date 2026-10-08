@@ -244,10 +244,10 @@ Images test material).
   multipart streaming, rendered retrieval, and standard error payloads, as
   user agent and origin server, checked against dicomweb-client and Orthanc;
   other PS3.18 services and the items of the limitations register remain;
-- [ ] JPIP Referenced Pixel Data (.94, .95, and HTJ2K .204, .205; PS3.5 A.6,
-  A.7, 8.2.10): resolve Pixel Data Provider URL (0028,7FE0) with a JPIP client
-  (ISO/IEC 15444-9), then decode with the JPEG 2000 codecs; these syntaxes are
-  only preserved and negotiated today;
+- [x] JPIP Referenced Pixel Data (.94, .95, and HTJ2K .204, .205; PS3.5 A.6,
+  A.7, A.11, A.12, 8.4.1): the Pixel Data Provider URL (0028,7FE0) is resolved
+  with a JPIP client (ISO/IEC 15444-9) and the rebuilt codestreams are decoded
+  with the JPEG 2000 codecs, checked against Kakadu's kdu_server;
 - [ ] security and audit (TLS profiles done in Phase 2): ATNA audit events,
   digital signatures, encrypted attributes, and de-identification profiles;
 - [ ] semantic APIs for Structured Reports, segmentations,

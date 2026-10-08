@@ -130,7 +130,7 @@ a dot abbreviate `1.2.840.10008.1.2`.
 | HTJ2K | .4.201, .4.202, .4.203 | ✓ | ✓ | Decoded by OpenJPEG, encoded by OpenJPH; cross-checked in both directions |
 | JPEG XL | .4.110, .4.111, .4.112 | ✓ | ✓ | libjxl and imagecodecs; recompressed JPEG rebuilt bit for bit |
 | JPEG 2000 Part 2 multi-component | .4.92, .4.93 | ✓ | ✓ | Kakadu 8.4.1 in both directions; lossless cases bit-exact, lossy within 1 |
-| JPIP Referenced | .4.94, .4.95, .4.204, .4.205 | | | Preserved and negotiated; pixel retrieval through JPIP planned (Phase 4) |
+| JPIP Referenced | .4.94, .4.95, .4.204, .4.205 | ✓ | | Frames retrieved from the Pixel Data Provider URL over JPIP and rebuilt as codestreams; kdu_server, every codestream identical through kdu_expand |
 
 Encapsulated frames are located through the Extended or Basic Offset Table, or
 from the Fragment layout; under JPEG 2000 Part 2, the frames of a multi-frame

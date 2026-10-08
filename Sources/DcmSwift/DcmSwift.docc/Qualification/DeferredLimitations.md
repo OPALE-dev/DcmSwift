@@ -75,8 +75,16 @@ conformance without that evidence.
     and reversible JPEG recompression streams, but no external DICOM JPEG XL
     corpus is currently qualified.
 - JPEG 2000 limits:
-  - JPIP Referenced (.94, .95, .204, .205) is preserved but its Pixel Data
-    Provider URL is not resolved (planned in Phase 4);
+  - JPIP Referenced (.94, .95, .204, .205): frames are retrieved at full
+    resolution and quality only; codestreams with packed packet headers
+    (PPM, PPT) are refused; JPIP over UDP is not supported (PS3.5 excludes
+    it); no DICOM JPIP provider was available, so Kakadu's kdu_server, which
+    numbers JPX code streams from 0, is the reference; the rendering and
+    WADO-RS paths need `DICOMJPIPClient.resolve(_:)` first;
+  - OpenJPEG 2.5.4 cannot decode codestreams whose components or tiles have
+    different decomposition levels together with a multiple component
+    transform ("Tiles don't all have the same dimension"), nor some
+    subsampled ones; Kakadu decodes them;
   - the Part 2 encoder handles grayscale frames only and writes one wavelet
     collection per codestream (no array-based transforms); its PSNR target
     applies to the codestream components and is approximate;
