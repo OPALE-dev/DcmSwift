@@ -84,6 +84,20 @@ curl --fail --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
 | `native_xml.py DCMPRINT [--pydicom-testdata] [PATH...]` | `DcmPrint -f XML` against the normative PS3.19 schema, and against pydicom through the PS3.18 F.3 mapping; needs `rnc2rng` and `lxml` |
 | `dicomweb_client.py BASE_URL [--pydicom-testdata] [PATH...]` | The DICOMweb origin server of `DcmServer --http-port` against dicomweb-client: STOW-RS, QIDO-RS, then instances, metadata, frames, and rendered images compared with pydicom |
 
+## JPIP
+
+`DcmSwiftJPIPTests.testRetrievalFromAnIndependentJPIPServer` retrieves every
+file of a directory served by a JPIP server, such as Kakadu's kdu_server, and
+compares it with the file decoded directly. `Scripts/crosscheck/jpip_kakadu.sh`
+then decodes the served files and the rebuilt codestreams with kdu_expand:
+
+```sh
+kdu_server -wd /path/to/images -restrict -port 8080 -address 127.0.0.1
+DCMSWIFT_JPIP_ORACLE=http://127.0.0.1:8080 DCMSWIFT_JPIP_FILES=/path/to/images \
+DCMSWIFT_JPIP_OUTPUT=/path/to/rebuilt swift test --filter DcmSwiftJPIPTests
+Scripts/crosscheck/jpip_kakadu.sh /path/to/kakadu/bin /path/to/images /path/to/rebuilt
+```
+
 ## DICOMweb user agent
 
 `DcmSwiftWebInteropTests` stores files with `DICOMwebClient` in an

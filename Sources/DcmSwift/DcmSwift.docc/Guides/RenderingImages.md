@@ -49,6 +49,16 @@ Apple-specific. <doc:DcmConvert> wraps this API in a command-line tool.
 ``DICOMNativePixelData`` exposes stored values frame by frame without loading
 file-backed Bulk Data.
 
+Instances in a JPIP Referenced Transfer Syntax hold a Pixel Data Provider
+URL instead of Pixel Data. ``DICOMJPIPClient`` retrieves their frames over
+JPIP; `resolve(_:)` returns the same instance with JPEG 2000 or HTJ2K
+encapsulated Pixel Data, which renders like any other:
+
+```swift
+let resolved = try await DICOMJPIPClient().resolve(file.dataset)
+let image = try DICOMImageRenderer(dataset: resolved).render(frame: 0)
+```
+
 Encapsulated Pixel Data is decoded frame by frame by the codec registered for
 its Transfer Syntax. Frames are located through the Extended or Basic Offset
 Table, or from the Fragment layout. Every codec listed in <doc:Conformance> is
