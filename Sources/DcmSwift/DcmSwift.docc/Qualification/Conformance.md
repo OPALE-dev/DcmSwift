@@ -257,6 +257,24 @@ such as Buttock and Gluteal region, but also apparent errors, such as MDC
 2:15880 for both Bazett and Framingham in CID 3227. Both rows are kept, and
 the first is the group's meaning, as in NEMA's value sets.
 
+## IOD validation (PS3.3)
+
+`DICOMIODValidator` validates data sets against the IODs of PS3.3 2026d,
+generated with the SOP Class to IOD mapping of PS3.4 by
+`Scripts/generate-dicom-iods.py`. It is a layer separate from parsing.
+
+| Content | Support |
+| --- | --- |
+| Specification | <ul><li>183 SOP Classes, mapped to 171 IODs</li><li>678 module and macro tables: 7,672 attributes, 849 lists of Enumerated Values, 1,339 inclusions</li><li>The Functional Group Macros of 32 enhanced multi-frame IODs</li></ul> |
+| Checked | <ul><li>Mandatory modules always; user-optional and conditional modules when one of their own attributes is present</li><li>Type 1 present and not empty, Type 2 present, Type 1C not empty when present</li><li>Sequence Items, at every depth, with the macros they include</li><li>Enumerated Values of single-valued attributes, hexadecimal ones such as 0001H included</li><li>Functional Group Macros in the Shared or every Per-Frame Functional Groups Sequence Item</li><li>Inclusions conditioned on a value, such as the Content Item macros of each Value Type</li></ul> |
+| Not checked yet | <ul><li>The conditions of Types 1C and 2C, so a required conditional attribute that is absent is not reported</li><li>The conditions of conditional modules</li><li>Defined Terms, Context Groups, and attributes not allowed by the IOD</li></ul> |
+| Receive policy | `DICOMIODValidationPolicy`: off, warn (B007H), or reject (A900H), for C-STORE and STOW-RS; instances of SOP Classes without an IOD are not judged |
+
+On the pydicom test files and the local corpus, DcmValidate reports nothing
+that dicom-validator 0.9.0 does not: 194 files, 1,350 findings in common.
+dicom-validator also reports 67 findings that depend on conditions, mostly
+Patient Position (0018,5100), Type 2C.
+
 ## Character sets
 
 Text decoding follows Specific Character Set (0008,0005). Every Defined Term of
@@ -322,10 +340,10 @@ access control, persistence, and audit.
 
 ## Validation boundaries
 
-Dictionary lookup and binary parsing do not establish IOD conformance. Full
-PS3.3 module/IOD validation, the use of PS3.16 Context Groups in that
-validation, and application profile validation remain separate future
-layers. A successfully parsed file
+Dictionary lookup and binary parsing do not establish IOD conformance, which
+`DICOMIODValidator` checks separately and partially: the conditions of Types
+1C and 2C, PS3.16 Context Groups, and application profiles are not validated
+yet. A successfully parsed file
 must therefore not be reported as clinically or semantically conformant solely
 on that basis.
 

@@ -27,6 +27,18 @@ curl -H 'Accept: application/dicom+json' 'http://localhost:8080/dicomweb/studies
 
 See <doc:DICOMweb>.
 
+`--validate` checks received instances, by C-STORE or STOW-RS, against their
+IOD in PS3.3:
+
+| Policy | Instance that does not conform |
+| --- | --- |
+| `off` (default) | Stored, not validated |
+| `warn` | Stored; C-STORE answers Status B007H, STOW-RS the Warning Reason B007H; the findings are logged |
+| `reject` | Not stored; C-STORE answers Status A900H, STOW-RS the Failure Reason A900H |
+
+Instances of a SOP Class without an IOD in PS3.3, such as a retired one, are
+stored either way.
+
 This is a demonstrator and interoperability tool. Production deployment still
 requires access control, durable indexing, audit logging, monitoring, backup,
 and an operational security review.
