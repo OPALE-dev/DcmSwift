@@ -127,6 +127,7 @@ let package = Package(
             resources: [
                 .process("Resources/dicom-dictionary-2026d.json"),
                 .process("Resources/dicom-command-dictionary-2026d.json"),
+                .process("Resources/dicom-terminology-2026d.json"),
                 .copy("Resources/CharacterSets")
             ]),
         .executableTarget(
