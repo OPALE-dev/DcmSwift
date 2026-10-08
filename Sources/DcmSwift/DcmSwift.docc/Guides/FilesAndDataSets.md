@@ -136,6 +136,16 @@ for group in try DICOMWaveform.groups(in: dataSet) {
 }
 ```
 
+## Radiotherapy
+
+``DICOMRTStructureSet``, ``DICOMRTDose``, and ``DICOMRTPlan`` read RT objects:
+
+```swift
+let rois = DICOMRTStructureSet(dataSet: dataSet)?.rois          // names, colors, contours
+let dose = try DICOMRTDose(dataSet: dataSet)?.dose(frame: 0)     // Gy, row by row
+let beams = DICOMRTPlan(dataSet: dataSet)?.beams                // control points, metersets
+```
+
 ## IOD validation
 
 ``DICOMIODValidator`` checks a data set against the IOD of its SOP Class, as
