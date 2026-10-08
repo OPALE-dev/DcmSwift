@@ -1,0 +1,103 @@
+# Mirrors the test jobs of .gitlab-ci.yml.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The confidential interoperability corpus is fetched only when both secrets
+  # are set; it is then required, as on GitLab. Its version and checksum are
+  # read from .gitlab-ci.yml so both CIs test the same corpus. It is never
+  # cached: caches of a public repository are readable by pull requests.
+  #   DCM_CORPUS_URL:   .../api/v4/projects/<id>/packages/generic/dcmswift-dicom-corpus
+  #   DCM_CORPUS_TOKEN: a token allowed to read that package registry
+  DCM_CORPUS_URL: ${{ secrets.DCM_CORPUS_URL }}
+  DCM_CORPUS_TOKEN: ${{ secrets.DCM_CORPUS_TOKEN }}
+
+jobs:
+  swift-package:
+    name: Linux
+    runs-on: ubuntu-latest
+    container: swift:6.1
+    steps:
+      - uses: actions/checkout@v6
+      - name: Fetch interoperability corpus
+        if: env.DCM_CORPUS_URL != '' && env.DCM_CORPUS_TOKEN != ''
+        run: |
+          command -v curl >/dev/null || { apt-get update -qq && apt-get install -y -qq curl; }
+          Scripts/ci/fetch-interop-corpus.sh
+      - run: swift --version
+      - run: swift build -c release
+      # SwiftPM writes the XCTest xUnit report only in parallel mode.
+      - run: mkdir -p .reports && swift test --parallel --xunit-output .reports/xunit.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-test-report
+          path: .reports/*.xml
+          retention-days: 30
+
+  macos-package:
+    name: macOS
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v6
+      - name: Fetch interoperability corpus
+        if: env.DCM_CORPUS_URL != '' && env.DCM_CORPUS_TOKEN != ''
+        run: Scripts/ci/fetch-interop-corpus.sh
+      - run: xcodebuild -version && swift --version
+      # The bundled character set tables must match their generator (macOS ICU).
+      - run: xcrun python3 Scripts/generate-character-set-tables.py --check
+      - run: swift build -c release
+      # SwiftPM writes the XCTest xUnit report only in parallel mode.
+      - run: mkdir -p .reports && swift test --parallel --xunit-output .reports/xunit.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-test-report
+          path: .reports/*.xml
+          retention-days: 30
+
+  ios-package:
+    name: iOS
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v6
+      - name: Fetch interoperability corpus
+        if: env.DCM_CORPUS_URL != '' && env.DCM_CORPUS_TOKEN != ''
+        run: Scripts/ci/fetch-interop-corpus.sh
+      - run: xcodebuild -version
+      - run: xcodebuild build -scheme DcmSwift -destination 'generic/platform=iOS' -derivedDataPath .derived-data -quiet
+      - name: Test on the newest iOS Simulator
+        run: |
+          # An iPhone from the newest installed iOS runtime, so the job does not
+          # depend on device names that change between Xcode releases.
+          IOS_RUNTIME=$(xcrun simctl list runtimes available | awk '/^iOS / {version=$2} END {print version}')
+          SIMULATOR_ID=$(xcrun simctl list devices available "iOS $IOS_RUNTIME" | grep -m1 'iPhone' | grep -oE '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}')
+          test -n "$SIMULATOR_ID"
+          mkdir -p .reports
+          # xcodebuild forwards TEST_RUNNER_-prefixed variables to the test process.
+          TEST_RUNNER_DCMSWIFT_INTEROP_CORPUS="${DCMSWIFT_INTEROP_CORPUS:-}" \
+          TEST_RUNNER_DCMSWIFT_REQUIRE_INTEROP_CORPUS="${DCMSWIFT_REQUIRE_INTEROP_CORPUS:-}" \
+          xcodebuild test -scheme DcmSwift-Package \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -derivedDataPath .derived-data \
+            -resultBundlePath .reports/ios.xcresult
+      - name: Convert the result bundle to JUnit
+        if: always()
+        run: test -d .reports/ios.xcresult && xcrun python3 Scripts/xcresult-junit.py .reports/ios.xcresult .reports/ios-junit.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-test-report
+          path: .reports/*.xml
+          retention-days: 30
