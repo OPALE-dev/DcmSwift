@@ -30,7 +30,7 @@ from the articles below and the `///` comments of the public API.
 | Topic | Documents |
 | --- | --- |
 | Start here | <ul><li>[Getting Started](Sources/DcmSwift/DcmSwift.docc/Guides/GettingStarted.md)</li><li>[Command-Line Tools](Sources/DcmSwift/DcmSwift.docc/Guides/CommandLineTools.md)</li></ul> |
-| Guides | <ul><li>[Files and Data Sets](Sources/DcmSwift/DcmSwift.docc/Guides/FilesAndDataSets.md)</li><li>[Rendering Images](Sources/DcmSwift/DcmSwift.docc/Guides/RenderingImages.md)</li><li>[DICOMDIR](Sources/DcmSwift/DcmSwift.docc/Guides/DICOMDIR.md)</li><li>[Structured Reports](Sources/DcmSwift/DcmSwift.docc/Guides/StructuredReports.md)</li><li>[Networking](Sources/DcmSwift/DcmSwift.docc/Guides/Networking.md)</li></ul> |
+| Guides | <ul><li>[Files and Data Sets](Sources/DcmSwift/DcmSwift.docc/Guides/FilesAndDataSets.md)</li><li>[Rendering Images](Sources/DcmSwift/DcmSwift.docc/Guides/RenderingImages.md)</li><li>[DICOMDIR](Sources/DcmSwift/DcmSwift.docc/Guides/DICOMDIR.md)</li><li>[Structured Reports](Sources/DcmSwift/DcmSwift.docc/Guides/StructuredReports.md)</li><li>[Networking](Sources/DcmSwift/DcmSwift.docc/Guides/Networking.md)</li><li>[DICOMweb](Sources/DcmSwift/DcmSwift.docc/Guides/DICOMweb.md)</li></ul> |
 | Qualification | <ul><li>[Conformance Statement](Sources/DcmSwift/DcmSwift.docc/Qualification/Conformance.md) (working draft)</li><li>[Traceability matrix](Sources/DcmSwift/DcmSwift.docc/Qualification/Traceability.md): requirements and their tests</li><li>[Deferred limitations](Sources/DcmSwift/DcmSwift.docc/Qualification/DeferredLimitations.md)</li><li>[Implementation plan](Sources/DcmSwift/DcmSwift.docc/Qualification/ImplementationPlan.md)</li></ul> |
 | Contributing | <ul><li>[Testing and Qualification](Sources/DcmSwift/DcmSwift.docc/Guides/TestingAndQualification.md): tests, corpus, CI, interoperability scripts</li><li>[Documentation Workflow](Sources/DcmSwift/DcmSwift.docc/Guides/DocumentationWorkflow.md)</li></ul> |
 
@@ -178,6 +178,7 @@ on every platform.
 | DIMSE-N (PS3.7 10) | <ul><li>N-EVENT-REPORT, N-GET, N-SET, N-ACTION, N-CREATE, N-DELETE, SCU and SCP</li><li>Services plugged in per SOP Class</li></ul> |
 | Storage Commitment (PS3.4 J) | <ul><li>Push Model SCU and SCP</li><li>Results on the same association or a new one with role selection</li><li>Checked against pynetdicom in both roles</li></ul> |
 | TLS (PS3.15 B.12, B.13) | <ul><li>TLS 1.2 and 1.3 with swift-nio-ssl (BoringSSL); ECDHE with AEAD suites only</li><li>Server verification with host name; mutual authentication; peer certificate given to services</li><li>Checked against Python <code>ssl</code> (OpenSSL) through pynetdicom</li></ul> |
+| DICOMweb Studies Service (PS3.18 10) | <ul><li>QIDO-RS, WADO-RS (instances, metadata, frames, Pixel Data, rendered, thumbnails), STOW-RS, Retrieve Capabilities</li><li>User agent on AsyncHTTPClient, origin server on SwiftNIO over HTTP/1.1 or HTTPS</li><li>Server checked with dicomweb-client, client with Orthanc and its DICOMweb plugin</li></ul> |
 | Audit and other security profiles | Not implemented |
 
 ## Command-line tools
@@ -195,7 +196,7 @@ Every tool documents its options with `--help`.
 | [DcmEcho](Sources/DcmSwift/DcmSwift.docc/Commands/DcmEcho.md) | Verification SCU |
 | [DcmStore](Sources/DcmSwift/DcmSwift.docc/Commands/DcmStore.md) | Storage SCU, with optional Storage Commitment |
 | [DcmFind](Sources/DcmSwift/DcmSwift.docc/Commands/DcmFind.md) | Query SCU (C-FIND) |
-| [DcmServer](Sources/DcmSwift/DcmSwift.docc/Commands/DcmServer.md) | Verification, storage, Query/Retrieve, and Storage Commitment SCP over a directory |
+| [DcmServer](Sources/DcmSwift/DcmSwift.docc/Commands/DcmServer.md) | Verification, storage, Query/Retrieve, and Storage Commitment SCP over a directory, also served over DICOMweb |
 
 The network options and TLS settings shared by the network tools are listed in
 [Command-Line Tools](Sources/DcmSwift/DcmSwift.docc/Guides/CommandLineTools.md).
@@ -218,6 +219,7 @@ All dependencies are resolved by Swift Package Manager, except the system
 | Dependency | Use |
 | --- | --- |
 | [swift-nio](https://github.com/apple/swift-nio), [swift-nio-ssl](https://github.com/apple/swift-nio-ssl) | Networking and TLS |
+| [async-http-client](https://github.com/swift-server/async-http-client) | DICOMweb user agent |
 | [swift-log](https://github.com/apple/swift-log) | Network logging |
 | [swift-argument-parser](https://github.com/apple/swift-argument-parser) | Command-line tools |
 | [swift-html](https://github.com/pointfreeco/swift-html) | HTML rendering of Structured Reports |

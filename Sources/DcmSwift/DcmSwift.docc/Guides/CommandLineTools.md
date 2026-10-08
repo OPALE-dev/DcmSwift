@@ -29,7 +29,7 @@ revision.
 - <doc:DcmStore> sends instances and can request Storage Commitment.
 - <doc:DcmFind> performs Query/Retrieve C-FIND requests.
 - <doc:DcmServer> provides verification, storage, query/retrieve, and Storage
-  Commitment services over a directory.
+  Commitment services over a directory, and serves it over DICOMweb.
 
 The networking programs exit with status 1 when the association or any
 operation fails, making them suitable for scripts and demonstrations.
