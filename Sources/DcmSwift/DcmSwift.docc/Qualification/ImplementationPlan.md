@@ -34,9 +34,9 @@ Deliverables:
 - [x] define a corpus policy: synthetic edge cases, public DICOM samples, and
   round trips with independent toolkits.
 
-The current implementation evidence and remaining gaps are tracked in
-`Documentation/DICOM_TRACEABILITY.md`. Intentionally deferred limitations stay
-listed in `Documentation/DICOM_DEFERRED_LIMITATIONS.md` until their evidence and
+The current implementation evidence and remaining gaps are tracked in the
+[traceability matrix](Traceability.md). Intentionally deferred limitations stay
+listed in the [limitations register](DeferredLimitations.md) until their evidence and
 documentation release gates are complete.
 
 Acceptance criteria:

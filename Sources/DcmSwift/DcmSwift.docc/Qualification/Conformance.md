@@ -5,8 +5,8 @@ Implementation: DcmSwift 2.0 development branch
 Status: incomplete implementation statement; not a claim of full DICOM
 conformance
 
-All deliberately deferred gaps are tracked in
-`Documentation/DICOM_DEFERRED_LIMITATIONS.md`; they are not implied to be
+All deliberately deferred gaps are tracked in the
+[limitations register](DeferredLimitations.md); they are not implied to be
 covered by broader structural claims in this document.
 
 ## Implementation model

@@ -229,12 +229,12 @@ on every platform.
 | TLS (PS3.15 B.12, B.13) | <ul><li>TLS 1.2 and 1.3 with swift-nio-ssl (BoringSSL); ECDHE with AEAD suites only</li><li>Server verification with host name; mutual authentication; peer certificate given to services</li><li>Checked against Python <code>ssl</code> (OpenSSL) through pynetdicom</li></ul> |
 | Audit and other security profiles | Not implemented |
 
-See the [DcmSwift 2.0 implementation plan](Documentation/DICOM_2_0_IMPLEMENTATION_PLAN.md)
-the [working Conformance Statement](Documentation/DICOM_CONFORMANCE.md), and
-the [DICOM traceability matrix](Documentation/DICOM_TRACEABILITY.md) for the
+See the [DcmSwift 2.0 implementation plan](Sources/DcmSwift/DcmSwift.docc/Qualification/ImplementationPlan.md),
+the [working Conformance Statement](Sources/DcmSwift/DcmSwift.docc/Qualification/Conformance.md), and
+the [DICOM traceability matrix](Sources/DcmSwift/DcmSwift.docc/Qualification/Traceability.md) for the
 detailed scope, automated evidence, and release gates.
 Intentionally deferred gaps are retained in the
-[limitations register](Documentation/DICOM_DEFERRED_LIMITATIONS.md) until their
+[limitations register](Sources/DcmSwift/DcmSwift.docc/Qualification/DeferredLimitations.md) until their
 implementation and qualification evidence are complete.
 
 ## Use DcmSwift in your project
@@ -579,7 +579,7 @@ Recursively convert a study while keeping its subdirectory layout:
 
 Without `--frame`, multi-frame instances produce numbered files such as
 `cine_0001.png`. Existing outputs are protected unless `--overwrite` is used.
-See [the complete DcmConvert guide](Documentation/DCMCONVERT.md) or run
+See [the complete DcmConvert guide](Sources/DcmSwift/DcmSwift.docc/Commands/DcmConvert.md) or run
 `DcmConvert --help` for all options.
 
 ### Network tools
@@ -618,19 +618,22 @@ run does not claim interoperability with files that were not qualified.
     
 ## Documentation
 
-Documentation can be generated using `jazzy`:
+The canonical documentation combines public `///` comments with the articles
+in the [DcmSwift DocC catalog](Sources/DcmSwift/DcmSwift.docc). Each executable
+also has a short README in its target directory and a complete guide in the
+catalog.
 
-    jazzy \
-      --module DcmSwift \
-      --swift-build-tool spm \
-      --build-tool-arguments -Xswiftc,-swift-version,-Xswiftc,5
-      
-Or with swift doc:
+Preview the documentation locally:
 
-    swift doc generate \
-        --module-name DcmSwift Sources/DcmSwift/Data \
-        --minimum-access-level private \
-        --output docs --format html
+    Scripts/documentation/preview.sh
+
+Build the same static DocC site published by GitLab and GitHub Pages:
+
+    Scripts/documentation/build.sh .build/documentation DcmSwift
+
+Generated HTML is never committed. See
+[the documentation contributor guide](Sources/DcmSwift/DcmSwift.docc/Guides/DocumentationWorkflow.md)
+for the source-of-truth and publishing rules.
     
 ## Side notes
 

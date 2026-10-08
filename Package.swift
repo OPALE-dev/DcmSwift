@@ -30,7 +30,8 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-html", from: "0.5.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.103.0"),
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.29.0"),
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.6.0")
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.6.0"),
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -130,19 +131,22 @@ let package = Package(
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ]),
+            ],
+            exclude: ["README.md"]),
         .executableTarget(
             name: "DcmPrint",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ]),
+            ],
+            exclude: ["README.md"]),
         .executableTarget(
             name: "DcmSR",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ]),
+            ],
+            exclude: ["README.md"]),
         // Options shared by the network tools; not a product.
         .target(
             name: "DcmNetworkCommand",
@@ -159,40 +163,46 @@ let package = Package(
                 "DcmSwift",
                 "DcmNetworkCommand",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ]),
+            ],
+            exclude: ["README.md"]),
         .executableTarget(
             name: "DcmEcho",
             dependencies: [
                 "DcmSwift",
                 "DcmNetworkCommand",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ]),
+            ],
+            exclude: ["README.md"]),
         .executableTarget(
             name: "DcmStore",
             dependencies: [
                 "DcmSwift",
                 "DcmNetworkCommand",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ]),
+            ],
+            exclude: ["README.md"]),
         .executableTarget(
             name: "DcmFind",
             dependencies: [
                 "DcmSwift",
                 "DcmNetworkCommand",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ]),
+            ],
+            exclude: ["README.md"]),
         .executableTarget(
             name: "DcmIzer",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ]),
+            ],
+            exclude: ["README.md"]),
         .executableTarget(
             name: "DcmConvert",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ]),
+            ],
+            exclude: ["README.md"]),
         .testTarget(
             name: "DcmSwiftTests",
             dependencies: ["DcmSwift", "CZlib"],
