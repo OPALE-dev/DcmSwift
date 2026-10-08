@@ -218,7 +218,8 @@ tests.
   contracts per SOP class);
 - [x] model status codes per service rather than as a single generic success flag;
 - [ ] test fragmentation and association state transitions with independent peers;
-- [ ] add TLS with explicit certificate and hostname validation policies.
+- [x] add TLS with explicit certificate and hostname validation policies
+  (PS3.15 B.12 with the B.13 algorithm restrictions).
 
 ## Phase 3 — Image rendering and presentation (after the network)
 
@@ -241,7 +242,7 @@ Images test material).
 
 - [ ] DICOMweb: QIDO-RS, WADO-RS, STOW-RS, media types, multipart streaming,
   rendered retrieval, and standard error payloads;
-- [ ] security and audit: TLS profiles, authentication hooks, ATNA audit events,
+- [ ] security and audit (TLS profiles done in Phase 2): ATNA audit events,
   digital signatures, encrypted attributes, and de-identification profiles;
 - [ ] semantic APIs for Structured Reports, segmentations,
   radiotherapy, waveforms, encapsulated documents, and parametric maps;

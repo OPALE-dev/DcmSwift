@@ -1,6 +1,7 @@
 import Foundation
 import Logging
 import NIOCore
+import NIOSSL
 
 /// The machinery of an established association, shared by requestors and
 /// acceptors: it drives the PS3.8 state machine, serializes outgoing
@@ -13,6 +14,8 @@ actor DICOMAssociationRuntime {
     nonisolated let logger: Logging.Logger
     /// Remote address, for logging and service contexts.
     nonisolated let remoteAddress: String
+    /// The certificate the peer presented over TLS, if any.
+    nonisolated let peerCertificate: NIOSSLCertificate?
 
     private let outbound: NIOAsyncChannelOutboundWriter<DICOMPDU>
     private let channel: Channel
@@ -47,8 +50,10 @@ actor DICOMAssociationRuntime {
     init(
         machine: DICOMAssociationStateMachine, negotiated: DICOMNegotiatedAssociation,
         outbound: NIOAsyncChannelOutboundWriter<DICOMPDU>, channel: Channel,
-        limits: DICOMNetworkLimits, timeouts: DICOMNetworkTimeouts, logger: Logging.Logger
+        limits: DICOMNetworkLimits, timeouts: DICOMNetworkTimeouts, logger: Logging.Logger,
+        peerCertificate: NIOSSLCertificate? = nil
     ) {
+        self.peerCertificate = peerCertificate
         self.machine = machine
         self.negotiated = negotiated
         self.role = machine.role
@@ -211,6 +216,12 @@ actor DICOMAssociationRuntime {
     /// The inbound stream failed: an invalid PDU, a timeout, or a transport
     /// error.
     func inboundFailed(_ error: Error) async {
+        // Peers often close without a TLS close_notify; once the release
+        // completed nothing can be truncated, so that is a normal close.
+        if case NIOSSLError.uncleanShutdown? = error as? NIOSSLError, releaseConfirmed {
+            await transportClosed()
+            return
+        }
         if let pduError = error as? DICOMPDUError {
             logger.warning("invalid PDU from \(remoteAddress): \(pduError.message)")
             fail(.protocolViolation(pduError.message))
@@ -220,7 +231,11 @@ actor DICOMAssociationRuntime {
             fail(networkError)
             await sendAbort()
         } else {
-            fail(.connectionClosed)
+            // A TLS failure drops the connection (PS3.15 B.12): an A-P-ABORT
+            // with DICOMNetworkError.tls as the provider reason.
+            let networkError = DICOMNetworkError.from(error)
+            if case .tls = networkError { logger.warning("association with \(remoteAddress): \(networkError)") }
+            fail(networkError)
         }
         channel.close(promise: nil)
     }

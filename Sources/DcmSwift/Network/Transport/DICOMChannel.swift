@@ -34,6 +34,13 @@ enum DICOMChannel {
     }
 }
 
+extension DICOMChannel {
+    /// The certificate the peer presented, once the TLS handshake is done.
+    static func peerCertificate(of channel: Channel) async -> NIOSSLCertificate? {
+        try? await channel.pipeline.handler(type: NIOSSLHandler.self).map { $0.peerCertificate }.get()
+    }
+}
+
 /// Turns a read-idle event into an error, which ends the inbound stream.
 private final class IdleTimeoutHandler: ChannelInboundHandler {
     typealias InboundIn = NIOAny

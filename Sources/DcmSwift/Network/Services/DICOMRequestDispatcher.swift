@@ -39,7 +39,8 @@ struct DICOMRequestDispatcher: Sendable {
         let serviceContext = DICOMServiceContext(
             callingAETitle: association.negotiated.callingAETitle, calledAETitle: association.negotiated.calledAETitle,
             remoteAddress: association.remoteAddress, userIdentity: association.negotiated.userIdentity,
-            presentationContext: context, cancelled: { await runtime.isCancelled(id) })
+            presentationContext: context, peerCertificate: runtime.peerCertificate,
+            cancelled: { await runtime.isCancelled(id) })
 
         func respond(_ status: DICOMStatus, comment: String? = nil, dataSet: DICOMDataSetPayload? = nil,
                      progress: DICOMRetrieveProgress? = nil) async {
@@ -266,7 +267,8 @@ struct DICOMRequestDispatcher: Sendable {
         let context = DICOMServiceContext(
             callingAETitle: context.callingAETitle, calledAETitle: context.calledAETitle,
             remoteAddress: context.remoteAddress, userIdentity: context.userIdentity,
-            presentationContext: context.presentationContext, cancelled: { false })
+            presentationContext: context.presentationContext, peerCertificate: context.peerCertificate,
+            cancelled: { false })
         Task {
             var result: DICOMStorageCommitmentResult
             do {

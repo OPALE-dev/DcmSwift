@@ -219,11 +219,33 @@ the DCMTK character-set test files, whose decoding matches pydicom 3.0.2.
 
 ## Security
 
-No TLS profile, application authentication, ATNA audit trail, digital signature,
-encrypted-attribute, or de-identification-profile conformance is currently
-claimed. Applications embedding DcmSwift are responsible for access control,
-transport security, persistence, and audit until these capabilities are
-implemented and documented.
+### Secure Transport Connection Profiles (PS3.15 B.12, B.13)
+
+`DICOMTLSConfiguration.client` and `.server` apply the BCP 195 RFC 8996, 9325
+TLS Secure Transport Connection Profile (B.12) with the algorithm restrictions
+of the Modified profile (B.13). The retired B.9 to B.11 profiles are not
+offered.
+
+| Requirement | Behavior |
+| --- | --- |
+| Protocol versions | <ul><li>TLS 1.2 and TLS 1.3; clients offer 1.3 first and servers prefer it</li><li>SSL, TLS 1.0, and TLS 1.1 refused</li></ul> |
+| TLS 1.2 cipher suites | <ul><li>TLS_ECDHE_ECDSA/RSA_WITH_AES_256_GCM_SHA384</li><li>TLS_ECDHE_ECDSA/RSA_WITH_CHACHA20_POLY1305_SHA256</li><li>TLS_ECDHE_ECDSA/RSA_WITH_AES_128_GCM_SHA256</li><li>No CBC, RC4, NULL, static RSA or DH key exchange, MD5, or SHA-1</li></ul> |
+| TLS 1.3 cipher suites | TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256, TLS_AES_128_GCM_SHA256 |
+| Authentication | <ul><li>Clients verify the server chain and host name (DNS or IP subject alternative name); relaxing either is explicit</li><li>Servers support mutual authentication with <code>pemClientTrustRootsFile</code>; the verified client certificate reaches services as <code>DICOMServiceContext.peerCertificate</code></li></ul> |
+| Key management | PEM certificate chains, private keys, and trust roots from files, or any NIOSSL source through <code>DICOMTLSConfiguration(configuration:)</code>, which applies no profile |
+| Ports | Configured per server and remote node; 2762 (dicom-tls) is recommended. A TLS server accepts only TLS |
+| Provider reasons | A handshake or integrity failure drops the connection and ends the association with <code>DICOMNetworkError.tls</code>, carrying the TLS error; TLS data received on a plain connection is reported the same way |
+
+C-MOVE destinations and Storage Commitment SCUs are reached with
+`DICOMServerConfiguration.clientTLS` when their node uses TLS.
+
+### Other security profiles
+
+No audit trail (ATNA), digital signature, encrypted-attribute, or
+de-identification-profile conformance is claimed. User Identity negotiation is
+passed to an application hook (`DICOMServerConfiguration.authenticate`), which
+decides on acceptance. Applications embedding DcmSwift remain responsible for
+access control, persistence, and audit.
 
 ## Validation boundaries
 

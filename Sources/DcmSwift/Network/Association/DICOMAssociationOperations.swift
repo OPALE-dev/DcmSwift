@@ -1,5 +1,6 @@
 import Foundation
 import NIOCore
+import NIOSSL
 
 /// A DIMSE operation failed with a status other than success or warning.
 public struct DICOMServiceError: Error, Equatable, CustomStringConvertible {
@@ -26,6 +27,10 @@ public final class DICOMAssociation: Sendable {
 
     /// The peer's address.
     public var remoteAddress: String { runtime.remoteAddress }
+
+    /// The certificate the peer presented over TLS: the server's, or with
+    /// mutual authentication the client's.
+    public var peerCertificate: NIOSSLCertificate? { runtime.peerCertificate }
 
     /// Aborts the association (A-ABORT).
     public func abort() async {

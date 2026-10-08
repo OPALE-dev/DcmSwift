@@ -241,8 +241,12 @@ conformance without that evidence.
 - Implement PS3.18 DICOMweb services and media types: QIDO-RS, WADO-RS,
   STOW-RS, UPS-RS where in scope, multipart streaming, rendered retrieval,
   bulk data, and standard error responses.
-- Implement the selected PS3.15 security profiles: TLS policy, certificate and
-  hostname validation, authentication hooks, ATNA audit, digital signatures,
+- TLS: BoringSSL has no CCM suites, so a server does not offer every suite B.13
+  lists (TLS_ECDHE_ECDSA_WITH_AES_*_CCM*, TLS_AES_128_CCM*_SHA256), nor the
+  optional Camellia and DHE ones. Certificate key sizes and signature hashes
+  are not checked beyond BoringSSL's own rules, and revocation (CRL, OCSP) is
+  not checked.
+- Security profiles still to implement: ATNA audit, digital signatures,
   encrypted attributes, and de-identification profiles.
 
 ## Cross-platform implementation

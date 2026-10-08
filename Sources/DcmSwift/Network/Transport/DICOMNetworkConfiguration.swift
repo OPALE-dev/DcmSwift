@@ -18,6 +18,9 @@ public enum DICOMNetworkError: Error, Equatable, CustomStringConvertible {
     case noPresentationContext(abstractSyntax: String)
     /// The operation is not possible in the association's current state.
     case invalidState(String)
+    /// The TLS handshake or record layer failed: certificate, host name,
+    /// protocol version, cipher suite, or integrity check (PS3.15 B.12).
+    case tls(String)
 
     public var description: String {
         switch self {
@@ -28,7 +31,20 @@ public enum DICOMNetworkError: Error, Equatable, CustomStringConvertible {
         case .connectionClosed: return "connection closed"
         case .noPresentationContext(let uid): return "no accepted presentation context for \(uid)"
         case .invalidState(let message): return "invalid association state: \(message)"
+        case .tls(let message): return "TLS: \(message)"
         }
+    }
+
+    /// The network error for a transport failure.
+    static func from(_ error: Error) -> DICOMNetworkError {
+        if let error = error as? DICOMNetworkError { return error }
+        if let error = error as? DICOMPDUError {
+            return error == .tlsRecord ? .tls(error.message) : .protocolViolation(error.message)
+        }
+        if let error = error as? NIOSSLError { return .tls("\(error)") }
+        if let error = error as? NIOSSLExtraError { return .tls("\(error)") }
+        if let error = error as? BoringSSLError { return .tls("\(error)") }
+        return .connectionClosed
     }
 }
 
@@ -86,15 +102,36 @@ public struct DICOMNetworkLimits: Sendable {
     }
 }
 
-/// TLS for DICOM connections, following the BCP 195 TLS Secure Transport
-/// Connection Profile of PS3.15 B.9: TLS 1.2 or later, certificate and host
-/// name verification unless explicitly relaxed.
+/// TLS for DICOM connections, following the BCP 195 RFC 8996, 9325 TLS
+/// Secure Transport Connection Profile (PS3.15 B.12) and the algorithm
+/// restrictions of its Modified variant (B.13): TLS 1.2 or 1.3, 1.3
+/// preferred; for TLS 1.2 only ECDHE key exchange with AEAD ciphers (AES-GCM,
+/// ChaCha20-Poly1305); certificate and host name verification unless
+/// explicitly relaxed. The registered port for DICOM over TLS is 2762.
 public struct DICOMTLSConfiguration: Sendable {
     /// The NIOSSL configuration, which callers may adjust.
     public var configuration: TLSConfiguration
 
+    /// A configuration used as given: `client` and `server` apply the
+    /// profile, this initializer does not.
     public init(configuration: TLSConfiguration) {
         self.configuration = configuration
+    }
+
+    /// The TLS 1.2 cipher suites permitted by PS3.15 B.13 that BoringSSL
+    /// implements, strongest first. TLS 1.3 always offers its AEAD suites.
+    public static let cipherSuites: [NIOTLSCipher] = [
+        .TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, .TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+        .TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256, .TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+        .TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, .TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+    ]
+
+    /// Applies the profile: TLS 1.2 minimum, 1.3 maximum, and the cipher
+    /// suites above.
+    public static func applyProfile(to configuration: inout TLSConfiguration) {
+        configuration.minimumTLSVersion = .tlsv12
+        configuration.maximumTLSVersion = .tlsv13
+        configuration.cipherSuiteValues = cipherSuites
     }
 
     /// A client: verifies the server against `trustRoots` (the system's by
@@ -105,7 +142,7 @@ public struct DICOMTLSConfiguration: Sendable {
         verification: CertificateVerification = .fullVerification
     ) -> DICOMTLSConfiguration {
         var configuration = TLSConfiguration.makeClientConfiguration()
-        configuration.minimumTLSVersion = .tlsv12
+        applyProfile(to: &configuration)
         configuration.trustRoots = trustRoots
         configuration.certificateVerification = verification
         configuration.certificateChain = certificateChain.map { .certificate($0) }
@@ -114,14 +151,15 @@ public struct DICOMTLSConfiguration: Sendable {
     }
 
     /// A server presenting `certificateChain`; with `clientTrustRoots`, it
-    /// requires and verifies client certificates (mutual authentication).
+    /// requires and verifies client certificates (mutual authentication,
+    /// which B.12 requires servers to support).
     public static func server(
         certificateChain: [NIOSSLCertificate], privateKey: NIOSSLPrivateKey,
         clientTrustRoots: NIOSSLTrustRoots? = nil
     ) -> DICOMTLSConfiguration {
         var configuration = TLSConfiguration.makeServerConfiguration(
             certificateChain: certificateChain.map { .certificate($0) }, privateKey: .privateKey(privateKey))
-        configuration.minimumTLSVersion = .tlsv12
+        applyProfile(to: &configuration)
         if let clientTrustRoots {
             configuration.trustRoots = clientTrustRoots
             configuration.certificateVerification = .noHostnameVerification

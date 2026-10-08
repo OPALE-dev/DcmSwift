@@ -15,6 +15,9 @@ public struct DICOMPDUError: Error, Equatable, CustomStringConvertible {
     public var description: String { "DICOM PDU error (\(reason)): \(message)" }
 
     static func invalid(_ message: String) -> Self { .init(.invalidPDUParameterValue, message) }
+
+    /// TLS data received on a plain connection.
+    static let tlsRecord = Self(.unrecognizedPDU, "a TLS record instead of a PDU: the peer expects TLS")
 }
 
 /// Encodes and decodes PDUs (PS3.8 9.3). Decoding is strict about lengths
