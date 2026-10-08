@@ -1,5 +1,12 @@
 # DcmSwift
 
+[![CI](https://github.com/OPALE-dev/DcmSwift/actions/workflows/ci.yml/badge.svg)](https://github.com/OPALE-dev/DcmSwift/actions/workflows/ci.yml)
+[![Documentation](https://github.com/OPALE-dev/DcmSwift/actions/workflows/documentation.yml/badge.svg)](https://opale-dev.github.io/DcmSwift/documentation/dcmswift/)
+[![Swift 5.9+](https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white)](https://swift.org)
+[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20iOS%20%7C%20Linux-lightgrey)](#requirements)
+[![DICOM 2026d](https://img.shields.io/badge/DICOM-2026d-blue)](https://www.dicomstandard.org/current)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](#license)
+
 DcmSwift is a DICOM library and a set of command-line tools written in Swift.
 It reads, writes, validates, renders, and exchanges DICOM data on macOS, iOS,
 and Linux, and relies mainly on Foundation.
