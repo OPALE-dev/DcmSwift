@@ -9,6 +9,8 @@ public struct TransferSyntaxCapability: Equatable {
     public let canPreservePixelData: Bool
     public let canDecodePixelData: Bool
     public let canEncodePixelData: Bool
+    /// Can be negotiated on DIMSE associations: data sets are sent and
+    /// received as encoded, and converted only between uncompressed syntaxes.
     public let canNegotiateForDIMSE: Bool
 
     public var isImplemented: Bool { canReadDataset || canWriteDataset }
@@ -49,7 +51,7 @@ public enum DICOMCapabilities {
                 canPreservePixelData: true,
                 canDecodePixelData: false,
                 canEncodePixelData: false,
-                canNegotiateForDIMSE: false
+                canNegotiateForDIMSE: true
             )
         }
 
@@ -74,7 +76,7 @@ public enum DICOMCapabilities {
                 // Includes decoders registered by the application.
                 canDecodePixelData: DICOMCodecRegistry.decoder(for: uid) != nil,
                 canEncodePixelData: encodableUIDs.contains(uid),
-                canNegotiateForDIMSE: false
+                canNegotiateForDIMSE: DICOMTransferSyntaxes.storage.contains(uid)
             )
         }
 

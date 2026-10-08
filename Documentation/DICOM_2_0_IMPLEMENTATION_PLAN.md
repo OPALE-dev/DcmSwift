@@ -207,16 +207,16 @@ tests.
 
 ## Phase 2 — DICOM Upper Layer and DIMSE (priority after the file core)
 
-- [ ] implement and test all A-ASSOCIATE negotiation items, role selection,
+- [x] implement and test all A-ASSOCIATE negotiation items, role selection,
   asynchronous operations, extended negotiation, identity, rejection, release,
   and abort paths;
-- [ ] enforce odd presentation-context IDs, maximum PDU length, PDV fragmentation,
+- [x] enforce odd presentation-context IDs, maximum PDU length, PDV fragmentation,
   command/data ordering, and timeouts;
-- [ ] implement C-ECHO, C-STORE, C-FIND, C-MOVE, C-GET and C-CANCEL as SCU/SCP
-  (C-ECHO is the most complete experimental path);
+- [x] implement C-ECHO, C-STORE, C-FIND, C-MOVE, C-GET and C-CANCEL as SCU/SCP;
+- [x] move the command-line tools to the new stack and remove the legacy one;
 - [ ] add Storage Commitment and selected DIMSE-N services only after their service
   contracts and persistence semantics are defined;
-- [ ] model status codes per service rather than as a single generic success flag;
+- [x] model status codes per service rather than as a single generic success flag;
 - [ ] test fragmentation and association state transitions with independent peers;
 - [ ] add TLS with explicit certificate and hostname validation policies.
 

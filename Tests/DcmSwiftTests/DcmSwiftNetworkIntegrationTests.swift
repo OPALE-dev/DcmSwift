@@ -171,6 +171,30 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
         XCTAssertEqual(file?.dataset.string(forTag: "SOPInstanceUID"), "1.2.826.0.1.99.2")
     }
 
+    /// An uncompressed instance goes to an uncompressed context even when a
+    /// compressed context of its class has a lower ID.
+    func testStoreConvertsOnAnUncompressedContextOfTheClass() async throws {
+        let storage = MemoryStorage()
+        let server = try DICOMServer(configuration: configuration(), storage: storage)
+        let sopClass = "1.2.840.10008.5.1.4.1.1.7"
+        try await withServer(server) { port in
+            try await client().withAssociation(
+                to: DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port),
+                presentationContexts: [
+                    DICOMPresentationContextProposal(id: 1, abstractSyntax: sopClass, transferSyntaxes: ["1.2.840.10008.1.2.5"]),
+                    DICOMPresentationContextProposal(
+                        id: 3, abstractSyntax: sopClass, transferSyntaxes: [TransferSyntax.implicitVRLittleEndian]),
+                ]
+            ) { association in
+                let status = try await association.store(self.instance(5))
+                XCTAssertEqual(status, .success)
+            }
+        }
+        let received = storage.received.withLockedValue { $0 }
+        XCTAssertEqual(received.map(\.transferSyntaxUID), [TransferSyntax.implicitVRLittleEndian])
+        XCTAssertEqual(try received.first?.dataSet().string(forTag: "PatientName"), "Doe^Jane")
+    }
+
     func testFindStreamsMatchesAndCancels() async throws {
         let query = CountingQuery(count: 500)
         let server = try DICOMServer(configuration: configuration(), query: query)

@@ -216,11 +216,11 @@ on every platform.
 
 | Area | Status |
 | --- | --- |
-| DICOM Upper Layer and DIMSE | Experimental |
-| C-ECHO | Most complete path |
-| C-STORE, C-FIND | Partial building blocks |
-| C-MOVE, C-GET, C-CANCEL, DIMSE-N | Not implemented or not qualified |
-| TLS, audit, DICOM security profiles | Not implemented |
+| DICOM Upper Layer (PS3.8) | <ul><li>Every PDU and item, byte-exact with pynetdicom</li><li>State machine covering all 494 cells of Table 9-10</li><li>Negotiation: role selection, asynchronous operations window, user identity</li><li>Fragmentation and reassembly, large data sets spilled to disk</li><li>ARTIM, idle timeout, release, abort</li></ul> |
+| DIMSE-C (PS3.7, PS3.4) | <ul><li>C-ECHO, C-STORE, C-FIND, C-MOVE, C-GET, C-CANCEL</li><li>SCU and SCP, checked against pynetdicom 3.0.4 in both directions</li></ul> |
+| DIMSE-N, Storage Commitment | Not implemented |
+| TLS (PS3.15 B.9) | Implemented with swift-nio-ssl; not yet qualified |
+| Audit and other security profiles | Not implemented |
 
 See the [DcmSwift 2.0 implementation plan](Documentation/DICOM_2_0_IMPLEMENTATION_PLAN.md)
 the [working Conformance Statement](Documentation/DICOM_CONFORMANCE.md), and
@@ -444,51 +444,97 @@ Load and print SR as HTML:
     
 ## Networking
 
-### DICOM ECHO
+The network API is asynchronous and built on SwiftNIO. An association lives
+within the scope of `withAssociation`, which releases it at the end, or aborts
+it when the body throws or its task is cancelled.
 
-Create a calling AE, aka your local client (port is totally random and unused):
-    
-    let callingAE = DicomEntity(
-        title: callingAET,
-        hostname: "127.0.0.1",
-        port: 11112)
+### Verification and storage (SCU)
 
-Create a called AE, aka the remote AE you want to connect to:
-   
-    let calledAE = DicomEntity(
-        title: calledAET,
-        hostname: calledHostname,
-        port: calledPort)
+    let client = try DICOMClient(configuration: DICOMClientConfiguration(aeTitle: "DCMCLIENT"))
+    let remote = DICOMRemoteNode(aeTitle: "PACS", host: "pacs.example.org", port: 11112)
+    let file = try DICOMRetrieveItem(file: URL(fileURLWithPath: "/path/to/image.dcm"))
 
-Create a DICOM client:
-    
-    let client = DicomClient(
-        callingAE: callingAE,
-        calledAE: calledAE)
-
-Run C-ECHO SCU service:
-    
-    if client.echo() {
-        print("ECHO \(calledAE) SUCCEEDED")
-    } else {
-        print("ECHO \(callingAE) FAILED")
+    try await client.withAssociation(
+        to: remote, presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.verification])
+    ) { association in
+        try await association.echo()
     }
-    
-See source code of embbeded binaries for more network related examples (`DcmFind`, `DcmStore`).
+
+    try await client.withAssociation(
+        to: remote, presentationContexts: DICOMPresentationContextProposal.proposals(for: [file])
+    ) { association in
+        let status = try await association.store(file)   // streamed from disk
+        print(status)
+    }
+
+`proposals(for:)` proposes, for each SOP class, its compressed transfer
+syntaxes one per context and the uncompressed ones together, so the file is
+sent as encoded or converted between uncompressed syntaxes.
+
+### Query (C-FIND)
+
+    let identifier = DataSet()
+    _ = identifier.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
+    _ = identifier.set(value: "DOE*", forTagName: "PatientName")
+    _ = identifier.set(value: "", forTagName: "StudyInstanceUID")
+
+    try await client.withAssociation(
+        to: remote, presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.studyRootFind])
+    ) { association in
+        for try await match in association.find(identifier) {
+            print(match.string(forTag: "StudyInstanceUID") ?? "")
+        }   // leaving the loop early sends C-CANCEL
+    }
+
+`move(_:destination:)` and `get(_:)` retrieve in the same way; C-GET stores
+the instances through the `storage` service given to `withAssociation`.
+
+### Server (SCP)
+
+    struct Archive: DICOMStorageService {
+        func store(_ instance: DICOMReceivedInstance, context: DICOMServiceContext) async throws -> DICOMStatus {
+            try instance.write(to: URL(fileURLWithPath: "/data/\(instance.sopInstanceUID).dcm"))
+            return .success
+        }
+    }
+
+    let server = try DICOMServer(
+        configuration: DICOMServerConfiguration(aeTitle: "DCMSERVER", port: 11112), storage: Archive())
+    try await server.run()   // until the task is cancelled
+
+`DICOMQueryService` and `DICOMRetrieveService` add C-FIND, C-MOVE, and C-GET;
+`DICOMQueryMatching` implements the PS3.4 C.2.2.2 matching rules.
 
 ## Using binaries
 
-The DcmSwift package embbed some binaries known as `DcmPrint`, `DcmAnonymize`, `DcmEcho`, etc. which you can build as follow:
+The DcmSwift package embeds some binaries known as `DcmPrint`, `DcmAnonymize`, `DcmEcho`, etc. which you can build as follow:
 
     swift build
-    
+
 To build release binaries:
-    
+
     swift build -c release
-    
+
 Binaries can be found in `.build/release` directory. For example:
 
     .build/release/DcmPrint /my/dicom/file.dcm
+
+### Network tools
+
+| Tool | Role | Example |
+| --- | --- | --- |
+| `DcmEcho` | Verification SCU | `DcmEcho PACS pacs.example.org 11112 --repeat 3` |
+| `DcmStore` | Storage SCU; directories are searched recursively, files streamed in their own transfer syntax | `DcmStore PACS pacs.example.org 11112 /data/study` |
+| `DcmFind` | Query SCU; keys as `Keyword[=value]` or `gggg,eeee[=value]`, `--limit` cancels | `DcmFind PACS pacs.example.org 11112 -l SERIES -k StudyInstanceUID=1.2.3 -k Modality` |
+| `DcmServer` | Verification SCP; with `-s`, storage SCP and C-FIND, C-MOVE, C-GET SCP over that directory | `DcmServer -a DCMSERVER -p 11112 -s /data/archive --destination VIEWER=10.0.0.5:104` |
+
+| Shared options | Meaning |
+| --- | --- |
+| Logging and timers | <ul><li><code>-v</code>: association and DIMSE details</li><li><code>--timeout</code>: connection and ARTIM, in seconds</li><li><code>--idle-timeout</code>: seconds without data before aborting</li><li><code>--max-pdu</code>: Maximum Length Received</li></ul> |
+| TLS, SCU tools | <ul><li><code>--tls</code>: connect with TLS 1.2 or later</li><li><code>--tls-ca</code>: PEM CA certificates (default: the system's)</li><li><code>--tls-certificate</code>, <code>--tls-key</code>: client certificate</li><li><code>--tls-no-hostname-check</code></li></ul> |
+| TLS, `DcmServer` | <ul><li><code>--tls-certificate</code>, <code>--tls-key</code>: accept TLS only</li><li><code>--tls-client-ca</code>: require client certificates</li><li><code>--destination-tls</code> and its <code>--destination-tls-*</code> options for C-MOVE destinations</li></ul> |
+
+The SCU tools exit with status 1 when the association or any operation fails.
 
 ## Unit tests
 
