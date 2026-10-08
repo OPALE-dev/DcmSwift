@@ -144,3 +144,18 @@ public struct DICOMRetrieveResult: Sendable {
     /// SOP Instance UID List).
     public let failedInstances: [String]
 }
+
+extension DataSet {
+    /// Writes the data set as a Part 10 file: the 128-byte preamble, "DICM",
+    /// File Meta Information describing DcmSwift, then the data set in
+    /// `transferSyntaxUID`. The file appears atomically.
+    public func writePart10(to url: URL, transferSyntaxUID: String = TransferSyntax.explicitVRLittleEndian) throws {
+        guard let sopClass = string(forTag: "SOPClassUID"), let sopInstance = string(forTag: "SOPInstanceUID") else {
+            throw DICOMCommandError("the data set has no SOP Class or SOP Instance UID")
+        }
+        try DICOMReceivedInstance(
+            sopClassUID: sopClass, sopInstanceUID: sopInstance, transferSyntaxUID: transferSyntaxUID,
+            payload: DICOMDataSetPayload(data: DICOMDataSetCoding.encode(self, transferSyntax: transferSyntaxUID)),
+            moveOriginatorAETitle: nil, moveOriginatorMessageID: nil, sourceAETitle: "").write(to: url)
+    }
+}

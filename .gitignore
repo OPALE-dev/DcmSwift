@@ -10,3 +10,4 @@ __MACOSX/
 .reports/
 .derived-data/
 .agent-handoff/
+__pycache__/

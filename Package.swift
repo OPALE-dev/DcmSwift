@@ -24,7 +24,8 @@ let package = Package(
         .executable(name: "DcmIzer", targets: ["DcmIzer"]),
         .executable(name: "DcmConvert", targets: ["DcmConvert"]),
         .executable(name: "DcmValidate", targets: ["DcmValidate"]),
-        .executable(name: "DcmSign", targets: ["DcmSign"])
+        .executable(name: "DcmSign", targets: ["DcmSign"]),
+        .executable(name: "DcmDocument", targets: ["DcmDocument"])
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -227,6 +228,13 @@ let package = Package(
             exclude: ["README.md"]),
         .executableTarget(
             name: "DcmSign",
+            dependencies: [
+                "DcmSwift",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ],
+            exclude: ["README.md"]),
+        .executableTarget(
+            name: "DcmDocument",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
