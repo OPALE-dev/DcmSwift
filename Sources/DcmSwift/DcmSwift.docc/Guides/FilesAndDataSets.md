@@ -1,0 +1,111 @@
+# Files and Data Sets
+
+Read, inspect, modify, and write DICOM Part 10 files and their data sets.
+
+## Read and write a file
+
+`DicomFile` reads a Part 10 file into a `DataSet`:
+
+```swift
+import DcmSwift
+
+guard let file = DicomFile(forPath: "/path/to/image.dcm") else { return }
+
+let patientName = file.dataset.string(forTag: "PatientName")
+_ = file.dataset.set(value: "John^Doe", forTagName: "PatientName")
+
+_ = file.write(atPath: "/path/to/copy.dcm")
+```
+
+`write(atPath:vrMethod:byteOrder:)` keeps the data set encoding unless a VR
+method or byte order is given; `write(atPath:transferSyntax:)` writes another
+Transfer Syntax. File Meta Information is always written as Explicit VR Little
+Endian, and its group length is recalculated during serialization.
+
+## Read a data set from a stream
+
+`DicomInputStream` reads a data set from a path, a `URL`, or `Data`:
+
+```swift
+let stream = DicomInputStream(filePath: path)
+
+do {
+    if let dataset = try stream.readDataset() {
+        print(dataset)
+    }
+} catch {
+    print(error)
+}
+```
+
+`readDataset(headerOnly:withoutPixelData:enforceVR:)` can stop after the File
+Meta Information or skip Pixel Data.
+
+## Create a data set
+
+```swift
+let dataset = DataSet()
+
+_ = dataset.set(value: "John^Doe", forTagName: "PatientName")
+_ = dataset.set(value: "12345678", forTagName: "PatientID")
+
+print(dataset.toData().toHex())
+```
+
+## Values
+
+| Value kind | API |
+| --- | --- |
+| Character strings | `textValues` on the element, `textValues(forTag:)` on the data set |
+| Person Names | `personNames` and `personNames(forTag:)`: structured `DICOMPersonName` values with alphabetic, ideographic, and phonetic component groups |
+| Fixed-width numbers | Typed multi-valued encoding and decoding of signed and unsigned 16, 32, and 64-bit integers, and 32 and 64-bit floating-point values |
+| Historical API | The flat `value` accessor remains available |
+
+Dictionary VM expressions, including bounded ranges and `2-2n` or `3-3n`
+multiples, are validated independently from IOD requirements. Validation also
+reports odd-length Value Fields.
+
+## Parsing safeguards
+
+| Safeguard | Behavior |
+| --- | --- |
+| Lengths | Malformed lengths are bounds-checked |
+| Limits | `DicomInputStream.limits` bounds value sizes, element counts, sequence depth, sequence items, and encapsulated Pixel Data fragments |
+| Sequences | Defined and undefined-length Sequences validate Item tags, exact boundaries, and zero-length Item and Sequence delimiters |
+| Explicit VR | Unknown VR codes and non-zero reserved bytes in long-form headers are rejected |
+| Private elements | Private Creator elements are read as `LO` in implicit VR data sets; private block reservations are resolved separately in the top-level data set and in every Sequence Item |
+| Unknown values | Unknown private values stay byte-preserving `UN` values unless their explicit VR is present on the wire |
+
+## Bulk data
+
+For file-backed input, `DicomInputStream.bulkDataLoadingPolicy` can defer
+defined-length `OB`, `OD`, `OF`, `OL`, `OV`, `OW`, and `UN` Value Fields above a
+configurable threshold.
+
+- `bulkDataReference` gives the source URL, byte offset, and length of a
+  deferred value.
+- `loadData()` reports I/O errors; the historical `data` accessor loads the
+  value on first use.
+- `loadData(range:)` reads a bounded subrange without loading the whole value.
+
+The same policy applies to encapsulated Pixel Data fragments: the Basic Offset
+Table and each fragment keep their own file ranges.
+
+## Dictionary
+
+The runtime tag and UID registry is generated reproducibly from PS3.6 2026d. It
+contains 5,303 data-element entries and 1,990 UID entries. Command Set fields
+are generated from PS3.7 2026d Table E.1-1. A UID in the registry does not mean
+that the corresponding feature is implemented; see <doc:Conformance>.
+
+## Other helpers
+
+The library also provides helpers for DICOM dates, times, UIDs, tags, VRs,
+endianness, pixel access, and radiotherapy objects. ``DICOMJSON`` and
+``DICOMXML`` encode and decode the DICOM JSON Model (PS3.18 F) and the Native
+DICOM Model XML (PS3.19 A.1).
+
+## Logging
+
+The legacy `Logger` writes to standard error by default. It writes to a file
+only when asked with `Logger.addDestination(.File)`.

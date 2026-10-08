@@ -20,7 +20,14 @@ and what remains deliberately limited.
 
 - <doc:GettingStarted>
 - <doc:CommandLineTools>
-- <doc:DocumentationWorkflow>
+
+### Guides
+
+- <doc:FilesAndDataSets>
+- <doc:RenderingImages>
+- <doc:DICOMDIR>
+- <doc:StructuredReports>
+- <doc:Networking>
 
 ### Command-Line Tools
 
@@ -40,3 +47,8 @@ and what remains deliberately limited.
 - <doc:Traceability>
 - <doc:DeferredLimitations>
 - <doc:ImplementationPlan>
+
+### Contributing
+
+- <doc:TestingAndQualification>
+- <doc:DocumentationWorkflow>

@@ -5,11 +5,13 @@ open a DICOM Part 10 file through ``DicomFile``.
 
 ## Package dependency
 
-Use the repository URL and a release or revision appropriate for your project:
+DcmSwift 2.0 is not tagged yet; depend on a branch or a revision:
 
 ```swift
-.package(url: "https://github.com/OPALE-dev/DcmSwift.git", from: "2.0.0")
+.package(url: "https://github.com/OPALE-dev/DcmSwift.git", branch: "master")
 ```
+
+In Xcode, add the package by its repository address.
 
 Add `DcmSwift` to the dependencies of the target that uses it:
 
@@ -39,12 +41,9 @@ Parsing a file successfully is not a claim that its IOD is conformant. Consult
 <doc:Conformance>, <doc:Traceability>, and <doc:DeferredLimitations> before
 using validation results as qualification evidence.
 
-## Build and test the repository
+## Next steps
 
-```sh
-swift build -c release
-swift test --parallel
-```
-
-Linux and Apple platforms are release targets. Optional interoperability
-corpora are controlled by the environment described in the repository README.
+- <doc:FilesAndDataSets> to read, edit, and write data sets.
+- <doc:RenderingImages> to display or export Pixel Data.
+- <doc:Networking> to talk to PACS and other DICOM nodes.
+- <doc:TestingAndQualification> to build and test the repository.

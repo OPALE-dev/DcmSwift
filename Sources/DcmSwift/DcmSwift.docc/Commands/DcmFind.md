@@ -5,6 +5,7 @@ Query a remote Query/Retrieve SCP with C-FIND.
 ```sh
 DcmFind PACS pacs.example.org 11112 --level STUDY \
   --key 'PatientName=DOE*' --key 'StudyDate=20240101-20241231'
+DcmFind PACS pacs.example.org 11112 -l SERIES -k StudyInstanceUID=1.2.3 -k Modality
 ```
 
 Keys may be DICOM keywords or `gggg,eeee` tags. A key without `=value` requests
