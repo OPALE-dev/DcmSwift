@@ -7,7 +7,7 @@ final class DcmSwiftIODValidationTests: XCTestCase {
     private let secondaryCapture = "1.2.840.10008.5.1.4.1.1.7"
 
     /// A Secondary Capture Image with every attribute its mandatory modules
-    /// require unconditionally.
+    /// require, Pixel Data included.
     private func secondaryCaptureImage() -> DataSet {
         let dataSet = DataSet()
         let values: [(String, Any)] = [
@@ -19,7 +19,7 @@ final class DcmSwiftIODValidationTests: XCTestCase {
             ("ConversionType", "WSD"), ("InstanceNumber", "1"),
             ("SamplesPerPixel", UInt16(1)), ("PhotometricInterpretation", "MONOCHROME2"),
             ("Rows", UInt16(2)), ("Columns", UInt16(2)), ("BitsAllocated", UInt16(8)), ("BitsStored", UInt16(8)),
-            ("HighBit", UInt16(7)), ("PixelRepresentation", UInt16(0)),
+            ("HighBit", UInt16(7)), ("PixelRepresentation", UInt16(0)), ("PixelData", Data([1, 2, 3, 4])),
         ]
         for (name, value) in values { XCTAssertNotNil(dataSet.set(value: value, forTagName: name), name) }
         return dataSet
@@ -107,15 +107,51 @@ final class DcmSwiftIODValidationTests: XCTestCase {
         XCTAssertTrue(modules.isSuperset(of: ["Pixel Measures", "Frame Content", "Plane Position (Patient)"]), "\(modules)")
     }
 
-    func testConditionalInclusionsFollowTheirCondition() throws {
+    func testConditionsAreReadFromTheirSentence() throws {
         let spec = DICOMIODSpecification.shared
-        let numeric = try XCTUnwrap(spec.table("C.17-5")).entries.first { $0.include == "C.18.1-1" }
-        XCTAssertEqual(numeric?.includeCondition, "if and only if Value Type (0040,A040) is NUM")
-        // Numeric Measurement attributes are required in NUM Content Items
-        // only.
-        let nodes = spec.tree("C.17-5")
-        let measured = nodes.first { $0.tag == "0040A300" }
-        XCTAssertNotNil(measured?.includeCondition)
+        func entry(_ table: String, _ tag: String) throws -> DICOMIODSpecification.Entry {
+            try XCTUnwrap(spec.table(table)?.entries.first { $0.tag == tag }, "\(table) \(tag)")
+        }
+        // "Required if Pixel Data Provider URL (0028,7FE0) is not present."
+        let pixelData = try entry("C.7-11a", "7FE00010").when
+        XCTAssertEqual(pixelData?.terms.map(\.tag), ["00287FE0"])
+        XCTAssertEqual(pixelData?.terms.first?.test, .absent)
+        // "Required if Image Type (0008,0008) Value 1 is ORIGINAL or MIXED."
+        let original = try XCTUnwrap(spec.table("C.8-87")?.entries.compactMap(\.when).first {
+            $0.terms.contains { $0.tag == "00080008" && $0.values == ["ORIGINAL", "MIXED"] }
+        })
+        XCTAssertEqual(original.terms.first { $0.tag == "00080008" }?.index, 0)
+        // Prose before the attribute: "Required if the Patient is a
+        // non-human organism and if Patient Species Code Sequence
+        // (0010,2202) is not present" is not evaluated.
+        XCTAssertNotNil(try entry("C.7-1", "00102201").condition)
+        XCTAssertNil(try entry("C.7-1", "00102201").when)
+        // Conditional inclusions: Numeric Measurement attributes belong to
+        // NUM Content Items.
+        let numeric = try XCTUnwrap(spec.table("C.17-5")?.entries.first { $0.include == "C.18.1-1" })
+        XCTAssertEqual(numeric.includeCondition, "if and only if Value Type (0040,A040) is NUM")
+        XCTAssertEqual(numeric.when?.terms.first?.values, ["NUM"])
+    }
+
+    func testConditionalTypesAreRequiredWhenTheirConditionHolds() throws {
+        let dataSet = secondaryCaptureImage()
+        _ = dataSet.remove(dataElement: try XCTUnwrap(dataSet.element(forTagName: "PixelData")))
+        let missing = DICOMIODValidator().validate(dataSet).findings
+        XCTAssertEqual(missing.map(\.path), [["7FE00010"]], missing.map(\.description).joined(separator: "\n"))
+        XCTAssertEqual(missing.first?.kind, .missing)
+        XCTAssertTrue(missing.first?.message.contains("Type 1C") ?? false)
+
+        // With Pixel Data Provider URL, Pixel Data is not required.
+        _ = dataSet.set(value: "https://example.org/pixels", forTagName: "PixelDataProviderURL")
+        let provided = DICOMIODValidator().validate(dataSet).findings
+        XCTAssertFalse(provided.contains { $0.path == ["7FE00010"] }, provided.map(\.description).joined(separator: "\n"))
+
+        // Planar Configuration (0028,0006) is required when Samples per
+        // Pixel (0028,0002) has a Value greater than 1.
+        let color = secondaryCaptureImage()
+        _ = color.set(value: UInt16(3), forTagName: "SamplesPerPixel")
+        _ = color.set(value: "RGB", forTagName: "PhotometricInterpretation")
+        XCTAssertTrue(DICOMIODValidator().validate(color).findings.contains { $0.path == ["00280006"] })
     }
 
     func testReceivePolicy() async throws {
