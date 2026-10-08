@@ -22,7 +22,8 @@ let package = Package(
         .executable(name: "DcmFind", targets: ["DcmFind"]),
         .executable(name: "DcmSR", targets: ["DcmSR"]),
         .executable(name: "DcmIzer", targets: ["DcmIzer"]),
-        .executable(name: "DcmConvert", targets: ["DcmConvert"])
+        .executable(name: "DcmConvert", targets: ["DcmConvert"]),
+        .executable(name: "DcmValidate", targets: ["DcmValidate"])
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -128,6 +129,7 @@ let package = Package(
                 .process("Resources/dicom-dictionary-2026d.json"),
                 .process("Resources/dicom-command-dictionary-2026d.json"),
                 .process("Resources/dicom-terminology-2026d.json"),
+                .process("Resources/dicom-iods-2026d.json"),
                 .copy("Resources/CharacterSets")
             ]),
         .executableTarget(
@@ -202,6 +204,13 @@ let package = Package(
             exclude: ["README.md"]),
         .executableTarget(
             name: "DcmConvert",
+            dependencies: [
+                "DcmSwift",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ],
+            exclude: ["README.md"]),
+        .executableTarget(
+            name: "DcmValidate",
             dependencies: [
                 "DcmSwift",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")

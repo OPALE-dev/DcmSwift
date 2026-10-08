@@ -47,6 +47,9 @@ struct DcmServer: AsyncParsableCommand {
     @Option(name: .long, help: "Scheme and authority of the DICOMweb service in Retrieve URLs, such as https://pacs.example.org (default: from the Host header).")
     var httpPublicOrigin: String?
 
+    @Option(name: .customLong("validate"), help: "What to do with received instances that do not conform to their IOD in PS3.3: off, warn (store, Status B007), or reject (Status A900).")
+    var validationPolicy: DICOMIODValidationPolicy = .off
+
     @Option(name: .long, help: "A C-MOVE destination or Storage Commitment SCU, as AET=host:port; repeatable.")
     var destination: [String] = []
 
@@ -128,7 +131,8 @@ struct DcmServer: AsyncParsableCommand {
             let archive = DICOMDirectoryArchive(directory: directory)
             let indexed = await archive.scan()
             print("\(indexed) instances in \(directory.path)")
-            let services = DICOMDirectoryArchiveServices(archive: archive, destinations: try destinations())
+            let services = DICOMDirectoryArchiveServices(
+                archive: archive, destinations: try destinations(), validation: validationPolicy)
             server = try DICOMServer(
                 configuration: configuration, storage: services, query: services, retrieve: services,
                 storageCommitment: services)
@@ -167,3 +171,5 @@ struct DcmServer: AsyncParsableCommand {
         }
     }
 }
+
+extension DICOMIODValidationPolicy: ExpressibleByArgument {}
