@@ -76,7 +76,8 @@ abbreviate `1.2.840.10008.1.2.4`):
 | --- | --- |
 | Basic DICOMDIR | <ul><li>Legacy PATIENT/STUDY/SERIES/IMAGE and generic typed record-tree read/write</li><li>Lossless view of all current F.4-1 types</li><li>Validation of serialized Item offsets, complete reachability, all unconditional top-level F.5 keys, common Type 1C keys, File-set/File IDs, the consistency flag, and referenced Part 10 identities</li></ul> |
 | PS3.12 media profiles | Not qualified; no media-profile conformance claim |
-| DICOM JSON / Native DICOM Model XML | Existing convenience output is not PS3.18 conformant |
+| DICOM JSON Model | PS3.18 Annex F, encode and decode (see below) |
+| Native DICOM Model XML | Existing convenience output is not PS3.19 conformant |
 
 Known UIDs are not automatically supported. `TransferSyntaxCapability` is the
 authoritative programmatic statement for structural I/O, Pixel Data
@@ -84,7 +85,29 @@ preservation, codec operations, and DIMSE negotiation.
 
 The next file-core priorities are remaining semantic VR validation, broader
 DICOMDIR Directory Record coverage, and PS3.12 media-profile qualification.
-PS3.18 JSON and XML representations follow those binary-format milestones.
+The Native DICOM Model XML representation (PS3.19) follows.
+
+### DICOM JSON Model (PS3.18 Annex F)
+
+| Rule | Behavior |
+| --- | --- |
+| Structure | <ul><li>Attributes keyed by uppercase tag, in plain lexicographic order</li><li>Group Length attributes left out; File Meta Information on request</li><li>Several data sets as one top-level array</li></ul> |
+| Values | <ul><li>Empty attributes without Value; empty Values as <code>null</code>; empty Items as <code>{}</code></li><li>PN by component group; AT as eight hexadecimal digits</li><li>IS and DS as numbers, or as their trimmed strings on request; non-finite FL/FD as the strings NaN, Infinity, -Infinity (JSON has no such numbers)</li></ul> |
+| Binary data | <ul><li>InlineBinary in Little Endian, or a BulkDataURI chosen by the caller</li><li>Encapsulated Pixel Data as its Items, without the Sequence Delimitation Item</li><li>Decoding loads BulkDataURI values through a caller-supplied loader</li></ul> |
+| UN | Written with the dictionary VR when it is unambiguous (PS3.5 6.2.2): Values decoded, Sequences read as Implicit VR Little Endian, Private Creators as LO; unknown private elements stay UN |
+| Decoding | Strings encoded in the object's Specific Character Set, padded to even lengths; mixing Value, InlineBinary, and BulkDataURI, wrong types, and delimiter characters in multi-valued strings are rejected |
+
+### Reading files other toolkits read
+
+| Case | Behavior |
+| --- | --- |
+| Preamble | Any 128 bytes before <code>DICM</code> (PS3.10 7.1), e.g. a TIFF header |
+| Implicit VR data set labelled Explicit VR | Detected on the first data set element and read as Implicit VR, with a warning |
+| Undefined-length UN, or unknown element in Implicit VR | Read as a Sequence in Implicit VR Little Endian (PS3.5 6.2.2) |
+| Ambiguous VRs in Implicit VR | OB/OW as OW (encapsulated Pixel Data as OB); US/SS from Pixel Representation |
+| Deflated data set | A trailing gzip CRC-32 and size that match the inflated data are accepted |
+| Trailing bytes | Fewer than a tag's four bytes end the data set; an unreadable element is an error, never a loop |
+| Truncated files | Rejected, where pydicom returns the part it could read |
 
 The Basic DICOMDIR implementation uses Explicit VR Little Endian, defined
 length Directory Record Sequence Items, and offsets that reference Item Tags.

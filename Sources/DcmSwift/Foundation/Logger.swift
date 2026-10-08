@@ -119,9 +119,16 @@ public class Logger {
     }
     
     public static var shared       = Logger()
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd-MM-yyyy HH:mm:ss"
+        return formatter
+    }()
     private var maxLevel: Int       = 6
     public lazy var fileName:String = targetName + ".log"
-    public var outputs:[Output]     = [.Stdout, .File, .Console]
+    /// The console only by default: a library writes no file unless asked
+    /// (`setDestinations`, `addDestination(.File)`).
+    public var outputs:[Output]     = [.Stdout, .Console]
     public var sizeLimit:UInt64     = 1_000_000
     public var timeLimit:TimeLimit  = .Minute
     public var startDate:Date       = Date()
@@ -184,14 +191,11 @@ public class Logger {
      */
     public func output(string:String, _ tag:String?, _ file: String = #file, _ function: String = #function, line: Int = #line, severity:LogLevel) {
         let date = Date()
-        let df = DateFormatter()
-        // formatting date
-        df.dateFormat = "dd-MM-yyyy HH:mm:ss"
         // if tag is nil, tag is name of target
         let tagName:String = tag ?? self.targetName
 
         /* DATE SEVERITY -> [TAG]        MESSAGE */
-        let outputString:String = "\(df.string(from: date)) \(severity.description) -> [\(tagName)]\t \(string)"
+        let outputString:String = "\(Logger.dateFormatter.string(from: date)) \(severity.description) -> [\(tagName)]\t \(string)"
 
         // managing different type of output (console or file)
         for output in outputs {
@@ -216,7 +220,9 @@ public class Logger {
 
      */
     public func consoleLog(message:String) {
-        print(message)
+        // Diagnostics go to standard error, keeping standard output for the
+        // tools' results.
+        FileHandle.standardError.write(Data((message + "\n").utf8))
     }
 
     /**

@@ -1,13 +1,16 @@
 # DcmSwift
 
 DcmSwift is a work-in-progress DICOM implementation written in Swift. The
-DcmSwift 2.0 effort currently prioritizes a safe, measurable implementation of
-the DICOM file format before expanding the networking stack.
+DcmSwift 2.0 effort prioritizes a safe, measurable implementation of the DICOM
+file format, then the network stack, alternate representations, and rendering.
 
-The binary VR/VM, lazy Bulk Data, Deflated Explicit VR Little Endian, and Basic
-DICOMDIR milestones are now implemented with structural regression tests. The
-remaining binary-file work and media-profile qualification still precede the
-PS3.18 JSON and XML representations.
+The binary file format, the codecs, the DICOM Upper Layer and DIMSE services
+with TLS, and the DICOM JSON Model are implemented with regression tests, fuzzing,
+and comparisons with independent toolkits; the Native DICOM Model XML and
+rendering follow.
+
+The legacy `Logger` writes to standard error by default, and to a file only when
+asked (`Logger.addDestination(.File)`).
 
 The normative baseline is **DICOM 2026d**. Registry knowledge is kept separate
 from actual structural, semantic, codec, and network support: the presence of a
@@ -210,7 +213,9 @@ on every platform.
 | --- | --- |
 | DICOMDIR | <ul><li>Legacy Basic hierarchy</li><li>Generic record-tree read and write, with a lossless view of every current F.4-1 type</li><li>Validation of offsets, the record graph, selected F.5 keys, File-set IDs, and referenced Part 10 identities</li></ul> |
 | PS3.12 media profiles | Not yet qualified; Basic DICOMDIR support is not a media-profile claim |
-| DICOM JSON and Native DICOM Model XML | Convenience output, not yet PS3.18 conformant |
+| DICOM JSON Model (PS3.18 F) | <ul><li><code>DICOMJSON</code> encode and decode, <code>DcmPrint -f JSON</code></li><li>Matches pydicom on 144 of its 147 readable test files and on the local corpus</li></ul> |
+| Native DICOM Model XML (PS3.19) | Convenience output, not yet conformant |
+| Robustness | <ul><li>Mutation fuzzing of the parser and pixel decoders, also run under AddressSanitizer</li><li>Reproducers kept as regression fixtures</li></ul> |
 
 ### Networking and security
 
