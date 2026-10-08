@@ -15,11 +15,13 @@ import Foundation
 @main
 struct DcmServer: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        abstract: "Serve verification, storage, and query/retrieve (C-FIND, C-MOVE, C-GET) over a directory.",
+        abstract: "Serve verification, storage, query/retrieve, and Storage Commitment over a directory.",
         discussion: """
             Without --storage-directory, only C-ECHO is served. With it, received instances are written \
             there as <SOPInstanceUID>.dcm, in their received transfer syntax, and the Part 10 files found \
-            there at start-up and received later answer C-FIND, C-MOVE, and C-GET.
+            there at start-up and received later answer C-FIND, C-MOVE, and C-GET. Storage Commitment \
+            commits the instances present in the directory; results go on the requesting association, \
+            or to the --destination of the requestor's AE title once it is released.
             """)
 
     @Option(name: .shortAndLong, help: "Local AE title.")
@@ -34,7 +36,7 @@ struct DcmServer: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "Directory where instances are stored and retrieved from.")
     var storageDirectory: String?
 
-    @Option(name: .long, help: "A C-MOVE destination, as AET=host:port; repeatable.")
+    @Option(name: .long, help: "A C-MOVE destination or Storage Commitment SCU, as AET=host:port; repeatable.")
     var destination: [String] = []
 
     @Option(name: .long, help: "A calling AE title allowed to associate; repeatable (default: any).")
@@ -112,7 +114,8 @@ struct DcmServer: AsyncParsableCommand {
             print("\(indexed) instances in \(directory.path)")
             let services = ArchiveServices(archive: archive, destinations: try destinations())
             server = try DICOMServer(
-                configuration: configuration, storage: services, query: services, retrieve: services)
+                configuration: configuration, storage: services, query: services, retrieve: services,
+                storageCommitment: services)
         } else {
             server = try DICOMServer(configuration: configuration)
         }

@@ -214,8 +214,8 @@ tests.
   command/data ordering, and timeouts;
 - [x] implement C-ECHO, C-STORE, C-FIND, C-MOVE, C-GET and C-CANCEL as SCU/SCP;
 - [x] move the command-line tools to the new stack and remove the legacy one;
-- [ ] add Storage Commitment and selected DIMSE-N services only after their service
-  contracts and persistence semantics are defined;
+- [x] add Storage Commitment and the DIMSE-N services (generic SCU/SCP, service
+  contracts per SOP class);
 - [x] model status codes per service rather than as a single generic success flag;
 - [ ] test fragmentation and association state transitions with independent peers;
 - [ ] add TLS with explicit certificate and hostname validation policies.

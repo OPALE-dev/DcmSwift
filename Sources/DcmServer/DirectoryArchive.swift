@@ -70,6 +70,11 @@ actor DirectoryArchive {
         records[instance.sopInstanceUID] = Self.record(url: url, header: header, dataSet: dataSet)
     }
 
+    /// The record of an instance.
+    func record(_ sopInstanceUID: String) -> Record? {
+        records[sopInstanceUID]
+    }
+
     /// The groups of records at `level` matching `identifier`, each the
     /// records of one patient, study, series, or instance.
     func match(_ identifier: DataSet, level: String) throws -> [[Record]] {
@@ -99,8 +104,9 @@ actor DirectoryArchive {
     }
 }
 
-/// Storage, query, and retrieval over a `DirectoryArchive`.
-struct ArchiveServices: DICOMStorageService, DICOMQueryService, DICOMRetrieveService {
+/// Storage, query, retrieval, and Storage Commitment over a
+/// `DirectoryArchive`.
+struct ArchiveServices: DICOMStorageService, DICOMQueryService, DICOMRetrieveService, DICOMStorageCommitmentService {
     let archive: DirectoryArchive
     let destinations: [String: DICOMRemoteNode]
 
@@ -161,5 +167,27 @@ struct ArchiveServices: DICOMStorageService, DICOMQueryService, DICOMRetrieveSer
 
     func destination(for aeTitle: String) async -> DICOMRemoteNode? {
         destinations[aeTitle]
+    }
+
+    /// Commits the instances in the directory (PS3.4 J.3.3.2).
+    func commit(
+        _ request: DICOMStorageCommitmentRequest, context: DICOMServiceContext
+    ) async throws -> DICOMStorageCommitmentResult {
+        var result = DICOMStorageCommitmentResult(
+            transactionUID: request.transactionUID, committed: [], retrieveAETitle: context.calledAETitle)
+        for reference in request.references {
+            guard let record = await archive.record(reference.sopInstanceUID),
+                  FileManager.default.fileExists(atPath: record.url.path) else {
+                result.failed.append(.init(reference: reference, reason: DICOMStorageCommitmentResult.FailureReason.noSuchSOPInstance))
+                continue
+            }
+            if record.sopClassUID == reference.sopClassUID {
+                result.committed.append(reference)
+            } else {
+                result.failed.append(.init(
+                    reference: reference, reason: DICOMStorageCommitmentResult.FailureReason.classInstanceConflict))
+            }
+        }
+        return result
     }
 }

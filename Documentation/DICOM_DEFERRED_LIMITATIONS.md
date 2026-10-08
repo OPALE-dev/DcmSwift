@@ -232,7 +232,12 @@ conformance without that evidence.
   C-MOVE SCP does not yet.
 - The `DcmServer` archive keeps its index in memory and matches the
   attributes of PS3.4 C.6 key tables only; it is a tool, not a PACS.
-- DIMSE-N services and Storage Commitment are not implemented.
+- DIMSE-N is generic: no SOP-class-specific behavior (MPPS state rules,
+  Print Management, UPS) is built in yet. Storage Commitment's optional
+  Storage Media File-Set attributes are carried but not interpreted, and
+  duplicate Transaction UIDs are left to the service.
+- A Storage Commitment result that cannot be delivered (no destination, or
+  the SCU unreachable) is logged, not queued for a later retry.
 - Implement PS3.18 DICOMweb services and media types: QIDO-RS, WADO-RS,
   STOW-RS, UPS-RS where in scope, multipart streaming, rendered retrieval,
   bulk data, and standard error responses.

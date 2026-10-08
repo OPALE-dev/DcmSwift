@@ -36,6 +36,14 @@ actor DICOMAssociationRuntime {
     private var releaseConfirmed = false
     private(set) var failure: DICOMNetworkError?
 
+    /// Storage Commitment results received, and the operations waiting for
+    /// them, by Transaction UID.
+    private var commitmentResults: [String: DICOMStorageCommitmentResult] = [:]
+    private var commitmentWaiters: [String: [(UInt64, CheckedContinuation<DICOMStorageCommitmentResult?, Never>)]] = [:]
+    private var nextWaiter: UInt64 = 0
+    /// Waiting for the peer requests being performed to finish.
+    private var idleWaiters: [CheckedContinuation<Void, Never>] = []
+
     init(
         machine: DICOMAssociationStateMachine, negotiated: DICOMNegotiatedAssociation,
         outbound: NIOAsyncChannelOutboundWriter<DICOMPDU>, channel: Channel,
@@ -131,18 +139,66 @@ actor DICOMAssociationRuntime {
         responses.removeValue(forKey: messageID)?.abandon()
     }
 
-    /// Whether the peer cancelled a request being performed.
+    /// Whether a service should stop working on a peer request: the peer
+    /// cancelled it, or it is no longer being performed (answered, or the
+    /// association ended).
     func isCancelled(_ messageID: UInt16) -> Bool {
-        performing[messageID] ?? false
+        performing[messageID] ?? true
     }
 
     /// Marks a peer request as performed; a pending release proceeds once
     /// none is left.
     func finishedPerforming(_ messageID: UInt16) async {
         performing[messageID] = nil
-        if releaseRequestedByPeer, performing.isEmpty {
+        guard performing.isEmpty else { return }
+        resumeIdleWaiters()
+        if releaseRequestedByPeer {
             await respondToRelease()
         }
+    }
+
+    private func resumeIdleWaiters() {
+        let waiters = idleWaiters
+        idleWaiters = []
+        waiters.forEach { $0.resume() }
+    }
+
+    /// Whether new requests may still be sent: the association is
+    /// established and the peer has not asked to release it.
+    var acceptsRequests: Bool {
+        failure == nil && machine.state == .established && !releaseRequestedByPeer
+    }
+
+    // MARK: Storage Commitment results
+
+    func deliverCommitment(_ result: DICOMStorageCommitmentResult) {
+        if let waiters = commitmentWaiters.removeValue(forKey: result.transactionUID) {
+            waiters.forEach { $0.1.resume(returning: result) }
+        } else if commitmentResults[result.transactionUID] == nil {
+            commitmentResults[result.transactionUID] = result
+        }
+    }
+
+    func commitmentResult(_ transactionUID: String, timeout: TimeAmount) async -> DICOMStorageCommitmentResult? {
+        if let result = commitmentResults.removeValue(forKey: transactionUID) { return result }
+        if failure != nil || machine.state == .idle { return nil }
+        let token = nextWaiter
+        nextWaiter += 1
+        let expiry = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(max(0, timeout.nanoseconds)))
+            await self?.expireCommitmentWaiter(transactionUID, token: token)
+        }
+        defer { expiry.cancel() }
+        return await withCheckedContinuation { continuation in
+            commitmentWaiters[transactionUID, default: []].append((token, continuation))
+        }
+    }
+
+    private func expireCommitmentWaiter(_ transactionUID: String, token: UInt64) {
+        guard var waiters = commitmentWaiters[transactionUID],
+              let index = waiters.firstIndex(where: { $0.0 == token }) else { return }
+        waiters.remove(at: index).1.resume(returning: nil)
+        commitmentWaiters[transactionUID] = waiters.isEmpty ? nil : waiters
     }
 
     // MARK: Receiving
@@ -282,6 +338,11 @@ actor DICOMAssociationRuntime {
     /// Releases the association (requestor side, PS3.8 7.2): no message
     /// may start once the A-RELEASE-RQ is sent.
     func release() async throws {
+        // Peer requests being performed are answered first: a C-STORE of a
+        // C-GET, or an N-EVENT-REPORT whose result the caller already has.
+        while !performing.isEmpty, failure == nil {
+            await withCheckedContinuation { idleWaiters.append($0) }
+        }
         if let failure { throw failure }
         await acquireSend()
         guard machine.state == .established else {
@@ -335,6 +396,7 @@ actor DICOMAssociationRuntime {
         finishQueues(throwing: error)
         releaseWaiter?.resume(throwing: error)
         releaseWaiter = nil
+        resumeIdleWaiters()
         // Pending senders proceed and see the failure.
         let waiters = sendWaiters
         sendWaiters = []
@@ -346,6 +408,10 @@ actor DICOMAssociationRuntime {
         let queues = responses.values
         responses = [:]
         for queue in queues { queue.finish(throwing: error ?? DICOMNetworkError.connectionClosed) }
+        // No result can arrive any more.
+        let waiters = commitmentWaiters.values.joined()
+        commitmentWaiters = [:]
+        for (_, waiter) in waiters { waiter.resume(returning: nil) }
     }
 
     // MARK: ARTIM

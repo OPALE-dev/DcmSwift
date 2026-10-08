@@ -218,7 +218,8 @@ on every platform.
 | --- | --- |
 | DICOM Upper Layer (PS3.8) | <ul><li>Every PDU and item, byte-exact with pynetdicom</li><li>State machine covering all 494 cells of Table 9-10</li><li>Negotiation: role selection, asynchronous operations window, user identity</li><li>Fragmentation and reassembly, large data sets spilled to disk</li><li>ARTIM, idle timeout, release, abort</li></ul> |
 | DIMSE-C (PS3.7, PS3.4) | <ul><li>C-ECHO, C-STORE, C-FIND, C-MOVE, C-GET, C-CANCEL</li><li>SCU and SCP, checked against pynetdicom 3.0.4 in both directions</li></ul> |
-| DIMSE-N, Storage Commitment | Not implemented |
+| DIMSE-N (PS3.7 10) | <ul><li>N-EVENT-REPORT, N-GET, N-SET, N-ACTION, N-CREATE, N-DELETE, SCU and SCP</li><li>Services plugged in per SOP Class</li></ul> |
+| Storage Commitment (PS3.4 J) | <ul><li>Push Model SCU and SCP</li><li>Results on the same association or a new one with role selection</li><li>Checked against pynetdicom in both roles</li></ul> |
 | TLS (PS3.15 B.9) | Implemented with swift-nio-ssl; not yet qualified |
 | Audit and other security profiles | Not implemented |
 
@@ -505,6 +506,28 @@ the instances through the `storage` service given to `withAssociation`.
 `DICOMQueryService` and `DICOMRetrieveService` add C-FIND, C-MOVE, and C-GET;
 `DICOMQueryMatching` implements the PS3.4 C.2.2.2 matching rules.
 
+### Storage Commitment and DIMSE-N
+
+    try await client.withAssociation(
+        to: remote,
+        presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.storageCommitmentPushModel])
+    ) { association in
+        if let result = try await association.commit([file.reference], timeout: .seconds(30)) {
+            print(result.committed, result.failed)   // nil: no result on this association in time
+        }
+    }
+
+An SCP implements `DICOMStorageCommitmentService` and passes it to
+`DICOMServer(storageCommitment:)`; the server answers the N-ACTION, then sends
+the result on the same association, or on a new one to
+`destination(for:)` once the SCU has released. An SCU that receives results on
+new associations runs a `DICOMServer` with a `storageCommitmentReceiver`.
+
+Other DIMSE-N SOP classes (Modality Performed Procedure Step, Print, and so
+on) use `nCreate`, `nSet`, `nGet`, `nAction`, `nDelete`, and `nEventReport`
+on the association, and `DICOMNormalizedService` implementations given to
+`DICOMServer(normalized:)` by SOP Class UID.
+
 ## Using binaries
 
 The DcmSwift package embeds some binaries known as `DcmPrint`, `DcmAnonymize`, `DcmEcho`, etc. which you can build as follow:
@@ -524,9 +547,9 @@ Binaries can be found in `.build/release` directory. For example:
 | Tool | Role | Example |
 | --- | --- | --- |
 | `DcmEcho` | Verification SCU | `DcmEcho PACS pacs.example.org 11112 --repeat 3` |
-| `DcmStore` | Storage SCU; directories are searched recursively, files streamed in their own transfer syntax | `DcmStore PACS pacs.example.org 11112 /data/study` |
+| `DcmStore` | Storage SCU; directories are searched recursively, files streamed in their own transfer syntax; `--commit` requests Storage Commitment | `DcmStore PACS pacs.example.org 11112 /data/study --commit` |
 | `DcmFind` | Query SCU; keys as `Keyword[=value]` or `gggg,eeee[=value]`, `--limit` cancels | `DcmFind PACS pacs.example.org 11112 -l SERIES -k StudyInstanceUID=1.2.3 -k Modality` |
-| `DcmServer` | Verification SCP; with `-s`, storage SCP and C-FIND, C-MOVE, C-GET SCP over that directory | `DcmServer -a DCMSERVER -p 11112 -s /data/archive --destination VIEWER=10.0.0.5:104` |
+| `DcmServer` | Verification SCP; with `-s`, storage SCP and C-FIND, C-MOVE, C-GET, Storage Commitment SCP over that directory | `DcmServer -a DCMSERVER -p 11112 -s /data/archive --destination VIEWER=10.0.0.5:104` |
 
 | Shared options | Meaning |
 | --- | --- |
@@ -572,6 +595,10 @@ Or with swift doc:
 ## Side notes
 
 ### For testing/debuging networking
+
+`Scripts/interop` drives pynetdicom 3 against DcmSwift: `scu.py` (echo, store,
+find, get, move against `DcmServer`), `scp.py` (an SCP for `DcmEcho`,
+`DcmStore`, `DcmFind`), and `commitment.py` (Storage Commitment in both roles).
 
 Very useful DCMTK arguments for `storescp` program that show a lot of logs: 
 

@@ -47,6 +47,7 @@ public struct DICOMStatus: Hashable, Sendable, CustomStringConvertible {
     public static let noSuchArgument = DICOMStatus(code: 0x0114)
     public static let noSuchAttribute = DICOMStatus(code: 0x0105)
     public static let noSuchEventType = DICOMStatus(code: 0x0113)
+    public static let noSuchActionType = DICOMStatus(code: 0x0123)
     public static let noSuchObjectInstance = DICOMStatus(code: 0x0112)
     public static let noSuchSOPClass = DICOMStatus(code: 0x0118)
     public static let processingFailure = DICOMStatus(code: 0x0110)
