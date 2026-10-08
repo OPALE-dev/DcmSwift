@@ -35,6 +35,7 @@ and what remains deliberately limited.
 - <doc:DcmPrint>
 - <doc:DcmConvert>
 - <doc:DcmValidate>
+- <doc:DcmSign>
 - <doc:DcmAnonymize>
 - <doc:DcmIzer>
 - <doc:DcmSR>

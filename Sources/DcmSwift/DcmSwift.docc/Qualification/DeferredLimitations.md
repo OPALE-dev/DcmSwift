@@ -273,9 +273,10 @@ conformance without that evidence.
   optional Camellia and DHE ones. Certificate key sizes and signature hashes
   are not checked beyond BoringSSL's own rules, and revocation (CRL, OCSP) is
   not checked.
-- Security profiles still to implement: digital signatures and encrypted
-  attributes, including the Encrypted Attributes Data Set of
-  de-identification.
+- Encrypted attributes: no Triple-DES content encryption, key agreement, or
+  symmetric key-encryption keys.
+- Digital Signatures: no certified timestamps, and certificates are not
+  checked against trusted authorities or revocation lists.
 - Audit: messages are sent, not received; a collector that cannot be reached
   loses the messages, which are logged as errors.
 - De-identification does not inspect Pixel Data (burned-in annotations) nor

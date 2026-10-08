@@ -166,6 +166,26 @@ received (`pip install rnc2rng lxml syslog-rfc5424-parser pynetdicom`):
 python3 Scripts/crosscheck/audit_syslog.py part15.xml .build/debug image.dcm
 ```
 
+## Digital Signatures
+
+`Scripts/crosscheck/dcmsign.py` checks DcmSwift's signatures with DCMTK's
+dcmsign, and dcmsign's with DcmSwift, for each file: SHA-1 to SHA-512 and
+RIPEMD-160, a signed Sequence Item, and a changed file both must reject:
+
+```sh
+python3 Scripts/crosscheck/dcmsign.py .build/debug /path/to/files
+```
+
+## Encrypted attributes
+
+`Scripts/crosscheck/cms_openssl.py` checks that `openssl cms` opens the
+Encrypted Attributes DcmAnonymize writes, with both key transports, and that
+DcmAnonymize restores the values of envelopes `openssl cms` makes:
+
+```sh
+python3 Scripts/crosscheck/cms_openssl.py .build/debug /path/to/files
+```
+
 ## Network interoperability
 
 `Scripts/interop` drives pynetdicom 3 against DcmSwift:
