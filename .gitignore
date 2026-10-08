@@ -9,3 +9,4 @@ __MACOSX/
 .corpus/
 .reports/
 .derived-data/
+.agent-handoff/
