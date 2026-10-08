@@ -203,6 +203,10 @@ public struct DICOMDeidentifier: Sendable {
     /// Cleans an attribute in place for a C action; returns false to leave
     /// it to the Basic Profile's action.
     public var cleaner: (@Sendable (DataElement) -> Bool)?
+    /// Recipients of the original values: each top-level attribute removed
+    /// or changed, wholly, goes encrypted for them into the Encrypted
+    /// Attributes Sequence (PS3.15 E.1.1, PS3.3 C.12.1.1.4).
+    public var encryptionRecipients: [DICOMEncryptionRecipient] = []
     public let profile: DICOMDeidentificationProfile
     public let specification: DICOMIODSpecification
 
@@ -238,6 +242,10 @@ public struct DICOMDeidentifier: Sendable {
     @discardableResult
     public func deidentify(_ dataSet: DataSet) -> DICOMDeidentificationReport {
         var report = DICOMDeidentificationReport()
+        // A copy of the original top-level attributes, to encrypt.
+        let original = encryptionRecipients.isEmpty ? nil : (try? DICOMDataSetCoding.decode(
+            DICOMDataSetCoding.encode(dataSet, transferSyntax: TransferSyntax.explicitVRLittleEndian),
+            transferSyntax: TransferSyntax.explicitVRLittleEndian))
         let sopClass = dataSet.string(forTag: "SOPClassUID") ?? ""
         let iod = specification.iod(forSOPClass: sopClass)
         let top = (iod?.modules ?? []).compactMap(\.table).flatMap { specification.tree($0) }
@@ -247,6 +255,15 @@ public struct DICOMDeidentifier: Sendable {
         let kept = Set(level.elements.map { ObjectIdentifier($0) })
         for element in dataSet.datasetElements where !kept.contains(ObjectIdentifier(element)) {
             _ = dataSet.remove(dataElement: element)
+        }
+        if let original {
+            let changed = Set(report.changes.filter { $0.action != .keep || $0.path.count > 1 }.compactMap(\.path.first))
+            let originals = original.datasetElements.filter { changed.contains($0.tagCode().uppercased()) }
+            do {
+                try DICOMEncryptedAttributes.add(originals, to: dataSet, recipients: encryptionRecipients)
+            } catch {
+                Logger.error("Cannot encrypt the original attributes: \(error)")
+            }
         }
         record(in: dataSet)
         rewriteMetaInformation(of: dataSet)

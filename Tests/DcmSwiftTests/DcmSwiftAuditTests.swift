@@ -16,19 +16,17 @@ final class DcmSwiftAuditTests: XCTestCase {
     private let study = DICOMAuditMessage.ParticipantObject.study(
         uid: "1.2.3", sopClasses: [.init(uid: "1.2.840.10008.5.1.4.1.1.2", numberOfInstances: 2)])
 
-    private func document(_ message: DICOMAuditMessage) throws -> XMLElement {
-        let document = try XMLDocument(data: message.xml())
-        return try XCTUnwrap(document.rootElement())
+    private func document(_ message: DICOMAuditMessage) throws -> AuditXMLNode {
+        try XCTUnwrap(AuditXMLNode.parse(message.xml()))
     }
 
     /// The elements at a path of element names; "//Name" finds them at any
     /// depth.
-    private func elements(_ root: XMLElement, _ path: String) -> [XMLElement] {
+    private func elements(_ root: AuditXMLNode, _ path: String) -> [AuditXMLNode] {
         if path.hasPrefix("//") {
             let name = String(path.dropFirst(2))
-            func all(_ element: XMLElement) -> [XMLElement] {
-                let children = (element.children ?? []).compactMap { $0 as? XMLElement }
-                return children.filter { $0.name == name } + children.flatMap(all)
+            func all(_ element: AuditXMLNode) -> [AuditXMLNode] {
+                element.children.filter { $0.name == name } + element.children.flatMap(all)
             }
             return all(root)
         }
@@ -40,11 +38,11 @@ final class DcmSwiftAuditTests: XCTestCase {
     }
 
     /// The values of an attribute of the elements at a path.
-    private func values(_ root: XMLElement, _ path: String, _ attribute: String) -> [String] {
-        elements(root, path).compactMap { $0.attribute(forName: attribute)?.stringValue }
+    private func values(_ root: AuditXMLNode, _ path: String, _ attribute: String) -> [String] {
+        elements(root, path).compactMap { $0.attributes[attribute] }
     }
 
-    private func codes(_ element: XMLElement, _ path: String) throws -> [String] {
+    private func codes(_ element: AuditXMLNode, _ path: String) throws -> [String] {
         values(element, path, "csd-code")
     }
 
@@ -85,9 +83,9 @@ final class DcmSwiftAuditTests: XCTestCase {
             XCTAssertEqual(root.name, "AuditMessage")
             let identification = try XCTUnwrap(root.elements(forName: "EventIdentification").first)
             XCTAssertEqual(try codes(identification, "EventID"), [event])
-            XCTAssertEqual(identification.attribute(forName: "EventActionCode")?.stringValue, action, event)
+            XCTAssertEqual(identification.attributes["EventActionCode"], action, event)
             XCTAssertEqual(try codes(identification, "EventTypeCode"), types, event)
-            XCTAssertNotNil(identification.attribute(forName: "EventDateTime")?.stringValue)
+            XCTAssertNotNil(identification.attributes["EventDateTime"])
             // The meaning comes from PS3.16, not the code itself.
             let meaning = values(identification, "EventID", "originalText").first
             XCTAssertEqual(meaning, DICOMTerminology.shared.dicomCode(event)?.meaning)
@@ -110,13 +108,13 @@ final class DcmSwiftAuditTests: XCTestCase {
         XCTAssertEqual(try codes(root, "ParticipantObjectIdentification/ParticipantObjectIDTypeCode"), ["110180", "2"])
         XCTAssertEqual(values(root, "ParticipantObjectIdentification", "ParticipantObjectTypeCodeRole"), ["3", "1"])
         XCTAssertEqual(values(root, "//SOPClass", "NumberOfInstances"), ["2"])
-        XCTAssertEqual(elements(root, "//ParticipantObjectName").last?.stringValue, "Doe^Jane")
+        XCTAssertEqual(elements(root, "//ParticipantObjectName").last?.text, "Doe^Jane")
 
         // Query: the Data Set in base 64, with its Transfer Syntax.
         let query = try document(.query(issuer: remote, responder: local, sopClassUID: "1.2.840.10008.5.1.4.1.2.2.1",
                                         query: Data("query".utf8), transferSyntaxUID: "1.2.840.10008.1.2.1",
                                         source: source))
-        XCTAssertEqual(elements(query, "//ParticipantObjectQuery").first?.stringValue,
+        XCTAssertEqual(elements(query, "//ParticipantObjectQuery").first?.text,
                        Data("query".utf8).base64EncodedString())
         XCTAssertEqual(values(query, "//ParticipantObjectDetail", "type"), ["TransferSyntax"])
     }
@@ -211,5 +209,47 @@ private final class DatagramCollector: ChannelInboundHandler, @unchecked Sendabl
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         var envelope = unwrapInboundIn(data)
         continuation.yield(Data(envelope.data.readBytes(length: envelope.data.readableBytes) ?? []))
+    }
+}
+
+/// An element of an XML document, read with XMLParser, which every platform
+/// has (XMLDocument is not on iOS).
+final class AuditXMLNode {
+    let name: String
+    let attributes: [String: String]
+    var children: [AuditXMLNode] = []
+    var text = ""
+
+    init(name: String, attributes: [String: String]) {
+        self.name = name
+        self.attributes = attributes
+    }
+
+    func elements(forName name: String) -> [AuditXMLNode] { children.filter { $0.name == name } }
+
+    static func parse(_ data: Data) -> AuditXMLNode? {
+        let builder = Builder()
+        let parser = XMLParser(data: data)
+        parser.delegate = builder
+        return parser.parse() ? builder.root : nil
+    }
+
+    private final class Builder: NSObject, XMLParserDelegate {
+        var root: AuditXMLNode?
+        var stack: [AuditXMLNode] = []
+
+        func parser(_ parser: XMLParser, didStartElement name: String, namespaceURI: String?, qualifiedName: String?,
+                    attributes: [String: String] = [:]) {
+            let node = AuditXMLNode(name: name, attributes: attributes)
+            stack.last?.children.append(node)
+            if root == nil { root = node }
+            stack.append(node)
+        }
+
+        func parser(_ parser: XMLParser, foundCharacters string: String) { stack.last?.text += string }
+
+        func parser(_ parser: XMLParser, didEndElement name: String, namespaceURI: String?, qualifiedName: String?) {
+            stack.removeLast()
+        }
     }
 }

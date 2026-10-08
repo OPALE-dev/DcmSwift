@@ -51,6 +51,15 @@ struct DcmAnonymize: ParsableCommand {
     @Flag(help: "Retain Longitudinal Temporal Information with Modified Dates Option: shift dates")
     var retainModifiedDates = false
 
+    @Option(name: .customLong("encrypt-for"), help: "PEM certificate of a recipient of the original values, kept encrypted in the Encrypted Attributes Sequence; repeatable")
+    var recipients: [String] = []
+
+    @Flag(help: "Transport the content-encryption key with RSAES-OAEP instead of PKCS #1 v1.5")
+    var oaep = false
+
+    @Option(help: "PEM private key: instead of de-identifying, put back the original values the files carry encrypted for it")
+    var restoreWith: String?
+
     mutating func run() throws {
         var options: DICOMDeidentificationOptions = []
         if retainSafePrivate { options.insert(.retainSafePrivate) }
@@ -61,7 +70,12 @@ struct DcmAnonymize: ParsableCommand {
         if retainFullDates { options.insert(.retainLongitudinalFullDates) }
         if retainModifiedDates { options.insert(.retainLongitudinalModifiedDates) }
         let secret = try key.map { try Data(contentsOf: URL(fileURLWithPath: $0)) }
-        let deidentifier = try DICOMDeidentifier(options: options, key: secret, dateShift: dateShift)
+        var deidentifier = try DICOMDeidentifier(options: options, key: secret, dateShift: dateShift)
+        deidentifier.encryptionRecipients = try recipients.map {
+            try DICOMEncryptionRecipient(certificatePEM: String(contentsOfFile: $0, encoding: .utf8),
+                                         keyTransport: oaep ? .oaep : .pkcs1v1_5)
+        }
+        let restoreKey = try restoreWith.map { try String(contentsOfFile: $0, encoding: .utf8) }
 
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: sourcePath, isDirectory: &isDirectory) else {
@@ -90,7 +104,17 @@ struct DcmAnonymize: ParsableCommand {
                 failures += 1
                 continue
             }
-            deidentifier.deidentify(dataSet)
+            if let restoreKey {
+                do {
+                    try DICOMEncryptedAttributes.restore(dataSet, privateKeyPEM: restoreKey)
+                } catch {
+                    Logger.error("Cannot restore \(source): \(error)")
+                    failures += 1
+                    continue
+                }
+            } else {
+                deidentifier.deidentify(dataSet)
+            }
             try FileManager.default.createDirectory(
                 at: URL(fileURLWithPath: destination).deletingLastPathComponent(), withIntermediateDirectories: true)
             if !file.write(atPath: destination) {
