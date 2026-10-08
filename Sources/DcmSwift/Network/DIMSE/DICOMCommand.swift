@@ -191,8 +191,7 @@ extension DICOMCommand {
             guard position + 8 <= bytes.count else { throw DICOMCommandError("truncated element") }
             let group = UInt16(bytes[position]) | UInt16(bytes[position + 1]) << 8
             let number = UInt16(bytes[position + 2]) | UInt16(bytes[position + 3]) << 8
-            let length = Int(UInt32(bytes[position + 4]) | UInt32(bytes[position + 5]) << 8
-                | UInt32(bytes[position + 6]) << 16 | UInt32(bytes[position + 7]) << 24)
+            let length = Int(bytes[(position + 4)..<(position + 8)].reversed().reduce(UInt32(0)) { $0 << 8 | UInt32($1) })
             position += 8
             guard group == 0 else { throw DICOMCommandError(String(format: "element (%04X,%04X) outside group 0000", group, number)) }
             guard length <= bytes.count - position else { throw DICOMCommandError("element length \(length) overruns") }
@@ -213,9 +212,10 @@ extension DICOMCommand {
         func tags(_ number: UInt16) throws -> [UInt32]? {
             guard let value = values[number] else { return nil }
             guard value.count % 4 == 0 else { throw DICOMCommandError(String(format: "(0000,%04X) is not AT", number)) }
-            return stride(from: 0, to: value.count, by: 4).map { index in
-                UInt32(UInt16(value[index]) | UInt16(value[index + 1]) << 8) << 16
-                    | UInt32(UInt16(value[index + 2]) | UInt16(value[index + 3]) << 8)
+            return stride(from: 0, to: value.count, by: 4).map { index -> UInt32 in
+                let group = UInt32(value[index]) | UInt32(value[index + 1]) << 8
+                let element = UInt32(value[index + 2]) | UInt32(value[index + 3]) << 8
+                return group << 16 | element
             }
         }
 

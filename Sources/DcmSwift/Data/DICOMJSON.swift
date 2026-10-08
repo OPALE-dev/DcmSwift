@@ -491,8 +491,7 @@ public enum DICOMJSON {
                 if raw[offset..<(offset + 4)].elementsEqual([0xFE, 0xFF, 0xDD, 0xE0]) { break }
                 throw DICOMJSONError("encapsulated Pixel Data holds a non-Item at \(offset)")
             }
-            let length = Int(UInt32(raw[offset + 4]) | UInt32(raw[offset + 5]) << 8
-                | UInt32(raw[offset + 6]) << 16 | UInt32(raw[offset + 7]) << 24)
+            let length = Int(raw[(offset + 4)..<(offset + 8)].reversed().reduce(UInt32(0)) { $0 << 8 | UInt32($1) })
             guard offset + 8 + length <= raw.count else { throw DICOMJSONError("encapsulated Pixel Data is truncated") }
             let item = DataItem(withTag: DataTag(withGroup: "fffe", element: "e000"), parent: sequence)
             item.data = Data(raw[(offset + 8)..<(offset + 8 + length)])
