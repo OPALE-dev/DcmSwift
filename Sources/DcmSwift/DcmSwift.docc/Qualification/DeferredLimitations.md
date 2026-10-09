@@ -261,6 +261,9 @@ conformance without that evidence.
   of Table F.7.2-1 and the Code Sequence macros are not checked, the
   Deleted event is never sent, and a step does not update the Modality
   Worklist (PS3.4 F.7.2.1.2 makes it optional).
+- Instance Availability Notification: `DcmServer` notifies ONLINE instances
+  only, without Referenced Performed Procedure Steps, and keeps pending
+  notifications in memory (lost if it stops before the delay).
 - DIMSE-N is generic: no SOP-class-specific behavior (Print Management,
   UPS) is built in yet. Storage Commitment's optional
   Storage Media File-Set attributes are carried but not interpreted, and

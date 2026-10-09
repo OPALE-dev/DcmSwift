@@ -78,3 +78,17 @@ Discontinued events (N-EVENT-REPORT of the Notification SOP Class).
 DcmServer -a RIS --worklist-directory ./worklist \
   --mpps-directory ./mpps --mpps-notify PACS=pacs.example.org:11112
 ```
+
+## Instance Availability Notification
+
+Each `--ian-destination AET=host:port` receives an Instance Availability
+Notification (PS3.4 R) for the instances stored: one N-CREATE per study, once
+no instance of that study has arrived for `--ian-delay` seconds (5 by
+default), with `DcmServer`'s AE title as Retrieve AE Title. With
+`--ian-directory`, `DcmServer` also receives notifications, checks them
+against Table R.3.2-1, and keeps them there as JSON documents.
+
+```sh
+DcmServer -a PACS -s ./archive --ian-destination RIS=ris.example.org:11112
+DcmServer -a RIS --ian-directory ./availability
+```
