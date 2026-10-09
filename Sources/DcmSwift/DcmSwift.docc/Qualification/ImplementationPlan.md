@@ -301,6 +301,7 @@ their state rules, qualified against pynetdicom, DCMTK, and dcm4che.
 | :-: | --- | :-: | --- | --- | --- |
 | ✓ | Modality Worklist | M | <ul><li>C-FIND on the Modality Worklist Information Model, SCU and SCP</li><li>Matching keys and return keys of K.6</li><li>A worklist provider in `DcmServer` and a query tool</li></ul> | PS3.4 K | DCMTK `wlmscpfs`, `findscu` (`Scripts/crosscheck/worklist_dcmtk.py`) |
 | ✓ | Modality Performed Procedure Step | M | <ul><li>N-CREATE and N-SET with the IN PROGRESS, COMPLETED, and DISCONTINUED rules</li><li>Attribute requirements per operation (F.7.2)</li><li>MPPS Notification and Retrieve</li></ul> | PS3.4 F | pynetdicom (`Scripts/interop/mpps.py`) |
+| ☐ | Pluggable archive storage | L | <ul><li>Protocols in the core, without any database dependency: an archive index (instances, worklist items, procedure steps, UPS) and an instance store for the bytes (files, object storage)</li><li>The services (storage, Query/Retrieve, Storage Commitment, MWL, MPPS, UPS, DICOMweb) built on them; the in-memory implementation is the reference</li><li>A neutral query model built from the Identifier: adapters translate what they can, and the core filters the candidates with <code>DICOMQueryMatcher</code>, so partial translations stay exact</li><li>A shared conformance test kit that every adapter runs</li><li>Before UPS, so that UPS is written on it</li></ul> | PS3.4 C, K, F, CC; PS3.18 | Conformance kit: same results as the in-memory archive and DCMTK |
 | ☐ | Unified Procedure Step | XL | <ul><li>Push, Pull, Watch, Event, and Query SOP Classes</li><li>State machine, locking Transaction UID, cancellation requests</li><li>Subscriptions, global and filtered, with N-EVENT-REPORT delivery</li></ul> | PS3.4 CC | pynetdicom; dcm4che `upsscu` |
 | ☐ | Instance Availability Notification | S | N-CREATE SCU and SCP, sent by `DcmServer` after storage | PS3.4 R | dcm4che `ianscu` |
 | ☐ | Query/Retrieve extensions | L | <ul><li>Extended negotiation interpreted: relational queries, combined date and time, fuzzy semantic matching, timezone adjustment, enhanced multi-frame conversion</li><li>Composite Instance Root Retrieve and Retrieve Without Bulk Data</li><li>Relevant Patient Information Query</li></ul> | PS3.4 C, Y, Z, Q; PS3.7 D.3.3.5, D.3.3.6 | pynetdicom; DCMTK |
@@ -346,7 +347,17 @@ their state rules, qualified against pynetdicom, DCMTK, and dcm4che.
 | ☐ | Storage Management | M | Inventory creation and storage management operations | PS3.4 KK | dcm4che |
 | ☐ | DICOMweb completeness | L | <ul><li>Non-Patient Instance service</li><li>Bulk Data resources and STOW-RS of metadata with Bulk Data</li><li>Rendered GIF, video, MPR and 3D volume resources</li><li>Charset negotiation, fuzzy and multiple-value matching, paging, HTTP Range</li></ul> | PS3.18 | dicomweb-client; Orthanc; dcm4chee-arc |
 | ☐ | Independent peers | M | Fragmentation, state transitions, and live-association fuzzing against DCMTK and dcm4che (Phase 2 item) | PS3.8 | DCMTK; dcm4che |
-| ☐ | Database-backed archive | L | <ul><li>An archive repository protocol behind the storage, query, retrieve, commitment, worklist, MPPS, UPS, and DICOMweb services, instead of the in-memory indexes</li><li>C-FIND matching (<code>DICOMQueryMatcher</code> rules) translated to SQL, with the same results</li><li>SQLite and PostgreSQL drivers that build on Linux, macOS, and iOS; schema migrations; instance files or object storage for the bulk data</li><li>Enough to run a small PACS on <code>DcmServer</code></li></ul> | PS3.4 C, K, F, CC; PS3.18 | Same queries against the in-memory archive and DCMTK; dcm4chee-arc |
+
+## Archive adapters (separate packages)
+
+Database drivers never become dependencies of DcmSwift: each adapter is its
+own package, which depends on DcmSwift and passes the conformance kit, so that
+applications choose their stack (a Vapor application reuses its database).
+
+| Status | Adapter | Effort | Scope | Oracle |
+| :-: | --- | :-: | --- | --- |
+| ☐ | SQLKit | L | <ul><li>PostgreSQL, MySQL, and SQLite through SQLKit, on the database a Vapor or Fluent application already has</li><li>Schema and migrations; the neutral query model translated to SQL</li></ul> | Conformance kit; dcm4chee-arc |
+| ☐ | Standalone SQLite | M | For iOS and command-line use without SQLKit | Conformance kit |
 
 ## Phase 10 — Security, media, and legacy services
 
