@@ -19,6 +19,11 @@ implements ``DICOMArchiveIndex``; an object-storage adapter implements
 ``DICOMInstanceStore``. Applications choose them, for example an adapter on
 the SQLKit database a Vapor application already has.
 
+`Adapters/DcmSwiftSQLite` provides a standalone SQLite adapter. It uses
+transactions and a document-version comparison for updates from multiple
+connections, and indexes top-level UID equality keys. The SQLKit adapter is
+planned separately for applications that already own a SQLKit database.
+
 ```swift
 // SQLKitArchiveIndex would come from an adapter package.
 let index: DICOMArchiveIndex = SQLKitArchiveIndex(database: app.db as! SQLDatabase)

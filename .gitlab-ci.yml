@@ -60,6 +60,17 @@ swift-package:
     # SwiftPM writes the XCTest xUnit report only in parallel mode.
     - swift test --parallel --xunit-output .reports/xunit.xml
 
+sqlite-adapter:
+  stage: test
+  image: swift:6.2
+  tags:
+    - deploy
+  script:
+    - apt-get update -qq && apt-get install -y -qq libsqlite3-dev
+    - cd Adapters/DcmSwiftSQLite
+    - swift build -c release
+    - swift test --parallel
+
 macos-package:
   stage: test
   extends: [.interop-corpus, .junit-reports]

@@ -377,7 +377,7 @@ applications choose their stack (a Vapor application reuses its database).
 | Status | Adapter | Effort | Scope | Oracle |
 | :-: | --- | :-: | --- | --- |
 | ☐ | SQLKit | L | <ul><li>PostgreSQL, MySQL, and SQLite through SQLKit, on the database a Vapor or Fluent application already has</li><li>Schema and migrations; the neutral query model translated to SQL</li></ul> | Conformance kit; dcm4chee-arc |
-| ☐ | Standalone SQLite | M | For iOS and command-line use without SQLKit | Conformance kit |
+| ◐ | Standalone SQLite | M | `Adapters/DcmSwiftSQLite`: independent package, atomic versioned documents and top-level UID equality index; local conformance and cross-connection tests pass. Linux CI job added but not yet run. | Conformance kit |
 
 ## Out of scope
 
