@@ -29,6 +29,7 @@ and what remains deliberately limited.
 - <doc:StructuredReports>
 - <doc:Networking>
 - <doc:DICOMweb>
+- <doc:ArchiveStorage>
 
 ### Command-Line Tools
 
