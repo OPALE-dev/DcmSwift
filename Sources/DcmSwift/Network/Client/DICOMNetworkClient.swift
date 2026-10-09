@@ -49,6 +49,37 @@ extension DICOMPresentationContextProposal {
     /// acceptor cannot choose another, and one for the uncompressed
     /// syntaxes, to which uncompressed instances convert. At most 128.
     public static func proposals(for items: [DICOMRetrieveItem]) -> [DICOMPresentationContextProposal] {
+        Array(contexts(for: items).prefix(128))
+    }
+
+    /// The items in consecutive batches whose contexts fit in one
+    /// association (128 presentation contexts, PS3.8 9.3.2.2).
+    public static func batches(for items: [DICOMRetrieveItem], limit: Int = 128) -> [[DICOMRetrieveItem]] {
+        var batches: [[DICOMRetrieveItem]] = []
+        var batch: [DICOMRetrieveItem] = []
+        var needed: Set<String> = []
+        for item in items {
+            var keys = ["\(item.sopClassUID) *"]
+            if !DICOMAssociation.isUncompressed(item.transferSyntaxUID) {
+                keys.append("\(item.sopClassUID) \(item.transferSyntaxUID)")
+            }
+            let added = keys.filter { !needed.contains($0) }
+            if needed.count + added.count > limit, !batch.isEmpty {
+                batches.append(batch)
+                batch = []
+                needed = []
+                keys.forEach { needed.insert($0) }
+            } else {
+                added.forEach { needed.insert($0) }
+            }
+            batch.append(item)
+        }
+        if !batch.isEmpty { batches.append(batch) }
+        return batches
+    }
+
+    /// Every context the items need, with odd IDs.
+    static func contexts(for items: [DICOMRetrieveItem]) -> [DICOMPresentationContextProposal] {
         var order: [String] = []
         var compressed: [String: [String]] = [:]
         for item in items {
@@ -69,9 +100,9 @@ extension DICOMPresentationContextProposal {
             proposals.append(DICOMPresentationContextProposal(
                 id: 0, abstractSyntax: sopClass, transferSyntaxes: DICOMTransferSyntaxes.uncompressed))
         }
-        return proposals.prefix(128).enumerated().map { index, proposal in
+        return proposals.enumerated().map { index, proposal in
             var proposal = proposal
-            proposal.id = UInt8(2 * index + 1)
+            proposal.id = UInt8(truncatingIfNeeded: 2 * index + 1)
             return proposal
         }
     }

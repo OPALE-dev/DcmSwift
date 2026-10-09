@@ -137,15 +137,30 @@ struct DICOMRequestDispatcher: Sendable {
                         await respond(.moveDestinationUnknown)
                         return
                     }
-                    try await outgoingClient.withAssociation(
-                        to: destination, presentationContexts: DICOMPresentationContextProposal.proposals(for: items)
-                    ) { outgoing in
-                        await subOperations(items, through: outgoing, moveOriginator: (
-                            association.negotiated.callingAETitle, id), respond: respond, context: serviceContext)
+                    // At most 128 presentation contexts per association: the
+                    // instances go over as many associations as needed.
+                    let state = SubOperations(count: items.count)
+                    for batch in DICOMPresentationContextProposal.batches(for: items) {
+                        if state.cancelled { break }
+                        do {
+                            try await outgoingClient.withAssociation(
+                                to: destination, presentationContexts: DICOMPresentationContextProposal.proposals(for: batch)
+                            ) { outgoing in
+                                await subOperations(batch, through: outgoing, moveOriginator: (
+                                    association.negotiated.callingAETitle, id), state: state, respond: respond,
+                                    context: serviceContext)
+                            }
+                        } catch {
+                            runtime.logger.warning("C-MOVE to \(destinationTitle) failed: \(error)")
+                            state.fail(batch)
+                        }
                     }
+                    await finish(state, respond: respond, context: serviceContext)
                 } else {
-                    await subOperations(items, through: association, moveOriginator: nil, respond: respond,
+                    let state = SubOperations(count: items.count)
+                    await subOperations(items, through: association, moveOriginator: nil, state: state, respond: respond,
                                         context: serviceContext)
+                    await finish(state, respond: respond, context: serviceContext)
                 }
             } catch {
                 runtime.logger.warning("\(command.field) failed: \(error)")
@@ -331,45 +346,81 @@ struct DICOMRequestDispatcher: Sendable {
         }
     }
 
+    /// The progress of the sub-operations of a C-MOVE or C-GET, across
+    /// the associations it uses.
+    final class SubOperations: @unchecked Sendable {
+        var progress: DICOMRetrieveProgress
+        var failedInstances: [String] = []
+        var attempted: Set<String> = []
+        var cancelled = false
+        let count: Int
+
+        init(count: Int) {
+            self.count = count
+            progress = DICOMRetrieveProgress(remaining: count)
+        }
+
+        /// Counts the instances of a batch not yet attempted as failed.
+        func fail(_ batch: [DICOMRetrieveItem]) {
+            for item in batch where !attempted.contains(item.sopInstanceUID) {
+                attempted.insert(item.sopInstanceUID)
+                progress.remaining -= 1
+                progress.failed += 1
+                failedInstances.append(item.sopInstanceUID)
+            }
+        }
+    }
+
     /// Sends the instances by C-STORE, reporting progress after each
     /// (PS3.4 C.4.2.3, C.4.3.3).
     private func subOperations(
         _ items: [DICOMRetrieveItem], through association: DICOMAssociation, moveOriginator: (String, UInt16)?,
-        respond: (DICOMStatus, String?, DICOMDataSetPayload?, DICOMRetrieveProgress?) async -> Void,
+        state: SubOperations, respond: (DICOMStatus, String?, DICOMDataSetPayload?, DICOMRetrieveProgress?) async -> Void,
         context: DICOMServiceContext
     ) async {
-        var progress = DICOMRetrieveProgress(remaining: items.count)
-        var failedInstances: [String] = []
         for item in items {
             if await context.isCancelled {
-                await respond(.cancel, nil, failureList(failedInstances, context), progress)
+                state.cancelled = true
                 return
             }
-            progress.remaining -= 1
+            state.attempted.insert(item.sopInstanceUID)
+            state.progress.remaining -= 1
             do {
                 let status = try await association.store(item, moveOriginator: moveOriginator)
                 switch status.category {
-                case .success: progress.completed += 1
-                case .warning: progress.warning += 1
+                case .success: state.progress.completed += 1
+                case .warning: state.progress.warning += 1
                 default:
-                    progress.failed += 1
-                    failedInstances.append(item.sopInstanceUID)
+                    state.progress.failed += 1
+                    state.failedInstances.append(item.sopInstanceUID)
                 }
             } catch {
-                progress.failed += 1
-                failedInstances.append(item.sopInstanceUID)
+                state.progress.failed += 1
+                state.failedInstances.append(item.sopInstanceUID)
             }
-            if progress.remaining > 0 { await respond(.pending, nil, nil, progress) }
+            if state.progress.remaining > 0 { await respond(.pending, nil, nil, state.progress) }
         }
+    }
+
+    /// The final response of a C-MOVE or C-GET.
+    private func finish(
+        _ state: SubOperations, respond: (DICOMStatus, String?, DICOMDataSetPayload?, DICOMRetrieveProgress?) async -> Void,
+        context: DICOMServiceContext
+    ) async {
+        if state.cancelled {
+            await respond(.cancel, nil, failureList(state.failedInstances, context), state.progress)
+            return
+        }
+        let progress = state.progress
         let status: DICOMStatus
-        if progress.failed > 0, progress.failed == items.count {
+        if progress.failed > 0, progress.failed == state.count {
             status = .retrieveOutOfResourcesForSuboperations
         } else if progress.failed + progress.warning > 0 {
             status = .suboperationsCompleteWithFailures
         } else {
             status = .success
         }
-        await respond(status, nil, failureList(failedInstances, context), progress)
+        await respond(status, nil, failureList(state.failedInstances, context), progress)
     }
 
     /// The Failed SOP Instance UID List (0008,0058) of a final response.
