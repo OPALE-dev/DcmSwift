@@ -92,3 +92,14 @@ against Table R.3.2-1, and keeps them there as JSON documents.
 DcmServer -a PACS -s ./archive --ian-destination RIS=ris.example.org:11112
 DcmServer -a RIS --ian-directory ./availability
 ```
+
+## Application Event Logging
+
+With `--event-log-directory`, `DcmServer` is an SCP of the Procedural Event
+Logging and Substance Administration Logging SOP Classes (PS3.4 P). Events
+are checked against Tables P.2-2 and P.3-2 and kept there in `eventLog/` as
+JSON documents; no Procedure Log instance is made from them.
+
+```sh
+DcmServer -a LOG --event-log-directory ./events
+```

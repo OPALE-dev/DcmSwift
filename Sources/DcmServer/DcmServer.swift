@@ -29,7 +29,8 @@ struct DcmServer: AsyncParsableCommand {
             set, and retrieved, kept there as DICOM JSON, and notified to each --mpps-notify AE. \
             Each --ian-destination receives an Instance Availability Notification for the instances \
             stored, per study, once none has arrived for --ian-delay seconds; with --ian-directory, \
-            notifications are also received and kept there.
+            notifications are also received and kept there. With --event-log-directory, procedural \
+            and substance administration events (Application Event Logging) are checked and kept there.
             """)
 
     @Option(name: .shortAndLong, help: "Local AE title.")
@@ -61,6 +62,9 @@ struct DcmServer: AsyncParsableCommand {
 
     @Option(name: .long, help: "Directory where received Instance Availability Notifications are kept.")
     var ianDirectory: String?
+
+    @Option(name: .long, help: "Directory where Application Event Logging events are kept.")
+    var eventLogDirectory: String?
 
     @Option(name: .long, help: "Port of the DICOMweb service over the storage directory (default: none).")
     var httpPort: Int?
@@ -229,6 +233,15 @@ struct DcmServer: AsyncParsableCommand {
                 let count = notification.series.reduce(0) { $0 + $1.instances.count }
                 print("\(context.callingAETitle): \(count) instances available in study \(notification.studyInstanceUID)")
             }
+        }
+        if let eventLogDirectory {
+            let service = DICOMEventLoggingService(
+                index: DICOMFileArchiveIndex(directory: URL(fileURLWithPath: eventLogDirectory, isDirectory: true))
+            ) { sopClass, _, context in
+                let kind = sopClass == DICOMSOPClass.proceduralEventLogging ? "procedural event" : "substance administration"
+                print("\(context.callingAETitle): \(kind) logged")
+            }
+            for sopClass in DICOMEventLoggingService.sopClasses { normalized[sopClass] = service }
         }
         let ianRecipients = try Self.nodes(ianDestination, option: "--ian-destination", tls: false)
         let availability = ianRecipients.isEmpty ? nil : DICOMInstanceAvailabilityNotifier(
