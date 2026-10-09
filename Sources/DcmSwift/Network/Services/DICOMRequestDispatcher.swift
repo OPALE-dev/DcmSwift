@@ -179,6 +179,8 @@ struct DICOMRequestDispatcher: Sendable {
             answer.affectedSOPInstanceUID = response.sopInstanceUID ?? sopInstance
             answer.status = response.status.code
             answer.errorComment = response.errorComment.map { String($0.prefix(64)) }
+            answer.errorID = response.errorID
+            answer.attributeIdentifierList = response.attributes
             if response.status.category != .failure {
                 switch operation {
                 case .eventReport(let type): answer.eventTypeID = response.typeID ?? type

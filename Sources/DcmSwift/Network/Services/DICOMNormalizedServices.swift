@@ -73,13 +73,19 @@ public struct DICOMNormalizedResponse: @unchecked Sendable {
     /// Event Reply, Attribute List, or Action Reply.
     public var dataSet: DataSet?
     public var errorComment: String?
+    /// Error ID (0000,0903), a code defined by the SOP class.
+    public var errorID: UInt16?
+    /// Attribute Identifier List (0000,1005) of the attributes in error.
+    public var attributes: [UInt32]?
     /// Event Type ID or Action Type ID, echoed in the response.
     public var typeID: UInt16?
 
     public init(
         status: DICOMStatus, sopClassUID: String? = nil, sopInstanceUID: String? = nil, dataSet: DataSet? = nil,
-        errorComment: String? = nil, typeID: UInt16? = nil
+        errorComment: String? = nil, errorID: UInt16? = nil, attributes: [UInt32]? = nil, typeID: UInt16? = nil
     ) {
+        self.errorID = errorID
+        self.attributes = attributes
         self.status = status
         self.sopClassUID = sopClassUID
         self.sopInstanceUID = sopInstanceUID
@@ -207,7 +213,7 @@ extension DICOMAssociation {
         return DICOMNormalizedResponse(
             status: last.command.statusValue ?? .success, sopClassUID: last.command.affectedSOPClassUID,
             sopInstanceUID: last.command.affectedSOPInstanceUID, dataSet: reply, errorComment: last.command.errorComment,
-            typeID: last.command.eventTypeID ?? last.command.actionTypeID)
+            errorID: last.command.errorID, attributes: last.command.attributeIdentifierList, typeID: last.command.eventTypeID ?? last.command.actionTypeID)
     }
 
     /// An accepted context on which this side acts as SCP, to send
