@@ -218,11 +218,20 @@ public final class DICOMServer: Sendable {
             count += 1
             return count <= configuration.maximumAssociations
         }
-        defer { active.withLockedValue { $0 -= 1 } }
+        // A rejected association gives its place back at once, not when its
+        // connection closes.
+        let slot = NIOLockedValueBox(true)
+        let release: @Sendable () -> Void = { [active] in
+            if slot.withLockedValue({ held in defer { held = false }; return held }) {
+                active.withLockedValue { $0 -= 1 }
+            }
+        }
+        defer { release() }
         do {
             try await connection.executeThenClose { inbound, outbound in
                 try await self.associate(
-                    inbound: inbound, outbound: outbound, channel: connection.channel, admitted: admitted)
+                    inbound: inbound, outbound: outbound, channel: connection.channel, admitted: admitted,
+                    release: release)
             }
         } catch {
             logger.debug("connection from \(peer) ended: \(error)")
@@ -231,7 +240,7 @@ public final class DICOMServer: Sendable {
 
     private func associate(
         inbound: NIOAsyncChannelInboundStream<DICOMPDU>, outbound: NIOAsyncChannelOutboundWriter<DICOMPDU>,
-        channel: Channel, admitted: Bool
+        channel: Channel, admitted: Bool, release: @Sendable () -> Void
     ) async throws {
         let configuration = self.configuration
         let logger = configuration.logger
@@ -264,6 +273,7 @@ public final class DICOMServer: Sendable {
             : .failure(DICOMAssociateReject(result: .transient, reason: .localLimitExceeded))
         switch answer {
         case .failure(let reject):
+            release()
             logger.info("rejecting \(request.callingAETitle) at \(channel.remoteAddress?.description ?? "?"): \(reject.reason)")
             if let audit = configuration.audit {
                 let host = DICOMAuditMessage.host(of: channel.remoteAddress?.description)
