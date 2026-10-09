@@ -193,6 +193,23 @@ sockets.
 | Query | <code>find(_:)</code>: an <code>AsyncSequence</code> of matches; stopping early sends C-CANCEL | <ul><li><code>DICOMQueryService</code>, Patient Root, Study Root, Patient/Study Only (retired)</li><li><code>DICOMQueryMatching</code>: PS3.4 C.2.2.2 matching</li></ul> |
 | Retrieve | <ul><li><code>move(_:destination:)</code>, <code>get(_:)</code>, with progress</li><li>Task cancellation sends C-CANCEL</li></ul> | <ul><li><code>DICOMRetrieveService</code>, with Composite Instance Root</li><li>C-MOVE through a new association to the destination, C-GET on the same association</li><li>Sub-operation counts and Failed SOP Instance UID List</li></ul> |
 
+### Workflow services (PS3.4 K, F)
+
+| Service | SCU | SCP |
+| --- | --- | --- |
+| Modality Worklist (K.6) | <ul><li><code>find</code> on <code>DICOMSOPClass.modalityWorklistFind</code></li><li><code>DcmFind -m worklist</code>, with keys inside sequences (<code>Sequence[0].Keyword</code>)</li></ul> | <ul><li><code>DICOMModalityWorklist</code>: items in memory, or read at each query from a directory (Part 10, bare <code>.wl</code> data sets, DICOM JSON)</li><li>Every attribute can be matched: no unsupported optional key, status FF00</li><li>Scheduled Procedure Step Start Date and Time matched as one period when both are ranges</li><li>Several Scheduled Procedure Step Items: A900</li><li><code>DcmServer --worklist-directory</code></li></ul> |
+
+C-FIND matching (`DICOMQueryMatcher`, PS3.4 C.2.2.2) is shared by the
+workflow services:
+
+| Matching | Behavior |
+| --- | --- |
+| Single value, wild card | <ul><li>Case-sensitive for AE, CS, LO, LT, SH, ST, UC, UR, UT</li><li>PN insensitive to case and accents; a key without <code>=</code> is tried on each component group; trailing <code>^</code> ignored</li><li>DS and IS by numeric value</li></ul> |
+| Dates and times | <ul><li>By meaning: each bound covers its precision (<code>2230</code> matches <code>223000</code> to <code>223059</code>)</li><li>DT offsets honoured; retired <code>YYYY.MM.DD</code> and <code>HH:MM:SS</code> forms read</li><li>TM ranges crossing midnight do not match</li></ul> |
+| Sequences | <ul><li>Item by Item, at any depth; matching Items returned with the requested attributes only</li><li>An empty key sequence or Item returns the whole sequence</li></ul> |
+| Multiple values | <ul><li>A stored attribute matches when any of its values does; all are returned</li><li>A key with several values (other than UI) matches when any does</li></ul> |
+| Unknown values | An absent or empty attribute does not match a key that is not universal |
+
 ### DIMSE-N services (PS3.7 10) and Storage Commitment (PS3.4 J)
 
 | Service | SCU | SCP |

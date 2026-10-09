@@ -299,7 +299,7 @@ their state rules, qualified against pynetdicom, DCMTK, and dcm4che.
 
 | Status | Area | Effort | Scope | Normative source | Oracle |
 | :-: | --- | :-: | --- | --- | --- |
-| ☐ | Modality Worklist | M | <ul><li>C-FIND on the Modality Worklist Information Model, SCU and SCP</li><li>Matching keys and return keys of K.6</li><li>A worklist provider in `DcmServer` and a query tool</li></ul> | PS3.4 K | DCMTK `wlmscpfs`, `findscu`; pynetdicom |
+| ✓ | Modality Worklist | M | <ul><li>C-FIND on the Modality Worklist Information Model, SCU and SCP</li><li>Matching keys and return keys of K.6</li><li>A worklist provider in `DcmServer` and a query tool</li></ul> | PS3.4 K | DCMTK `wlmscpfs`, `findscu` (`Scripts/crosscheck/worklist_dcmtk.py`) |
 | ☐ | Modality Performed Procedure Step | M | <ul><li>N-CREATE and N-SET with the IN PROGRESS, COMPLETED, and DISCONTINUED rules</li><li>Attribute requirements per operation (F.7.2)</li><li>MPPS Notification and Retrieve</li></ul> | PS3.4 F | pynetdicom; dcm4che `mppsscu` |
 | ☐ | Unified Procedure Step | XL | <ul><li>Push, Pull, Watch, Event, and Query SOP Classes</li><li>State machine, locking Transaction UID, cancellation requests</li><li>Subscriptions, global and filtered, with N-EVENT-REPORT delivery</li></ul> | PS3.4 CC | pynetdicom; dcm4che `upsscu` |
 | ☐ | Instance Availability Notification | S | N-CREATE SCU and SCP, sent by `DcmServer` after storage | PS3.4 R | dcm4che `ianscu` |

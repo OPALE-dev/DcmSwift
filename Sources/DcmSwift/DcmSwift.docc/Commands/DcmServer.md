@@ -51,3 +51,15 @@ DcmServer -s ./archive --audit udp://127.0.0.1:514
 This is a demonstrator and interoperability tool. Production deployment still
 requires access control, durable indexing, audit logging, monitoring, backup,
 and an operational security review.
+
+## Modality Worklist
+
+With `--worklist-directory`, `DcmServer` is a Modality Worklist SCP. The
+directory is read at each query, recursively: Part 10 files, data sets
+without File Meta Information (such as the `.wl` files of DCMTK `wlmscpfs`),
+and DICOM JSON files (`.json`) are worklist items. It needs no storage
+directory.
+
+```sh
+DcmServer -a RIS --worklist-directory ./worklist
+```
