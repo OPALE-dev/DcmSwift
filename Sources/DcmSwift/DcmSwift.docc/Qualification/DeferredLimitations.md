@@ -251,8 +251,6 @@ conformance without that evidence.
   planned as separate packages.
 - The memory and file indexes ignore query conditions and let the services
   filter every document of a collection.
-- A C-MOVE whose destination is the server itself completes, but only after
-  about 60 seconds (seen with `Scripts/interop/scu.py`).
 - Modality Worklist: the extended negotiation of fuzzy person-name
   matching and timezone query adjustment is not accepted (names already
   match without regard to case and accents), and Timezone Offset From UTC
