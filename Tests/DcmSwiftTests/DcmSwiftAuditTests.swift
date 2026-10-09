@@ -166,8 +166,8 @@ final class DcmSwiftAuditTests: XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         let recorder = AuditCollector()
-        let services = DICOMDirectoryArchiveServices(
-            archive: DICOMDirectoryArchive(directory: directory), audit: recorder, auditSource: source)
+        let services = DICOMArchiveServices(
+            archive: DICOMArchive(directory: directory), audit: recorder, auditSource: source)
         let item = try DICOMRetrieveItem(dataSet: DcmSwiftIODValidationTests.secondaryCaptureImage())
         let instance = DICOMReceivedInstance(
             sopClassUID: item.sopClassUID, sopInstanceUID: item.sopInstanceUID, transferSyntaxUID: item.transferSyntaxUID,

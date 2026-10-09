@@ -30,7 +30,7 @@ extension DICOMAuditMessage {
 
     /// The studies and patients of archive records, each study with its SOP
     /// Classes and their number of instances.
-    static func objects(of records: [DICOMDirectoryArchive.Record]) -> [ParticipantObject] {
+    static func objects(of records: [DICOMArchive.Record]) -> [ParticipantObject] {
         var studies: [String: [String: Int]] = [:]
         var patients: [String: String] = [:]
         for record in records {
