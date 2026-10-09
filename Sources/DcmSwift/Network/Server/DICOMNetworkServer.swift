@@ -88,6 +88,7 @@ public final class DICOMServer: Sendable {
     ///   - configuration: local AE, listener, security, and protocol limits.
     ///   - storage: the Storage SCP service.
     ///   - query: the Query SCP service.
+    ///   - worklist: the Modality Worklist SCP service.
     ///   - retrieve: the C-GET and C-MOVE retrieval service.
     ///   - storageCommitment: the Storage Commitment SCP.
     ///   - storageCommitmentReceiver: receives Storage Commitment results as
@@ -96,7 +97,7 @@ public final class DICOMServer: Sendable {
     ///   - eventLoopGroup: NIO event loops used by the listener and associations.
     public init(
         configuration: DICOMServerConfiguration, storage: DICOMStorageService? = nil,
-        query: DICOMQueryService? = nil, retrieve: DICOMRetrieveService? = nil,
+        query: DICOMQueryService? = nil, worklist: DICOMQueryService? = nil, retrieve: DICOMRetrieveService? = nil,
         storageCommitment: DICOMStorageCommitmentService? = nil,
         storageCommitmentReceiver: DICOMStorageCommitmentReceiver? = nil,
         normalized: [String: DICOMNormalizedService] = [:],
@@ -111,7 +112,7 @@ public final class DICOMServer: Sendable {
                 tls: configuration.clientTLS, logger: configuration.logger),
             eventLoopGroup: eventLoopGroup)
         dispatcher = DICOMRequestDispatcher(
-            verification: true, storage: storage, query: query, retrieve: retrieve, normalized: normalized,
+            verification: true, storage: storage, query: query, worklist: worklist, retrieve: retrieve, normalized: normalized,
             storageCommitment: storageCommitment, commitmentReceiver: storageCommitmentReceiver,
             outgoingClient: outgoingClient)
 
@@ -130,6 +131,10 @@ public final class DICOMServer: Sendable {
             for model in [DICOMSOPClass.patientRootFind, DICOMSOPClass.studyRootFind, DICOMSOPClass.patientStudyOnlyFind] {
                 syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes)
             }
+        }
+        if worklist != nil {
+            syntaxes[DICOMSOPClass.modalityWorklistFind] = DICOMAbstractSyntaxSupport(
+                transferSyntaxes: configuration.transferSyntaxes)
         }
         if retrieve != nil {
             for model in [DICOMSOPClass.patientRootMove, DICOMSOPClass.studyRootMove, DICOMSOPClass.patientStudyOnlyMove,
