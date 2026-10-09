@@ -184,6 +184,7 @@ on every platform.
 | DIMSE-C (PS3.7, PS3.4) | <ul><li>C-ECHO, C-STORE, C-FIND, C-MOVE, C-GET, C-CANCEL</li><li>SCU and SCP, checked against pynetdicom 3.0.4 in both directions</li></ul> |
 | DIMSE-N (PS3.7 10) | <ul><li>N-EVENT-REPORT, N-GET, N-SET, N-ACTION, N-CREATE, N-DELETE, SCU and SCP</li><li>Services plugged in per SOP Class</li></ul> |
 | Modality Worklist (PS3.4 K) | <ul><li>C-FIND SCU and SCP with sequence and combined date-time matching</li><li>Worklist items from memory or a directory</li><li>Responses identical to DCMTK <code>wlmscpfs</code></li></ul> |
+| Modality Performed Procedure Step (PS3.4 F) | <ul><li>N-CREATE and N-SET with the IN PROGRESS, COMPLETED, and DISCONTINUED rules of Table F.7.2-1</li><li>Retrieve (N-GET) and Notification (N-EVENT-REPORT)</li><li>Checked against pynetdicom</li></ul> |
 | Storage Commitment (PS3.4 J) | <ul><li>Push Model SCU and SCP</li><li>Results on the same association or a new one with role selection</li><li>Checked against pynetdicom in both roles</li></ul> |
 | TLS (PS3.15 B.12, B.13) | <ul><li>TLS 1.2 and 1.3 with swift-nio-ssl (BoringSSL); ECDHE with AEAD suites only</li><li>Server verification with host name; mutual authentication; peer certificate given to services</li><li>Checked against Python <code>ssl</code> (OpenSSL) through pynetdicom</li></ul> |
 | DICOMweb Studies Service (PS3.18 10) | <ul><li>QIDO-RS, WADO-RS (instances, metadata, frames, Pixel Data, rendered, thumbnails), STOW-RS, Retrieve Capabilities</li><li>User agent on AsyncHTTPClient, origin server on SwiftNIO over HTTP/1.1 or HTTPS</li><li>Server checked with dicomweb-client, client with Orthanc and its DICOMweb plugin</li></ul> |
@@ -213,7 +214,7 @@ Every tool documents its options with `--help`.
 | [DcmEcho](Sources/DcmSwift/DcmSwift.docc/Commands/DcmEcho.md) | Verification SCU |
 | [DcmStore](Sources/DcmSwift/DcmSwift.docc/Commands/DcmStore.md) | Storage SCU, with optional Storage Commitment |
 | [DcmFind](Sources/DcmSwift/DcmSwift.docc/Commands/DcmFind.md) | Query SCU (C-FIND), including Modality Worklist |
-| [DcmServer](Sources/DcmSwift/DcmSwift.docc/Commands/DcmServer.md) | Verification, storage, Query/Retrieve, Storage Commitment, and Modality Worklist SCP over directories, also served over DICOMweb |
+| [DcmServer](Sources/DcmSwift/DcmSwift.docc/Commands/DcmServer.md) | Verification, storage, Query/Retrieve, Storage Commitment, Modality Worklist, and MPPS SCP over directories, also served over DICOMweb |
 
 The network options and TLS settings shared by the network tools are listed in
 [Command-Line Tools](Sources/DcmSwift/DcmSwift.docc/Guides/CommandLineTools.md).

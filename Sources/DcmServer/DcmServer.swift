@@ -15,7 +15,7 @@ import Foundation
 @main
 struct DcmServer: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        abstract: "Serve verification, storage, query/retrieve, Storage Commitment, and Modality Worklist.",
+        abstract: "Serve verification, storage, query/retrieve, Storage Commitment, Modality Worklist, and MPPS.",
         discussion: """
             Without --storage-directory, only C-ECHO is served. With it, received instances are written \
             there as <SOPInstanceUID>.dcm, in their received transfer syntax, and the Part 10 files found \
@@ -25,7 +25,8 @@ struct DcmServer: AsyncParsableCommand {
             the same directory is also served over DICOMweb (QIDO-RS, WADO-RS, STOW-RS), with TLS when \
             --tls-certificate is given. With --worklist-directory, the worklist items found there at each \
             query (Part 10 files, bare data sets such as DCMTK .wl files, or DICOM JSON) answer Modality \
-            Worklist C-FIND.
+            Worklist C-FIND. With --mpps-directory, Modality Performed Procedure Steps are created, \
+            set, and retrieved, kept there as DICOM JSON, and notified to each --mpps-notify AE.
             """)
 
     @Option(name: .shortAndLong, help: "Local AE title.")
@@ -42,6 +43,12 @@ struct DcmServer: AsyncParsableCommand {
 
     @Option(name: .long, help: "Directory of Modality Worklist items, read at each query.")
     var worklistDirectory: String?
+
+    @Option(name: .long, help: "Directory of Modality Performed Procedure Steps, kept as DICOM JSON.")
+    var mppsDirectory: String?
+
+    @Option(name: .long, help: "An SCU of MPPS notifications, as AET=host:port; repeatable.")
+    var mppsNotify: [String] = []
 
     @Option(name: .long, help: "Port of the DICOMweb service over the storage directory (default: none).")
     var httpPort: Int?
@@ -102,6 +109,8 @@ struct DcmServer: AsyncParsableCommand {
         guard (0...65535).contains(port) else { throw ValidationError("invalid port \(port)") }
         guard maxAssociations >= 1 else { throw ValidationError("--max-associations must be at least 1") }
         _ = try destinations()
+        _ = try Self.nodes(mppsNotify, option: "--mpps-notify", tls: false)
+        if !mppsNotify.isEmpty, mppsDirectory == nil { throw ValidationError("--mpps-notify needs --mpps-directory") }
         if !destination.isEmpty, storageDirectory == nil {
             throw ValidationError("--destination needs --storage-directory")
         }
@@ -141,19 +150,21 @@ struct DcmServer: AsyncParsableCommand {
     }
 
     func destinations() throws -> [String: DICOMRemoteNode] {
-        var nodes: [String: DICOMRemoteNode] = [:]
-        for value in destination {
+        Dictionary(try Self.nodes(destination, option: "--destination", tls: destinationTLS).map { ($0.aeTitle, $0) },
+                   uniquingKeysWith: { _, last in last })
+    }
+
+    /// Nodes given as AET=host:port.
+    static func nodes(_ values: [String], option: String, tls: Bool) throws -> [DICOMRemoteNode] {
+        try values.map { value in
             let parts = value.split(separator: "=", maxSplits: 1)
             guard parts.count == 2, let colon = parts[1].lastIndex(of: ":"),
                   let port = Int(parts[1][parts[1].index(after: colon)...]), (1...65535).contains(port),
                   DICOMApplicationEntityTitle.isValid(String(parts[0])) else {
-                throw ValidationError("--destination expects AET=host:port, not \(value)")
+                throw ValidationError("\(option) expects AET=host:port, not \(value)")
             }
-            let title = String(parts[0])
-            nodes[title] = DICOMRemoteNode(
-                aeTitle: title, host: String(parts[1][..<colon]), port: port, useTLS: destinationTLS)
+            return DICOMRemoteNode(aeTitle: String(parts[0]), host: String(parts[1][..<colon]), port: port, useTLS: tls)
         }
-        return nodes
     }
 
     func run() async throws {
@@ -179,6 +190,21 @@ struct DcmServer: AsyncParsableCommand {
         if let directory = worklist?.directory {
             print("\(DICOMModalityWorklist.items(in: directory).count) worklist items in \(directory.path)")
         }
+        var normalized: [String: DICOMNormalizedService] = [:]
+        if let mppsDirectory {
+            let directory = URL(fileURLWithPath: mppsDirectory, isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let recipients = try Self.nodes(mppsNotify, option: "--mpps-notify", tls: false)
+            let notifier = recipients.isEmpty ? nil : DICOMPerformedProcedureStepNotifier(
+                client: try DICOMClient(configuration: DICOMClientConfiguration(
+                    aeTitle: aet, limits: network.limits, timeouts: network.timeouts, logger: logger)),
+                recipients: recipients)
+            let service = DICOMPerformedProcedureStepService(directory: directory) { event, uid, _ in
+                await notifier?.send(event, instance: uid)
+            }
+            for sopClass in DICOMPerformedProcedureStepService.sopClasses { normalized[sopClass] = service }
+            print("\(await service.instanceUIDs().count) performed procedure steps in \(directory.path)")
+        }
         let server: DICOMServer
         var web: DICOMwebServer?
         if let storageDirectory {
@@ -192,7 +218,7 @@ struct DcmServer: AsyncParsableCommand {
                 auditSource: auditSource)
             server = try DICOMServer(
                 configuration: configuration, storage: services, query: services, worklist: worklist,
-                retrieve: services, storageCommitment: services)
+                retrieve: services, storageCommitment: services, normalized: normalized)
             if let httpPort {
                 var network = DICOMwebServerNetworkConfiguration(
                     host: host, port: httpPort, tls: try tls.configuration(), publicOrigin: httpPublicOrigin, logger: logger)
@@ -203,7 +229,7 @@ struct DcmServer: AsyncParsableCommand {
                     network: network)
             }
         } else {
-            server = try DICOMServer(configuration: configuration, worklist: worklist)
+            server = try DICOMServer(configuration: configuration, worklist: worklist, normalized: normalized)
         }
         let banner = "\(configuration.aeTitle) listening on \(configuration.host)"
         let secure = configuration.tls != nil ? " (TLS)" : ""

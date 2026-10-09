@@ -63,3 +63,17 @@ directory.
 ```sh
 DcmServer -a RIS --worklist-directory ./worklist
 ```
+
+## Modality Performed Procedure Step
+
+With `--mpps-directory`, `DcmServer` is an SCP of the Modality Performed
+Procedure Step SOP Class and of its Retrieve SOP Class. Each step is kept
+there as `<SOP Instance UID>.json` (DICOM JSON) and read again at start-up.
+Requests are checked against PS3.4 Table F.7.2-1. Each `--mpps-notify
+AET=host:port` receives the In Progress, Updated, Completed, and
+Discontinued events (N-EVENT-REPORT of the Notification SOP Class).
+
+```sh
+DcmServer -a RIS --worklist-directory ./worklist \
+  --mpps-directory ./mpps --mpps-notify PACS=pacs.example.org:11112
+```
