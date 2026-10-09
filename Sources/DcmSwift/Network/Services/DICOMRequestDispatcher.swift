@@ -8,6 +8,8 @@ struct DICOMRequestDispatcher: Sendable {
     var verification = true
     var storage: DICOMStorageService?
     var query: DICOMQueryService?
+    /// Answers C-FIND on the Modality Worklist Information Model.
+    var worklist: DICOMQueryService?
     var retrieve: DICOMRetrieveService?
     /// DIMSE-N services, by abstract syntax.
     var normalized: [String: DICOMNormalizedService] = [:]
@@ -94,6 +96,7 @@ struct DICOMRequestDispatcher: Sendable {
             }
 
         case .cFindRequest:
+            let query = context.abstractSyntax == DICOMSOPClass.modalityWorklistFind ? worklist : self.query
             guard let query, let payload = request.dataSet else {
                 await respond(query == nil ? .sopClassNotSupported : .identifierDoesNotMatchSOPClass)
                 return
@@ -111,6 +114,8 @@ struct DICOMRequestDispatcher: Sendable {
                     await respond(.pending, dataSet: DICOMDataSetPayload(data: encoded))
                 }
                 await respond(await serviceContext.isCancelled ? .cancel : .success)
+            } catch let error as DICOMServiceError {
+                await respond(error.status, comment: error.comment)
             } catch {
                 runtime.logger.warning("C-FIND failed: \(error)")
                 await respond(.unableToProcess, comment: comment(error))
@@ -228,6 +233,8 @@ struct DICOMRequestDispatcher: Sendable {
                 return
             }
             await respond(try await service.perform(normalizedRequest, context: context))
+        } catch let error as DICOMServiceError {
+            await respond(DICOMNormalizedResponse(status: error.status, errorComment: error.comment))
         } catch {
             runtime.logger.warning("\(command.field) failed: \(error)")
             await respond(DICOMNormalizedResponse(status: .processingFailure, errorComment: "\(error)"))

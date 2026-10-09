@@ -19,6 +19,14 @@ public enum DICOMSOPClass {
     public static let compositeInstanceRootMove = "1.2.840.10008.5.1.4.1.2.4.3"
     public static let compositeInstanceRetrieveWithoutBulkDataGet = "1.2.840.10008.5.1.4.1.2.5.3"
 
+    /// Modality Worklist Information Model - FIND (PS3.4 K.6).
+    public static let modalityWorklistFind = "1.2.840.10008.5.1.4.31"
+    /// Modality Performed Procedure Step (PS3.4 F.7), Retrieve (F.8), and
+    /// Notification (F.9); all three share the SOP Instance UIDs.
+    public static let modalityPerformedProcedureStep = "1.2.840.10008.3.1.2.3.3"
+    public static let modalityPerformedProcedureStepRetrieve = "1.2.840.10008.3.1.2.3.4"
+    public static let modalityPerformedProcedureStepNotification = "1.2.840.10008.3.1.2.3.5"
+
     /// Storage SOP classes of PS3.4 Table B.5-1.
     public static let storage: [String] = [
         "1.2.840.10008.5.1.4.1.1.1",  // Computed Radiography Image Storage

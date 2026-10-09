@@ -3,9 +3,15 @@ import NIOCore
 import NIOSSL
 
 /// A DIMSE operation failed with a status other than success or warning.
+/// Services throw it to answer with that status.
 public struct DICOMServiceError: Error, Equatable, CustomStringConvertible {
     public let status: DICOMStatus
     public let comment: String?
+
+    public init(status: DICOMStatus, comment: String? = nil) {
+        self.status = status
+        self.comment = comment
+    }
 
     public var description: String {
         "DIMSE status \(status)" + (comment.map { ": \($0)" } ?? "")
