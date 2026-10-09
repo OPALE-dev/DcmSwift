@@ -245,8 +245,9 @@ in them. The remaining phases follow their dependencies, not their numbers:
 | 3 | Phase 6 — Object models and data | Phase 1, Phase 4 builder | Volumes are needed by Phase 8 and by the volume resources of Phase 9 |
 | 4 | Phase 7 — Report templates | Phase 4 (SR, terminology) | Builds on the SR content tree; CDA and AIM need the templates |
 | 5 | Phase 8 — Advanced imaging objects | Phase 3, Phase 6 | Whole slide imaging and annotations need tiles, volumes, and rendering |
-| 6 | Phase 9 — Network and web completeness | Phases 3, 5, 6, 8 | Query/Retrieve of the objects of Phase 8, rendered volume resources |
-| 7 | Phase 10 — Security, media, and legacy services | — | Completeness; no other phase depends on it |
+| 6 | Phase 11 — Archive adapters | Phase 5 (pluggable archive storage) | A database-backed archive, such as a small PACS or a Vapor application, before the completeness phases |
+| 7 | Phase 9 — Network and web completeness | Phases 3, 5, 6, 8 | Query/Retrieve of the objects of Phase 8, rendered volume resources |
+| 8 | Phase 10 — Security, media, and legacy services | — | Completeness; no other phase depends on it |
 
 ## Phase 3 — Image rendering and presentation (after Phase 5)
 
@@ -358,7 +359,16 @@ services, then UPS, then its RESTful version.
 | ☐ | DICOMweb completeness | L | <ul><li>Non-Patient Instance service</li><li>Bulk Data resources and STOW-RS of metadata with Bulk Data</li><li>Rendered GIF, video, MPR and 3D volume resources</li><li>Charset negotiation, fuzzy and multiple-value matching, paging, HTTP Range</li></ul> | PS3.18 | dicomweb-client; Orthanc; dcm4chee-arc |
 | ☐ | Independent peers | M | Fragmentation, state transitions, and live-association fuzzing against DCMTK and dcm4che (Phase 2 item) | PS3.8 | DCMTK; dcm4che |
 
-## Archive adapters (separate packages)
+## Phase 10 — Security, media, and legacy services
+
+| Status | Area | Effort | Scope | Normative source | Oracle |
+| :-: | --- | :-: | --- | --- | --- |
+| ☐ | Security completeness | XL | <ul><li>Secure DICOM Files (Part 10 inside CMS)</li><li>User identity validation: JWT, SAML, Kerberos</li><li>Certificate revocation (CRL, OCSP) and trust checks for signatures</li><li>Creator and Authorization RSA signature profiles, certified timestamps</li><li>Audit message reception</li><li>Configuration profiles (LDAP, DHCP, DNS, NTP)</li></ul> | PS3.15; PS3.10 7.4 | openssl; DCMTK `dcmsign` |
+| ☐ | Media | M | <ul><li>PS3.11 application profiles and PS3.12 media formats (Phase 1 item)</li><li>File-set updates: additions, replacements, deletions</li></ul> | PS3.11; PS3.12; PS3.3 F | DCMTK `dcmgpdir`, `dcmmkdir` |
+| ☐ | Remaining services | L | <ul><li>Print Management (Basic Grayscale and Color Print)</li><li>Media Creation Management</li><li>Display System Management</li><li>Substance Administration and Product Characteristics queries</li><li>RT Machine Verification</li></ul> | PS3.4 H, S, EE, V, DD | DCMTK `dcmprscp`; pynetdicom |
+| ☐ | Writing the remaining RT objects | L | RT Plan and Ion Plan | PS3.3 C.8.8 | dicompyler-core; pydicom |
+
+## Phase 11 — Archive adapters (separate packages)
 
 Database drivers never become dependencies of DcmSwift: each adapter is its
 own package, which depends on DcmSwift and passes the conformance kit, so that
@@ -368,15 +378,6 @@ applications choose their stack (a Vapor application reuses its database).
 | :-: | --- | :-: | --- | --- |
 | ☐ | SQLKit | L | <ul><li>PostgreSQL, MySQL, and SQLite through SQLKit, on the database a Vapor or Fluent application already has</li><li>Schema and migrations; the neutral query model translated to SQL</li></ul> | Conformance kit; dcm4chee-arc |
 | ☐ | Standalone SQLite | M | For iOS and command-line use without SQLKit | Conformance kit |
-
-## Phase 10 — Security, media, and legacy services
-
-| Status | Area | Effort | Scope | Normative source | Oracle |
-| :-: | --- | :-: | --- | --- | --- |
-| ☐ | Security completeness | XL | <ul><li>Secure DICOM Files (Part 10 inside CMS)</li><li>User identity validation: JWT, SAML, Kerberos</li><li>Certificate revocation (CRL, OCSP) and trust checks for signatures</li><li>Creator and Authorization RSA signature profiles, certified timestamps</li><li>Audit message reception</li><li>Configuration profiles (LDAP, DHCP, DNS, NTP)</li></ul> | PS3.15; PS3.10 7.4 | openssl; DCMTK `dcmsign` |
-| ☐ | Media | M | <ul><li>PS3.11 application profiles and PS3.12 media formats (Phase 1 item)</li><li>File-set updates: additions, replacements, deletions</li></ul> | PS3.11; PS3.12; PS3.3 F | DCMTK `dcmgpdir`, `dcmmkdir` |
-| ☐ | Remaining services | L | <ul><li>Print Management (Basic Grayscale and Color Print)</li><li>Media Creation Management</li><li>Display System Management</li><li>Substance Administration and Product Characteristics queries</li><li>RT Machine Verification</li></ul> | PS3.4 H, S, EE, V, DD | DCMTK `dcmprscp`; pynetdicom |
-| ☐ | Writing the remaining RT objects | L | RT Plan and Ion Plan | PS3.3 C.8.8 | dicompyler-core; pydicom |
 
 ## Out of scope
 
