@@ -14,6 +14,7 @@ let package = Package(
         .library(
             name: "DcmSwift",
             targets: ["DcmSwift"]),
+        .library(name: "DcmSwiftArchiveConformance", targets: ["DcmSwiftArchiveConformance"]),
         .executable(name: "DcmAnonymize", targets: ["DcmAnonymize"]),
         .executable(name: "DcmPrint", targets: ["DcmPrint"]),
         .executable(name: "DcmServer", targets: ["DcmServer"]),
@@ -168,6 +169,9 @@ let package = Package(
             exclude: ["README.md"]),
         // Options shared by the network tools; not a product.
         .target(
+            name: "DcmSwiftArchiveConformance",
+            dependencies: ["DcmSwift"]),
+        .target(
             name: "DcmNetworkCommand",
             dependencies: [
                 "DcmSwift",
@@ -267,7 +271,7 @@ let package = Package(
         .testTarget(
             name: "DcmSwiftTests",
             dependencies: [
-                "DcmSwift", "CZlib",
+                "DcmSwift", "DcmSwiftArchiveConformance", "CZlib",
                 .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "_CryptoExtras", package: "swift-crypto"),
                 .product(name: "X509", package: "swift-certificates"),

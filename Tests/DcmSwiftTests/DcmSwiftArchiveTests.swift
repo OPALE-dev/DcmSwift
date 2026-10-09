@@ -1,5 +1,6 @@
 import XCTest
 @testable import DcmSwift
+import DcmSwiftArchiveConformance
 
 /// Pluggable archive storage: the neutral query model, the archive index
 /// implementations, and their conformance kit.
@@ -34,5 +35,27 @@ final class DcmSwiftArchiveTests: XCTestCase {
                        ... DICOMQuery.normalizedRange("202407071800", vr: "DT")!.upperBound)
         // Without the worklist matcher, each range is its own condition.
         XCTAssertEqual(try DICOMQuery(identifier: identifier).conditions.count, 6)
+    }
+
+    func testMemoryIndexConformance() async throws {
+        try await DICOMArchiveConformance.check { DICOMMemoryArchiveIndex() }
+    }
+
+    func testFileIndexConformanceAndPersistence() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dcmswift-index-\(UUID().uuidString)", isDirectory: true)
+        try await DICOMArchiveConformance.check {
+            DICOMFileArchiveIndex(directory: root.appendingPathComponent(UUID().uuidString, isDirectory: true))
+        }
+        let directory = root.appendingPathComponent("persistence", isDirectory: true)
+        let index = DICOMFileArchiveIndex(directory: directory)
+        try await index.insert(DICOMArchiveDocument(id: "a/b", attributes: ["00100020": ["vr": "LO", "Value": ["P1"]]],
+                                                    metadata: ["k": "v"]), into: .worklist)
+        let read = try await index.document("a/b", in: .worklist)!
+        try await index.replace(read, in: .worklist)
+        let reopened = try await DICOMFileArchiveIndex(directory: directory).document("a/b", in: .worklist)
+        XCTAssertEqual(reopened?.version, 2)
+        XCTAssertEqual(reopened?.metadata, ["k": "v"])
+        XCTAssertEqual(try reopened?.dataSet().string(forTag: "PatientID"), "P1")
     }
 }
