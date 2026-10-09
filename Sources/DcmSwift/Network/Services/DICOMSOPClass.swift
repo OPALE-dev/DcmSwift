@@ -21,6 +21,12 @@ public enum DICOMSOPClass {
 
     /// Modality Worklist Information Model - FIND (PS3.4 K.6).
     public static let modalityWorklistFind = "1.2.840.10008.5.1.4.31"
+    /// Procedural Event Logging and Substance Administration Logging
+    /// (PS3.4 P.2, P.3), with their well-known SOP Instances.
+    public static let proceduralEventLogging = "1.2.840.10008.1.40"
+    public static let proceduralEventLoggingInstance = "1.2.840.10008.1.40.1"
+    public static let substanceAdministrationLogging = "1.2.840.10008.1.42"
+    public static let substanceAdministrationLoggingInstance = "1.2.840.10008.1.42.1"
     /// Instance Availability Notification (PS3.4 R).
     public static let instanceAvailabilityNotification = "1.2.840.10008.5.1.4.33"
     /// Modality Performed Procedure Step (PS3.4 F.7), Retrieve (F.8), and
