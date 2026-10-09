@@ -21,6 +21,8 @@ public enum DICOMSOPClass {
 
     /// Modality Worklist Information Model - FIND (PS3.4 K.6).
     public static let modalityWorklistFind = "1.2.840.10008.5.1.4.31"
+    /// Instance Availability Notification (PS3.4 R).
+    public static let instanceAvailabilityNotification = "1.2.840.10008.5.1.4.33"
     /// Modality Performed Procedure Step (PS3.4 F.7), Retrieve (F.8), and
     /// Notification (F.9); all three share the SOP Instance UIDs.
     public static let modalityPerformedProcedureStep = "1.2.840.10008.3.1.2.3.3"
