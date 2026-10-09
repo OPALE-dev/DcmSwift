@@ -26,7 +26,10 @@ struct DcmServer: AsyncParsableCommand {
             --tls-certificate is given. With --worklist-directory, the worklist items found there at each \
             query (Part 10 files, bare data sets such as DCMTK .wl files, or DICOM JSON) answer Modality \
             Worklist C-FIND. With --mpps-directory, Modality Performed Procedure Steps are created, \
-            set, and retrieved, kept there as DICOM JSON, and notified to each --mpps-notify AE.
+            set, and retrieved, kept there as DICOM JSON, and notified to each --mpps-notify AE. \
+            Each --ian-destination receives an Instance Availability Notification for the instances \
+            stored, per study, once none has arrived for --ian-delay seconds; with --ian-directory, \
+            notifications are also received and kept there.
             """)
 
     @Option(name: .shortAndLong, help: "Local AE title.")
@@ -49,6 +52,15 @@ struct DcmServer: AsyncParsableCommand {
 
     @Option(name: .long, help: "An SCU of MPPS notifications, as AET=host:port; repeatable.")
     var mppsNotify: [String] = []
+
+    @Option(name: .long, help: "An SCP of Instance Availability Notification, as AET=host:port; repeatable.")
+    var ianDestination: [String] = []
+
+    @Option(name: .long, help: "Seconds without a new instance of a study before its availability is notified.")
+    var ianDelay: Double = 5
+
+    @Option(name: .long, help: "Directory where received Instance Availability Notifications are kept.")
+    var ianDirectory: String?
 
     @Option(name: .long, help: "Port of the DICOMweb service over the storage directory (default: none).")
     var httpPort: Int?
@@ -110,6 +122,11 @@ struct DcmServer: AsyncParsableCommand {
         guard maxAssociations >= 1 else { throw ValidationError("--max-associations must be at least 1") }
         _ = try destinations()
         _ = try Self.nodes(mppsNotify, option: "--mpps-notify", tls: false)
+        _ = try Self.nodes(ianDestination, option: "--ian-destination", tls: false)
+        if !ianDestination.isEmpty, storageDirectory == nil {
+            throw ValidationError("--ian-destination needs --storage-directory")
+        }
+        guard ianDelay >= 0 else { throw ValidationError("--ian-delay cannot be negative") }
         if !mppsNotify.isEmpty, mppsDirectory == nil { throw ValidationError("--mpps-notify needs --mpps-directory") }
         if !destination.isEmpty, storageDirectory == nil {
             throw ValidationError("--destination needs --storage-directory")
@@ -205,6 +222,19 @@ struct DcmServer: AsyncParsableCommand {
             for sopClass in DICOMPerformedProcedureStepService.sopClasses { normalized[sopClass] = service }
             print("\(try await service.instanceUIDs().count) performed procedure steps in \(directory.path)")
         }
+        if let ianDirectory {
+            let index = DICOMFileArchiveIndex(directory: URL(fileURLWithPath: ianDirectory, isDirectory: true))
+            normalized[DICOMSOPClass.instanceAvailabilityNotification] = DICOMInstanceAvailabilityService(index: index) {
+                notification, context in
+                let count = notification.series.reduce(0) { $0 + $1.instances.count }
+                print("\(context.callingAETitle): \(count) instances available in study \(notification.studyInstanceUID)")
+            }
+        }
+        let ianRecipients = try Self.nodes(ianDestination, option: "--ian-destination", tls: false)
+        let availability = ianRecipients.isEmpty ? nil : DICOMInstanceAvailabilityNotifier(
+            client: try DICOMClient(configuration: DICOMClientConfiguration(
+                aeTitle: aet, limits: network.limits, timeouts: network.timeouts, logger: logger)),
+            recipients: ianRecipients, retrieveAETitle: aet, delay: ianDelay)
         let server: DICOMServer
         var web: DICOMwebServer?
         if let storageDirectory {
@@ -215,7 +245,7 @@ struct DcmServer: AsyncParsableCommand {
             print("\(indexed) instances in \(directory.path)")
             let services = DICOMArchiveServices(
                 archive: archive, destinations: try destinations(), validation: validationPolicy, audit: audit,
-                auditSource: auditSource)
+                auditSource: auditSource, availability: availability)
             server = try DICOMServer(
                 configuration: configuration, storage: services, query: services, worklist: worklist,
                 retrieve: services, storageCommitment: services, normalized: normalized)
