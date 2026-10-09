@@ -21,12 +21,24 @@ the SQLKit database a Vapor application already has.
 
 `Adapters/DcmSwiftSQLite` provides a standalone SQLite adapter. It uses
 transactions and a document-version comparison for updates from multiple
-connections, and indexes top-level UID equality keys. The SQLKit adapter is
-planned separately for applications that already own a SQLKit database.
+connections, and indexes top-level UID equality keys.
+
+`Adapters/DcmSwiftSQLKit` uses the SQLKit database already owned by an
+application (PostgreSQL, MySQL, or SQLite). Call its idempotent `migrate()`
+once during deployment, before serving archive requests. It stores each
+versioned document in one row and indexes exact top-level SOP, Study, and
+Series Instance UIDs. Its separate package README describes setup and tests.
 
 ```swift
-// SQLKitArchiveIndex would come from an adapter package.
-let index: DICOMArchiveIndex = SQLKitArchiveIndex(database: app.db as! SQLDatabase)
+import DcmSwiftSQLKit
+import FluentSQL
+import SQLKit
+
+guard let database = app.db as? any SQLDatabase else {
+    fatalError("The archive requires a SQL database")
+}
+let index = DICOMSQLKitArchiveIndex(database: database)
+try await index.migrate()
 let archive = DICOMArchive(index: index, store: DICOMFileInstanceStore(directory: folder))
 let worklist = DICOMModalityWorklist(index: index)
 let steps = DICOMPerformedProcedureStepService(index: index)

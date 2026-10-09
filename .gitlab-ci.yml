@@ -71,6 +71,51 @@ sqlite-adapter:
     - swift build -c release
     - swift test --parallel
 
+sqlkit-adapter:
+  stage: test
+  image: swift:6.2
+  tags:
+    - deploy
+  script:
+    - cd Adapters/DcmSwiftSQLKit
+    - swift build -c release
+    - swift test -c release --parallel
+
+sqlkit-postgres:
+  stage: test
+  image: swift:6.2
+  tags:
+    - deploy
+  services:
+    - name: postgres:16
+      alias: postgres
+  variables:
+    POSTGRES_DB: dcmswift
+    POSTGRES_USER: dcmswift
+    POSTGRES_PASSWORD: dcmswift_test
+    DCMSWIFT_SQLKIT_POSTGRES_URL: "postgres://dcmswift:dcmswift_test@postgres:5432/dcmswift?tlsmode=disable"
+  script:
+    - cd Adapters/DcmSwiftSQLKit
+    - swift test -c release --filter SQLDialectIntegrationTests.testPostgreSQL
+
+sqlkit-mysql:
+  stage: test
+  image: swift:6.2
+  tags:
+    - deploy
+  services:
+    - name: mysql:8.4
+      alias: mysql
+  variables:
+    MYSQL_DATABASE: dcmswift
+    MYSQL_USER: dcmswift
+    MYSQL_PASSWORD: dcmswift_test
+    MYSQL_ROOT_PASSWORD: dcmswift_root_test
+    DCMSWIFT_SQLKIT_MYSQL_URL: "mysql://dcmswift:dcmswift_test@mysql:3306/dcmswift?ssl-mode=DISABLED"
+  script:
+    - cd Adapters/DcmSwiftSQLKit
+    - swift test -c release --filter SQLDialectIntegrationTests.testMySQL
+
 macos-package:
   stage: test
   extends: [.interop-corpus, .junit-reports]
