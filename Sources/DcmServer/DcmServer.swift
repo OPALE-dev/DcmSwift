@@ -199,11 +199,11 @@ struct DcmServer: AsyncParsableCommand {
                 client: try DICOMClient(configuration: DICOMClientConfiguration(
                     aeTitle: aet, limits: network.limits, timeouts: network.timeouts, logger: logger)),
                 recipients: recipients)
-            let service = DICOMPerformedProcedureStepService(directory: directory) { event, uid, _ in
+            let service = DICOMPerformedProcedureStepService(index: DICOMFileArchiveIndex(directory: directory)) { event, uid, _ in
                 await notifier?.send(event, instance: uid)
             }
             for sopClass in DICOMPerformedProcedureStepService.sopClasses { normalized[sopClass] = service }
-            print("\(await service.instanceUIDs().count) performed procedure steps in \(directory.path)")
+            print("\(try await service.instanceUIDs().count) performed procedure steps in \(directory.path)")
         }
         let server: DICOMServer
         var web: DICOMwebServer?

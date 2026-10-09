@@ -5,7 +5,8 @@ import Foundation
 /// under the Retrieve SOP Class, and the events of the Notification SOP
 /// Class given to `notify`.
 ///
-/// Requests are checked against Table F.7.2-1:
+/// Steps are kept in an archive index. Requests are checked against Table
+/// F.7.2-1:
 /// - N-CREATE needs Performed Procedure Step Status IN PROGRESS (else 0106H)
 ///   and the Type 1 and Type 2 attributes, including those of the Items of
 ///   the Scheduled Step Attributes and Performed Series Sequences (0120H when
@@ -24,25 +25,16 @@ public actor DICOMPerformedProcedureStepService: DICOMNormalizedService {
         case inProgress = 1, completed, discontinued, updated, deleted
     }
 
-    /// A directory where each instance is written as `<uid>.json` (DICOM
-    /// JSON) after each change, and read at start-up; nil keeps them in
-    /// memory only.
-    public nonisolated let directory: URL?
+    /// Where the steps are kept, in the `performedProcedureSteps`
+    /// collection. Updates are checked against the version read, so that
+    /// several servers may share an index.
+    public nonisolated let index: DICOMArchiveIndex
     private let notify: (@Sendable (Event, String, DataSet) async -> Void)?
-    private var instances: [String: [String: Any]] = [:]
 
-    public init(directory: URL? = nil, notify: (@Sendable (Event, String, DataSet) async -> Void)? = nil) {
-        self.directory = directory
+    public init(index: DICOMArchiveIndex = DICOMMemoryArchiveIndex(),
+                notify: (@Sendable (Event, String, DataSet) async -> Void)? = nil) {
+        self.index = index
         self.notify = notify
-        if let directory {
-            let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
-            for file in files where file.pathExtension == "json" {
-                if let data = try? Data(contentsOf: file),
-                   let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    instances[file.deletingPathExtension().lastPathComponent] = object
-                }
-            }
-        }
     }
 
     /// The SOP classes to register with `DICOMServer`: the Modality
@@ -51,12 +43,14 @@ public actor DICOMPerformedProcedureStepService: DICOMNormalizedService {
                                     DICOMSOPClass.modalityPerformedProcedureStepRetrieve]
 
     /// The instance with this UID.
-    public func instance(_ uid: String) throws -> DataSet? {
-        try instances[uid].map { try DICOMJSON.dataSet($0) }
+    public func instance(_ uid: String) async throws -> DataSet? {
+        try await index.document(uid, in: .performedProcedureSteps)?.dataSet()
     }
 
     /// The UIDs of the instances.
-    public func instanceUIDs() -> [String] { instances.keys.sorted() }
+    public func instanceUIDs() async throws -> [String] {
+        try await index.documents(in: .performedProcedureSteps, matching: DICOMQuery(conditions: [])).map(\.id)
+    }
 
     public nonisolated func perform(
         _ request: DICOMNormalizedRequest, context: DICOMServiceContext
@@ -80,7 +74,9 @@ public actor DICOMPerformedProcedureStepService: DICOMNormalizedService {
 
     func create(_ uid: String?, _ attributes: [String: Any]) async throws -> DICOMNormalizedResponse {
         let uid = uid ?? DICOMDataSetBuilder.newUID()
-        guard instances[uid] == nil else { return DICOMNormalizedResponse(status: .duplicateSOPInstance) }
+        guard try await index.document(uid, in: .performedProcedureSteps) == nil else {
+            return DICOMNormalizedResponse(status: .duplicateSOPInstance)
+        }
         guard Self.status(attributes) == "IN PROGRESS" else {
             return Self.failure(.invalidAttributeValue, "Performed Procedure Step Status must be IN PROGRESS",
                                 ["PerformedProcedureStepStatus"])
@@ -89,13 +85,20 @@ public actor DICOMPerformedProcedureStepService: DICOMNormalizedService {
         var instance = attributes
         instance[Self.tag("SOPInstanceUID")] = ["vr": "UI", "Value": [uid]]
         instance[Self.tag("SOPClassUID")] = ["vr": "UI", "Value": [DICOMSOPClass.modalityPerformedProcedureStep]]
-        try save(uid, instance)
+        do {
+            try await index.insert(DICOMArchiveDocument(id: uid, attributes: instance), into: .performedProcedureSteps)
+        } catch DICOMArchiveError.duplicate {
+            return DICOMNormalizedResponse(status: .duplicateSOPInstance)
+        }
         await notify?(.inProgress, uid, try DICOMJSON.dataSet(instance))
         return DICOMNormalizedResponse(status: .success, sopInstanceUID: uid)
     }
 
     func set(_ uid: String, _ modifications: [String: Any]) async throws -> DICOMNormalizedResponse {
-        guard var instance = instances[uid] else { return DICOMNormalizedResponse(status: .noSuchObjectInstance) }
+        guard var document = try await index.document(uid, in: .performedProcedureSteps) else {
+            return DICOMNormalizedResponse(status: .noSuchObjectInstance)
+        }
+        var instance = document.attributes
         guard Self.status(instance) == "IN PROGRESS" else {
             return DICOMNormalizedResponse(
                 status: .processingFailure, errorComment: "Performed Procedure Step Object may no longer be updated",
@@ -119,28 +122,27 @@ public actor DICOMPerformedProcedureStepService: DICOMNormalizedService {
             if status == "DISCONTINUED" { rules[2].type = "2" }
             if let failure = Self.check(instance, rules) { return failure }
         }
-        try save(uid, instance)
+        document.attributes = instance
+        do {
+            try await index.replace(document, in: .performedProcedureSteps)
+        } catch DICOMArchiveError.conflict {
+            return DICOMNormalizedResponse(status: .processingFailure, errorComment: "the step changed meanwhile")
+        }
         let event: Event = status == "COMPLETED" ? .completed : status == "DISCONTINUED" ? .discontinued : .updated
         await notify?(event, uid, try DICOMJSON.dataSet(instance))
         return DICOMNormalizedResponse(status: .success)
     }
 
-    func get(_ uid: String, _ tags: [UInt32]) throws -> DICOMNormalizedResponse {
-        guard let instance = instances[uid] else { return DICOMNormalizedResponse(status: .noSuchObjectInstance) }
+    func get(_ uid: String, _ tags: [UInt32]) async throws -> DICOMNormalizedResponse {
+        guard let instance = try await index.document(uid, in: .performedProcedureSteps)?.attributes else {
+            return DICOMNormalizedResponse(status: .noSuchObjectInstance)
+        }
         var reply = instance
         if !tags.isEmpty {
             let wanted = Set(tags.map { String(format: "%08X", $0) })
             reply = instance.filter { wanted.contains($0.key) || $0.key == Self.specificCharacterSet }
         }
         return DICOMNormalizedResponse(status: .success, dataSet: try DICOMJSON.dataSet(reply))
-    }
-
-    private func save(_ uid: String, _ instance: [String: Any]) throws {
-        if let directory {
-            let data = try JSONSerialization.data(withJSONObject: instance, options: [.sortedKeys])
-            try data.write(to: directory.appendingPathComponent(uid + ".json"), options: .atomic)
-        }
-        instances[uid] = instance
     }
 
     // MARK: Table F.7.2-1

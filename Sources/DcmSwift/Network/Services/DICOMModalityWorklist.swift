@@ -5,8 +5,9 @@ import Foundation
 ///
 /// Each item is a data set with the attributes of one Scheduled Procedure
 /// Step and of the Requested Procedure, Imaging Service Request, Visit, and
-/// Patient it belongs to (PS3.4 Table K.6-1). Items come from `add(_:)` or,
-/// with a directory, from the files found there at each query: Part 10
+/// Patient it belongs to (PS3.4 Table K.6-1). Items are kept in the
+/// `worklist` collection of an archive index (`add(_:id:)`), and, with a
+/// directory, also read from the files found there at each query: Part 10
 /// files, data sets without File Meta Information (such as DCMTK `.wl`
 /// files), and DICOM JSON files (`.json`), searched recursively.
 ///
@@ -16,30 +17,28 @@ import Foundation
 public actor DICOMModalityWorklist: DICOMQueryService {
     /// A directory read at each query, or nil.
     public nonisolated let directory: URL?
-    private var items: [String: DataSet] = [:]
+    /// Where the items added are kept.
+    public nonisolated let index: DICOMArchiveIndex
     private let matcher: DICOMQueryMatcher
 
-    public init(directory: URL? = nil, matcher: DICOMQueryMatcher = .modalityWorklist) {
+    public init(index: DICOMArchiveIndex = DICOMMemoryArchiveIndex(), directory: URL? = nil,
+                matcher: DICOMQueryMatcher = .modalityWorklist) {
+        self.index = index
         self.directory = directory
         self.matcher = matcher
     }
 
     /// Adds or replaces an item; returns its identifier for `remove(_:)`.
     @discardableResult
-    public func add(_ item: DataSet, id: String = UUID().uuidString) -> String {
-        items[id] = item
+    public func add(_ item: DataSet, id: String = UUID().uuidString) async throws -> String {
+        try await index.save(DICOMArchiveDocument(id: id, dataSet: item), in: .worklist)
         return id
     }
 
-    /// Removes an item added with `add(_:id:)`.
+    /// Removes an item added with `add(_:id:)`; returns whether it existed.
     @discardableResult
-    public func remove(_ id: String) -> DataSet? {
-        items.removeValue(forKey: id)
-    }
-
-    /// The items added and those of the directory.
-    public func allItems() -> [DataSet] {
-        items.keys.sorted().compactMap { items[$0] } + (directory.map(Self.items(in:)) ?? [])
+    public func remove(_ id: String) async throws -> Bool {
+        try await index.delete(id, from: .worklist)
     }
 
     /// The worklist items of a directory; unreadable or empty files are
@@ -83,13 +82,21 @@ public actor DICOMModalityWorklist: DICOMQueryService {
     /// - Throws: `DICOMServiceError` with status A900 when the Identifier
     ///   does not fit the information model: a Scheduled Procedure Step
     ///   Sequence with more than one Item (Table K.6-1).
-    public func matches(_ identifier: DataSet) throws -> [DataSet] {
+    public func matches(_ identifier: DataSet) async throws -> [DataSet] {
         if let sequence = identifier.sequence(forTagName: "ScheduledProcedureStepSequence"), sequence.items.count > 1 {
             throw DICOMServiceError(
                 status: .identifierDoesNotMatchSOPClass,
                 comment: "the Scheduled Procedure Step Sequence has more than one Item")
         }
-        return try allItems().compactMap { try matcher.match(identifier, against: $0) }
+        let keys = try DICOMJSON.object(identifier, options: DICOMJSON.EncodingOptions(numbersAsStrings: true))
+        var items = try await index.documents(in: .worklist, matching: DICOMQuery(identifier: keys, matcher: matcher))
+            .map(\.attributes)
+        if let directory {
+            items += try Self.items(in: directory).map {
+                try DICOMJSON.object($0, options: DICOMJSON.EncodingOptions(numbersAsStrings: true))
+            }
+        }
+        return try items.compactMap { try matcher.match(keys, against: $0).map { try DICOMJSON.dataSet($0) } }
     }
 
     public nonisolated func find(
