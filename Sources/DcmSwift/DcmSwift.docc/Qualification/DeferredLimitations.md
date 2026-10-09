@@ -264,6 +264,10 @@ conformance without that evidence.
 - Instance Availability Notification: `DcmServer` notifies ONLINE instances
   only, without Referenced Performed Procedure Steps, and keeps pending
   notifications in memory (lost if it stops before the delay).
+- Application Event Logging: procedural events are checked for a CONTAINER
+  with content, not against TID 3001; they are kept as received, and no
+  Procedure Log instance is made from them. Synchronization Frame of
+  Reference UIDs are not compared (no B101H).
 - DIMSE-N is generic: no SOP-class-specific behavior (Print Management,
   UPS) is built in yet. Storage Commitment's optional
   Storage Media File-Set attributes are carried but not interpreted, and
