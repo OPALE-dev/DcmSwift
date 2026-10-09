@@ -1,12 +1,15 @@
 import Foundation
 
-/// The instances of a directory, indexed by the attributes of the
-/// Query/Retrieve information models (PS3.4 C.6). It backs the storage,
-/// query, retrieval, and Storage Commitment services of `DcmServer`, over
-/// DIMSE and DICOMweb.
-public actor DICOMDirectoryArchive {
+/// The instances of an archive, indexed by the attributes of the
+/// Query/Retrieve information models (PS3.4 C.6): their index entries are
+/// documents of the `instances` collection of a `DICOMArchiveIndex`, their
+/// bytes are kept by a `DICOMInstanceStore`. It backs the storage, query,
+/// retrieval, and Storage Commitment services of `DcmServer`, over DIMSE and
+/// DICOMweb.
+public actor DICOMArchive {
     public struct Record: Sendable {
-        public var url: URL
+        /// The location of the instance in the store.
+        public var location: String
         public var sopClassUID: String
         public var transferSyntaxUID: String
         /// Indexed attributes, by keyword.
@@ -23,22 +26,37 @@ public actor DICOMDirectoryArchive {
                                      "BitsAllocated", "NumberOfFrames"]),
     ]
     static let indexedKeys = levels.flatMap(\.keys)
+    /// Indexed keywords by tag (8 upper-case hexadecimal digits), and back.
+    static let tags: [String: String] = Dictionary(uniqueKeysWithValues: indexedKeys.map {
+        ($0, DicomSpec.shared.dataTag(forName: $0)!.code.uppercased())
+    })
+    static let keywords: [String: String] = Dictionary(uniqueKeysWithValues: tags.map { ($1, $0) })
 
-    public let directory: URL
-    private var records: [String: Record] = [:]
+    public nonisolated let index: DICOMArchiveIndex
+    public nonisolated let store: DICOMInstanceStore
 
-    public init(directory: URL) {
-        self.directory = directory
+    public init(index: DICOMArchiveIndex = DICOMMemoryArchiveIndex(), store: DICOMInstanceStore) {
+        self.index = index
+        self.store = store
     }
 
-    /// Indexes the Part 10 files of the directory; returns their number.
-    public func scan() -> Int {
-        let enumerator = FileManager.default.enumerator(
-            at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])
-        while let url = enumerator?.nextObject() as? URL {
-            if let record = try? Self.record(of: url) { records[record.attributes["SOPInstanceUID"] ?? url.path] = record }
+    /// An archive of the Part 10 files of a directory, indexed in memory
+    /// (call `scan()` to index the files already there).
+    public init(directory: URL) {
+        self.init(store: DICOMFileInstanceStore(directory: directory))
+    }
+
+    /// Indexes the Part 10 files of a `DICOMFileInstanceStore`; returns the
+    /// number of instances indexed.
+    public func scan() async throws -> Int {
+        guard let files = store as? DICOMFileInstanceStore else { return 0 }
+        var count = 0
+        for url in files.files() {
+            guard let record = try? Self.record(of: url) else { continue }
+            try await index.save(Self.document(record), in: .instances)
+            count += 1
         }
-        return records.count
+        return count
     }
 
     static func record(of url: URL) throws -> Record {
@@ -46,10 +64,10 @@ public actor DICOMDirectoryArchive {
         guard let file = DicomFile(forPath: url.path), let dataSet = file.dataset else {
             throw DICOMCommandError("cannot read \(url.lastPathComponent)")
         }
-        return record(url: url, header: header, dataSet: dataSet)
+        return record(location: url.path, header: header, dataSet: dataSet)
     }
 
-    static func record(url: URL, header: DICOMPart10Header, dataSet: DataSet) -> Record {
+    static func record(location: String, header: DICOMPart10Header, dataSet: DataSet) -> Record {
         var attributes: [String: String] = [:]
         for key in indexedKeys {
             if let values = dataSet.textValues(forTag: key) { attributes[key] = values.joined(separator: "\\") }
@@ -58,30 +76,71 @@ public actor DICOMDirectoryArchive {
         // disagrees with them.
         if attributes["SOPInstanceUID"]?.isEmpty ?? true { attributes["SOPInstanceUID"] = header.sopInstanceUID }
         if attributes["SOPClassUID"]?.isEmpty ?? true { attributes["SOPClassUID"] = header.sopClassUID }
-        return Record(url: url, sopClassUID: attributes["SOPClassUID"] ?? header.sopClassUID,
+        return Record(location: location, sopClassUID: attributes["SOPClassUID"] ?? header.sopClassUID,
                       transferSyntaxUID: header.transferSyntaxUID, attributes: attributes)
     }
 
-    /// Writes a received instance and indexes it.
-    public func store(_ instance: DICOMReceivedInstance) throws {
-        guard DICOMUniqueIdentifier.isValid(instance.sopInstanceUID) else {
-            throw DICOMCommandError("invalid SOP Instance UID")
+    /// The index document of a record: its attributes in the DICOM JSON
+    /// Model, its location and transfer syntax as metadata.
+    static func document(_ record: Record) -> DICOMArchiveDocument {
+        var attributes: [String: Any] = [:]
+        for (keyword, value) in record.attributes {
+            guard let tag = tags[keyword] else { continue }
+            let vr = DicomSpec.shared.vrForTag(withCode: tag.lowercased()).map { "\($0)" } ?? "UN"
+            let values = value.isEmpty ? [] : value.components(separatedBy: "\\")
+            if vr == "PN" {
+                attributes[tag] = ["vr": vr, "Value": values.map { name -> [String: String] in
+                    var groups: [String: String] = [:]
+                    for (offset, group) in name.split(separator: "=", omittingEmptySubsequences: false).prefix(3).enumerated()
+                    where !group.isEmpty {
+                        groups[["Alphabetic", "Ideographic", "Phonetic"][offset]] = String(group)
+                    }
+                    return groups
+                }]
+            } else {
+                attributes[tag] = values.isEmpty ? ["vr": vr] : ["vr": vr, "Value": values]
+            }
         }
-        let url = directory.appendingPathComponent(instance.sopInstanceUID + ".dcm")
+        return DICOMArchiveDocument(
+            id: record.attributes["SOPInstanceUID"] ?? record.location, attributes: attributes,
+            metadata: ["location": record.location, "sopClassUID": record.sopClassUID,
+                       "transferSyntaxUID": record.transferSyntaxUID])
+    }
+
+    static func record(_ document: DICOMArchiveDocument) -> Record {
+        var attributes: [String: String] = [:]
+        for (tag, value) in document.attributes {
+            guard let keyword = keywords[tag], let attribute = value as? [String: Any] else { continue }
+            attributes[keyword] = DICOMQueryMatcher.strings(attribute).joined(separator: "\\")
+        }
+        return Record(location: document.metadata["location"] ?? "", sopClassUID: document.metadata["sopClassUID"] ?? "",
+                      transferSyntaxUID: document.metadata["transferSyntaxUID"] ?? "", attributes: attributes)
+    }
+
+    /// Writes a received instance and indexes it.
+    public func store(_ instance: DICOMReceivedInstance) async throws {
         let dataSet = try instance.dataSet()
-        try instance.write(to: url)
-        let header = try DICOMPart10Header.read(url)
-        records[instance.sopInstanceUID] = Self.record(url: url, header: header, dataSet: dataSet)
+        let location = try await store.write(instance)
+        let header = DICOMPart10Header(
+            sopClassUID: instance.sopClassUID, sopInstanceUID: instance.sopInstanceUID,
+            transferSyntaxUID: instance.transferSyntaxUID, dataSetOffset: 0, dataSetLength: 0)
+        try await index.save(Self.document(Self.record(location: location, header: header, dataSet: dataSet)),
+                             in: .instances)
     }
 
     /// The record of an instance.
-    public func record(_ sopInstanceUID: String) -> Record? {
-        records[sopInstanceUID]
+    public func record(_ sopInstanceUID: String) async throws -> Record? {
+        try await index.document(sopInstanceUID, in: .instances).map(Self.record)
+    }
+
+    /// The instance of a record, to send.
+    public func item(_ record: Record) async throws -> DICOMRetrieveItem {
+        try await store.item(at: record.location)
     }
 
     /// The groups of records at `level` matching `identifier`, each the
     /// records of one patient, study, series, or instance, in a stable order.
-    public func match(_ identifier: DataSet, level: String) throws -> [[Record]] {
+    public func match(_ identifier: DataSet, level: String) async throws -> [[Record]] {
         guard let depth = Self.levels.firstIndex(where: { $0.level == level }) else {
             throw DICOMCommandError("unknown Query/Retrieve Level \(level)")
         }
@@ -93,10 +152,16 @@ public actor DICOMDirectoryArchive {
             let value = values.joined(separator: "\\")
             if !value.isEmpty, value != "*" { conditions.append((key, value)) }
         }
+        // The index is asked for the candidates of these keys only.
+        let allowed = Set(keys.compactMap { Self.tags[$0] })
+        let query = DICOMQuery(conditions: try DICOMQuery(identifier: identifier).conditions.filter {
+            $0.path.count == 1 && allowed.contains($0.path[0])
+        })
+        let candidates = try await index.documents(in: .instances, matching: query).map(Self.record)
         let unique = Self.levels[depth].unique
         var groups: [String: [Record]] = [:]
         var order: [String] = []
-        for record in records.values.sorted(by: { $0.url.path < $1.url.path }) {
+        for record in candidates.sorted(by: { $0.location < $1.location }) {
             guard conditions.allSatisfy({ key, value in
                 DICOMQueryMatching.matches(record.attributes[key] ?? "", key: value, keyword: key)
             }) else { continue }
@@ -108,9 +173,9 @@ public actor DICOMDirectoryArchive {
     }
 
     /// The matches of a C-FIND identifier, with its return keys filled.
-    public func find(_ identifier: DataSet) throws -> [DataSet] {
+    public func find(_ identifier: DataSet) async throws -> [DataSet] {
         let level = identifier.string(forTag: "QueryRetrieveLevel") ?? ""
-        let groups = try match(identifier, level: level)
+        let groups = try await match(identifier, level: level)
         let requested = identifier.allElements.map(\.name)
         return groups.map { group in
             let match = DataSet()
@@ -148,10 +213,10 @@ public actor DICOMDirectoryArchive {
 }
 
 /// Storage, query, retrieval, and Storage Commitment over a
-/// `DICOMDirectoryArchive`, for DIMSE and for DICOMweb.
-public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryService, DICOMRetrieveService,
+/// `DICOMArchive`, for DIMSE and for DICOMweb.
+public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICOMRetrieveService,
     DICOMStorageCommitmentService, DICOMwebSearchService, DICOMwebRetrieveService, DICOMwebStoreService {
-    public let archive: DICOMDirectoryArchive
+    public let archive: DICOMArchive
     /// C-MOVE destinations and Storage Commitment SCUs, by AE title.
     public let destinations: [String: DICOMRemoteNode]
     /// What to do with received instances that do not conform to their IOD.
@@ -162,7 +227,7 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
     public let audit: DICOMAuditRecorder?
     public let auditSource: DICOMAuditSource
 
-    public init(archive: DICOMDirectoryArchive, destinations: [String: DICOMRemoteNode] = [:],
+    public init(archive: DICOMArchive, destinations: [String: DICOMRemoteNode] = [:],
                 validation: DICOMIODValidationPolicy = .off, audit: DICOMAuditRecorder? = nil,
                 auditSource: DICOMAuditSource = DICOMAuditSource(id: "DcmSwift")) {
         self.archive = archive
@@ -214,7 +279,7 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
     // MARK: DIMSE
 
     public func store(_ instance: DICOMReceivedInstance, context: DICOMServiceContext) async throws -> DICOMStatus {
-        let existed = audit != nil ? await archive.record(instance.sopInstanceUID) != nil : false
+        let existed = audit != nil ? try await archive.record(instance.sopInstanceUID) != nil : false
         guard let warn = admit(instance) else {
             await auditReceived(instance, existed: existed, stored: false, sender: remote(context),
                                 receiver: local(context.calledAETitle))
@@ -271,7 +336,9 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
                 studies: objects.filter { $0.idType != .patientNumber },
                 patient: patients.first ?? .patient(id: "unknown", name: "unknown"), source: auditSource))
         }
-        return try records.map { try DICOMRetrieveItem(file: $0.url) }
+        var items: [DICOMRetrieveItem] = []
+        for record in records { items.append(try await archive.item(record)) }
+        return items
     }
 
     public func destination(for aeTitle: String) async -> DICOMRemoteNode? {
@@ -285,8 +352,8 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
         var result = DICOMStorageCommitmentResult(
             transactionUID: request.transactionUID, committed: [], retrieveAETitle: context.calledAETitle)
         for reference in request.references {
-            guard let record = await archive.record(reference.sopInstanceUID),
-                  FileManager.default.fileExists(atPath: record.url.path) else {
+            guard let record = try await archive.record(reference.sopInstanceUID),
+                  await archive.store.exists(record.location) else {
                 result.failed.append(.init(reference: reference, reason: DICOMStorageCommitmentResult.FailureReason.noSuchSOPInstance))
                 continue
             }
@@ -327,10 +394,10 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
         let level = instance != nil ? "IMAGE" : series != nil ? "SERIES" : "STUDY"
         let records = try await archive.match(identifier, level: level).joined()
         // Instances in series and instance number order.
-        func key(_ record: DICOMDirectoryArchive.Record) -> (Int, Int, String) {
+        func key(_ record: DICOMArchive.Record) -> (Int, Int, String) {
             let series: Int = Int(record.attributes["SeriesNumber"] ?? "") ?? 0
             let instance: Int = Int(record.attributes["InstanceNumber"] ?? "") ?? 0
-            return (series, instance, record.url.path)
+            return (series, instance, record.location)
         }
         let ordered = records.sorted { key($0) < key($1) }
         if let audit, !ordered.isEmpty {
@@ -342,13 +409,15 @@ public struct DICOMDirectoryArchiveServices: DICOMStorageService, DICOMQueryServ
                 studies: objects.filter { $0.idType != .patientNumber },
                 patient: patients.first ?? .patient(id: "unknown", name: "unknown"), source: auditSource))
         }
-        return try ordered.map { try DICOMRetrieveItem(file: $0.url) }
+        var items: [DICOMRetrieveItem] = []
+        for record in ordered { items.append(try await archive.item(record)) }
+        return items
     }
 
     public func store(
         _ instance: DICOMReceivedInstance, context: DICOMwebRequestContext
     ) async throws -> DICOMwebStoreResult {
-        let existed = audit != nil ? await archive.record(instance.sopInstanceUID) != nil : false
+        let existed = audit != nil ? try await archive.record(instance.sopInstanceUID) != nil : false
         guard let warn = admit(instance) else {
             await auditReceived(instance, existed: existed, stored: false, sender: remote(context),
                                 receiver: local(auditSource.id))

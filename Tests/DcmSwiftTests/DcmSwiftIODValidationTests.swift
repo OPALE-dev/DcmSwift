@@ -178,19 +178,19 @@ final class DcmSwiftIODValidationTests: XCTestCase {
         XCTAssertNil(DICOMIODValidationPolicy.warn.report(for: valid))
         XCTAssertEqual(DICOMIODValidationPolicy.warn.report(for: instance)?.findings.count, 1)
 
-        let archive = DICOMDirectoryArchive(directory: directory)
-        let rejecting = DICOMDirectoryArchiveServices(archive: archive, validation: .reject)
+        let archive = DICOMArchive(directory: directory)
+        let rejecting = DICOMArchiveServices(archive: archive, validation: .reject)
         let result = try await rejecting.store(instance, context: context)
         XCTAssertEqual(result, .failed(DICOMwebStoreResponse.dataSetDoesNotMatchSOPClass))
-        let refused = await archive.record(instance.sopInstanceUID)
+        let refused = try await archive.record(instance.sopInstanceUID)
         XCTAssertNil(refused)
         let stored = try await rejecting.store(valid, context: context)
         XCTAssertEqual(stored, .stored)
 
-        let warning = DICOMDirectoryArchiveServices(archive: archive, validation: .warn)
+        let warning = DICOMArchiveServices(archive: archive, validation: .warn)
         let warned = try await warning.store(instance, context: context)
         XCTAssertEqual(warned, .storedWithWarning(DICOMwebStoreResponse.dataSetDoesNotMatchSOPClassWarning))
-        let kept = await archive.record(instance.sopInstanceUID)
+        let kept = try await archive.record(instance.sopInstanceUID)
         XCTAssertNotNil(kept)
     }
 }

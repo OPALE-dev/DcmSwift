@@ -19,7 +19,7 @@ final class DcmSwiftWebServerTests: XCTestCase {
     override func setUp() async throws {
         directory = FileManager.default.temporaryDirectory.appendingPathComponent("dcmswift-web-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let services = DICOMDirectoryArchiveServices(archive: DICOMDirectoryArchive(directory: directory))
+        let services = DICOMArchiveServices(archive: DICOMArchive(directory: directory))
         server = DICOMwebOriginServer(configuration: .init(basePath: "/dicomweb", maximumResults: 10),
                                       search: services, retrieve: services, store: services)
     }

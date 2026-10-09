@@ -45,11 +45,11 @@ three services shared with DIMSE implementations:
 | ``DICOMwebRetrieveService`` | Retrieve (WADO-RS): the instances of a study, series, or instance |
 | ``DICOMwebStoreService`` | Store (STOW-RS): one received instance |
 
-``DICOMwebServer`` serves it over HTTP/1.1 or HTTPS. ``DICOMDirectoryArchive``
+``DICOMwebServer`` serves it over HTTP/1.1 or HTTPS. ``DICOMArchive``
 implements every service over a folder, for DIMSE and DICOMweb alike:
 
 ```swift
-let services = DICOMDirectoryArchiveServices(archive: DICOMDirectoryArchive(directory: folder))
+let services = DICOMArchiveServices(archive: DICOMArchive(directory: folder))
 let origin = DICOMwebOriginServer(configuration: .init(basePath: "/dicomweb"),
                                   search: services, retrieve: services, store: services)
 let server = try DICOMwebServer(origin: origin, network: .init(port: 8080))
