@@ -147,19 +147,11 @@ public actor DICOMPerformedProcedureStepService: DICOMNormalizedService {
 
     // MARK: Table F.7.2-1
 
-    /// An attribute that must be present (Type 2) or have a value (Type 1),
-    /// with the requirements of its Items.
-    struct Requirement {
-        let keyword: String
-        var type: Character
-        var items: [Requirement] = []
-    }
+    typealias Requirement = DICOMAttributeRequirement
 
     static let specificCharacterSet = "00080005"
 
-    static func tag(_ keyword: String) -> String {
-        DicomSpec.shared.dataTag(forName: keyword)!.code.uppercased()
-    }
+    static func tag(_ keyword: String) -> String { Requirement.tag(keyword) }
 
     static let referencedInstance = [Requirement(keyword: "ReferencedSOPClassUID", type: "1"),
                                      Requirement(keyword: "ReferencedSOPInstanceUID", type: "1")]
@@ -235,29 +227,11 @@ public actor DICOMPerformedProcedureStepService: DICOMNormalizedService {
     }
 
     static func failure(_ status: DICOMStatus, _ comment: String, _ keywords: [String]) -> DICOMNormalizedResponse {
-        DICOMNormalizedResponse(status: status, errorComment: comment,
-                                attributes: keywords.compactMap { UInt32(tag($0), radix: 16) })
+        Requirement.failure(status, comment, keywords)
     }
 
-    /// The failure for the first unmet requirement; with `presentOnly`, the
-    /// top-level requirements apply only to the attributes present.
     static func check(_ object: [String: Any], _ rules: [Requirement], presentOnly: Bool = false) -> DICOMNormalizedResponse? {
-        for rule in rules {
-            let key = tag(rule.keyword)
-            guard let attribute = object[key] as? [String: Any] else {
-                if presentOnly || rule.type == "3" { continue }
-                return failure(.missingAttribute, "\(rule.keyword) is missing", [rule.keyword])
-            }
-            let values = attribute["Value"] as? [Any] ?? []
-            let empty = values.isEmpty || values.allSatisfy { $0 is NSNull || ($0 as? String)?.isEmpty == true }
-            if rule.type == "1", empty {
-                return failure(.missingAttributeValue, "\(rule.keyword) has no value", [rule.keyword])
-            }
-            for item in values.compactMap({ $0 as? [String: Any] }) where !rule.items.isEmpty {
-                if let failure = check(item, rule.items) { return failure }
-            }
-        }
-        return nil
+        Requirement.check(object, rules, presentOnly: presentOnly)
     }
 }
 

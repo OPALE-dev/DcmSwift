@@ -13,6 +13,8 @@ public struct DICOMArchiveCollection: RawRepresentable, Hashable, Sendable, Cust
     public static let worklist = DICOMArchiveCollection(rawValue: "worklist")
     /// Modality Performed Procedure Steps (PS3.4 F.7).
     public static let performedProcedureSteps = DICOMArchiveCollection(rawValue: "performedProcedureSteps")
+    /// Instance Availability Notifications received (PS3.4 R).
+    public static let instanceAvailability = DICOMArchiveCollection(rawValue: "instanceAvailability")
     /// Unified Procedure Steps (PS3.4 CC).
     public static let unifiedProcedureSteps = DICOMArchiveCollection(rawValue: "unifiedProcedureSteps")
 

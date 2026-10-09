@@ -117,15 +117,17 @@ public actor DICOMArchive {
                       transferSyntaxUID: document.metadata["transferSyntaxUID"] ?? "", attributes: attributes)
     }
 
-    /// Writes a received instance and indexes it.
-    public func store(_ instance: DICOMReceivedInstance) async throws {
+    /// Writes a received instance and indexes it; returns its record.
+    @discardableResult
+    public func store(_ instance: DICOMReceivedInstance) async throws -> Record {
         let dataSet = try instance.dataSet()
         let location = try await store.write(instance)
         let header = DICOMPart10Header(
             sopClassUID: instance.sopClassUID, sopInstanceUID: instance.sopInstanceUID,
             transferSyntaxUID: instance.transferSyntaxUID, dataSetOffset: 0, dataSetLength: 0)
-        try await index.save(Self.document(Self.record(location: location, header: header, dataSet: dataSet)),
-                             in: .instances)
+        let record = Self.record(location: location, header: header, dataSet: dataSet)
+        try await index.save(Self.document(record), in: .instances)
+        return record
     }
 
     /// The record of an instance.
@@ -226,10 +228,15 @@ public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICO
     /// Instances.
     public let audit: DICOMAuditRecorder?
     public let auditSource: DICOMAuditSource
+    /// Notified of each instance stored, for Instance Availability
+    /// Notification.
+    public let availability: DICOMInstanceAvailabilityNotifier?
 
     public init(archive: DICOMArchive, destinations: [String: DICOMRemoteNode] = [:],
                 validation: DICOMIODValidationPolicy = .off, audit: DICOMAuditRecorder? = nil,
-                auditSource: DICOMAuditSource = DICOMAuditSource(id: "DcmSwift")) {
+                auditSource: DICOMAuditSource = DICOMAuditSource(id: "DcmSwift"),
+                availability: DICOMInstanceAvailabilityNotifier? = nil) {
+        self.availability = availability
         self.archive = archive
         self.destinations = destinations
         self.validation = validation
@@ -286,7 +293,8 @@ public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICO
             return .storageDataSetDoesNotMatchSOPClass
         }
         do {
-            try await archive.store(instance)
+            let record = try await archive.store(instance)
+            await availability?.stored(record)
         } catch {
             await auditReceived(instance, existed: existed, stored: false, sender: remote(context),
                                 receiver: local(context.calledAETitle))
@@ -424,7 +432,8 @@ public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICO
             return .failed(DICOMwebStoreResponse.dataSetDoesNotMatchSOPClass)
         }
         do {
-            try await archive.store(instance)
+            let record = try await archive.store(instance)
+            await availability?.stored(record)
             await auditReceived(instance, existed: existed, stored: true, sender: remote(context),
                                 receiver: local(auditSource.id))
             return warn ? .storedWithWarning(DICOMwebStoreResponse.dataSetDoesNotMatchSOPClassWarning) : .stored

@@ -318,4 +318,94 @@ final class DcmSwiftWorkflowTests: XCTestCase {
         serving.cancel()
         listening.cancel()
     }
+
+    // MARK: Instance Availability Notification (PS3.4 R)
+
+    actor Availabilities {
+        var received: [DICOMInstanceAvailability] = []
+        func add(_ notification: DICOMInstanceAvailability) { received.append(notification) }
+    }
+
+    func testInstanceAvailabilityAfterStorage() async throws {
+        let availabilities = Availabilities()
+        let listener = try DICOMServer(
+            configuration: DICOMServerConfiguration(aeTitle: "RIS", host: "127.0.0.1", port: 0),
+            normalized: [DICOMSOPClass.instanceAvailabilityNotification: DICOMInstanceAvailabilityService {
+                notification, _ in await availabilities.add(notification)
+            }])
+        let ready = AsyncStream<Int>.makeStream()
+        let listening = Task { try await listener.run { ready.continuation.yield($0) } }
+        var readiness = ready.stream.makeAsyncIterator()
+        guard let listenerPort = await readiness.next() else { throw DICOMNetworkError.connectionClosed }
+        defer { listening.cancel() }
+
+        let client = try DICOMClient(configuration: DICOMClientConfiguration(aeTitle: "CT1"))
+        let ris = DICOMRemoteNode(aeTitle: "RIS", host: "127.0.0.1", port: listenerPort)
+        // Invalid notifications are refused (Table R.3.2-1).
+        try await client.withAssociation(
+            to: ris, presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.instanceAvailabilityNotification])
+        ) { association in
+            var invalid = DICOMInstanceAvailability(studyInstanceUID: "1.2.3", series: [])
+            var response = try await association.notifyAvailability(invalid)
+            XCTAssertEqual(response.status, .missingAttributeValue)
+            invalid.series = [.init(seriesInstanceUID: "1.2.3.4", instances: [
+                .init(sopClassUID: "1.2.840.10008.5.1.4.1.1.7", sopInstanceUID: "1.2.3.4.5", retrieveAETitle: "")])]
+            response = try await association.notifyAvailability(invalid)
+            XCTAssertEqual(response.status, .missingAttributeValue)
+            XCTAssertEqual(response.attributes, [0x0008_0054])
+            let attributes = try invalid.dataSet()
+            let item = attributes.sequence(forTagName: "ReferencedSeriesSequence")!.items[0]
+            let reference = (item.element(withName: "ReferencedSOPSequence") as! DataSequence).items[0]
+            _ = reference.element(withName: "InstanceAvailability")!.setValue("SOMEWHERE")
+            _ = reference.element(withName: "RetrieveAETitle")!.setValue("PACS")
+            response = try await association.nCreate(
+                sopClassUID: DICOMSOPClass.instanceAvailabilityNotification, sopInstanceUID: "1.2.3.9", attributes: attributes)
+            XCTAssertEqual(response.status, .invalidAttributeValue)
+        }
+
+        // The archive notifies the instances of a study once they stop arriving.
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dcmswift-ian-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let notifier = DICOMInstanceAvailabilityNotifier(client: client, recipients: [ris], retrieveAETitle: "PACS",
+                                                         delay: 0.3)
+        let services = DICOMArchiveServices(archive: DICOMArchive(directory: directory), availability: notifier)
+        let server = try DICOMServer(
+            configuration: DICOMServerConfiguration(aeTitle: "PACS", host: "127.0.0.1", port: 0), storage: services)
+        let started = AsyncStream<Int>.makeStream()
+        let serving = Task { try await server.run { started.continuation.yield($0) } }
+        var iterator = started.stream.makeAsyncIterator()
+        guard let port = await iterator.next() else { throw DICOMNetworkError.connectionClosed }
+        defer { serving.cancel() }
+        let secondaryCapture = "1.2.840.10008.5.1.4.1.1.7"
+        let instances = try (1...3).map { index in
+            try Self.dataSet([
+                "00080016": ("UI", [secondaryCapture]), "00080018": ("UI", ["1.2.826.0.1.3680043.2.1125.7.\(index)"]),
+                "0020000D": ("UI", ["1.2.826.0.1.3680043.2.1125.7"]),
+                "0020000E": ("UI", ["1.2.826.0.1.3680043.2.1125.7.\(index == 3 ? 20 : 10)"]),
+                "00100020": ("LO", ["P1"]),
+            ])
+        }
+        try await client.withAssociation(
+            to: DICOMRemoteNode(aeTitle: "PACS", host: "127.0.0.1", port: port),
+            presentationContexts: .proposals(abstractSyntaxes: [secondaryCapture])
+        ) { association in
+            for instance in instances {
+                let status = try await association.store(instance)
+                XCTAssertEqual(status, .success)
+            }
+        }
+        var received: [DICOMInstanceAvailability] = []
+        for _ in 0..<50 where received.isEmpty {
+            try await Task.sleep(nanoseconds: 100_000_000)
+            received = await availabilities.received
+        }
+        XCTAssertEqual(received.count, 1)
+        XCTAssertEqual(received.first?.studyInstanceUID, "1.2.826.0.1.3680043.2.1125.7")
+        XCTAssertEqual(received.first?.series.map { $0.instances.count }, [2, 1])
+        XCTAssertEqual(received.first?.series.first?.instances.first?.retrieveAETitle, "PACS")
+        XCTAssertEqual(received.first?.series.first?.instances.first?.availability, .online)
+        serving.cancel()
+        listening.cancel()
+    }
 }
