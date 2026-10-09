@@ -251,8 +251,12 @@ conformance without that evidence.
   matching and timezone query adjustment is not accepted (names already
   match without regard to case and accents), and Timezone Offset From UTC
   is not used to adjust queries.
-- DIMSE-N is generic: no SOP-class-specific behavior (MPPS state rules,
-  Print Management, UPS) is built in yet. Storage Commitment's optional
+- Modality Performed Procedure Step: the conditional (1C, 2C) requirements
+  of Table F.7.2-1 and the Code Sequence macros are not checked, the
+  Deleted event is never sent, and a step does not update the Modality
+  Worklist (PS3.4 F.7.2.1.2 makes it optional).
+- DIMSE-N is generic: no SOP-class-specific behavior (Print Management,
+  UPS) is built in yet. Storage Commitment's optional
   Storage Media File-Set attributes are carried but not interpreted, and
   duplicate Transaction UIDs are left to the service.
 - A Storage Commitment result that cannot be delivered (no destination, or
