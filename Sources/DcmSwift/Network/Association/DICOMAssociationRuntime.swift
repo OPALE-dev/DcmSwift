@@ -29,6 +29,9 @@ actor DICOMAssociationRuntime {
     private var responses: [UInt16: DICOMMessageQueue] = [:]
     /// Requests from the peer being performed, and whether C-CANCEL arrived.
     private var performing: [UInt16: Bool] = [:]
+    /// Peer requests whose final response is sent but whose service has
+    /// not returned yet.
+    private var answered: Set<UInt16> = []
     /// The most peer requests performed at once (the negotiated window).
     nonisolated let maximumPerforming: Int
 
@@ -97,6 +100,13 @@ actor DICOMAssociationRuntime {
                 || machine.state == .awaitingReleaseResponse else {
             throw DICOMNetworkError.invalidState("cannot send in state \(machine.state)")
         }
+        // A peer request counts against the asynchronous window until its
+        // final response is sent: the peer may start the next one as soon
+        // as it reads that response.
+        if message.command.field.isResponse, message.command.statusValue?.isPending != true,
+           let id = message.command.messageIDBeingRespondedTo, performing[id] != nil {
+            answered.insert(id)
+        }
         let maximum = role == .requestor ? negotiated.acceptorMaximumLength : negotiated.requestorMaximumLength
         let fragments = try DICOMMessageFragmenter(message, maximumLength: maximum)
         for pdu in fragments {
@@ -155,6 +165,7 @@ actor DICOMAssociationRuntime {
     /// none is left.
     func finishedPerforming(_ messageID: UInt16) async {
         performing[messageID] = nil
+        answered.remove(messageID)
         guard performing.isEmpty else { return }
         resumeIdleWaiters()
         if releaseRequestedByPeer {
@@ -340,7 +351,7 @@ actor DICOMAssociationRuntime {
             await abort(reason: .invalidPDUParameterValue, message: "Message ID \(id) is already in use")
             return nil
         }
-        guard performing.count < maximumPerforming else {
+        guard performing.count - answered.count < maximumPerforming else {
             await abort(reason: .unexpectedPDU, message: "more operations than the asynchronous window allows")
             return nil
         }
