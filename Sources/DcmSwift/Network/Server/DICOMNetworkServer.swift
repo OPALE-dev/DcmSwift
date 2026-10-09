@@ -89,6 +89,7 @@ public final class DICOMServer: Sendable {
     ///   - storage: the Storage SCP service.
     ///   - query: the Query SCP service.
     ///   - worklist: the Modality Worklist SCP service.
+    ///   - upsQuery: the UPS Query SCP service.
     ///   - retrieve: the C-GET and C-MOVE retrieval service.
     ///   - storageCommitment: the Storage Commitment SCP.
     ///   - storageCommitmentReceiver: receives Storage Commitment results as
@@ -99,7 +100,8 @@ public final class DICOMServer: Sendable {
     ///   - eventLoopGroup: NIO event loops used by the listener and associations.
     public init(
         configuration: DICOMServerConfiguration, storage: DICOMStorageService? = nil,
-        query: DICOMQueryService? = nil, worklist: DICOMQueryService? = nil, retrieve: DICOMRetrieveService? = nil,
+        query: DICOMQueryService? = nil, worklist: DICOMQueryService? = nil,
+        upsQuery: DICOMQueryService? = nil, retrieve: DICOMRetrieveService? = nil,
         storageCommitment: DICOMStorageCommitmentService? = nil,
         storageCommitmentReceiver: DICOMStorageCommitmentReceiver? = nil,
         storageCommitmentOutbox: DICOMStorageCommitmentOutbox? = nil,
@@ -115,7 +117,8 @@ public final class DICOMServer: Sendable {
                 tls: configuration.clientTLS, logger: configuration.logger),
             eventLoopGroup: eventLoopGroup)
         dispatcher = DICOMRequestDispatcher(
-            verification: true, storage: storage, query: query, worklist: worklist, retrieve: retrieve, normalized: normalized,
+            verification: true, storage: storage, query: query, worklist: worklist, upsQuery: upsQuery,
+            retrieve: retrieve, normalized: normalized,
             storageCommitment: storageCommitment, commitmentReceiver: storageCommitmentReceiver,
             commitmentOutbox: storageCommitmentOutbox,
             outgoingClient: outgoingClient)
@@ -138,6 +141,10 @@ public final class DICOMServer: Sendable {
         }
         if worklist != nil {
             syntaxes[DICOMSOPClass.modalityWorklistFind] = DICOMAbstractSyntaxSupport(
+                transferSyntaxes: configuration.transferSyntaxes)
+        }
+        if upsQuery != nil {
+            syntaxes[DICOMSOPClass.upsQuery] = DICOMAbstractSyntaxSupport(
                 transferSyntaxes: configuration.transferSyntaxes)
         }
         if retrieve != nil {

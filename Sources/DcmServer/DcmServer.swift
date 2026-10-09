@@ -15,7 +15,7 @@ import Foundation
 @main
 struct DcmServer: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        abstract: "Serve verification, storage, query/retrieve, Storage Commitment, Modality Worklist, and MPPS.",
+        abstract: "Serve verification, storage, query/retrieve, Storage Commitment, Worklist, MPPS, and UPS.",
         discussion: """
             Without --storage-directory, only C-ECHO is served. With it, received instances are written \
             there as <SOPInstanceUID>.dcm, in their received transfer syntax, and the Part 10 files found \
@@ -27,6 +27,8 @@ struct DcmServer: AsyncParsableCommand {
             query (Part 10 files, bare data sets such as DCMTK .wl files, or DICOM JSON) answer Modality \
             Worklist C-FIND. With --mpps-directory, Modality Performed Procedure Steps are created, \
             set, and retrieved, kept there as DICOM JSON, and notified to each --mpps-notify AE. \
+            With --ups-directory, Unified Procedure Steps and subscriptions are kept in an archive index; \
+            --ups-notify maps a receiving AE to its Event Report destination. \
             Each --ian-destination receives an Instance Availability Notification for the instances \
             stored, per study, once none has arrived for --ian-delay seconds; with --ian-directory, \
             notifications are also received and kept there. With --event-log-directory, procedural \
@@ -53,6 +55,12 @@ struct DcmServer: AsyncParsableCommand {
 
     @Option(name: .long, help: "An SCU of MPPS notifications, as AET=host:port; repeatable.")
     var mppsNotify: [String] = []
+
+    @Option(name: .long, help: "Directory of Unified Procedure Steps and their subscriptions.")
+    var upsDirectory: String?
+
+    @Option(name: .long, help: "Destination for UPS Event reports, as AET=host:port; repeatable.")
+    var upsNotify: [String] = []
 
     @Option(name: .long, help: "An SCP of Instance Availability Notification, as AET=host:port; repeatable.")
     var ianDestination: [String] = []
@@ -129,6 +137,7 @@ struct DcmServer: AsyncParsableCommand {
         guard maxAssociations >= 1 else { throw ValidationError("--max-associations must be at least 1") }
         _ = try destinations()
         _ = try Self.nodes(mppsNotify, option: "--mpps-notify", tls: false)
+        _ = try Self.nodes(upsNotify, option: "--ups-notify", tls: false)
         _ = try Self.nodes(ianDestination, option: "--ian-destination", tls: false)
         if !ianDestination.isEmpty, storageDirectory == nil {
             throw ValidationError("--ian-destination needs --storage-directory")
@@ -136,6 +145,7 @@ struct DcmServer: AsyncParsableCommand {
         guard commitmentRetryInterval > 0 else { throw ValidationError("--commitment-retry-interval must be positive") }
         guard ianDelay >= 0 else { throw ValidationError("--ian-delay cannot be negative") }
         if !mppsNotify.isEmpty, mppsDirectory == nil { throw ValidationError("--mpps-notify needs --mpps-directory") }
+        if !upsNotify.isEmpty, upsDirectory == nil { throw ValidationError("--ups-notify needs --ups-directory") }
         if !destination.isEmpty, storageDirectory == nil {
             throw ValidationError("--destination needs --storage-directory")
         }
@@ -216,6 +226,7 @@ struct DcmServer: AsyncParsableCommand {
             print("\(DICOMModalityWorklist.items(in: directory).count) worklist items in \(directory.path)")
         }
         var normalized: [String: DICOMNormalizedService] = [:]
+        var ups: DICOMUnifiedProcedureStepService?
         if let mppsDirectory {
             let directory = URL(fileURLWithPath: mppsDirectory, isDirectory: true)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -229,6 +240,21 @@ struct DcmServer: AsyncParsableCommand {
             }
             for sopClass in DICOMPerformedProcedureStepService.sopClasses { normalized[sopClass] = service }
             print("\(try await service.instanceUIDs().count) performed procedure steps in \(directory.path)")
+        }
+        if let upsDirectory {
+            let directory = URL(fileURLWithPath: upsDirectory, isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let recipients = try Self.nodes(upsNotify, option: "--ups-notify", tls: false)
+            let notifier = recipients.isEmpty ? nil : DICOMUPSNotifier(
+                client: try DICOMClient(configuration: DICOMClientConfiguration(
+                    aeTitle: aet, limits: network.limits, timeouts: network.timeouts, logger: logger)),
+                recipients: Dictionary(recipients.map { ($0.aeTitle, $0) }, uniquingKeysWith: { _, last in last }))
+            let service = DICOMUnifiedProcedureStepService(index: DICOMFileArchiveIndex(directory: directory)) {
+                receivingAE, uid, event, information in
+                await notifier?.send(to: receivingAE, instance: uid, event: event, information: information)
+            }
+            for sopClass in DICOMUnifiedProcedureStepService.sopClasses { normalized[sopClass] = service }
+            ups = service
         }
         if let ianDirectory {
             let index = DICOMFileArchiveIndex(directory: URL(fileURLWithPath: ianDirectory, isDirectory: true))
@@ -265,6 +291,7 @@ struct DcmServer: AsyncParsableCommand {
                 auditSource: auditSource, availability: availability)
             server = try DICOMServer(
                 configuration: configuration, storage: services, query: services, worklist: worklist,
+                upsQuery: ups,
                 retrieve: services, storageCommitment: services,
                 storageCommitmentOutbox: DICOMStorageCommitmentOutbox(retryInterval: commitmentRetryInterval),
                 normalized: normalized)
@@ -278,7 +305,8 @@ struct DcmServer: AsyncParsableCommand {
                     network: network)
             }
         } else {
-            server = try DICOMServer(configuration: configuration, worklist: worklist, normalized: normalized)
+            server = try DICOMServer(configuration: configuration, worklist: worklist, upsQuery: ups,
+                                     normalized: normalized)
         }
         let banner = "\(configuration.aeTitle) listening on \(configuration.host)"
         let secure = configuration.tls != nil ? " (TLS)" : ""

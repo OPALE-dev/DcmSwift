@@ -10,6 +10,8 @@ struct DICOMRequestDispatcher: Sendable {
     var query: DICOMQueryService?
     /// Answers C-FIND on the Modality Worklist Information Model.
     var worklist: DICOMQueryService?
+    /// Answers C-FIND on the UPS Query SOP Class.
+    var upsQuery: DICOMQueryService?
     var retrieve: DICOMRetrieveService?
     /// DIMSE-N services, by abstract syntax.
     var normalized: [String: DICOMNormalizedService] = [:]
@@ -98,7 +100,9 @@ struct DICOMRequestDispatcher: Sendable {
             }
 
         case .cFindRequest:
-            let query = context.abstractSyntax == DICOMSOPClass.modalityWorklistFind ? worklist : self.query
+            let query = context.abstractSyntax == DICOMSOPClass.modalityWorklistFind ? worklist
+                : [DICOMSOPClass.upsQuery, DICOMSOPClass.upsPull, DICOMSOPClass.upsWatch]
+                    .contains(context.abstractSyntax) ? upsQuery : self.query
             guard let query, let payload = request.dataSet else {
                 await respond(query == nil ? .sopClassNotSupported : .identifierDoesNotMatchSOPClass)
                 return

@@ -34,6 +34,16 @@ public enum DICOMSOPClass {
     public static let modalityPerformedProcedureStep = "1.2.840.10008.3.1.2.3.3"
     public static let modalityPerformedProcedureStepRetrieve = "1.2.840.10008.3.1.2.3.4"
     public static let modalityPerformedProcedureStepNotification = "1.2.840.10008.3.1.2.3.5"
+    /// Unified Procedure Step SOP Classes (PS3.4 CC.3.1).
+    public static let upsPush = "1.2.840.10008.5.1.4.34.6.1"
+    public static let upsWatch = "1.2.840.10008.5.1.4.34.6.2"
+    public static let upsPull = "1.2.840.10008.5.1.4.34.6.3"
+    public static let upsEvent = "1.2.840.10008.5.1.4.34.6.4"
+    public static let upsQuery = "1.2.840.10008.5.1.4.34.6.5"
+    /// Well-known SOP Instance for global subscription actions (CC.3.1.2).
+    public static let upsGlobalSubscription = "1.2.840.10008.5.1.4.34.5"
+    /// Well-known SOP Instance for filtered global subscription (CC.2.3.3.1).
+    public static let upsFilteredGlobalSubscription = "1.2.840.10008.5.1.4.34.5.1"
 
     /// Storage SOP classes of PS3.4 Table B.5-1.
     public static let storage: [String] = [

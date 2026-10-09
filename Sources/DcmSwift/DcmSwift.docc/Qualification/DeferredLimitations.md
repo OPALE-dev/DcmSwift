@@ -266,8 +266,15 @@ conformance without that evidence.
   with content, not against TID 3001; they are kept as received, and no
   Procedure Log instance is made from them. Synchronization Frame of
   Reference UIDs are not compared (no B101H).
-- DIMSE-N is generic: no SOP-class-specific behavior (Print Management,
-  UPS) is built in yet. Storage Commitment's optional
+- UPS (PS3.4 CC) has its core DIMSE operations, state lock, specific and
+  global subscriptions (including filtering), and Event reports. Overlapping
+  subscriptions for the same AE, conditional and nested CC.2.5-3 attribute
+  rules, full final-state checks, and deletion after locks are released
+  remain to implement and qualify.
+  The pynetdicom interop script checks a central path; dcm4che and more
+  state/status combinations have not been checked.
+- DIMSE-N is generic: Print Management behavior is not built in yet.
+  Storage Commitment's optional
   Storage Media File-Set attributes are carried but not interpreted, and
   duplicate Transaction UIDs are left to the service.
 - A Storage Commitment result that cannot be delivered is retried by
