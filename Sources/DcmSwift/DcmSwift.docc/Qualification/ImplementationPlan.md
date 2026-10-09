@@ -376,8 +376,8 @@ applications choose their stack (a Vapor application reuses its database).
 
 | Status | Adapter | Effort | Scope | Oracle |
 | :-: | --- | :-: | --- | --- |
-| ◐ | SQLKit | L | `Adapters/DcmSwiftSQLKit`: independent package using an application's SQLKit database; schema migration, atomic versioned documents, and SQL pruning of top-level SOP/Study/Series UID equality conditions. Local conformance and cross-connection tests pass on SQLiteKit, PostgreSQL 17, and MySQL 9.6 (4/4 tests). Linux CI jobs for all three drivers are added but have not run. | Conformance kit; live databases |
-| ◐ | Standalone SQLite | M | `Adapters/DcmSwiftSQLite`: independent package, atomic versioned documents and top-level UID equality index; local conformance and cross-connection tests pass (2/2). Linux CI job added but not yet run. | Conformance kit |
+| ✓ | SQLKit | L | `Adapters/DcmSwiftSQLKit`: independent package using an application's SQLKit database; schema migration, atomic versioned documents, and SQL pruning of top-level SOP/Study/Series UID equality conditions. Local conformance and cross-connection tests pass on SQLiteKit, PostgreSQL 17, and MySQL 9.6 (4/4 tests). Linux CI jobs for all three drivers are green (reported 2026-10-09). | Conformance kit; live databases |
+| ✓ | Standalone SQLite | M | `Adapters/DcmSwiftSQLite`: independent package, atomic versioned documents and top-level UID equality index; local conformance and cross-connection tests pass (2/2). Linux CI job is green (reported 2026-10-09). | Conformance kit |
 
 ## Out of scope
 
