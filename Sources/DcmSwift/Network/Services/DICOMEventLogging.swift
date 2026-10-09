@@ -20,8 +20,10 @@ public struct DICOMEventLoggingService: DICOMNormalizedService {
     public let index: DICOMArchiveIndex
     let received: (@Sendable (String, DataSet, DICOMServiceContext) async -> Void)?
 
-    /// - Parameter received: called with the SOP Class UID and the Action
-    ///   Information of each event logged.
+    /// - Parameters:
+    ///   - index: where the events are kept.
+    ///   - received: called with the SOP Class UID and the Action
+    ///     Information of each event logged.
     public init(index: DICOMArchiveIndex = DICOMMemoryArchiveIndex(),
                 received: (@Sendable (String, DataSet, DICOMServiceContext) async -> Void)? = nil) {
         self.index = index
