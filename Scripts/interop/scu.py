@@ -55,6 +55,7 @@ for status, identifier in assoc.send_c_get(query, StudyRootQueryRetrieveInformat
 check(final is not None and final.Status == 0, 'get status %s' % final)
 # Instances sharing a SOP Instance UID (MR_small and MR_small_RLE) are kept once.
 check({uid for uid, _ in received} == {ds.SOPInstanceUID for ds in files}, 'get received %s' % received)
+assoc.release()
 
 ae = AE(ae_title='PYSCU')
 ae.add_requested_context(StudyRootQueryRetrieveInformationModelMove)
