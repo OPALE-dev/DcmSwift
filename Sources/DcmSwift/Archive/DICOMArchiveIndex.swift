@@ -21,6 +21,8 @@ public struct DICOMArchiveCollection: RawRepresentable, Hashable, Sendable, Cust
     public static let storageCommitmentResults = DICOMArchiveCollection(rawValue: "storageCommitmentResults")
     /// Unified Procedure Steps (PS3.4 CC).
     public static let unifiedProcedureSteps = DICOMArchiveCollection(rawValue: "unifiedProcedureSteps")
+    /// Per-AE and global subscriptions to UPS events (PS3.4 CC.2.3).
+    public static let unifiedProcedureStepSubscriptions = DICOMArchiveCollection(rawValue: "unifiedProcedureStepSubscriptions")
 
     public var description: String { rawValue }
 }
