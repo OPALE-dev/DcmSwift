@@ -216,6 +216,9 @@ tests.
 - [x] add Storage Commitment and the DIMSE-N services (generic SCU/SCP, service
   contracts per SOP class);
 - [x] model status codes per service rather than as a single generic success flag;
+- [x] build the archive services (storage, Query/Retrieve, Storage Commitment)
+  on the pluggable archive storage of Phase 5 (`DICOMArchiveIndex`,
+  `DICOMInstanceStore`), so that a database can replace the in-memory index;
 - [ ] test fragmentation and association state transitions with independent peers;
 - [x] add TLS with explicit certificate and hostname validation policies
   (PS3.15 B.12 with the B.13 algorithm restrictions).
@@ -295,19 +298,26 @@ Images test material).
 ## Phase 5 — Workflow services (next)
 
 Goal: the services that drive acquisition and reading, as SCU and SCP, with
-their state rules, qualified against pynetdicom, DCMTK, and dcm4che.
+their state rules, qualified against pynetdicom, DCMTK, and dcm4che. Every
+service that keeps state is built on the pluggable archive storage: its data
+live in a `DICOMArchiveIndex` collection, so that applications can put them in
+the database of their choice through an adapter package.
+
+Order decided on 2026-10-09: Modality Worklist and MPPS, then the archive
+protocols (before UPS, so that UPS is written on them), then the small
+services, then UPS, then its RESTful version.
 
 | Status | Area | Effort | Scope | Normative source | Oracle |
 | :-: | --- | :-: | --- | --- | --- |
-| ✓ | Modality Worklist | M | <ul><li>C-FIND on the Modality Worklist Information Model, SCU and SCP</li><li>Matching keys and return keys of K.6</li><li>A worklist provider in `DcmServer` and a query tool</li></ul> | PS3.4 K | DCMTK `wlmscpfs`, `findscu` (`Scripts/crosscheck/worklist_dcmtk.py`) |
+| ✓ | Modality Worklist | M | <ul><li>C-FIND on the Modality Worklist Information Model, SCU and SCP</li><li>Matching keys and return keys of K.6</li><li>A worklist provider in `DcmServer` and a query tool</li><li>Items in the archive index (since the pluggable storage)</li></ul> | PS3.4 K | DCMTK `wlmscpfs`, `findscu` (`Scripts/crosscheck/worklist_dcmtk.py`) |
 | ✓ | Modality Performed Procedure Step | M | <ul><li>N-CREATE and N-SET with the IN PROGRESS, COMPLETED, and DISCONTINUED rules</li><li>Attribute requirements per operation (F.7.2)</li><li>MPPS Notification and Retrieve</li></ul> | PS3.4 F | pynetdicom (`Scripts/interop/mpps.py`) |
 | ✓ | Pluggable archive storage | L | <ul><li>Protocols in the core, without any database dependency: an archive index (instances, worklist items, procedure steps, UPS) and an instance store for the bytes (files, object storage)</li><li>The services (storage, Query/Retrieve, Storage Commitment, MWL, MPPS, UPS, DICOMweb) built on them; the in-memory implementation is the reference</li><li>A neutral query model built from the Identifier: adapters translate what they can, and the core filters the candidates with <code>DICOMQueryMatcher</code>, so partial translations stay exact</li><li>A shared conformance test kit that every adapter runs</li><li>Before UPS, so that UPS is written on it</li></ul> | PS3.4 C, K, F, CC; PS3.18 | Conformance kit: same results as the in-memory archive and DCMTK |
-| ☐ | Unified Procedure Step | XL | <ul><li>Push, Pull, Watch, Event, and Query SOP Classes</li><li>State machine, locking Transaction UID, cancellation requests</li><li>Subscriptions, global and filtered, with N-EVENT-REPORT delivery</li></ul> | PS3.4 CC | pynetdicom; dcm4che `upsscu` |
 | ☐ | Instance Availability Notification | S | N-CREATE SCU and SCP, sent by `DcmServer` after storage | PS3.4 R | dcm4che `ianscu` |
-| ☐ | Query/Retrieve extensions | L | <ul><li>Extended negotiation interpreted: relational queries, combined date and time, fuzzy semantic matching, timezone adjustment, enhanced multi-frame conversion</li><li>Composite Instance Root Retrieve and Retrieve Without Bulk Data</li><li>Relevant Patient Information Query</li></ul> | PS3.4 C, Y, Z, Q; PS3.7 D.3.3.5, D.3.3.6 | pynetdicom; DCMTK |
 | ☐ | Application Event Logging | S | Procedure event logging N-ACTION SCU and SCP | PS3.4 P | pynetdicom |
-| ☐ | Robustness of existing services | S | <ul><li>Storage Commitment results queued and retried</li><li>C-MOVE SCP splitting more than 128 presentation contexts</li></ul> | PS3.4 J, C | pynetdicom |
+| ☐ | Robustness of existing services | S | <ul><li>Storage Commitment results queued and retried</li><li>C-MOVE SCP splitting more than 128 presentation contexts</li><li>C-MOVE to the server itself, which waits about 60 seconds</li></ul> | PS3.4 J, C | pynetdicom |
+| ☐ | Unified Procedure Step | XL | <ul><li>Push, Pull, Watch, Event, and Query SOP Classes</li><li>State machine, locking Transaction UID, cancellation requests</li><li>Subscriptions, global and filtered, with N-EVENT-REPORT delivery</li><li>Steps and subscriptions kept in the archive index; Transaction UID locking through document versions</li></ul> | PS3.4 CC | pynetdicom; dcm4che `upsscu` |
 | ☐ | RESTful workflow | L | <ul><li>UPS-RS (the Worklist Service) with WebSocket event notifications</li><li>MWL-RS and MPPS-RS where PS3.18 defines them</li><li>Storage Commitment over HTTP</li></ul> | PS3.18 11, 12 | dcm4chee-arc; dicomweb-client |
+| ☐ | Query/Retrieve extensions | L | <ul><li>Extended negotiation interpreted: relational queries, combined date and time, fuzzy semantic matching, timezone adjustment, enhanced multi-frame conversion</li><li>Composite Instance Root Retrieve and Retrieve Without Bulk Data</li><li>Relevant Patient Information Query</li></ul> | PS3.4 C, Y, Z, Q; PS3.7 D.3.3.5, D.3.3.6 | pynetdicom; DCMTK |
 
 ## Phase 6 — Object models and data
 
