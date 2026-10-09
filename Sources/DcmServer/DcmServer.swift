@@ -15,7 +15,7 @@ import Foundation
 @main
 struct DcmServer: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        abstract: "Serve verification, storage, query/retrieve, and Storage Commitment over a directory.",
+        abstract: "Serve verification, storage, query/retrieve, Storage Commitment, and Modality Worklist.",
         discussion: """
             Without --storage-directory, only C-ECHO is served. With it, received instances are written \
             there as <SOPInstanceUID>.dcm, in their received transfer syntax, and the Part 10 files found \
@@ -23,7 +23,9 @@ struct DcmServer: AsyncParsableCommand {
             commits the instances present in the directory; results go on the requesting association, \
             or to the --destination of the requestor's AE title once it is released. With --http-port, \
             the same directory is also served over DICOMweb (QIDO-RS, WADO-RS, STOW-RS), with TLS when \
-            --tls-certificate is given.
+            --tls-certificate is given. With --worklist-directory, the worklist items found there at each \
+            query (Part 10 files, bare data sets such as DCMTK .wl files, or DICOM JSON) answer Modality \
+            Worklist C-FIND.
             """)
 
     @Option(name: .shortAndLong, help: "Local AE title.")
@@ -37,6 +39,9 @@ struct DcmServer: AsyncParsableCommand {
 
     @Option(name: .shortAndLong, help: "Directory where instances are stored and retrieved from.")
     var storageDirectory: String?
+
+    @Option(name: .long, help: "Directory of Modality Worklist items, read at each query.")
+    var worklistDirectory: String?
 
     @Option(name: .long, help: "Port of the DICOMweb service over the storage directory (default: none).")
     var httpPort: Int?
@@ -168,6 +173,12 @@ struct DcmServer: AsyncParsableCommand {
         configuration.audit = audit
         configuration.auditSource = auditSource
 
+        let worklist = worklistDirectory.map {
+            DICOMModalityWorklist(directory: URL(fileURLWithPath: $0, isDirectory: true))
+        }
+        if let directory = worklist?.directory {
+            print("\(DICOMModalityWorklist.items(in: directory).count) worklist items in \(directory.path)")
+        }
         let server: DICOMServer
         var web: DICOMwebServer?
         if let storageDirectory {
@@ -180,8 +191,8 @@ struct DcmServer: AsyncParsableCommand {
                 archive: archive, destinations: try destinations(), validation: validationPolicy, audit: audit,
                 auditSource: auditSource)
             server = try DICOMServer(
-                configuration: configuration, storage: services, query: services, retrieve: services,
-                storageCommitment: services)
+                configuration: configuration, storage: services, query: services, worklist: worklist,
+                retrieve: services, storageCommitment: services)
             if let httpPort {
                 var network = DICOMwebServerNetworkConfiguration(
                     host: host, port: httpPort, tls: try tls.configuration(), publicOrigin: httpPublicOrigin, logger: logger)
@@ -192,7 +203,7 @@ struct DcmServer: AsyncParsableCommand {
                     network: network)
             }
         } else {
-            server = try DICOMServer(configuration: configuration)
+            server = try DICOMServer(configuration: configuration, worklist: worklist)
         }
         let banner = "\(configuration.aeTitle) listening on \(configuration.host)"
         let secure = configuration.tls != nil ? " (TLS)" : ""

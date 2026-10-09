@@ -15,7 +15,7 @@ import Foundation
 /// keys, so every match is answered with status FF00.
 public actor DICOMModalityWorklist: DICOMQueryService {
     /// A directory read at each query, or nil.
-    public let directory: URL?
+    public nonisolated let directory: URL?
     private var items: [String: DataSet] = [:]
     private let matcher: DICOMQueryMatcher
 
@@ -42,7 +42,8 @@ public actor DICOMModalityWorklist: DICOMQueryService {
         items.keys.sorted().compactMap { items[$0] } + (directory.map(Self.items(in:)) ?? [])
     }
 
-    /// The worklist items of a directory; unreadable files are skipped.
+    /// The worklist items of a directory; unreadable or empty files are
+    /// skipped.
     public static func items(in directory: URL) -> [DataSet] {
         let enumerator = FileManager.default.enumerator(
             at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])
@@ -50,7 +51,9 @@ public actor DICOMModalityWorklist: DICOMQueryService {
         while let url = enumerator?.nextObject() as? URL {
             if (try? url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true { urls.append(url) }
         }
-        return urls.sorted { $0.path < $1.path }.compactMap { try? item(at: $0) }
+        // Files that hold no attribute, such as DCMTK's lockfile, are not
+        // items.
+        return urls.sorted { $0.path < $1.path }.compactMap { try? item(at: $0) }.filter { !$0.allElements.isEmpty }
     }
 
     /// A worklist item from a Part 10 file, a bare data set in Little Endian

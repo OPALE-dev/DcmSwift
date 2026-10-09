@@ -247,6 +247,10 @@ conformance without that evidence.
   C-MOVE SCP does not yet.
 - The `DcmServer` archive keeps its index in memory and matches the
   attributes of PS3.4 C.6 key tables only; it is a tool, not a PACS.
+- Modality Worklist: the extended negotiation of fuzzy person-name
+  matching and timezone query adjustment is not accepted (names already
+  match without regard to case and accents), and Timezone Offset From UTC
+  is not used to adjust queries.
 - DIMSE-N is generic: no SOP-class-specific behavior (MPPS state rules,
   Print Management, UPS) is built in yet. Storage Commitment's optional
   Storage Media File-Set attributes are carried but not interpreted, and
