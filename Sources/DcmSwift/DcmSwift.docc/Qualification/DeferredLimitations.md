@@ -26,8 +26,6 @@ conformance without that evidence.
   new two-byte characters, so their former private-use characters are not
   encodable. Exchange of DcmSwift-encoded ISO 2022 text with DCMTK or devices
   has not been qualified beyond decoding their sample files.
-- Validate Extended Offset Table and Extended Offset Table Lengths and their
-  relationship to encapsulated Pixel Data fragments.
 - Add byte-preserving editing guarantees for values whose semantics are not
   understood, including explicit tests for unusual private and retired data.
 - Reads are compared with pydicom through the DICOM JSON Model
@@ -233,8 +231,9 @@ conformance without that evidence.
 - Semantic APIs read Structured Reports, waveforms, segmentations, parametric
   maps, encapsulated documents, and radiotherapy objects, each checked
   against an independent tool; making them is limited to Structured Reports,
-  BINARY segmentations, and encapsulated documents. Presentation states and
-  the other information objects remain to be qualified individually.
+  BINARY segmentations, and encapsulated documents. Writing the others, and
+  the object families not yet modelled, are Phases 6 to 8 of the
+  implementation plan; the topics left out of scope are listed there.
 
 ## Network, web, and security
 
@@ -287,15 +286,14 @@ conformance without that evidence.
 
 ## Cross-platform implementation
 
-- Image rendering and PNG export are portable. Encapsulated frames can only be
-  displayed through the Apple system decoders until DcmSwift has codecs.
-- GitLab CI currently qualifies the official Swift 6.1 Linux image, plus macOS
+- Image rendering and PNG export are portable, encapsulated frames included.
+- GitLab CI currently qualifies the official Swift 6.2 Linux image, plus macOS
   and an iOS Simulator (newest installed runtime) on the `swift` macOS runner.
   Physical iOS devices, the minimum declared iOS 13 runtime, and other Apple
   platforms are not exercised. Additional
   Linux distributions, architectures, Swift releases, and libc variants are
   not yet part of the tested platform matrix.
-- The package still uses Swift tools/language compatibility mode 5.9. Strict
+- The package uses Swift tools 6.2 in Swift 5 language mode. Strict
   Swift 6 concurrency checking currently reports NIO pipeline `Sendable`
   diagnostics that would become errors in Swift 6 language mode; that migration
   remains a separate release gate.

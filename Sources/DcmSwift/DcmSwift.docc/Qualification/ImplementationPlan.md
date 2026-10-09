@@ -220,7 +220,22 @@ tests.
 - [x] add TLS with explicit certificate and hostname validation policies
   (PS3.15 B.12 with the B.13 algorithm restrictions).
 
-## Phase 3 — Image rendering and presentation (after the network)
+## Order of the remaining work
+
+Phases 0, 1, 2, and 4 are done except for the qualification items still open
+in them. The remaining phases follow their dependencies, not their numbers:
+
+| Order | Phase | Depends on | Why this place |
+| :-: | --- | --- | --- |
+| 1 | Phase 5 — Workflow services | Phase 2 (DIMSE-N), Phase 4 (DICOMweb) | Runs a department; the generic DIMSE-N layer only lacks the service rules |
+| 2 | Phase 3 — Rendering and presentation | Phase 1 (codecs) | Every viewer needs it; Presentation States feed Phase 7 and 9 |
+| 3 | Phase 6 — Object models and data | Phase 1, Phase 4 builder | Volumes are needed by Phase 8 and by the volume resources of Phase 9 |
+| 4 | Phase 7 — Report templates | Phase 4 (SR, terminology) | Builds on the SR content tree; CDA and AIM need the templates |
+| 5 | Phase 8 — Advanced imaging objects | Phase 3, Phase 6 | Whole slide imaging and annotations need tiles, volumes, and rendering |
+| 6 | Phase 9 — Network and web completeness | Phases 3, 5, 6, 8 | Query/Retrieve of the objects of Phase 8, rendered volume resources |
+| 7 | Phase 10 — Security, media, and legacy services | — | Completeness; no other phase depends on it |
+
+## Phase 3 — Image rendering and presentation (after Phase 5)
 
 Goal: render every image as a conformant display application would, following
 the PS3.4 Annex N pixel transformation sequence, and qualify the result against
@@ -232,7 +247,7 @@ Images test material).
 | ☐ | Grayscale pipeline completion | <ul><li>Pixel Padding Value and Range</li><li>Presentation LUT and P-Values</li><li>High bit depth output (10 to 16 bits)</li></ul> | PS3.3 C.7.5.1.1.2, C.11.4, C.11.6; PS3.4 N.2 |
 | ☐ | Display calibration | Grayscale Standard Display Function mapping from P-Values | PS3.14 |
 | ☐ | Overlays and shutters | <ul><li>Overlay Planes (60xx), including multi-frame overlays</li><li>Display Shutter and Bitmap Display Shutter</li></ul> | PS3.3 C.9.2, C.7.6.11, C.7.6.15 |
-| ☐ | Presentation States | <ul><li>Grayscale Softcopy Presentation State: VOI, spatial transformation, displayed area, graphic and text annotations, compound graphics</li><li>Color, Pseudo-color, and Blending Presentation States</li><li>Variable Modality LUT Presentation State</li></ul> | PS3.3 C.11.10 to C.11.15; PS3.4 Annex N |
+| ☐ | Presentation States | <ul><li>Grayscale Softcopy Presentation State: VOI, spatial transformation, displayed area, graphic and text annotations, compound graphics</li><li>Color, Pseudo-color, and Blending Presentation States</li><li>Variable Modality LUT Presentation State</li><li>Volumetric Presentation States (planar MPR first; after the volumes of Phase 6)</li></ul> | PS3.3 C.11.10 to C.11.15; PS3.4 N, FF |
 | ☐ | Color management | <ul><li>ICC profiles to PCS-Values</li><li>Supplemental and Enhanced Palette Color LUTs</li></ul> | PS3.3 C.11.15, C.7.6.19, C.7.6.23; PS3.4 N.2.1 |
 | ☐ | Quantitative data | Real World Value Mapping | PS3.3 C.7.6.16.2.11 |
 | ✓ | Rendered image export | Portable 8-bit PNG, quality-controlled JPEG, uncompressed TIFF, and lossless PGM/PPM for independent medical-imaging/tooling exchange, exposed by the single-file and batch `DcmConvert` demonstrator; high-bit-depth export follows grayscale pipeline completion, and rendered exports are not DICOM replacements | PS3.4 Annex N; TIFF 6.0; ISO/IEC 10918-1 |
@@ -266,6 +281,80 @@ Images test material).
 - [x] terminology/context-group handling from PS3.16 with version provenance:
   Coding Schemes, DCM codes, and Context Groups of 2026d, identical to NEMA's
   FHIR value sets; Templates follow with the Structured Report API.
+
+## Phase 5 — Workflow services (next)
+
+Goal: the services that drive acquisition and reading, as SCU and SCP, with
+their state rules, qualified against pynetdicom, DCMTK, and dcm4che.
+
+| Status | Area | Scope | Normative source | Oracle |
+| :-: | --- | --- | --- | --- |
+| ☐ | Modality Worklist | <ul><li>C-FIND on the Modality Worklist Information Model, SCU and SCP</li><li>Matching keys and return keys of K.6</li><li>A worklist provider in `DcmServer` and a query tool</li></ul> | PS3.4 K | DCMTK `wlmscpfs`, `findscu`; pynetdicom |
+| ☐ | Modality Performed Procedure Step | <ul><li>N-CREATE and N-SET with the IN PROGRESS, COMPLETED, and DISCONTINUED rules</li><li>Attribute requirements per operation (F.7.2)</li><li>MPPS Notification and Retrieve</li></ul> | PS3.4 F | pynetdicom; dcm4che `mppsscu` |
+| ☐ | Unified Procedure Step | <ul><li>Push, Pull, Watch, Event, and Query SOP Classes</li><li>State machine, locking Transaction UID, cancellation requests</li><li>Subscriptions, global and filtered, with N-EVENT-REPORT delivery</li></ul> | PS3.4 CC | pynetdicom; dcm4che `upsscu` |
+| ☐ | Instance Availability Notification | N-CREATE SCU and SCP, sent by `DcmServer` after storage | PS3.4 R | dcm4che `ianscu` |
+| ☐ | Query/Retrieve extensions | <ul><li>Extended negotiation interpreted: relational queries, combined date and time, fuzzy semantic matching, timezone adjustment, enhanced multi-frame conversion</li><li>Composite Instance Root Retrieve and Retrieve Without Bulk Data</li><li>Relevant Patient Information Query</li></ul> | PS3.4 C, Y, Z, Q; PS3.7 D.3.3.5, D.3.3.6 | pynetdicom; DCMTK |
+| ☐ | Application Event Logging | Procedure event logging N-ACTION SCU and SCP | PS3.4 P | pynetdicom |
+| ☐ | Robustness of existing services | <ul><li>Storage Commitment results queued and retried</li><li>C-MOVE SCP splitting more than 128 presentation contexts</li></ul> | PS3.4 J, C | pynetdicom |
+| ☐ | RESTful workflow | <ul><li>UPS-RS (the Worklist Service) with WebSocket event notifications</li><li>MWL-RS and MPPS-RS where PS3.18 defines them</li><li>Storage Commitment over HTTP</li></ul> | PS3.18 11, 12 | dcm4chee-arc; dicomweb-client |
+
+## Phase 6 — Object models and data
+
+| Status | Area | Scope | Normative source | Oracle |
+| :-: | --- | --- | --- | --- |
+| ☐ | Writing what is read | <ul><li>Waveforms (multiplex groups, channel definitions, all sample interpretations)</li><li>RT Dose (dose grid, scaling, frame offsets)</li><li>RT Structure Set (contours from polygons or masks)</li></ul> | PS3.3 C.10.9, C.8.8.3, C.8.8.5, C.8.8.6 | pydicom; dicompyler-core; dicom-validator |
+| ☐ | Enhanced multi-frame volumes | <ul><li>Volume geometry from Functional Groups and Dimension Index</li><li>Enhanced CT, MR, PET, XA, US volumes; legacy-converted enhanced objects</li><li>Making Legacy Converted Enhanced images from a classic series</li></ul> | PS3.3 C.7.6.16, C.7.6.17, A.70 to A.72 | highdicom; DCMTK |
+| ☐ | Spatial registration | Spatial Registration and Deformable Spatial Registration read and applied | PS3.3 C.20 | highdicom; ITK |
+| ☐ | Surfaces | Surface Segmentation and Surface Scan meshes, point clouds | PS3.3 C.27, A.57, A.68 | highdicom or pydicom |
+| ☐ | Transcoding | A Data Set level transcoding API between every transfer syntax with an encoder, keeping Pixel Data metadata consistent | PS3.5 8, 10 | DCMTK `dcmconv`, `dcmdjpeg` |
+
+## Phase 7 — Report templates
+
+| Status | Area | Scope | Normative source | Oracle |
+| :-: | --- | --- | --- | --- |
+| ☐ | Key Objects | Key Object Selection documents (TID 2010) read and made | PS3.16 TID 2010; PS3.3 A.35.4 | highdicom; DCMTK `dsrdump` |
+| ☐ | Radiation dose | <ul><li>CT, projection X-ray, and radiopharmaceutical dose reports (TID 10011, 10001, 10021)</li><li>Patient Radiation Dose (TID 10030)</li></ul> | PS3.16 | PixelMed; DCMTK `dsrdump` |
+| ☐ | Clinical reports | <ul><li>Basic Diagnostic Imaging Report (TID 2000)</li><li>CAD: mammography and chest (TID 4000, 4100)</li><li>Ultrasound: OB-GYN, vascular, echocardiography (TID 5000, 5100, 5200)</li></ul> | PS3.16 | DCMTK `dsrdump`; dicom3tools |
+| ☐ | Template validation | Template and Context Group constraints checked on SR content and coded attributes | PS3.16 Annex A, B | dicom3tools `dciodvfy` |
+| ☐ | Other representations | <ul><li>SR to HL7 CDA imaging reports</li><li>The transformations of PS3.21 (AIM)</li></ul> | PS3.20; PS3.21 | Schematron and schemas of PS3.20 |
+
+## Phase 8 — Advanced imaging objects
+
+| Status | Area | Scope | Normative source | Oracle |
+| :-: | --- | --- | --- | --- |
+| ☐ | Whole slide imaging | <ul><li>TILED_FULL and TILED_SPARSE tiles, resolution pyramids, optical paths</li><li>Tile access by region and level; making pyramids</li></ul> | PS3.3 A.32.8, C.8.12.4 | wsidicom; highdicom |
+| ☐ | Annotations | Microscopy Bulk Simple Annotations | PS3.3 A.87 | highdicom |
+| ☐ | Display objects | <ul><li>Hanging Protocols</li><li>Color Palettes</li></ul> | PS3.3 A.38, A.58 | dicom-validator |
+| ☐ | Ophthalmology | Ophthalmic Tomography, OCT-A, thickness maps, visual fields | PS3.3 A.39 to A.43, A.83 | dicom-validator; pydicom |
+| ☐ | Other families | <ul><li>Tractography Results</li><li>Dermoscopy</li><li>Implant Templates</li><li>Defined and Performed Procedure Protocols</li><li>Inventory</li></ul> | PS3.3 | dicom-validator |
+
+## Phase 9 — Network and web completeness
+
+| Status | Area | Scope | Normative source | Oracle |
+| :-: | --- | --- | --- | --- |
+| ☐ | Query/Retrieve of non-patient objects | <ul><li>Hanging Protocol, Color Palette, Implant Template, Defined Procedure Protocol, Protocol Approval, and Inventory information models</li><li>Non-Patient Object Storage</li></ul> | PS3.4 U, X, BB, HH, II, JJ, GG | dcm4che |
+| ☐ | Storage Management | Inventory creation and storage management operations | PS3.4 KK | dcm4che |
+| ☐ | DICOMweb completeness | <ul><li>Non-Patient Instance service</li><li>Bulk Data resources and STOW-RS of metadata with Bulk Data</li><li>Rendered GIF, video, MPR and 3D volume resources</li><li>Charset negotiation, fuzzy and multiple-value matching, paging, HTTP Range</li></ul> | PS3.18 | dicomweb-client; Orthanc; dcm4chee-arc |
+| ☐ | Independent peers | Fragmentation, state transitions, and live-association fuzzing against DCMTK and dcm4che (Phase 2 item) | PS3.8 | DCMTK; dcm4che |
+
+## Phase 10 — Security, media, and legacy services
+
+| Status | Area | Scope | Normative source | Oracle |
+| :-: | --- | --- | --- | --- |
+| ☐ | Security completeness | <ul><li>Secure DICOM Files (Part 10 inside CMS)</li><li>User identity validation: JWT, SAML, Kerberos</li><li>Certificate revocation (CRL, OCSP) and trust checks for signatures</li><li>Creator and Authorization RSA signature profiles, certified timestamps</li><li>Audit message reception</li><li>Configuration profiles (LDAP, DHCP, DNS, NTP)</li></ul> | PS3.15; PS3.10 7.4 | openssl; DCMTK `dcmsign` |
+| ☐ | Media | <ul><li>PS3.11 application profiles and PS3.12 media formats (Phase 1 item)</li><li>File-set updates: additions, replacements, deletions</li></ul> | PS3.11; PS3.12; PS3.3 F | DCMTK `dcmgpdir`, `dcmmkdir` |
+| ☐ | Remaining services | <ul><li>Print Management (Basic Grayscale and Color Print)</li><li>Media Creation Management</li><li>Display System Management</li><li>Substance Administration and Product Characteristics queries</li><li>RT Machine Verification</li></ul> | PS3.4 H, S, EE, V, DD | DCMTK `dcmprscp`; pynetdicom |
+| ☐ | Writing the remaining RT objects | RT Plan and Ion Plan | PS3.3 C.8.8 | dicompyler-core; pydicom |
+
+## Out of scope
+
+| Topic | Reason |
+| --- | --- |
+| MPEG-2, MPEG-4 AVC, HEVC transfer syntaxes | Video codecs carry patent licensing and need platform-specific decoders; the encapsulated stream stays readable and writable as is |
+| PS3.22 real-time communication (SMPTE ST 2110) | A streaming transport, not a file or DIMSE feature; it needs dedicated media infrastructure |
+| PS3.19 Application Hosting API | A SOAP hosting interface for plug-ins, rarely deployed; its Native DICOM Model is implemented |
+| Retired service classes: Study Content Notification, Patient Management, Results Management, Queue Management, and the retired Print and Q/R SOP Classes | Retired from PS3.4; old files stay readable, but no current peer offers these services |
+| Closed GitHub PR #6 | Excluded until explicitly brought back |
 
 ## Release gates
 
