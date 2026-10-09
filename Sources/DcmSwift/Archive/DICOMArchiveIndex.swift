@@ -17,6 +17,8 @@ public struct DICOMArchiveCollection: RawRepresentable, Hashable, Sendable, Cust
     public static let instanceAvailability = DICOMArchiveCollection(rawValue: "instanceAvailability")
     /// Application events logged (PS3.4 P).
     public static let eventLog = DICOMArchiveCollection(rawValue: "eventLog")
+    /// Storage Commitment results waiting for delivery (PS3.4 J).
+    public static let storageCommitmentResults = DICOMArchiveCollection(rawValue: "storageCommitmentResults")
     /// Unified Procedure Steps (PS3.4 CC).
     public static let unifiedProcedureSteps = DICOMArchiveCollection(rawValue: "unifiedProcedureSteps")
 

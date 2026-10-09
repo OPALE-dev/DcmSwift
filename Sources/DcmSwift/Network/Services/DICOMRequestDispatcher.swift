@@ -15,6 +15,8 @@ struct DICOMRequestDispatcher: Sendable {
     var normalized: [String: DICOMNormalizedService] = [:]
     var storageCommitment: DICOMStorageCommitmentService?
     var commitmentReceiver: DICOMStorageCommitmentReceiver?
+    /// Keeps the Storage Commitment results that cannot be delivered.
+    var commitmentOutbox: DICOMStorageCommitmentOutbox?
     /// Opens associations to C-MOVE destinations and Storage Commitment
     /// SCUs.
     var outgoingClient: DICOMClient?
@@ -286,6 +288,7 @@ struct DICOMRequestDispatcher: Sendable {
         // release does not wait for it.
         guard let service = storageCommitment else { return }
         let client = outgoingClient
+        let outbox = commitmentOutbox
         let logger = association.runtime.logger
         // The N-ACTION is answered: nothing cancels the commitment.
         let context = DICOMServiceContext(
@@ -302,7 +305,8 @@ struct DICOMRequestDispatcher: Sendable {
                 logger.warning("Storage Commitment \(commitment.transactionUID) failed: \(error)")
                 result = .failure(of: commitment, reason: DICOMStorageCommitmentResult.FailureReason.processingFailure)
             }
-            await Self.report(result, on: association, client: client, service: service, context: context)
+            await Self.report(result, on: association, client: client, service: service, outbox: outbox,
+                              context: context)
         }
     }
 
@@ -310,7 +314,7 @@ struct DICOMRequestDispatcher: Sendable {
     /// open, else on a new one to the SCU, with the SCP role.
     static func report(
         _ result: DICOMStorageCommitmentResult, on association: DICOMAssociation, client: DICOMClient?,
-        service: DICOMStorageCommitmentService, context: DICOMServiceContext
+        service: DICOMStorageCommitmentService, outbox: DICOMStorageCommitmentOutbox?, context: DICOMServiceContext
     ) async {
         let logger = association.runtime.logger
         func send(on association: DICOMAssociation) async throws {
@@ -330,19 +334,44 @@ struct DICOMRequestDispatcher: Sendable {
                 logger.debug("Storage Commitment result not sent on the same association: \(error)")
             }
         }
+        func keep(_ reason: String) async {
+            guard let outbox else {
+                logger.warning("Storage Commitment result \(result.transactionUID) not sent: \(reason)")
+                return
+            }
+            do {
+                try await outbox.enqueue(result, for: context.callingAETitle)
+                logger.info("Storage Commitment result \(result.transactionUID) kept for retry: \(reason)")
+            } catch {
+                logger.warning("Storage Commitment result \(result.transactionUID) lost: \(error)")
+            }
+        }
         guard let client, let destination = await service.destination(for: context.callingAETitle) else {
-            logger.warning("no address for \(context.callingAETitle): Storage Commitment result \(result.transactionUID) not sent")
+            await keep("no address for \(context.callingAETitle)")
             return
         }
         do {
-            try await client.withAssociation(
-                to: destination,
-                presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.storageCommitmentPushModel]),
-                roleSelections: [DICOMRoleSelection(
-                    sopClassUID: DICOMSOPClass.storageCommitmentPushModel, scuRole: false, scpRole: true)]
-            ) { try await send(on: $0) }
+            try await deliver(result, to: destination, client: client)
         } catch {
-            logger.warning("Storage Commitment result \(result.transactionUID) not sent to \(destination.aeTitle): \(error)")
+            await keep("\(destination.aeTitle) unreachable: \(error)")
+        }
+    }
+
+    /// Sends a result on a new association to the SCU, with the SCP role.
+    static func deliver(_ result: DICOMStorageCommitmentResult, to destination: DICOMRemoteNode, client: DICOMClient) async throws {
+        try await client.withAssociation(
+            to: destination,
+            presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.storageCommitmentPushModel]),
+            roleSelections: [DICOMRoleSelection(
+                sopClassUID: DICOMSOPClass.storageCommitmentPushModel, scuRole: false, scpRole: true)]
+        ) { association in
+            let response = try await association.nEventReport(
+                sopClassUID: DICOMSOPClass.storageCommitmentPushModel,
+                sopInstanceUID: DICOMSOPClass.storageCommitmentPushModelInstance, eventTypeID: result.eventTypeID,
+                information: result.dataSet())
+            if response.status.category == .failure {
+                throw DICOMServiceError(status: response.status, comment: response.errorComment)
+            }
         }
     }
 
