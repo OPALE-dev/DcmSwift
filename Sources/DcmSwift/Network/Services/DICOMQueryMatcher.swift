@@ -175,16 +175,19 @@ public struct DICOMQueryMatcher: Sendable {
     /// Person names, insensitive to case and accents, with wild cards; a
     /// key without `=` is tried on each component group.
     static func matchesName(_ stored: String, key: String) -> Bool {
-        func fold(_ text: String) -> String {
-            var text = text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
-            // Trailing empty components are not significant.
-            while text.hasSuffix("^") { text.removeLast() }
-            return text
-        }
+        let fold = foldedName
         let pattern = fold(key)
         let candidates = key.contains("=")
             ? [stored] : stored.split(separator: "=", omittingEmptySubsequences: true).map(String.init)
         return candidates.contains { DICOMQueryMatching.wildcard(fold($0), pattern: pattern) }
+    }
+
+    /// A person name as matched: without case or accents, and without
+    /// trailing empty components. Adapters index names in this form.
+    public static func foldedName(_ name: String) -> String {
+        var text = name.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+        while text.hasSuffix("^") { text.removeLast() }
+        return text
     }
 
     /// The DT range of a DA and a TM key that use the same form of Range
