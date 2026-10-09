@@ -371,6 +371,52 @@ final class DcmSwiftNetworkNormalizedTests: XCTestCase {
         }
     }
 
+    func testUndeliveredStorageCommitmentResultsAreRetried() async throws {
+        let collector = ResultCollector()
+        let listener = try DICOMServer(configuration: configuration("SCU"), storageCommitmentReceiver: collector)
+        try await withServer(listener) { listenerPort in
+            // The SCU's address is unknown at first: the result waits.
+            let archive = CommittingArchive(destinations: [:], delay: 100_000_000)
+            let outbox = DICOMStorageCommitmentOutbox(retryInterval: 0.3)
+            let server = try DICOMServer(configuration: configuration("ARCHIVE"), storage: archive,
+                                         storageCommitment: archive, storageCommitmentOutbox: outbox)
+            let item = try DICOMRetrieveItem(dataSet: instance(8))
+            try await withServer(server) { port in
+                let transaction = try await client().withAssociation(
+                    to: DICOMRemoteNode(aeTitle: "ARCHIVE", host: "127.0.0.1", port: port),
+                    presentationContexts: DICOMPresentationContextProposal.proposals(
+                        abstractSyntaxes: [secondaryCapture, DICOMSOPClass.storageCommitmentPushModel])
+                ) { association -> String in
+                    try await association.store(item)
+                    return try await association.requestStorageCommitment([item.reference])
+                }
+                var pending: [DICOMStorageCommitmentResult] = []
+                for _ in 0..<40 where pending.isEmpty {
+                    try await Task.sleep(nanoseconds: 50_000_000)
+                    pending = try await outbox.pending()
+                }
+                XCTAssertEqual(pending.map(\.transactionUID), [transaction])
+                archive.destinations.withLockedValue {
+                    $0["SCU"] = DICOMRemoteNode(aeTitle: "SCU", host: "127.0.0.1", port: listenerPort)
+                }
+                var arrivals = collector.arrived.stream.makeAsyncIterator()
+                let waiter = Task { await arrivals.next() }
+                let timeout = Task {
+                    try await Task.sleep(nanoseconds: 5_000_000_000)
+                    waiter.cancel()
+                }
+                _ = await waiter.value
+                timeout.cancel()
+                XCTAssertEqual(collector.results.withLockedValue { $0 }.map(\.transactionUID), [transaction])
+                for _ in 0..<20 where !pending.isEmpty {
+                    try await Task.sleep(nanoseconds: 50_000_000)
+                    pending = try await outbox.pending()
+                }
+                XCTAssertTrue(pending.isEmpty)
+            }
+        }
+    }
+
     func testStorageCommitmentRequestsAreValidated() async throws {
         let archive = CommittingArchive()
         let server = try DICOMServer(configuration: configuration("ARCHIVE"), storageCommitment: archive)

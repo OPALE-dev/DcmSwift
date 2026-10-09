@@ -242,9 +242,9 @@ conformance without that evidence.
   remain to do.
 - Extended Negotiation (D.3.3.5) and SOP Class Common Extended Negotiation
   (D.3.3.6) items are carried but no service interprets them.
-- C-MOVE and the tools propose at most 128 presentation contexts per
-  association: `DcmStore` splits its files into several associations, the
-  C-MOVE SCP does not yet.
+- C-GET sends its sub-operations on the requesting association, so it is
+  limited to the presentation contexts negotiated there (at most 128); C-MOVE
+  and `DcmStore` split theirs into several associations.
 - The `DcmServer` archive keeps its instance index in memory (rebuilt from
   the files at start-up) and matches the attributes of PS3.4 C.6 key tables
   only; it is a tool, not a PACS. No database adapter exists yet: they are
@@ -270,8 +270,9 @@ conformance without that evidence.
   UPS) is built in yet. Storage Commitment's optional
   Storage Media File-Set attributes are carried but not interpreted, and
   duplicate Transaction UIDs are left to the service.
-- A Storage Commitment result that cannot be delivered (no destination, or
-  the SCU unreachable) is logged, not queued for a later retry.
+- A Storage Commitment result that cannot be delivered is retried by
+  `DICOMStorageCommitmentOutbox`; `DcmServer` keeps the pending results in
+  memory, so they are lost if it stops.
 - DICOMweb (PS3.18): the Studies Service is implemented. Still missing:
   - the Worklist (UPS-RS), Non-Patient Instance, Storage Commitment, MWL, and
     MPPS services, and WebSocket notifications;

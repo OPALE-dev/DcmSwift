@@ -93,6 +93,8 @@ public final class DICOMServer: Sendable {
     ///   - storageCommitment: the Storage Commitment SCP.
     ///   - storageCommitmentReceiver: receives Storage Commitment results as
     ///     the SCU, from SCPs that answer on a new association.
+    ///   - storageCommitmentOutbox: keeps the Storage Commitment results
+    ///     that cannot be delivered, and retries them.
     ///   - normalized: DIMSE-N services by SOP Class (or Meta SOP Class) UID.
     ///   - eventLoopGroup: NIO event loops used by the listener and associations.
     public init(
@@ -100,6 +102,7 @@ public final class DICOMServer: Sendable {
         query: DICOMQueryService? = nil, worklist: DICOMQueryService? = nil, retrieve: DICOMRetrieveService? = nil,
         storageCommitment: DICOMStorageCommitmentService? = nil,
         storageCommitmentReceiver: DICOMStorageCommitmentReceiver? = nil,
+        storageCommitmentOutbox: DICOMStorageCommitmentOutbox? = nil,
         normalized: [String: DICOMNormalizedService] = [:],
         eventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup.singleton
     ) throws {
@@ -114,6 +117,7 @@ public final class DICOMServer: Sendable {
         dispatcher = DICOMRequestDispatcher(
             verification: true, storage: storage, query: query, worklist: worklist, retrieve: retrieve, normalized: normalized,
             storageCommitment: storageCommitment, commitmentReceiver: storageCommitmentReceiver,
+            commitmentOutbox: storageCommitmentOutbox,
             outgoingClient: outgoingClient)
 
         var syntaxes: [String: DICOMAbstractSyntaxSupport] = [
@@ -172,6 +176,10 @@ public final class DICOMServer: Sendable {
     /// Binds and serves until the task is cancelled. `onBound` receives the
     /// bound port once connections are accepted.
     public func run(onBound: (@Sendable (Int) -> Void)? = nil) async throws {
+        if let outbox = dispatcher.commitmentOutbox, let client = dispatcher.outgoingClient,
+           let service = dispatcher.storageCommitment {
+            await outbox.attach(client: client, service: service)
+        }
         let configuration = self.configuration
         let sslContext = self.sslContext
         let server = try await ServerBootstrap(group: group)

@@ -63,6 +63,9 @@ struct DcmServer: AsyncParsableCommand {
     @Option(name: .long, help: "Directory where received Instance Availability Notifications are kept.")
     var ianDirectory: String?
 
+    @Option(name: .long, help: "Seconds between attempts to deliver Storage Commitment results whose SCU was unreachable (10 attempts).")
+    var commitmentRetryInterval: Double = 60
+
     @Option(name: .long, help: "Directory where Application Event Logging events are kept.")
     var eventLogDirectory: String?
 
@@ -130,6 +133,7 @@ struct DcmServer: AsyncParsableCommand {
         if !ianDestination.isEmpty, storageDirectory == nil {
             throw ValidationError("--ian-destination needs --storage-directory")
         }
+        guard commitmentRetryInterval > 0 else { throw ValidationError("--commitment-retry-interval must be positive") }
         guard ianDelay >= 0 else { throw ValidationError("--ian-delay cannot be negative") }
         if !mppsNotify.isEmpty, mppsDirectory == nil { throw ValidationError("--mpps-notify needs --mpps-directory") }
         if !destination.isEmpty, storageDirectory == nil {
@@ -261,7 +265,9 @@ struct DcmServer: AsyncParsableCommand {
                 auditSource: auditSource, availability: availability)
             server = try DICOMServer(
                 configuration: configuration, storage: services, query: services, worklist: worklist,
-                retrieve: services, storageCommitment: services, normalized: normalized)
+                retrieve: services, storageCommitment: services,
+                storageCommitmentOutbox: DICOMStorageCommitmentOutbox(retryInterval: commitmentRetryInterval),
+                normalized: normalized)
             if let httpPort {
                 var network = DICOMwebServerNetworkConfiguration(
                     host: host, port: httpPort, tls: try tls.configuration(), publicOrigin: httpPublicOrigin, logger: logger)
