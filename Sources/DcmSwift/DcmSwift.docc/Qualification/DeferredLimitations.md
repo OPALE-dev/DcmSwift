@@ -245,8 +245,14 @@ conformance without that evidence.
 - C-MOVE and the tools propose at most 128 presentation contexts per
   association: `DcmStore` splits its files into several associations, the
   C-MOVE SCP does not yet.
-- The `DcmServer` archive keeps its index in memory and matches the
-  attributes of PS3.4 C.6 key tables only; it is a tool, not a PACS.
+- The `DcmServer` archive keeps its instance index in memory (rebuilt from
+  the files at start-up) and matches the attributes of PS3.4 C.6 key tables
+  only; it is a tool, not a PACS. No database adapter exists yet: they are
+  planned as separate packages.
+- The memory and file indexes ignore query conditions and let the services
+  filter every document of a collection.
+- A C-MOVE whose destination is the server itself completes, but only after
+  about 60 seconds (seen with `Scripts/interop/scu.py`).
 - Modality Worklist: the extended negotiation of fuzzy person-name
   matching and timezone query adjustment is not accepted (names already
   match without regard to case and accents), and Timezone Offset From UTC

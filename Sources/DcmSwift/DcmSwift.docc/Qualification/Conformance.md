@@ -193,6 +193,15 @@ sockets.
 | Query | <code>find(_:)</code>: an <code>AsyncSequence</code> of matches; stopping early sends C-CANCEL | <ul><li><code>DICOMQueryService</code>, Patient Root, Study Root, Patient/Study Only (retired)</li><li><code>DICOMQueryMatching</code>: PS3.4 C.2.2.2 matching</li></ul> |
 | Retrieve | <ul><li><code>move(_:destination:)</code>, <code>get(_:)</code>, with progress</li><li>Task cancellation sends C-CANCEL</li></ul> | <ul><li><code>DICOMRetrieveService</code>, with Composite Instance Root</li><li>C-MOVE through a new association to the destination, C-GET on the same association</li><li>Sub-operation counts and Failed SOP Instance UID List</li></ul> |
 
+### Archive storage
+
+| Part | Protocol | Implementations in DcmSwift |
+| --- | --- | --- |
+| Index | <code>DICOMArchiveIndex</code>: documents in collections (instances, worklist, performed and unified procedure steps), DICOM JSON attributes, versions for optimistic concurrency | <ul><li><code>DICOMMemoryArchiveIndex</code></li><li><code>DICOMFileArchiveIndex</code></li></ul> |
+| Instances | <code>DICOMInstanceStore</code> | <code>DICOMFileInstanceStore</code> |
+| Queries | <code>DICOMQuery</code>: normalized conditions that adapters may translate in part; results filtered by <code>DICOMQueryMatcher</code> | — |
+| Conformance | <code>DcmSwiftArchiveConformance</code>, without a test framework | Both indexes pass |
+
 ### Workflow services (PS3.4 K, F)
 
 | Service | SCU | SCP |
