@@ -408,4 +408,82 @@ final class DcmSwiftWorkflowTests: XCTestCase {
         serving.cancel()
         listening.cancel()
     }
+
+    // MARK: Application Event Logging (PS3.4 P)
+
+    static func code(_ value: String, _ scheme: String, _ meaning: String) -> [String: (String, [Any])] {
+        ["00080100": ("SH", [value]), "00080102": ("SH", [scheme]), "00080104": ("LO", [meaning])]
+    }
+
+    static func proceduralEvent(study: String) throws -> DataSet {
+        try dataSet([
+            "00100020": ("LO", ["P1"]), "0020000D": ("UI", study.isEmpty ? [] : [study]), "00200010": ("SH", []),
+            "00200200": ("UI", []), "00400243": ("SH", ["CATH LAB 1"]),
+            "0040A040": ("CS", ["CONTAINER"]), "0040A043": ("SQ", [code("121145", "DCM", "Description of Procedure")]),
+            "0040A050": ("CS", ["SEPARATE"]),
+            "0040A730": ("SQ", [[
+                "0040A010": ("CS", ["CONTAINS"]), "0040A040": ("CS", ["TEXT"]),
+                "0040A043": ("SQ", [code("121106", "DCM", "Comment")]), "0040A160": ("UT", ["Catheter inserted"]),
+            ]]),
+        ])
+    }
+
+    func testApplicationEventLogging() async throws {
+        let index = DICOMMemoryArchiveIndex()
+        let service = DICOMEventLoggingService(index: index)
+        var normalized: [String: DICOMNormalizedService] = [:]
+        for sopClass in DICOMEventLoggingService.sopClasses { normalized[sopClass] = service }
+        let server = try DICOMServer(
+            configuration: DICOMServerConfiguration(aeTitle: "LOG", host: "127.0.0.1", port: 0), normalized: normalized)
+        let started = AsyncStream<Int>.makeStream()
+        let serving = Task { try await server.run { started.continuation.yield($0) } }
+        var iterator = started.stream.makeAsyncIterator()
+        guard let port = await iterator.next() else { throw DICOMNetworkError.connectionClosed }
+        defer { serving.cancel() }
+
+        let client = try DICOMClient(configuration: DICOMClientConfiguration(aeTitle: "CATH"))
+        try await client.withAssociation(
+            to: DICOMRemoteNode(aeTitle: "LOG", host: "127.0.0.1", port: port),
+            presentationContexts: .proposals(abstractSyntaxes: DICOMEventLoggingService.sopClasses)
+        ) { association in
+            var response = try await association.logProceduralEvent(Self.proceduralEvent(study: "1.2.3"))
+            XCTAssertEqual(response.status, .success)
+            XCTAssertEqual(response.typeID, 1)
+            XCTAssertEqual(response.dataSet?.string(forTag: "StudyInstanceUID"), "1.2.3")
+            XCTAssertEqual(response.dataSet?.string(forTag: "PatientID"), "P1")
+            response = try await association.logProceduralEvent(Self.proceduralEvent(study: ""))
+            XCTAssertEqual(response.status, DICOMEventLoggingService.cannotMatchEventToStudy)
+            let missing = try Self.proceduralEvent(study: "1.2.3")
+            _ = missing.remove(elementForTagName: "StudyID")
+            response = try await association.logProceduralEvent(missing)
+            XCTAssertEqual(response.status, .missingAttribute)
+            let flat = try Self.proceduralEvent(study: "1.2.3")
+            _ = flat.remove(elementForTagName: "ContentSequence")
+            response = try await association.logProceduralEvent(flat)
+            XCTAssertEqual(response.status, DICOMEventLoggingService.eventDoesNotMatchTemplate)
+            response = try await association.nAction(
+                sopClassUID: DICOMSOPClass.proceduralEventLogging, sopInstanceUID: "1.2.3", actionTypeID: 1,
+                information: Self.proceduralEvent(study: "1.2.3"))
+            XCTAssertEqual(response.status, .noSuchObjectInstance)
+
+            var substance: [String: (String, [Any])] = [
+                "00100010": ("PN", ["DOE^JANE"]), "00100020": ("LO", ["P1"]), "00440008": ("LO", ["Heparin"]),
+                "00440010": ("DT", ["20240706101500"]), "00540302": ("SQ", []),
+                "00081072": ("SQ", [["00401101": ("SQ", [Self.code("123", "L", "Nurse Ann")])]]),
+            ]
+            response = try await association.logSubstanceAdministration(Self.dataSet(substance))
+            XCTAssertEqual(response.status, .success)
+            substance["00100020"] = ("LO", [])
+            response = try await association.logSubstanceAdministration(Self.dataSet(substance))
+            XCTAssertEqual(response.status, DICOMEventLoggingService.patientCannotBeIdentified)
+            substance["00100020"] = ("LO", ["P1"])
+            substance["00081072"] = ("SQ", [[String: (String, [Any])]()])
+            response = try await association.logSubstanceAdministration(Self.dataSet(substance))
+            XCTAssertEqual(response.status, .missingAttribute)
+        }
+        let logged = try await index.documents(in: .eventLog, matching: DICOMQuery(conditions: []))
+        XCTAssertEqual(logged.count, 2)
+        XCTAssertEqual(Set(logged.compactMap { $0.metadata["sopClassUID"] }), Set(DICOMEventLoggingService.sopClasses))
+        serving.cancel()
+    }
 }
