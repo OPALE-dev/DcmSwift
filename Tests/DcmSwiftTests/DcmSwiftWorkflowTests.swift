@@ -128,9 +128,9 @@ final class DcmSwiftWorkflowTests: XCTestCase {
 
     func testModalityWorklistOverTheNetwork() async throws {
         let worklist = DICOMModalityWorklist()
-        await worklist.add(try Self.item(patient: "DOE^JANE", id: "P1", station: "CT1", modality: "CT",
+        try await worklist.add(Self.item(patient: "DOE^JANE", id: "P1", station: "CT1", modality: "CT",
                                          date: "20240706", time: "080000"))
-        await worklist.add(try Self.item(patient: "ROE^RICHARD", id: "P2", station: "MR1", modality: "MR",
+        try await worklist.add(Self.item(patient: "ROE^RICHARD", id: "P2", station: "MR1", modality: "MR",
                                          date: "20240707", time: "190000"))
         let server = try DICOMServer(
             configuration: DICOMServerConfiguration(aeTitle: "RIS", host: "127.0.0.1", port: 0), worklist: worklist)
