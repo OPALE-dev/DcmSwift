@@ -174,7 +174,7 @@ public final class DICOMClient: Sendable {
         do {
             asyncChannel = try await ClientBootstrap(group: group)
                 .connectTimeout(configuration.timeouts.connect)
-                .channelOption(ChannelOptions.socketOption(.tcp_nodelay), value: 1)
+                .channelOption(ChannelOptions.tcpOption(.tcp_nodelay), value: 1)
                 .connect(host: remote.host, port: remote.port) { channel in
                     channel.eventLoop.makeCompletedFuture {
                         try DICOMChannel.configure(

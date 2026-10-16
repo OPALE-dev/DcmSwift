@@ -208,7 +208,7 @@ public final class DICOMServer: Sendable {
                     do {
                         // Set here rather than as bootstrap child options: on a connection already
                         // reset they fail (EINVAL), which must drop that connection only.
-                        try channel.syncOptions?.setOption(ChannelOptions.socketOption(.tcp_nodelay), value: 1)
+                        try channel.syncOptions?.setOption(ChannelOptions.tcpOption(.tcp_nodelay), value: 1)
                         try channel.syncOptions?.setOption(ChannelOptions.socketOption(.so_keepalive), value: 1)
                         return try DICOMChannel.configure(
                             channel, tls: sslContext, serverHostname: nil, isServer: true,
