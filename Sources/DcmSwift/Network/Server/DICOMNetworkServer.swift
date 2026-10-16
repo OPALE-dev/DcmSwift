@@ -190,15 +190,34 @@ public final class DICOMServer: Sendable {
         let configuration = self.configuration
         let sslContext = self.sslContext
         let server = try await ServerBootstrap(group: group)
+            // Errors raised while accepting one connection (reset by the peer before it is
+            // accepted: NIOFcntlFailedError on Darwin, ECONNABORTED on Linux) would end the
+            // accept loop, and with it the whole server: they are logged and dropped here.
+            .serverChannelInitializer { channel in
+                channel.eventLoop.makeCompletedFuture {
+                    try channel.pipeline.syncOperations.addHandler(AcceptErrorFilter(logger: configuration.logger))
+                }
+            }
             .serverChannelOption(ChannelOptions.backlog, value: 256)
             .serverChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
-            .childChannelOption(ChannelOptions.socketOption(.tcp_nodelay), value: 1)
-            .childChannelOption(ChannelOptions.socketOption(.so_keepalive), value: 1)
             .bind(host: configuration.host, port: configuration.port) { channel in
-                channel.eventLoop.makeCompletedFuture {
-                    try DICOMChannel.configure(
-                        channel, tls: sslContext, serverHostname: nil, isServer: true,
-                        limits: configuration.limits, timeouts: configuration.timeouts)
+                // A connection closed or reset before it is set up (port probe, client giving up)
+                // makes the setup throw. Thrown here, the error would end the accept loop and stop
+                // the whole server: the connection is dropped instead.
+                channel.eventLoop.makeCompletedFuture { () -> DICOMChannel.Async? in
+                    do {
+                        // Set here rather than as bootstrap child options: on a connection already
+                        // reset they fail (EINVAL), which must drop that connection only.
+                        try channel.syncOptions?.setOption(ChannelOptions.socketOption(.tcp_nodelay), value: 1)
+                        try channel.syncOptions?.setOption(ChannelOptions.socketOption(.so_keepalive), value: 1)
+                        return try DICOMChannel.configure(
+                            channel, tls: sslContext, serverHostname: nil, isServer: true,
+                            limits: configuration.limits, timeouts: configuration.timeouts)
+                    } catch {
+                        configuration.logger.debug("connection dropped during setup: \(error)")
+                        channel.close(promise: nil)
+                        return nil
+                    }
                 }
             }
         let port = server.channel.localAddress?.port ?? configuration.port
@@ -209,6 +228,7 @@ public final class DICOMServer: Sendable {
             if #available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *) {
                 try await withThrowingDiscardingTaskGroup { group in
                     for try await connection in connections {
+                        guard let connection else { continue }
                         group.addTask { await self.serve(connection) }
                     }
                 }
@@ -218,6 +238,7 @@ public final class DICOMServer: Sendable {
                     // that a long-running server does not accumulate them.
                     var spawned = 0
                     for try await connection in connections {
+                        guard let connection else { continue }
                         while spawned >= 2 * configuration.maximumAssociations + 1 {
                             _ = try await group.next()
                             spawned -= 1
@@ -339,5 +360,17 @@ public final class DICOMServer: Sendable {
         let timer = channel.eventLoop.scheduleTask(in: artim) { channel.close(promise: nil) }
         while (try? await iterator.next()) != nil {}
         timer.cancel()
+    }
+}
+
+/// Keeps the listening channel alive when accepting one connection fails: the error concerns
+/// that connection only (already reset or aborted by the peer), not the server.
+final class AcceptErrorFilter: ChannelInboundHandler, Sendable {
+    typealias InboundIn = Channel
+    typealias InboundOut = Channel
+    let logger: Logging.Logger
+    init(logger: Logging.Logger) { self.logger = logger }
+    func errorCaught(context: ChannelHandlerContext, error: Error) {
+        logger.debug("connection dropped while being accepted: \(error)")
     }
 }

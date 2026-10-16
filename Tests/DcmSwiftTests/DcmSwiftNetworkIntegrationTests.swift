@@ -1,4 +1,9 @@
 import XCTest
+#if canImport(Glibc)
+import Glibc
+#else
+import Darwin
+#endif
 import NIOCore
 import NIOPosix
 import NIOConcurrencyHelpers
@@ -117,6 +122,39 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
             XCTAssertEqual(status, .success)
         }
         XCTAssertEqual(server.activeAssociations, 0)
+    }
+
+    /// Connections reset by the peer before they are accepted (port probes, clients giving up)
+    /// must not stop the server: before, one of them ended the accept loop and every later
+    /// association was refused.
+    func testConnectionsResetBeforeAcceptDoNotStopTheServer() async throws {
+        let server = try DICOMServer(configuration: configuration())
+        try await withServer(server) { port in
+            for _ in 0..<200 {
+                #if canImport(Glibc)
+                let fd = socket(AF_INET, Int32(SOCK_STREAM.rawValue), 0)
+                #else
+                let fd = socket(AF_INET, SOCK_STREAM, 0)
+                #endif
+                XCTAssertGreaterThanOrEqual(fd, 0)
+                var linger = linger(l_onoff: 1, l_linger: 0)
+                setsockopt(fd, SOL_SOCKET, SO_LINGER, &linger, socklen_t(MemoryLayout<linger>.size))
+                var address = sockaddr_in()
+                address.sin_family = sa_family_t(AF_INET)
+                address.sin_port = in_port_t(UInt16(port).bigEndian)
+                address.sin_addr.s_addr = inet_addr("127.0.0.1")
+                let connected = withUnsafePointer(to: &address) {
+                    $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { connect(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) }
+                }
+                XCTAssertEqual(connected, 0, "the server stopped accepting connections")
+                close(fd)
+            }
+            let status = try await client().withAssociation(
+                to: DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port),
+                presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.verification])
+            ) { association in try await association.echo() }
+            XCTAssertEqual(status, .success)
+        }
     }
 
     func testStoreKeepsTheSentEncoding() async throws {
