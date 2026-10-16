@@ -57,7 +57,7 @@ public final class DICOMwebServer: Sendable {
         let server = try await ServerBootstrap(group: group)
             .serverChannelOption(ChannelOptions.backlog, value: 256)
             .serverChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
-            .childChannelOption(ChannelOptions.socketOption(.tcp_nodelay), value: 1)
+            .childChannelOption(ChannelOptions.tcpOption(.tcp_nodelay), value: 1)
             .bind(host: network.host, port: network.port) { channel in
                 channel.eventLoop.makeCompletedFuture {
                     if let sslContext {
