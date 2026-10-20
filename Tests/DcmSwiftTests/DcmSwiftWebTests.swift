@@ -76,6 +76,7 @@ final class DcmSwiftWebTests: XCTestCase {
         XCTAssertEqual(select("multipart/related; type=\"application/dicom\"; transfer-syntax=\(stored)"),
                        .selected(supported[0]))
         XCTAssertEqual(select("*/*"), .selected(supported[1]))
+        XCTAssertEqual(select("multipart/related; type=\"application/dicom\"; transfer-syntax=\(TransferSyntax.explicitVRLittleEndian); q=0, */*; q=0.1"), .notAcceptable)
         XCTAssertEqual(select("multipart/related; type=\"application/dicom\"; transfer-syntax=1.2.840.10008.1.2.4.90"),
                        .notAcceptable)
         XCTAssertEqual(select(nil), .notAcceptable, "a request without Accept gets 406 (PS3.18 8.7.5)")

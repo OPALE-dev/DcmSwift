@@ -372,6 +372,15 @@ public enum DICOMwebContentNegotiation {
                 return .selected(best)
             }
         }
+        // A wildcard cannot re-enable a default explicitly excluded by a more specific range.
+        if let defaultType {
+            var specific: (score: Int, quality: Double)?
+            for member in header where member.range.type != "*" {
+                guard let score = member.specificity(for: defaultType, defaultTransferSyntax: defaultTransferSyntax) else { continue }
+                if specific == nil || score > specific!.score { specific = (score, member.quality) }
+            }
+            if specific?.quality == 0 { return .notAcceptable }
+        }
         if let defaultType, header.contains(where: { $0.quality > 0 && $0.range.isRange
             && $0.specificity(for: defaultType, defaultTransferSyntax: defaultTransferSyntax) != nil }) {
             return .selected(defaultType)
