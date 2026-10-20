@@ -117,8 +117,21 @@ public protocol DICOMRetrieveService: Sendable {
         _ identifier: DataSet, informationModel: String, context: DICOMServiceContext
     ) async throws -> [DICOMRetrieveItem]
 
+    /// Stored transfer syntaxes that may be proposed to a C-MOVE destination.
+    /// The service must be able to return these representations after negotiation.
+    func transferSyntaxes(for item: DICOMRetrieveItem, context: DICOMServiceContext) async throws -> [String]
+
+    /// Select an existing representation after C-GET/C-MOVE storage contexts are negotiated.
+    /// The returned item must preserve the SOP class and instance identifiers.
+    func representation(for item: DICOMRetrieveItem, acceptedTransferSyntaxes: [String], context: DICOMServiceContext) async throws -> DICOMRetrieveItem
+
     /// The C-MOVE destination with this AE title, or nil if unknown.
     func destination(for aeTitle: String) async -> DICOMRemoteNode?
+}
+
+public extension DICOMRetrieveService {
+    func transferSyntaxes(for item: DICOMRetrieveItem, context: DICOMServiceContext) async throws -> [String] { [item.transferSyntaxUID] }
+    func representation(for item: DICOMRetrieveItem, acceptedTransferSyntaxes: [String], context: DICOMServiceContext) async throws -> DICOMRetrieveItem { item }
 }
 
 /// Sub-operation counts of C-MOVE and C-GET (PS3.7 9.1.3, 9.1.4).

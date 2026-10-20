@@ -65,6 +65,50 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
         func destination(for aeTitle: String) async -> DICOMRemoteNode? { destinations[aeTitle] }
     }
 
+    struct AlternateRetrieve: DICOMRetrieveService {
+        let original: DICOMRetrieveItem
+        let alternate: DICOMRetrieveItem
+        let destinationNode: DICOMRemoteNode?
+        func retrieve(_ identifier: DataSet, informationModel: String, context: DICOMServiceContext) async throws -> [DICOMRetrieveItem] { [original] }
+        func destination(for aeTitle: String) async -> DICOMRemoteNode? { destinationNode }
+        func transferSyntaxes(for item: DICOMRetrieveItem, context: DICOMServiceContext) async throws -> [String] { [original.transferSyntaxUID, alternate.transferSyntaxUID] }
+        func representation(for item: DICOMRetrieveItem, acceptedTransferSyntaxes: [String], context: DICOMServiceContext) async throws -> DICOMRetrieveItem {
+            acceptedTransferSyntaxes.contains(alternate.transferSyntaxUID) ? alternate : original
+        }
+    }
+
+    func testStoredAlternateSelectedAfterGetAndMoveNegotiation() async throws {
+        // No Pixel Data: explicit-VR attributes have the same encoding in an encapsulated syntax.
+        let original = try DICOMRetrieveItem(dataSet: instance(905))
+        let alternate = DICOMRetrieveItem(sopClassUID: original.sopClassUID, sopInstanceUID: original.sopInstanceUID,
+            transferSyntaxUID: DICOMRLECodec.transferSyntaxUID, payload: original.payload)
+        let destinationStorage = MemoryStorage()
+        let destination = try DICOMServer(configuration: configuration("DEST"), storage: destinationStorage)
+        try await withServer(destination) { destinationPort in
+            let service = AlternateRetrieve(original: original, alternate: alternate,
+                destinationNode: .init(aeTitle: "DEST", host: "127.0.0.1", port: destinationPort))
+            let archive = try DICOMServer(configuration: configuration("ARCHIVE"), retrieve: service)
+            try await withServer(archive) { port in
+                let remote = DICOMRemoteNode(aeTitle: "ARCHIVE", host: "127.0.0.1", port: port)
+                let identifier = DataSet(); _ = identifier.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
+                let local = MemoryStorage()
+                let got = try await client().withAssociation(to: remote, presentationContexts: [
+                    .init(id: 1, abstractSyntax: DICOMSOPClass.studyRootGet, transferSyntaxes: [TransferSyntax.explicitVRLittleEndian]),
+                    .init(id: 3, abstractSyntax: original.sopClassUID, transferSyntaxes: [alternate.transferSyntaxUID])
+                ], roleSelections: [.init(sopClassUID: original.sopClassUID, scuRole: false, scpRole: true)], storage: local) { association in
+                    try await association.get(identifier)
+                }
+                XCTAssertEqual(got.progress.completed, 1)
+                XCTAssertEqual(local.received.withLockedValue { $0.map(\.transferSyntaxUID) }, [alternate.transferSyntaxUID])
+                let moved = try await client().withAssociation(to: remote, presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.studyRootMove])) { association in
+                    try await association.move(identifier, destination: "DEST")
+                }
+                XCTAssertEqual(moved.progress.completed, 1)
+                XCTAssertEqual(destinationStorage.received.withLockedValue { $0.map(\.transferSyntaxUID) }, [alternate.transferSyntaxUID])
+            }
+        }
+    }
+
     private func instance(_ index: Int, sopClass: String = "1.2.840.10008.5.1.4.1.1.7") -> DataSet {
         let dataSet = DataSet()
         _ = dataSet.set(value: sopClass, forTagName: "SOPClassUID")

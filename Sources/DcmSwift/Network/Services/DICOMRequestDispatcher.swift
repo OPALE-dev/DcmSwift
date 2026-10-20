@@ -146,11 +146,32 @@ struct DICOMRequestDispatcher: Sendable {
                     // At most 128 presentation contexts per association: the
                     // instances go over as many associations as needed.
                     let state = SubOperations(count: items.count)
-                    for batch in DICOMPresentationContextProposal.batches(for: items) {
+                    // Expand only negotiation metadata, never duplicate sub-operations.
+                    var plans: [(items: [DICOMRetrieveItem], offers: [DICOMRetrieveItem])] = []
+                    var batch: [DICOMRetrieveItem] = [], offers: [DICOMRetrieveItem] = [], keys: Set<String> = []
+                    for item in items {
+                        let syntaxes = try await retrieve.transferSyntaxes(for: item, context: serviceContext)
+                        let representations = (syntaxes.isEmpty ? [item.transferSyntaxUID] : syntaxes).map {
+                            DICOMRetrieveItem(sopClassUID: item.sopClassUID, sopInstanceUID: item.sopInstanceUID,
+                                transferSyntaxUID: $0, payload: .init(data: Data()))
+                        }
+                        var needed: Set<String> = [item.sopClassUID + " *"]
+                        for rep in representations where !DICOMAssociation.isUncompressed(rep.transferSyntaxUID) {
+                            needed.insert(item.sopClassUID + " " + rep.transferSyntaxUID)
+                        }
+                        guard needed.count <= 128 else { throw DICOMServiceError(status: .retrieveOutOfResourcesForSuboperations) }
+                        if keys.union(needed).count > 128 && !batch.isEmpty {
+                            plans.append((batch, offers)); batch = []; offers = []; keys = []
+                        }
+                        batch.append(item); offers += representations; keys.formUnion(needed)
+                    }
+                    if !batch.isEmpty { plans.append((batch, offers)) }
+                    for plan in plans {
+                        let batch = plan.items
                         if state.cancelled { break }
                         do {
                             try await outgoingClient.withAssociation(
-                                to: destination, presentationContexts: DICOMPresentationContextProposal.proposals(for: batch)
+                                to: destination, presentationContexts: DICOMPresentationContextProposal.proposals(for: plan.offers)
                             ) { outgoing in
                                 await subOperations(batch, through: outgoing, moveOriginator: (
                                     association.negotiated.callingAETitle, id), state: state, respond: respond,
@@ -419,7 +440,14 @@ struct DICOMRequestDispatcher: Sendable {
             state.attempted.insert(item.sopInstanceUID)
             state.progress.remaining -= 1
             do {
-                let status = try await association.store(item, moveOriginator: moveOriginator)
+                let accepted = association.negotiated.presentationContexts.values
+                    .filter { $0.abstractSyntax == item.sopClassUID && (association.runtime.role == .acceptor ? $0.requestorIsSCP : $0.requestorIsSCU) }
+                    .sorted { $0.id < $1.id }.map(\.transferSyntax)
+                let selected = try await retrieve?.representation(for: item, acceptedTransferSyntaxes: accepted, context: context) ?? item
+                guard selected.sopClassUID == item.sopClassUID, selected.sopInstanceUID == item.sopInstanceUID else {
+                    throw DICOMServiceError(status: .unableToProcess, comment: "Representation changed DICOM identity")
+                }
+                let status = try await association.store(selected, moveOriginator: moveOriginator)
                 switch status.category {
                 case .success: state.progress.completed += 1
                 case .warning: state.progress.warning += 1
