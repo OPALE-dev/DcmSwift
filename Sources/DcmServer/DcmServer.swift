@@ -17,7 +17,7 @@ struct DcmServer: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Serve verification, storage, query/retrieve, Storage Commitment, Worklist, MPPS, and UPS.",
         discussion: """
-            Without --storage-directory, only C-ECHO is served. With it, received instances are written \
+            Without a service directory, only C-ECHO is served. With --storage-directory, received instances are written \
             there as <SOPInstanceUID>.dcm, in their received transfer syntax, and the Part 10 files found \
             there at start-up and received later answer C-FIND, C-MOVE, and C-GET. Storage Commitment \
             commits the instances present in the directory; results go on the requesting association, \

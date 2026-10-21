@@ -71,7 +71,9 @@ public enum DICOMFrameExtraction {
         func strings(_ tag: String) -> [String] { DICOMQueryMatcher.strings(object[tag] as? [String: Any] ?? [:]) }
         // Reject frame-indexed structures whose semantics this extractor cannot
         // rewrite. Enhanced image extraction requires a dedicated implementation.
-        let unsupported = ["52009230", "00209161", "00182001", "00182002", "00186018", "00186020", "54000100"]
+        let unsupported = ["52009230", "00209161", "54000100",
+            "00182001", "00182002", "00182003", "00182004", "00182005", "00182006",
+            "00286010", "00286020", "00286022", "00286023", "00286040", "00286100"]
         guard !object.keys.contains(where: { $0.hasPrefix("50") || $0.hasPrefix("60") }),
               !unsupported.contains(where: { object[$0] != nil }) else { throw failure(0xAA02, "unsupported frame-dependent attributes") }
         let pointers = strings("00280009")
@@ -126,6 +128,7 @@ public enum DICOMFrameExtraction {
                 throw failure(0xAA02, "frame timing exceeds DICOM date range")
             }
             let microseconds = original.lower + Int((start * 1_000_000).rounded())
+            guard microseconds <= maximum else { throw failure(0xAA02, "rounded timing exceeds DICOM date range") }
             let instant = Date(timeIntervalSince1970: Double(microseconds / 1_000_000) - 62_135_596_800)
             let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX")
             formatter.calendar = Calendar(identifier: .gregorian); formatter.timeZone = TimeZone(secondsFromGMT: 0)
@@ -166,7 +169,7 @@ public enum DICOMFrameExtraction {
             return clean
         }
         object = stripPrivate(object)
-        for tag in ["00287FE0", "7FE00001", "7FE00002", "00209161", "00209162", "00209163", "00209228", "00186010", "00186012", "00082142", "00082143", "00180040", "00182140"] { object.removeValue(forKey: tag) }
+        for tag in ["00287FE0", "7FE00001", "7FE00002", "00209161", "00209162", "00209163", "00209228", "00082142", "00082143", "00180040", "00182140"] { object.removeValue(forKey: tag) }
         return try DICOMRetrieveItem(dataSet: DICOMJSON.dataSet(object))
     }
 }
