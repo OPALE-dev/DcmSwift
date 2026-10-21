@@ -193,6 +193,18 @@ sockets.
 | Query | <code>find(_:)</code>: an <code>AsyncSequence</code> of matches; stopping early sends C-CANCEL | <ul><li><code>DICOMQueryService</code>, Patient Root, Study Root, Patient/Study Only (retired)</li><li><code>DICOMQueryMatching</code>: PS3.4 C.2.2.2 matching</li></ul> |
 | Retrieve | <ul><li><code>move(_:destination:)</code>, <code>get(_:)</code>, with progress</li><li>Task cancellation sends C-CANCEL</li></ul> | <ul><li><code>DICOMRetrieveService</code>, with Composite Instance Root</li><li>C-MOVE through a new association to the destination, C-GET on the same association</li><li>Sub-operation counts and Failed SOP Instance UID List</li></ul> |
 
+### Query/Retrieve extensions
+
+See <doc:QueryRetrieveExtensions> for the accepted negotiation layout, matching
+algorithms, identifier rules, corrected Composite Instance Root UIDs, bulk-free
+retrieval and the separate Relevant Patient Information provider. The archive
+supports the first four FIND options and relational MOVE/GET. Annex Y and Z
+retain the reserved first byte; conversion is declined. Native Secondary Capture
+FRAME extraction supports all three selectors within the declared representation
+subset. Enhanced/classic view conversion, compressed/video and enhanced image
+frame extraction are not advertised as implemented. Full clinical SR template
+validation remains the provider application's responsibility.
+
 ### Archive storage
 
 | Part | Protocol | Implementations in DcmSwift |

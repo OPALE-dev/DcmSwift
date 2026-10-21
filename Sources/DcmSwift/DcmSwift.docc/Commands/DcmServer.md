@@ -9,7 +9,7 @@ DcmServer --aet ARCHIVE --storage-directory ./archive --port 11112
 DcmServer -a DCMSERVER -p 11112 -s /data/archive --destination VIEWER=10.0.0.5:104
 ```
 
-Without `--storage-directory`, only C-ECHO is served. With a storage directory,
+With no service directory configured, only C-ECHO is served. With a storage directory,
 received instances are persisted and indexed for C-FIND, C-MOVE, and C-GET.
 Move destinations and Storage Commitment callback destinations use repeated
 `--destination AET=host:port` options. TLS and mutual TLS are available through
@@ -121,4 +121,21 @@ JSON documents; no Procedure Log instance is made from them.
 
 ```sh
 DcmServer -a LOG --event-log-directory ./events
+```
+
+## Query/Retrieve extensions and patient information
+
+Archive queries negotiate relational matching, combined Study Date/Time ranges,
+fuzzy person names and timezone adjustment. Composite Instance Root retrieval,
+native Secondary Capture frame extraction and Retrieve Without Bulk Data are
+available through their dedicated SOP Classes. See <doc:QueryRetrieveExtensions>
+for identifier rules and the declared extraction limits.
+
+`--patient-information-directory` serves Relevant Patient Information FIND from
+response identifiers supplied as DICOM JSON or data sets. The records and their
+templates are loaded at startup; no storage directory is required. The provider
+must qualify their SR template and clinical content.
+
+```sh
+DcmServer --aet RIS --patient-information-directory ./patient-information
 ```

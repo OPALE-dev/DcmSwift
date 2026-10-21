@@ -26,11 +26,20 @@ public struct DICOMQueryMatcher: Sendable {
     public var combinedDateTime: [(date: String, time: String)]
     /// Tags, as 8 hexadecimal digits, returned as given in the request and
     /// never matched, such as Query/Retrieve Level.
+    /// Literal PN matching retains accents. Case remains insignificant.
+    /// Existing worklist/UPS callers retain their historical folded matching.
+    public var literalPersonNames: Bool
+    public var fuzzyPersonNames: Bool
+    public var timezoneAdjustment: Bool
     public var echoed: Set<String>
 
-    public init(combinedDateTime: [(date: String, time: String)] = [], echoed: Set<String> = []) {
+    public init(combinedDateTime: [(date: String, time: String)] = [], echoed: Set<String> = [],
+                fuzzyPersonNames: Bool = false, timezoneAdjustment: Bool = false, literalPersonNames: Bool = false) {
         self.combinedDateTime = combinedDateTime
         self.echoed = echoed
+        self.literalPersonNames = literalPersonNames
+        self.fuzzyPersonNames = fuzzyPersonNames
+        self.timezoneAdjustment = timezoneAdjustment
     }
 
     /// The Modality Worklist matcher (PS3.4 K.6.1.2.2): Scheduled Procedure
@@ -56,17 +65,22 @@ public struct DICOMQueryMatcher: Sendable {
         match(identifier, against: entity, topLevel: true)
     }
 
-    private func match(_ keys: [String: Any], against entity: [String: Any], topLevel: Bool) -> [String: Any]? {
+    private func match(_ keys: [String: Any], against entity: [String: Any], topLevel: Bool,
+                       queryOffset inheritedQueryOffset: Int = 0, storedOffset inheritedStoredOffset: Int = 0) -> [String: Any]? {
+        let queryOffset = keys[Self.timezoneOffset] != nil ? Self.offset(in: keys) : inheritedQueryOffset
+        let storedOffset = entity[Self.timezoneOffset] != nil ? Self.offset(in: entity) : inheritedStoredOffset
         var response: [String: Any] = [:]
         var combined: Set<String> = []
         for pair in combinedDateTime {
             guard let date = keys[pair.date] as? [String: Any], let time = keys[pair.time] as? [String: Any],
                   let dateKey = Self.strings(date).first, let timeKey = Self.strings(time).first,
-                  let range = Self.combinedRange(date: dateKey, time: timeKey) else { continue }
+                  let range = Self.combinedRange(date: dateKey, time: timeKey,
+                    offset: timezoneAdjustment ? queryOffset : 0) else { continue }
             let storedDate = Self.strings(entity[pair.date] as? [String: Any] ?? [:])
             let storedTime = Self.strings(entity[pair.time] as? [String: Any] ?? [:])
             guard let day = storedDate.first, !day.isEmpty else { return nil }
             let stored = DICOMDateTimeValue.dateTime(day + (storedTime.first ?? ""))
+                .map { $0.shifted(by: timezoneAdjustment ? storedOffset : 0) }
             guard let stored, range.contains(stored.lower) else { return nil }
             combined.formUnion([pair.date, pair.time])
         }
@@ -80,7 +94,7 @@ public struct DICOMQueryMatcher: Sendable {
             let stored = entity[tag] as? [String: Any]
             let vr = key["vr"] as? String ?? stored?["vr"] as? String ?? ""
             if vr == "SQ" {
-                guard let sequence = matchSequence(key, stored) else { return nil }
+                guard let sequence = matchSequence(key, stored, queryOffset: queryOffset, storedOffset: storedOffset) else { return nil }
                 response[tag] = sequence
                 continue
             }
@@ -88,7 +102,7 @@ public struct DICOMQueryMatcher: Sendable {
                 let values = Self.strings(key)
                 if !Self.isUniversal(values) {
                     let candidates = Self.strings(stored ?? [:]).filter { !$0.isEmpty }
-                    guard !candidates.isEmpty, Self.matches(candidates, keys: values, vr: vr) else { return nil }
+                    guard !candidates.isEmpty, matches(candidates, keys: values, vr: vr, queryOffset: queryOffset, storedOffset: storedOffset) else { return nil }
                 }
             }
             response[tag] = stored ?? ["vr": vr]
@@ -101,14 +115,91 @@ public struct DICOMQueryMatcher: Sendable {
         return response
     }
 
+    private static func offset(in object: [String: Any]) -> Int {
+        let text = strings(object[timezoneOffset] as? [String: Any] ?? [:]).first ?? "+0000"
+        guard text.count == 5, text.first == "+" || text.first == "-",
+              let hours = Int(text.dropFirst().prefix(2)), let minutes = Int(text.suffix(2)),
+              hours <= 14, minutes < 60, hours < 14 || minutes == 0 else { return 0 }
+        return (text.first == "-" ? -1 : 1) * (hours * 60 + minutes) * 60_000_000
+    }
+
+    private func matches(_ stored: [String], keys: [String], vr: String,
+                         queryOffset: Int, storedOffset: Int) -> Bool {
+        if vr == "PN", fuzzyPersonNames {
+            return keys.contains { key in stored.contains { Self.fuzzyName($0, key: key) } }
+        }
+        if vr == "PN", literalPersonNames {
+            func normalized(_ value: String) -> String {
+                var result = value.folding(options: [.caseInsensitive], locale: nil)
+                while result.hasSuffix("^") { result.removeLast() }
+                return result
+            }
+            return keys.contains { key in stored.contains { name in
+                let groups = key.contains("=") ? [name] : name.components(separatedBy: "=")
+                return groups.contains { DICOMQueryMatching.wildcard(normalized($0), pattern: normalized(key)) }
+            } }
+        }
+        if timezoneAdjustment, vr == "TM" || vr == "DT" {
+            let day = 86_400_000_000
+            return keys.contains { key in
+                guard let range = DICOMDateTimeValue.range(key, vr: vr) else { return false }
+                let parts = DICOMDateTimeValue.parse(key, vr: vr) != nil ? (low: key, high: key) : DICOMDateTimeValue.split(key, vr: vr)
+                func hasZone(_ text: String) -> Bool { text.contains("+") || text.contains("-") }
+                let lower = range.lowerBound == Int.min ? Int.min : range.lowerBound - (vr == "DT" && hasZone(parts.low) ? 0 : queryOffset)
+                let upper = range.upperBound == Int.max ? Int.max : range.upperBound - (vr == "DT" && hasZone(parts.high.isEmpty ? parts.low : parts.high) ? 0 : queryOffset)
+                guard lower <= upper else { return false }
+                return stored.contains { value in
+                    guard let parsed = DICOMDateTimeValue.parse(value, vr: vr) else { return false }
+                    let moment = parsed.lower - (vr == "DT" && hasZone(value) ? 0 : storedOffset)
+                    // A time without a date repeats every day. Include wrapped
+                    // intervals across midnight after adjustment.
+                    if vr == "TM" {
+                        let local = parsed.lower + queryOffset - storedOffset
+                        let clock = (local % day + day) % day
+                        return range.contains(clock)
+                    }
+                    return (lower...upper).contains(moment)
+                }
+            }
+        }
+        return Self.matches(stored, keys: keys, vr: vr)
+    }
+
+    /// Fuzzy PN: case/diacritic folding, punctuation and component order
+    /// ignored. Each query token must match a distinct stored token; wildcards
+    /// remain supported. No phonetic or language-specific equivalence is assumed.
+    static func fuzzyName(_ stored: String, key: String) -> Bool {
+        func tokens(_ text: String) -> [String] {
+            foldedName(text).split { !$0.isLetter && !$0.isNumber && $0 != "*" && $0 != "?" }.map(String.init)
+        }
+        let wanted = tokens(key)
+        return stored.split(separator: "=").contains { group in
+            let available = tokens(String(group))
+            // Bipartite matching avoids factorial work on repeated PN tokens.
+            var owner = Array(repeating: -1, count: available.count)
+            func assign(_ index: Int, visited: inout Set<Int>) -> Bool {
+                for i in available.indices where !visited.contains(i) && DICOMQueryMatching.wildcard(available[i], pattern: wanted[index]) {
+                    visited.insert(i)
+                    if owner[i] == -1 || assign(owner[i], visited: &visited) { owner[i] = index; return true }
+                }
+                return false
+            }
+            for i in wanted.indices {
+                var visited = Set<Int>()
+                if !assign(i, visited: &visited) { return false }
+            }
+            return true
+        }
+    }
+
     /// Sequence Matching (C.2.2.2.6): the matching Items, reduced to the
     /// requested attributes, or the whole sequence when the key has no Item
     /// attribute.
-    private func matchSequence(_ key: [String: Any], _ stored: [String: Any]?) -> [String: Any]? {
+    private func matchSequence(_ key: [String: Any], _ stored: [String: Any]?, queryOffset: Int, storedOffset: Int) -> [String: Any]? {
         let keyItems = key["Value"] as? [[String: Any]] ?? []
         guard let keyItem = keyItems.first, !keyItem.isEmpty else { return stored ?? ["vr": "SQ"] }
         let items = stored?["Value"] as? [[String: Any]] ?? []
-        let matched = items.compactMap { match(keyItem, against: $0, topLevel: false) }
+        let matched = items.compactMap { match(keyItem, against: $0, topLevel: false, queryOffset: queryOffset, storedOffset: storedOffset) }
         if matched.isEmpty, Self.constrains(keyItem) { return nil }
         return matched.isEmpty ? ["vr": "SQ"] : ["vr": "SQ", "Value": matched]
     }
@@ -192,7 +283,7 @@ public struct DICOMQueryMatcher: Sendable {
 
     /// The DT range of a DA and a TM key that use the same form of Range
     /// Matching, or nil when they do not.
-    static func combinedRange(date: String, time: String) -> ClosedRange<Int>? {
+    static func combinedRange(date: String, time: String, offset: Int = 0) -> ClosedRange<Int>? {
         guard date.contains("-"), time.contains("-") else { return nil }
         let dates = date.split(separator: "-", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
         let times = time.split(separator: "-", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
@@ -200,7 +291,7 @@ public struct DICOMQueryMatcher: Sendable {
         let low = dates[0].isEmpty ? Int.min : DICOMDateTimeValue.dateTime(dates[0] + times[0])?.lower
         let high = dates[1].isEmpty ? Int.max : DICOMDateTimeValue.dateTime(dates[1] + times[1])?.upper
         guard let low, let high, low <= high else { return nil }
-        return low...high
+        return (low == Int.min ? low : low - offset)...(high == Int.max ? high : high - offset)
     }
 }
 
@@ -211,9 +302,12 @@ struct DICOMDateTimeValue {
     let lower: Int
     let upper: Int
 
+    func shifted(by offset: Int) -> Self { Self(lower: lower - offset, upper: upper - offset) }
+
     /// A single value or a range (`a-b`, `-b`, `a-`) as the moments it
     /// covers, each bound covering its whole precision.
     static func range(_ key: String, vr: String) -> ClosedRange<Int>? {
+        if let single = parse(key, vr: vr) { return single.lower...single.upper }
         guard key.contains("-") else {
             return parse(key, vr: vr).map { $0.lower...$0.upper }
         }

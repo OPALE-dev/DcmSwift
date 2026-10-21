@@ -50,6 +50,9 @@ struct DcmServer: AsyncParsableCommand {
     @Option(name: .long, help: "Directory of Modality Worklist items, read at each query.")
     var worklistDirectory: String?
 
+    @Option(name: .long, help: "Directory of template-constrained Relevant Patient Information response identifiers (DICOM JSON or data sets). Loaded at startup.")
+    var patientInformationDirectory: String?
+
     @Option(name: .long, help: "Directory of Modality Performed Procedure Steps, kept as DICOM JSON.")
     var mppsDirectory: String?
 
@@ -286,6 +289,13 @@ struct DcmServer: AsyncParsableCommand {
             recipients: ianRecipients, retrieveAETitle: aet, delay: ianDelay)
         let server: DICOMServer
         var web: DICOMwebServer?
+        let patientInformation: DICOMRelevantPatientInformationService?
+        if let patientInformationDirectory {
+            let records = DICOMModalityWorklist.items(in: URL(fileURLWithPath: patientInformationDirectory, isDirectory: true))
+            let templates = Set(try records.compactMap { try DICOMRelevantPatientInformationService.template(in: $0) })
+            patientInformation = try DICOMRelevantPatientInformationService(records: records, supportedTemplates: templates)
+            print("\(records.count) patient information records in \(patientInformationDirectory)")
+        } else { patientInformation = nil }
         var archiveServices: DICOMArchiveServices?
         if let storageDirectory {
             let directory = URL(fileURLWithPath: storageDirectory, isDirectory: true)
@@ -299,13 +309,13 @@ struct DcmServer: AsyncParsableCommand {
             archiveServices = services
             server = try DICOMServer(
                 configuration: configuration, storage: services, query: services, worklist: worklist,
-                upsQuery: ups,
+                upsQuery: ups, relevantPatientInformation: patientInformation,
                 retrieve: services, storageCommitment: services,
                 storageCommitmentOutbox: DICOMStorageCommitmentOutbox(retryInterval: commitmentRetryInterval),
                 normalized: normalized)
         } else {
             server = try DICOMServer(configuration: configuration, worklist: worklist, upsQuery: ups,
-                                     normalized: normalized)
+                                     relevantPatientInformation: patientInformation, normalized: normalized)
         }
         if let httpPort {
             var network = DICOMwebServerNetworkConfiguration(
