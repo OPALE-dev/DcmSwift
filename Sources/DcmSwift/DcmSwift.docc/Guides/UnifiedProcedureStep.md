@@ -123,7 +123,7 @@ python3 Scripts/interop/ups_dcm4che.py /path/to/dcm4che/bin/upsscu 11112 11113
 The first interop script requires pynetdicom/pydicom. The second uses
 unmodified dcm4che command-line tools for both requests and Event reception.
 Use a fresh server directory for each interop run. UPS-RS and WebSocket
-notifications are a separate PS3.18 implementation phase.
+notifications share this state machine; see <doc:UPSREST>.
 
 Local qualification on 2026-10-21:
 

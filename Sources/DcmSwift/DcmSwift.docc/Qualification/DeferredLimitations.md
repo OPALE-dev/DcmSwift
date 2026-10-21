@@ -274,7 +274,7 @@ conformance without that evidence.
   Conditional requirements needing external task, patient, performer, or
   referenced frame/segment knowledge remain the application's responsibility;
   code scheme ambiguity and clinical suitability are not inferred.
-  UPS-RS remains a separate PS3.18 phase.
+  UPS-RS uses the same state machine and retention policy.
 - DIMSE-N is generic: Print Management behavior is not built in yet.
   Storage Commitment's optional
   Storage Media File-Set attributes are carried but not interpreted, and
@@ -282,9 +282,13 @@ conformance without that evidence.
 - A Storage Commitment result that cannot be delivered is retried by
   `DICOMStorageCommitmentOutbox`; `DcmServer` keeps the pending results in
   memory, so they are lost if it stops.
-- DICOMweb (PS3.18): the Studies Service is implemented. Still missing:
-  - the Worklist (UPS-RS), Non-Patient Instance, Storage Commitment, MWL, and
-    MPPS services, and WebSocket notifications;
+- DICOMweb (PS3.18): Studies and Worklist (UPS-RS) origin services are implemented.
+  UPS-RS has JSON/XML HTTP operations and WebSocket Event reports, but no
+  dedicated client SDK or replay queue. The native WebSocket server requires
+  macOS 13/iOS 16 or Linux; earlier Apple targets retain the existing HTTP server.
+  Matching extensions and character set transcoding/negotiation remain limited
+  as described in <doc:UPSREST>. Still missing:
+  - the Non-Patient Instance, Storage Commitment, MWL, and MPPS services;
   - STOW-RS of metadata with separate Bulk Data, and of compressed images
     supplied as image/jpeg or other Bulk Data media types (10.5.2);
   - the study, series, and instance Bulk Data resources: metadata references

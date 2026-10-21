@@ -255,7 +255,20 @@ DcmSwift is a user agent (`DICOMwebClient`) and a native origin server
 | Errors (8.5, 8.6.3) | Status Reports in <code>text/html</code>; 404, 405 with Allow, 406, 413, 415, 501 |
 | Transport | HTTP/1.1 with keep-alive; request payloads read as they are consumed; responses streamed with Content-Length or chunked coding; TLS with the configuration of the DIMSE profiles; a configurable public origin for Retrieve URLs behind a proxy |
 
-Not supported yet: other PS3.18 services (Worklist/UPS-RS, Non-Patient
+### Worklist Service (UPS-RS, PS3.18 11 and 8.10)
+
+<code>DICOMUPSRESTService</code> shares the DIMSE UPS state machine and archive
+with HTTP create, retrieve, update, state, cancel request, search, subscribe,
+unsubscribe and suspend. HTTP representations are DICOM JSON arrays and
+multipart Native DICOM XML. <code>DICOMUPSEventHub</code> delivers Event reports
+over WebSocket text messages at <code>/subscribers/{ae}</code>; reconnecting
+preserves subscriptions and locks, with no replay queue. Incoming frames are
+limited to 64 KiB and event queues to 64 reports per connection. The built-in
+WebSocket transport requires macOS 13/iOS 16 or Linux; older Apple targets
+retain the HTTP transport. The host provides authorization and AE identity.
+See <doc:UPSREST> for matching, retention, media and lifecycle behavior.
+
+Not supported yet: other PS3.18 services (Non-Patient
 Instance, Storage Commitment, MWL, MPPS), metadata with Bulk Data in STOW-RS,
 the generic Bulk Data resources, rendered GIF, MPR and 3D rendering,
 annotations, ICC profiles, character set transcoding, HTTP Range, and access
