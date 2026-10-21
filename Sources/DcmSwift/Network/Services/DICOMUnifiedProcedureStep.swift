@@ -10,16 +10,25 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
     /// with the UPS Event SOP Class and sends N-EVENT-REPORT on it.
     private let notify: (@Sendable (String, String, UInt16, DataSet) async -> Void)?
 
+    private let receivingAEs: Set<String>?
+    private let eventReportsSupported: Bool
+    private let receive: (@Sendable (String, UInt16, DataSet) async -> Void)?
+
     public init(index: DICOMArchiveIndex = DICOMMemoryArchiveIndex(),
+                receivingAEs: Set<String>? = nil, eventReportsSupported: Bool = true,
+                receive: (@Sendable (String, UInt16, DataSet) async -> Void)? = nil,
                 notify: (@Sendable (String, String, UInt16, DataSet) async -> Void)? = nil) {
         self.index = index
+        self.receivingAEs = receivingAEs
+        self.eventReportsSupported = eventReportsSupported
+        self.receive = receive
         self.notify = notify
     }
 
     public static let sopClasses = [DICOMSOPClass.upsPush, DICOMSOPClass.upsPull,
                                     DICOMSOPClass.upsWatch, DICOMSOPClass.upsEvent]
 
-    private enum Tag {
+    enum Tag {
         static let state = "00741000"
         static let transaction = "00081195"
         static let instance = "00080018"
@@ -52,15 +61,15 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         static let modificationTime = "00404010"
     }
 
-    private static func attribute(_ vr: String, _ value: String) -> [String: Any] {
+    static func attribute(_ vr: String, _ value: String) -> [String: Any] {
         ["vr": vr, "Value": [value]]
     }
 
-    private static func value(_ object: [String: Any], _ tag: String) -> String? {
+    static func value(_ object: [String: Any], _ tag: String) -> String? {
         ((object[tag] as? [String: Any])?["Value"] as? [String])?.first
     }
 
-    private static func hasValue(_ object: [String: Any], _ tag: String) -> Bool {
+    static func hasValue(_ object: [String: Any], _ tag: String) -> Bool {
         guard let values = (object[tag] as? [String: Any])?["Value"] as? [Any] else { return false }
         return !values.isEmpty && values.contains { !($0 is NSNull) && !(($0 as? String)?.isEmpty ?? false) }
     }
@@ -86,8 +95,7 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         let uid = request.sopInstanceUID ?? ""
         // The command's SOP Class UID is always UPS Push, even when the
         // negotiated abstract syntax is Pull or Watch (CC.3.1).
-        guard request.sopClassUID == DICOMSOPClass.upsPush ||
-                context.presentationContext.abstractSyntax == DICOMSOPClass.upsEvent else {
+        guard request.sopClassUID == DICOMSOPClass.upsPush else {
             return DICOMNormalizedResponse(status: .noSuchSOPClass)
         }
         switch (context.presentationContext.abstractSyntax, request.operation) {
@@ -97,7 +105,7 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
             return try await cancel(uid, object, requestingAE: context.callingAETitle)
         case (DICOMSOPClass.upsPull, .action(1)):
             return try await changeState(uid, object)
-        case (DICOMSOPClass.upsPull, .set):
+        case (DICOMSOPClass.upsPull, .set), (DICOMSOPClass.upsPush, .set):
             return try await set(uid, object)
         case (DICOMSOPClass.upsPull, .get(let tags)),
              (DICOMSOPClass.upsPush, .get(let tags)),
@@ -106,10 +114,29 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         case (DICOMSOPClass.upsWatch, .action(let action)) where (3...5).contains(action):
             return try await subscription(uid, action: action, object: object)
         case (DICOMSOPClass.upsEvent, .eventReport(let type)) where (1...5).contains(type):
-            return DICOMNormalizedResponse(status: .success)
+            return try await receiveEvent(uid, type: type, object: object)
+        case (_, .eventReport): return DICOMNormalizedResponse(status: .noSuchEventType)
+        case (_, .action): return DICOMNormalizedResponse(status: .noSuchActionType)
         default:
             return DICOMNormalizedResponse(status: .unrecognizedOperation)
         }
+    }
+
+    func receiveEvent(_ uid: String, type: UInt16, object: [String: Any]) async throws -> DICOMNormalizedResponse {
+        let required: [String]
+        switch type {
+        case 1: required = [Tag.state, Tag.readiness]
+        case 2: required = [Tag.requestingAE]
+        case 3: required = [Tag.progress]
+        case 4: required = ["00741242", "00741244", "00741246"]
+        case 5: required = []
+        default: return DICOMNormalizedResponse(status: .noSuchEventType)
+        }
+        if let missing = required.first(where: { !Self.hasValue(object, $0) }) {
+            return Self.reply(0x0120, "missing event attribute \(missing)")
+        }
+        if let receive { await receive(uid, type, try DICOMJSON.dataSet(object)) }
+        return DICOMNormalizedResponse(status: .success)
     }
 
     /// Creates a SCHEDULED instance. The required Type 1/2 top-level
@@ -135,13 +162,24 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
             return Self.reply(0x0121, "required UPS attribute \(empty) has no value")
         }
         if Self.value(object, Tag.state) != "SCHEDULED" {
-            return Self.reply(0x0106, "UPS must be created SCHEDULED")
+            return Self.reply(0xC309, "UPS must be created SCHEDULED")
         }
         if Self.hasValue(object, Tag.transaction) || Self.hasValue(object, Tag.progress)
             || Self.hasValue(object, Tag.performed) {
             return Self.reply(0x0106, "Transaction UID and performed information must be empty at creation")
         }
+        if let sopClass = Self.value(object, Tag.sopClass), sopClass != DICOMSOPClass.upsPush {
+            return Self.reply(0x0106, "SOP Class must be UPS Push")
+        }
+        if object[Tag.instance] != nil || object[Tag.modificationTime] != nil {
+            return Self.reply(0x0106, "SCP-managed attribute in N-CREATE")
+        }
+        if let error = Self.validateAttributes(object) { return Self.reply(0x0106, error) }
         var instance = object
+        // The SCP supports these Type 2 attributes even when the SCU's
+        // real-world Type 1C condition does not apply.
+        instance["00100020"] = instance["00100020"] ?? ["vr": "LO"]
+        instance["0020000D"] = instance["0020000D"] ?? ["vr": "UI"]
         instance[Tag.instance] = Self.attribute("UI", uid)
         instance[Tag.sopClass] = Self.attribute("UI", DICOMSOPClass.upsPush)
         instance[Tag.state] = Self.attribute("CS", "SCHEDULED")
@@ -189,8 +227,12 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
             document.attributes[Tag.transaction] = Self.attribute("UI", token)
         } else if desired == "COMPLETED" || desired == "CANCELED" {
             guard old == "IN PROGRESS" else { return Self.reply(0xC310) }
-            if desired == "CANCELED" && !Self.hasValue(document.attributes, Tag.cancelTime) {
-                document.attributes[Tag.cancelTime] = Self.attribute("DT", Self.dateTime())
+            if desired == "CANCELED" {
+                var progress = Self.items(document.attributes, Tag.progress).first ?? [:]
+                if !Self.hasValue(progress, Tag.cancelTime) {
+                    progress[Tag.cancelTime] = Self.attribute("DT", Self.dateTime())
+                }
+                document.attributes[Tag.progress] = ["vr": "SQ", "Value": [progress]]
             }
             if let missing = Self.missingFinalAttribute(document.attributes, state: desired) {
                 return Self.reply(0xC304, "final state requires \(missing)")
@@ -206,16 +248,22 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
     }
 
     private static func missingFinalAttribute(_ object: [String: Any], state: String) -> String? {
+        for tag in [Tag.sopClass, Tag.instance, Tag.priority, Tag.start, Tag.modificationTime,
+                    Tag.readiness, Tag.state] where !hasValue(object, tag) { return tag }
         if state == "CANCELED" {
-            return hasValue(object, Tag.cancelReasonCode) ? nil : Tag.cancelReasonCode
+            guard let progress = items(object, Tag.progress).first else { return Tag.progress }
+            for tag in [Tag.cancelTime, Tag.cancelReasonCode] where !hasValue(progress, tag) { return tag }
+            return nil
         }
-        guard let performed = ((object[Tag.performed] as? [String: Any])?["Value"] as? [[String: Any]])?.first else {
-            return Tag.performed
+        guard !items(object, Tag.performed).isEmpty else { return Tag.performed }
+        for performed in items(object, Tag.performed) {
+            for tag in [Tag.performedStation, Tag.performedStart, Tag.performedWorkitem, Tag.performedEnd] {
+                if !hasValue(performed, tag) { return tag }
+            }
+            // Output Information is Type 2: an empty sequence means no output.
+            if performed[Tag.output] == nil { return Tag.output }
         }
-        for tag in [Tag.performedStation, Tag.performedStart, Tag.performedWorkitem, Tag.performedEnd] {
-            if !hasValue(performed, tag) { return tag }
-        }
-        return performed[Tag.output] == nil ? Tag.output : nil
+        return nil
     }
 
     /// N-SET is restricted to the owning Transaction UID while IN PROGRESS.
@@ -227,19 +275,39 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
             guard Self.value(changes, Tag.transaction) == Self.value(document.attributes, Tag.transaction) else {
                 return Self.reply(0xC301)
             }
-        } else if Self.hasValue(changes, Tag.transaction) {
+        } else if changes[Tag.transaction] != nil {
             return Self.reply(0xC301)
         }
         let immutable: Set<String> = [Tag.state, Tag.instance, Tag.sopClass, Tag.transaction,
-                                      "00100010", "00100020", "00100030", "00100040", "0040A370"]
+                                      Tag.modificationTime, "00100010", "00100020", "00100021", "00100024",
+                                      "00100030", "00100040", "00380010", "00380014", "00081080",
+                                      "00081084", "0040A370", "00741224", "00100041", "00100043",
+                                      "00100011", "00100014"]
         if changes.keys.contains(where: { immutable.contains($0) && $0 != Tag.transaction }) {
             return Self.reply(0x0106, "attribute cannot be set")
         }
+        if let unknown = changes.keys.first(where: { document.attributes[$0] == nil && $0 != "00080005" }) {
+            return Self.reply(0x0105, "attribute was not created: \(unknown)")
+        }
+        for tag in [Tag.priority, Tag.label, Tag.worklist, Tag.start, Tag.readiness,
+                    Tag.workitem, Tag.comments, "00404011"] where changes[tag] != nil && !Self.hasValue(changes, tag) {
+            return Self.reply(0x0106, "empty N-SET Type 1 attribute \(tag)")
+        }
+        let previous = document.attributes
         for (tag, value) in changes where tag != Tag.transaction { document.attributes[tag] = value }
+        if let error = Self.validateAttributes(document.attributes) { return Self.reply(0x0106, error) }
         document.attributes[Tag.modificationTime] = Self.attribute("DT", Self.dateTime())
         do { try await index.replace(document, in: .unifiedProcedureSteps) }
         catch DICOMArchiveError.conflict { return Self.reply(0xC301, "UPS changed concurrently") }
-        if changes[Tag.progress] != nil { try await emit(uid: uid, event: 3, object: document.attributes) }
+        func changed(_ tag: String) -> Bool {
+            !NSDictionary(dictionary: previous[tag] as? [String: Any] ?? [:])
+                .isEqual(to: document.attributes[tag] as? [String: Any] ?? [:])
+        }
+        if changed(Tag.readiness) { try await emit(uid: uid, event: 1, object: document.attributes) }
+        if changed(Tag.stationName) || changed("00404034") {
+            try await emit(uid: uid, event: 5, object: document.attributes)
+        }
+        if changed(Tag.progress) { try await emit(uid: uid, event: 3, object: document.attributes) }
         return DICOMNormalizedResponse(status: .success)
     }
 
@@ -249,6 +317,7 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         }
         object.removeValue(forKey: Tag.transaction)
         object.removeValue(forKey: Tag.instance)
+        object.removeValue(forKey: Tag.sopClass)
         if !tags.isEmpty {
             let wanted = Set(tags.map { String(format: "%08X", $0) })
             object = object.filter { wanted.contains($0.key) || $0.key == "00080005" }
@@ -261,26 +330,30 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         let state = Self.value(document.attributes, Tag.state)
         if state == "CANCELED" { return Self.reply(0xB304) }
         if state == "COMPLETED" { return Self.reply(0xC311) }
+        if let error = Self.validateAttributes([Tag.progress: ["vr": "SQ", "Value": [reason]]]) {
+            return Self.reply(0x0106, error)
+        }
+        var requestEvent = reason
+        requestEvent[Tag.requestingAE] = Self.attribute("AE", requestingAE)
+        try await emit(uid: uid, event: 2, object: requestEvent)
         if state == "SCHEDULED" {
             document.attributes[Tag.transaction] = Self.attribute("UI", DICOMDataSetBuilder.newUID())
             var inProgress = document.attributes
             inProgress[Tag.state] = Self.attribute("CS", "IN PROGRESS")
             document.attributes[Tag.state] = Self.attribute("CS", "CANCELED")
-            document.attributes[Tag.cancelTime] = Self.attribute("DT", Self.dateTime())
-            document.attributes[Tag.cancelReasonCode] = reason[Tag.cancelReasonCode] ?? ["vr": "SQ", "Value": [[
+            var progress: [String: Any] = [Tag.cancelTime: Self.attribute("DT", Self.dateTime())]
+            progress[Tag.cancelReasonCode] = reason[Tag.cancelReasonCode] ?? ["vr": "SQ", "Value": [[
                 "00080100": Self.attribute("SH", "110513"),
                 "00080102": Self.attribute("SH", "DCM"),
                 "00080104": Self.attribute("LO", "Discontinued for unspecified reason"),
             ]]]
-            if let text = reason[Tag.cancelReason] { document.attributes[Tag.cancelReason] = text }
+            if let text = reason[Tag.cancelReason] { progress[Tag.cancelReason] = text }
+            document.attributes[Tag.progress] = ["vr": "SQ", "Value": [progress]]
+            document.attributes[Tag.modificationTime] = Self.attribute("DT", Self.dateTime())
             do { try await index.replace(document, in: .unifiedProcedureSteps) }
             catch DICOMArchiveError.conflict { return Self.reply(0xC301, "UPS changed concurrently") }
             try await emit(uid: uid, event: 1, object: inProgress)
             try await emit(uid: uid, event: 1, object: document.attributes)
-        } else {
-            var event = reason
-            event[Tag.requestingAE] = Self.attribute("AE", requestingAE)
-            try await emit(uid: uid, event: 2, object: event)
         }
         return DICOMNormalizedResponse(status: .success)
     }
@@ -294,9 +367,12 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         if !global {
             guard try await index.document(uid, in: .unifiedProcedureSteps) != nil else { return Self.reply(0xC307) }
         }
+        if (action == 5 || action == 4) && filtered { return Self.reply(0xC314) }
         if action == 5 && !global { return Self.reply(0xC314) }
         let id = ae + "|" + uid
         if action == 3 {
+            if !eventReportsSupported { return Self.reply(0xC315) }
+            if let receivingAEs, !receivingAEs.contains(ae) { return Self.reply(0xC308) }
             guard let lockValue = Self.value(object, Tag.deletionLock),
                   ["TRUE", "FALSE"].contains(lockValue) else { return Self.reply(0x0121) }
             let lock = lockValue == "TRUE"
@@ -304,13 +380,20 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
             filter.removeValue(forKey: Tag.receivingAE)
             filter.removeValue(forKey: Tag.deletionLock)
             if filtered && filter.isEmpty { return Self.reply(0x0120, "Matching Keys are required") }
+            if filtered, let error = Self.validateQueryKeys(filter) { return Self.reply(0x0106, error) }
+            // One global subscription per AE; a new filtered/unfiltered request replaces it.
+            if global {
+                let otherUID = filtered ? DICOMSOPClass.upsGlobalSubscription : DICOMSOPClass.upsFilteredGlobalSubscription
+                _ = try await index.delete(ae + "|" + otherUID, from: .unifiedProcedureStepSubscriptions)
+            }
             try await index.save(DICOMArchiveDocument(id: id, attributes: filtered ? filter : [:],
                 metadata: ["ae": ae, "uid": uid, "lock": lock ? "TRUE" : "FALSE"]),
                 in: .unifiedProcedureStepSubscriptions)
             if global {
                 let steps = try await index.documents(in: .unifiedProcedureSteps, matching: DICOMQuery(conditions: []))
                 for step in steps where !filtered || DICOMQueryMatcher().match(filter, against: step.attributes) != nil {
-                    try await subscribeSpecific(ae: ae, uid: step.id, lock: lock, object: step.attributes)
+                    try await subscribeSpecific(ae: ae, uid: step.id, lock: lock, object: step.attributes,
+                                                sendInitial: lock, preserveExisting: true)
                 }
             } else if let step = try await index.document(uid, in: .unifiedProcedureSteps) {
                 try await emit(to: ae, uid: uid, event: 1, object: step.attributes)
@@ -325,17 +408,26 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
                 }
             }
         } else if action == 5 {
-            _ = try await index.delete(id, from: .unifiedProcedureStepSubscriptions)
+            for globalUID in [DICOMSOPClass.upsGlobalSubscription, DICOMSOPClass.upsFilteredGlobalSubscription] {
+                _ = try await index.delete(ae + "|" + globalUID, from: .unifiedProcedureStepSubscriptions)
+            }
         } else { return DICOMNormalizedResponse(status: .noSuchActionType) }
         return DICOMNormalizedResponse(status: .success)
     }
 
-    private func subscribeSpecific(ae: String, uid: String, lock: Bool, object: [String: Any]) async throws {
+    private func subscribeSpecific(ae: String, uid: String, lock: Bool, object: [String: Any],
+                                   sendInitial: Bool = true, preserveExisting: Bool = false) async throws {
         let id = ae + "|" + uid
-        try await index.save(DICOMArchiveDocument(id: id, attributes: [:],
-            metadata: ["ae": ae, "uid": uid, "lock": lock ? "TRUE" : "FALSE"]),
-            in: .unifiedProcedureStepSubscriptions)
-        try await emit(to: ae, uid: uid, event: 1, object: object)
+        if preserveExisting, try await index.document(id, in: .unifiedProcedureStepSubscriptions) != nil { return }
+        let subscription = DICOMArchiveDocument(id: id, attributes: [:],
+            metadata: ["ae": ae, "uid": uid, "lock": lock ? "TRUE" : "FALSE"])
+        if preserveExisting {
+            do { try await index.insert(subscription, into: .unifiedProcedureStepSubscriptions) }
+            catch DICOMArchiveError.duplicate { return }
+        } else {
+            try await index.save(subscription, in: .unifiedProcedureStepSubscriptions)
+        }
+        if sendInitial { try await emit(to: ae, uid: uid, event: 1, object: object) }
     }
 
     private func applyGlobalSubscriptions(to uid: String, instance: [String: Any]) async throws {
@@ -347,6 +439,9 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
             if item.metadata["uid"] == DICOMSOPClass.upsFilteredGlobalSubscription,
                DICOMQueryMatcher().match(item.attributes, against: instance) == nil { continue }
             try await subscribeSpecific(ae: ae, uid: uid, lock: item.metadata["lock"] == "TRUE", object: instance)
+            if Self.hasValue(instance, Tag.stationName) || Self.hasValue(instance, "00404034") {
+                try await emit(to: ae, uid: uid, event: 5, object: instance)
+            }
         }
     }
 
@@ -361,17 +456,45 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
     private func emit(to ae: String, uid: String, event: UInt16, object: [String: Any]) async throws {
         guard let notify else { return }
         var report: [String: Any] = [:]
+        var source = object
+        if event == 5, let performer = Self.items(object, "00404034").first {
+            source.merge(performer) { _, nested in nested }
+        }
+        if event == 1, let progress = Self.items(object, Tag.progress).first {
+            source.merge(progress) { _, nested in nested }
+        }
         let tags: [String] = event == 1 ? [Tag.state, Tag.readiness, Tag.cancelReason, Tag.cancelReasonCode]
             : event == 2 ? [Tag.requestingAE, Tag.cancelReason, Tag.cancelReasonCode, "0074100A", "0074100C"]
-            : [Tag.progress]
-        for tag in tags { report[tag] = object[tag] }
+            : event == 3 ? [Tag.progress]
+            : event == 4 ? ["00741242", "00741244", "00741246"]
+            : [Tag.stationName, "00404034", "00404009", "00404036"]
+        for tag in tags { report[tag] = source[tag] }
+        if let charset = object["00080005"] { report["00080005"] = charset }
         await notify(ae, uid, event, try DICOMJSON.dataSet(report))
+    }
+
+    /// Announces restart/shutdown to subscribers and the application's fallback AEs.
+    /// Instances, subscriptions and deletion locks are retained until the host archives them.
+    public func reportStatus(restarted: Bool, subscriptionsPreserved: Bool = true,
+                             instancesPreserved: Bool = true, fallbackAEs: [String] = []) async throws {
+        let subscriptions = try await index.documents(in: .unifiedProcedureStepSubscriptions,
+                                                       matching: DICOMQuery(conditions: []))
+        let recipients = Set(fallbackAEs + subscriptions.compactMap { $0.metadata["ae"] })
+        let information = ["00741242": Self.attribute("CS", restarted ? "RESTARTED" : "GOING DOWN"),
+                           "00741244": Self.attribute("CS", subscriptionsPreserved ? "WARM START" : "COLD START"),
+                           "00741246": Self.attribute("CS", instancesPreserved ? "WARM START" : "COLD START")]
+        for ae in recipients.sorted() {
+            try await emit(to: ae, uid: DICOMSOPClass.upsGlobalSubscription, event: 4, object: information)
+        }
     }
 
     /// C-FIND on the UPS Query SOP Class. Candidate selection is delegated to
     /// the adapter and exact matching to the core matcher.
     public func matches(_ identifier: DataSet) async throws -> [DataSet] {
         let keys = try DICOMJSON.object(identifier, options: DICOMJSON.EncodingOptions(numbersAsStrings: true))
+        if let error = Self.validateQueryKeys(keys) {
+            throw DICOMServiceError(status: .identifierDoesNotMatchSOPClass, comment: error)
+        }
         let matcher = DICOMQueryMatcher()
         let documents = try await index.documents(in: .unifiedProcedureSteps,
                                                   matching: DICOMQuery(identifier: keys, matcher: matcher))
@@ -418,7 +541,8 @@ public struct DICOMUPSNotifier: Sendable {
                 roleSelections: [DICOMRoleSelection(sopClassUID: sopClass, scuRole: false, scpRole: true)]
             ) { association in
                 _ = try await association.nEventReport(
-                    sopClassUID: sopClass, sopInstanceUID: uid, eventTypeID: event, information: information)
+                    sopClassUID: DICOMSOPClass.upsPush, sopInstanceUID: uid, eventTypeID: event,
+                    information: information, abstractSyntax: sopClass)
             }
         } catch {
             Logger.warning("UPS event \(event) of \(uid) not sent to \(ae): \(error)")

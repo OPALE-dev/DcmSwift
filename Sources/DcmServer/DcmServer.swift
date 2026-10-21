@@ -249,10 +249,12 @@ struct DcmServer: AsyncParsableCommand {
                 client: try DICOMClient(configuration: DICOMClientConfiguration(
                     aeTitle: aet, limits: network.limits, timeouts: network.timeouts, logger: logger)),
                 recipients: Dictionary(recipients.map { ($0.aeTitle, $0) }, uniquingKeysWith: { _, last in last }))
-            let service = DICOMUnifiedProcedureStepService(index: DICOMFileArchiveIndex(directory: directory)) {
-                receivingAE, uid, event, information in
-                await notifier?.send(to: receivingAE, instance: uid, event: event, information: information)
-            }
+            let service = DICOMUnifiedProcedureStepService(
+                index: DICOMFileArchiveIndex(directory: directory),
+                receivingAEs: Set(recipients.map(\.aeTitle)), eventReportsSupported: notifier != nil,
+                notify: { receivingAE, uid, event, information in
+                    await notifier?.send(to: receivingAE, instance: uid, event: event, information: information)
+                })
             for sopClass in DICOMUnifiedProcedureStepService.sopClasses { normalized[sopClass] = service }
             ups = service
         }
@@ -315,7 +317,9 @@ struct DcmServer: AsyncParsableCommand {
         let user = DICOMAuditMessage.ActiveParticipant(userID: NSUserName(), isRequestor: true)
         await audit?.record(.applicationActivity(started: true, application: application, launchers: [user],
                                                  source: auditSource))
+        try await ups?.reportStatus(restarted: true, fallbackAEs: upsNotify.compactMap { $0.split(separator: "=").first.map(String.init) })
         func stopped() async {
+            try? await ups?.reportStatus(restarted: false, fallbackAEs: upsNotify.compactMap { $0.split(separator: "=").first.map(String.init) })
             await audit?.record(.applicationActivity(started: false, application: application, launchers: [user],
                                                      source: auditSource))
         }

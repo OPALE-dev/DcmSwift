@@ -79,6 +79,21 @@ DcmServer -a RIS --worklist-directory ./worklist \
   --mpps-directory ./mpps --mpps-notify PACS=pacs.example.org:11112
 ```
 
+## Unified Procedure Step
+
+With `--ups-directory`, the server supports UPS Push, Pull, Watch, Event, and
+Query. Instances, subscriptions, and deletion locks survive restart.
+`--ups-notify AET=host:port` configures each permitted Event destination;
+startup and orderly shutdown also emit SCP status events.
+
+```sh
+DcmServer -a UPSSCP --ups-directory ./ups --ups-notify WATCHER=127.0.0.1:11113
+```
+
+Final instances are retained indefinitely, including after locks are released.
+See <doc:UnifiedProcedureStep> for the work item lifecycle, subscription
+rules, validation responsibilities, and interoperability scripts.
+
 ## Instance Availability Notification
 
 Each `--ian-destination AET=host:port` receives an Instance Availability

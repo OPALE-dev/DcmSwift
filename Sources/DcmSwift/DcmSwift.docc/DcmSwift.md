@@ -28,6 +28,7 @@ and what remains deliberately limited.
 - <doc:DICOMDIR>
 - <doc:StructuredReports>
 - <doc:Networking>
+- <doc:UnifiedProcedureStep>
 - <doc:DICOMweb>
 - <doc:ArchiveStorage>
 
