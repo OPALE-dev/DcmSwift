@@ -542,7 +542,7 @@ public class DataSet: DicomObject {
         
         allElements.append(element)
         if element.name == "SpecificCharacterSet" {
-            characterSet = DICOMCharacterSet(specificCharacterSet: element.data.toString())
+            characterSet = DICOMCharacterSet(specificCharacterSet: element.data?.toString() ?? "")
         }
     }
 

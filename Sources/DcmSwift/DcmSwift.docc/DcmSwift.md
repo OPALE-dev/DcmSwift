@@ -29,6 +29,8 @@ and what remains deliberately limited.
 - <doc:StructuredReports>
 - <doc:Networking>
 - <doc:UnifiedProcedureStep>
+- <doc:UPSREST>
+- <doc:UPSRESTArchitecture>
 - <doc:DICOMweb>
 - <doc:ArchiveStorage>
 

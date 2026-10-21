@@ -3,6 +3,7 @@ import Logging
 import NIOConcurrencyHelpers
 import NIOCore
 import NIOHTTP1
+import NIOWebSocket
 import NIOPosix
 import NIOSSL
 
@@ -48,13 +49,30 @@ public final class DICOMwebServer: Sendable {
     }
 
     private typealias Connection = NIOAsyncChannel<HTTPServerRequestPart, HTTPServerResponsePart>
+    private struct Negotiation: Sendable {
+        let channel: Channel
+        let result: EventLoopFuture<UpgradeResult>
+    }
+    private enum UpgradeResult: Sendable {
+        case http(Connection)
+        case websocket(NIOAsyncChannel<WebSocketFrame, WebSocketFrame>, DICOMUPSEventHub.Connection)
+    }
+
+    private func notificationAE(_ head: HTTPRequestHead) -> String? {
+        guard origin.worklist != nil, head.method == .GET, !head.uri.contains("?"),
+              let path = origin.relativePath(head.uri), path.count == 2, path[0] == "subscribers",
+              DICOMUPSRESTService.validAE(path[1]), head.headers.first(name: "Origin") != nil,
+              head.headers.first(name: "Content-Length").map({ $0 == "0" }) ?? true,
+              head.headers.first(name: "Transfer-Encoding") == nil else { return nil }
+        return path[1]
+    }
 
     /// Binds and serves until the task is cancelled. `onBound` receives the
     /// bound port once connections are accepted.
     public func run(onBound: (@Sendable (Int) -> Void)? = nil) async throws {
         let sslContext = self.sslContext
         let idle = TimeAmount.seconds(network.idleTimeout)
-        let server = try await ServerBootstrap(group: group)
+        let server: NIOAsyncChannel<Negotiation, Never> = try await ServerBootstrap(group: group)
             .serverChannelOption(ChannelOptions.backlog, value: 256)
             .serverChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
             .childChannelOption(ChannelOptions.tcpOption(.tcp_nodelay), value: 1)
@@ -64,9 +82,57 @@ public final class DICOMwebServer: Sendable {
                         try channel.pipeline.syncOperations.addHandler(NIOSSLServerHandler(context: sslContext))
                     }
                     try channel.pipeline.syncOperations.addHandler(IdleStateHandler(allTimeout: idle))
-                    try channel.pipeline.syncOperations.configureHTTPServerPipeline()
-                    try channel.pipeline.syncOperations.addHandler(IdleCloseHandler())
-                    return try Connection(wrappingChannelSynchronously: channel)
+                    if #available(macOS 13, iOS 16, *) {
+                        let listenerBox = NIOLockedValueBox<DICOMUPSEventHub.Connection?>(nil)
+                        channel.closeFuture.whenComplete { _ in
+                            if let listener = listenerBox.withLockedValue({ $0 }), let hub = self.origin.worklist?.steps.eventHub {
+                                Task { await hub.disconnect(listener.id) }
+                            }
+                        }
+                        let upgrader = NIOTypedWebSocketServerUpgrader<UpgradeResult>(
+                            maxFrameSize: 64 << 10,
+                            shouldUpgrade: { channel, head in
+                                var headers = HTTPHeaders()
+                                if let source = head.headers.first(name: "Origin") { headers.add(name: "Origin", value: source) }
+                                if let protocols = head.headers.first(name: "Sec-WebSocket-Protocol"),
+                                   protocols.split(separator: ",").map({ $0.trimmingCharacters(in: .whitespaces) }).contains("dicom") {
+                                    headers.add(name: "Sec-WebSocket-Protocol", value: "dicom")
+                                }
+                                guard let ae = self.notificationAE(head), let hub = self.origin.worklist?.steps.eventHub else {
+                                    return channel.eventLoop.makeSucceededFuture(nil)
+                                }
+                                let responseHeaders = headers
+                                return channel.eventLoop.makeFutureWithTask {
+                                    let listener = await hub.connect(ae: ae)
+                                    listenerBox.withLockedValue { $0 = listener }
+                                    return responseHeaders
+                                }
+                            },
+                            upgradePipelineHandler: { channel, head in
+                                channel.eventLoop.makeCompletedFuture {
+                                    guard let listener = listenerBox.withLockedValue({ $0 }) else {
+                                        throw DICOMwebHTTPError(400, "notification connection was not registered")
+                                    }
+                                    return .websocket(try NIOAsyncChannel<WebSocketFrame, WebSocketFrame>(wrappingChannelSynchronously: channel), listener)
+                                }
+                            })
+                        let upgrade = NIOTypedHTTPServerUpgradeConfiguration<UpgradeResult>(
+                            upgraders: [upgrader], notUpgradingCompletionHandler: { channel in
+                                channel.eventLoop.makeCompletedFuture {
+                                    .http(try Connection(wrappingChannelSynchronously: channel))
+                                }
+                            })
+                        try channel.pipeline.syncOperations.addHandler(IdleCloseHandler())
+                        let result = try channel.pipeline.syncOperations.configureUpgradableHTTPServerPipeline(
+                            configuration: .init(upgradeConfiguration: upgrade))
+                        return Negotiation(channel: channel, result: result)
+                    } else {
+                        // Preserve the existing HTTP server on older deployment targets.
+                        try channel.pipeline.syncOperations.configureHTTPServerPipeline()
+                        try channel.pipeline.syncOperations.addHandler(IdleCloseHandler())
+                        return Negotiation(channel: channel, result: channel.eventLoop.makeSucceededFuture(
+                            .http(try Connection(wrappingChannelSynchronously: channel))))
+                    }
                 }
             }
         let port = server.channel.localAddress?.port ?? network.port
@@ -75,17 +141,73 @@ public final class DICOMwebServer: Sendable {
         try await server.executeThenClose { connections in
             try await withThrowingTaskGroup(of: Void.self) { group in
                 var running = 0
-                for try await connection in connections {
-                    // Finished connections are collected as new ones arrive.
+                for try await negotiated in connections {
                     while running >= 256 {
                         _ = try await group.next()
                         running -= 1
                     }
                     running += 1
-                    group.addTask { await self.serve(connection) }
+                    group.addTask {
+                        do {
+                            try await withTaskCancellationHandler {
+                                switch try await negotiated.result.get() {
+                                case .http(let connection): await self.serve(connection)
+                                case .websocket(let connection, let listener): await self.serveNotifications(connection, listener: listener)
+                                }
+                            } onCancel: {
+                                negotiated.channel.close(promise: nil)
+                            }
+                        } catch {
+                            self.network.logger.debug("HTTP/WebSocket negotiation ended: \(error)")
+                        }
+                    }
                 }
             }
         }
+    }
+
+    private func serveNotifications(_ connection: NIOAsyncChannel<WebSocketFrame, WebSocketFrame>,
+                                    listener: DICOMUPSEventHub.Connection) async {
+        guard let hub = origin.worklist?.steps.eventHub else { return }
+        do {
+            try await connection.executeThenClose { inbound, outbound in
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    group.addTask {
+                        for try await event in listener.events {
+                            try await outbound.write(WebSocketFrame(fin: true, opcode: .text, data: ByteBuffer(bytes: event)))
+                        }
+                    }
+                    group.addTask {
+                        for try await frame in inbound {
+                            guard frame.maskKey != nil else {
+                                var data = ByteBuffer(); data.writeInteger(UInt16(1002))
+                                try await outbound.write(WebSocketFrame(fin: true, opcode: .connectionClose, data: data))
+                                return
+                            }
+                            switch frame.opcode {
+                            case .ping:
+                                try await outbound.write(WebSocketFrame(fin: true, opcode: .pong, data: frame.unmaskedData))
+                            case .pong: break
+                            case .connectionClose:
+                                try await outbound.write(WebSocketFrame(fin: true, opcode: .connectionClose, data: frame.unmaskedData))
+                                return
+                            default:
+                                // Notification connections carry no client application messages.
+                                var data = ByteBuffer(); data.writeInteger(UInt16(1003))
+                                try await outbound.write(WebSocketFrame(fin: true, opcode: .connectionClose, data: data))
+                                return
+                            }
+                        }
+                    }
+                    defer { group.cancelAll() }
+                    _ = try await group.next()
+                    await hub.disconnect(listener.id)
+                }
+            }
+        } catch {
+            network.logger.debug("UPS notification connection ended: \(error)")
+        }
+        await hub.disconnect(listener.id)
     }
 
     /// Serves the requests of one connection in order; never throws.

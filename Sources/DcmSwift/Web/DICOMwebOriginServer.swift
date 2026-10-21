@@ -100,13 +100,16 @@ public struct DICOMwebOriginServer: Sendable {
     public let search: (any DICOMwebSearchService)?
     public let retrieve: (any DICOMwebRetrieveService)?
     public let store: (any DICOMwebStoreService)?
+    public let worklist: DICOMUPSRESTService?
 
     public init(configuration: DICOMwebServerConfiguration = .init(), search: (any DICOMwebSearchService)? = nil,
-                retrieve: (any DICOMwebRetrieveService)? = nil, store: (any DICOMwebStoreService)? = nil) {
+                retrieve: (any DICOMwebRetrieveService)? = nil, store: (any DICOMwebStoreService)? = nil,
+                worklist: DICOMUPSRESTService? = nil) {
         self.configuration = configuration
         self.search = search
         self.retrieve = retrieve
         self.store = store
+        self.worklist = worklist
     }
 
     /// Answers a request. `origin` is the scheme and authority the request
@@ -123,6 +126,12 @@ public struct DICOMwebOriginServer: Sendable {
             if relative.isEmpty || relative == ["/"] || relative.allSatisfy(\.isEmpty) {
                 guard request.method == "OPTIONS" else { return Self.report(405, "Use OPTIONS", allow: "OPTIONS") }
                 return capabilities(baseURI)
+            }
+            if relative.first == "workitems", let worklist {
+                return await worklist.respond(request, path: relative, baseURI: baseURI, configuration: configuration)
+            }
+            if relative.first == "subscribers", worklist != nil {
+                return Self.report(400, "Use a WebSocket notification connection")
             }
             guard let resource = DICOMwebResource(pathComponents: relative) else {
                 return Self.report(404, "No such resource")
@@ -157,7 +166,7 @@ public struct DICOMwebOriginServer: Sendable {
     }
 
     /// The path components below the base path, or nil outside it.
-    private func relativePath(_ path: String) -> [String]? {
+    func relativePath(_ path: String) -> [String]? {
         let decoded = path.removingPercentEncoding ?? path
         guard decoded.hasPrefix(configuration.basePath) else { return nil }
         let rest = decoded.dropFirst(configuration.basePath.count)
@@ -636,6 +645,17 @@ public struct DICOMwebOriginServer: Sendable {
             + "<resources base=\"\(Self.xmlEscape(baseURI))\">" + studies
             + "<resource path=\"series\">" + searchMethod + "</resource>"
             + "<resource path=\"instances\">" + searchMethod + "</resource>"
+            + (worklist != nil ? "<resource path=\"workitems\">" + method("POST", "CreateWorkitem", metadata)
+               + method("GET", "SearchWorkitems", metadata)
+               + "<resource path=\"{workitem}\">" + method("GET", "RetrieveWorkitem", metadata)
+               + method("POST", "UpdateWorkitem", metadata)
+               + "<resource path=\"state\">" + method("PUT", "ChangeWorkitemState", []) + "</resource>"
+               + "<resource path=\"cancelrequest\">" + method("POST", "RequestWorkitemCancellation", []) + "</resource>"
+               + "<resource path=\"subscribers/{subscriber}\">" + method("POST", "SubscribeWorkitem", [])
+               + method("DELETE", "UnsubscribeWorkitem", [])
+               + "<resource path=\"suspend\">" + method("POST", "SuspendWorklistSubscription", []) + "</resource></resource></resource></resource>"
+               + "<resource path=\"subscribers/{subscriber}\">" + method("GET", "OpenNotificationConnection", ["application/dicom+json"])
+               + "</resource>" : "")
             + "</resources></application>"
         var headers = DICOMwebMultipart.Headers()
         headers["Content-Type"] = "application/vnd.sun.wadl+xml"

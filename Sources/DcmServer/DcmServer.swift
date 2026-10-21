@@ -150,7 +150,9 @@ struct DcmServer: AsyncParsableCommand {
             throw ValidationError("--destination needs --storage-directory")
         }
         if let httpPort {
-            guard storageDirectory != nil else { throw ValidationError("--http-port needs --storage-directory") }
+            guard storageDirectory != nil || upsDirectory != nil else {
+                throw ValidationError("--http-port needs --storage-directory or --ups-directory")
+            }
             guard (0...65535).contains(httpPort) else { throw ValidationError("invalid HTTP port \(httpPort)") }
         }
         if !destinationTLS, destinationTLSCA != nil || destinationTLSCertificate != nil || destinationTLSKey != nil {
@@ -253,7 +255,9 @@ struct DcmServer: AsyncParsableCommand {
                 index: DICOMFileArchiveIndex(directory: directory),
                 receivingAEs: Set(recipients.map(\.aeTitle)), eventReportsSupported: notifier != nil,
                 notify: { receivingAE, uid, event, information in
-                    await notifier?.send(to: receivingAE, instance: uid, event: event, information: information)
+                    if recipients.contains(where: { $0.aeTitle == receivingAE }) {
+                        await notifier?.send(to: receivingAE, instance: uid, event: event, information: information)
+                    }
                 })
             for sopClass in DICOMUnifiedProcedureStepService.sopClasses { normalized[sopClass] = service }
             ups = service
@@ -282,6 +286,7 @@ struct DcmServer: AsyncParsableCommand {
             recipients: ianRecipients, retrieveAETitle: aet, delay: ianDelay)
         let server: DICOMServer
         var web: DICOMwebServer?
+        var archiveServices: DICOMArchiveServices?
         if let storageDirectory {
             let directory = URL(fileURLWithPath: storageDirectory, isDirectory: true)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -291,24 +296,26 @@ struct DcmServer: AsyncParsableCommand {
             let services = DICOMArchiveServices(
                 archive: archive, destinations: try destinations(), validation: validationPolicy, audit: audit,
                 auditSource: auditSource, availability: availability)
+            archiveServices = services
             server = try DICOMServer(
                 configuration: configuration, storage: services, query: services, worklist: worklist,
                 upsQuery: ups,
                 retrieve: services, storageCommitment: services,
                 storageCommitmentOutbox: DICOMStorageCommitmentOutbox(retryInterval: commitmentRetryInterval),
                 normalized: normalized)
-            if let httpPort {
-                var network = DICOMwebServerNetworkConfiguration(
-                    host: host, port: httpPort, tls: try tls.configuration(), publicOrigin: httpPublicOrigin, logger: logger)
-                network.logger.logLevel = configuration.logger.logLevel
-                web = try DICOMwebServer(
-                    origin: DICOMwebOriginServer(configuration: .init(basePath: httpBasePath),
-                                                 search: services, retrieve: services, store: services),
-                    network: network)
-            }
         } else {
             server = try DICOMServer(configuration: configuration, worklist: worklist, upsQuery: ups,
                                      normalized: normalized)
+        }
+        if let httpPort {
+            var network = DICOMwebServerNetworkConfiguration(
+                host: host, port: httpPort, tls: try tls.configuration(), publicOrigin: httpPublicOrigin, logger: logger)
+            network.logger.logLevel = configuration.logger.logLevel
+            web = try DICOMwebServer(
+                origin: DICOMwebOriginServer(configuration: .init(basePath: httpBasePath),
+                                             search: archiveServices, retrieve: archiveServices, store: archiveServices,
+                                             worklist: ups.map { DICOMUPSRESTService(steps: $0) }),
+                network: network)
         }
         let banner = "\(configuration.aeTitle) listening on \(configuration.host)"
         let secure = configuration.tls != nil ? " (TLS)" : ""
@@ -319,7 +326,6 @@ struct DcmServer: AsyncParsableCommand {
                                                  source: auditSource))
         try await ups?.reportStatus(restarted: true, fallbackAEs: upsNotify.compactMap { $0.split(separator: "=").first.map(String.init) })
         func stopped() async {
-            try? await ups?.reportStatus(restarted: false, fallbackAEs: upsNotify.compactMap { $0.split(separator: "=").first.map(String.init) })
             await audit?.record(.applicationActivity(started: false, application: application, launchers: [user],
                                                      source: auditSource))
         }
@@ -344,11 +350,18 @@ struct DcmServer: AsyncParsableCommand {
                 group.cancelAll()
             }
         }
+        let upsService = ups
+        let fallbackAEs = upsNotify.compactMap { $0.split(separator: "=").first.map(String.init) }
         var signals: [DispatchSourceSignal] = []
         for number in [SIGINT, SIGTERM] {
             signal(number, SIG_IGN)
             let source = DispatchSource.makeSignalSource(signal: number)
-            source.setEventHandler { services.cancel() }
+            source.setEventHandler {
+                Task {
+                    try? await upsService?.reportStatus(restarted: false, fallbackAEs: fallbackAEs)
+                    services.cancel()
+                }
+            }
             source.resume()
             signals.append(source)
         }

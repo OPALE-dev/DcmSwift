@@ -94,6 +94,10 @@ Final instances are retained indefinitely, including after locks are released.
 See <doc:UnifiedProcedureStep> for the work item lifecycle, subscription
 rules, validation responsibilities, and interoperability scripts.
 
+Add `--http-port 8080` to expose the same worklist through UPS-RS, with
+JSON/XML HTTP operations and WebSocket notifications. This configuration
+needs no `--storage-directory`; see <doc:UPSREST>.
+
 ## Instance Availability Notification
 
 Each `--ian-destination AET=host:port` receives an Instance Availability

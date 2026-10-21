@@ -6,6 +6,7 @@ import Logging
 /// state change against a document version shared by all server processes.
 public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQueryService {
     public nonisolated let index: DICOMArchiveIndex
+    public nonisolated let eventHub: DICOMUPSEventHub
     /// Called for each subscribed AE. The application opens an association
     /// with the UPS Event SOP Class and sends N-EVENT-REPORT on it.
     private let notify: (@Sendable (String, String, UInt16, DataSet) async -> Void)?
@@ -15,10 +16,12 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
     private let receive: (@Sendable (String, UInt16, DataSet) async -> Void)?
 
     public init(index: DICOMArchiveIndex = DICOMMemoryArchiveIndex(),
+                eventHub: DICOMUPSEventHub = DICOMUPSEventHub(),
                 receivingAEs: Set<String>? = nil, eventReportsSupported: Bool = true,
                 receive: (@Sendable (String, UInt16, DataSet) async -> Void)? = nil,
                 notify: (@Sendable (String, String, UInt16, DataSet) async -> Void)? = nil) {
         self.index = index
+        self.eventHub = eventHub
         self.receivingAEs = receivingAEs
         self.eventReportsSupported = eventReportsSupported
         self.receive = receive
@@ -205,7 +208,7 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
     }
 
     /// Applies CC.1.1-2 and CC.2.1-2, including optimistic locking.
-    func changeState(_ uid: String, _ action: [String: Any]) async throws -> DICOMNormalizedResponse {
+    func changeState(_ uid: String, _ action: [String: Any], requestingAE: String? = nil) async throws -> DICOMNormalizedResponse {
         guard var document = try await index.document(uid, in: .unifiedProcedureSteps) else { return Self.reply(0xC307) }
         let old = Self.value(document.attributes, Tag.state) ?? ""
         guard let desired = Self.value(action, Tag.state),
@@ -243,7 +246,9 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         do {
             try await index.replace(document, in: .unifiedProcedureSteps)
         } catch DICOMArchiveError.conflict { return Self.reply(0xC301, "UPS changed concurrently") }
-        try await emit(uid: uid, event: 1, object: document.attributes)
+        var report = document.attributes
+        if let requestingAE { report[Tag.requestingAE] = Self.attribute("AE", requestingAE) }
+        try await emit(uid: uid, event: 1, object: report)
         return DICOMNormalizedResponse(status: .success)
     }
 
@@ -371,8 +376,9 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         if action == 5 && !global { return Self.reply(0xC314) }
         let id = ae + "|" + uid
         if action == 3 {
-            if !eventReportsSupported { return Self.reply(0xC315) }
-            if let receivingAEs, !receivingAEs.contains(ae) { return Self.reply(0xC308) }
+            let webConnected = await eventHub.isConnected(ae)
+            if !eventReportsSupported && !webConnected { return Self.reply(0xC315) }
+            if let receivingAEs, !receivingAEs.contains(ae) && !webConnected { return Self.reply(0xC308) }
             guard let lockValue = Self.value(object, Tag.deletionLock),
                   ["TRUE", "FALSE"].contains(lockValue) else { return Self.reply(0x0121) }
             let lock = lockValue == "TRUE"
@@ -454,7 +460,6 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
     }
 
     private func emit(to ae: String, uid: String, event: UInt16, object: [String: Any]) async throws {
-        guard let notify else { return }
         var report: [String: Any] = [:]
         var source = object
         if event == 5, let performer = Self.items(object, "00404034").first {
@@ -463,14 +468,16 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         if event == 1, let progress = Self.items(object, Tag.progress).first {
             source.merge(progress) { _, nested in nested }
         }
-        let tags: [String] = event == 1 ? [Tag.state, Tag.readiness, Tag.cancelReason, Tag.cancelReasonCode]
+        let tags: [String] = event == 1 ? [Tag.state, Tag.readiness, Tag.cancelReason, Tag.cancelReasonCode, Tag.requestingAE]
             : event == 2 ? [Tag.requestingAE, Tag.cancelReason, Tag.cancelReasonCode, "0074100A", "0074100C"]
             : event == 3 ? [Tag.progress]
             : event == 4 ? ["00741242", "00741244", "00741246"]
             : [Tag.stationName, "00404034", "00404009", "00404036"]
         for tag in tags { report[tag] = source[tag] }
         if let charset = object["00080005"] { report["00080005"] = charset }
-        await notify(ae, uid, event, try DICOMJSON.dataSet(report))
+        let dataSet = try DICOMJSON.dataSet(report)
+        try await eventHub.publish(to: ae, uid: uid, type: event, information: dataSet)
+        if let notify { await notify(ae, uid, event, dataSet) }
     }
 
     /// Announces restart/shutdown to subscribers and the application's fallback AEs.
