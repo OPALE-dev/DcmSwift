@@ -42,7 +42,7 @@ final class DcmSwiftUPSTests: XCTestCase {
         let index = DICOMMemoryArchiveIndex()
         let service = DICOMUnifiedProcedureStepService(index: index)
         assertStatus(try await service.create(uid, scheduled()), 0)
-        let created = try await index.document(uid, in: .unifiedProcedureSteps)
+        let created = await index.document(uid, in: .unifiedProcedureSteps)
         XCTAssertEqual(((created?.attributes["00741202"] as? [String: Any])?["Value"] as? [String])?.first,
                        "DEFAULT", "the SCP fills an empty Worklist Label")
         assertStatus(try await service.create(uid, scheduled()), 0x0111)
@@ -54,9 +54,9 @@ final class DcmSwiftUPSTests: XCTestCase {
         assertStatus(try await service.set(uid, ["00081195": value("UI", "2.25.999")]), 0xC301)
         assertStatus(try await service.changeState(uid, state("COMPLETED")), 0xC304)
         let performed: [String: Any] = [
-            "00404028": ["vr": "SQ", "Value": [["00080100": value("SH", "STATION")]]],
+            "00404028": ["vr": "SQ", "Value": [code("STATION")]],
             "00404050": value("DT", "20261009120500+0200"),
-            "00404019": ["vr": "SQ", "Value": [["00080100": value("SH", "WORK")]]],
+            "00404019": ["vr": "SQ", "Value": [code("WORK")]],
             "00404051": value("DT", "20261009121000+0200"),
             "00404033": ["vr": "SQ"],
         ]
@@ -75,7 +75,7 @@ final class DcmSwiftUPSTests: XCTestCase {
         assertStatus(try await service.create(uid, scheduled()), 0)
         assertStatus(try await service.cancel(uid, [:], requestingAE: "SCU"), 0)
         let canceled = try await service.index.document(uid, in: .unifiedProcedureSteps)
-        XCTAssertNotNil(canceled?.attributes["00404052"], "the SCP fills Cancellation DateTime")
+        XCTAssertNotNil(DICOMUnifiedProcedureStepService.items(canceled!.attributes, "00741002").first?["00404052"], "the SCP fills Cancellation DateTime")
         assertStatus(try await service.cancel(uid, [:], requestingAE: "SCU"), 0xB304)
         let query = try DICOMJSON.dataSet(["00741000": value("CS", "CANCELED")])
         let results = try await service.matches(query)
@@ -90,13 +90,13 @@ final class DcmSwiftUPSTests: XCTestCase {
         assertStatus(try await service.subscription(DICOMSOPClass.upsGlobalSubscription,
                                                        action: 3, object: subscribe), 0)
         assertStatus(try await service.create(uid, scheduled()), 0)
-        let subscriptions = try await index.documents(in: .unifiedProcedureStepSubscriptions,
+        let subscriptions = await index.documents(in: .unifiedProcedureStepSubscriptions,
                                                        matching: DICOMQuery(conditions: []))
         XCTAssertEqual(subscriptions.count, 2)
         XCTAssertTrue(subscriptions.contains { $0.metadata["uid"] == uid && $0.metadata["lock"] == "TRUE" })
         assertStatus(try await service.subscription(DICOMSOPClass.upsGlobalSubscription,
                                                        action: 4, object: subscribe), 0)
-        let after = try await index.documents(in: .unifiedProcedureStepSubscriptions,
+        let after = await index.documents(in: .unifiedProcedureStepSubscriptions,
                                               matching: DICOMQuery(conditions: []))
         XCTAssertTrue(after.isEmpty)
     }
@@ -113,10 +113,243 @@ final class DcmSwiftUPSTests: XCTestCase {
         var high = scheduled()
         high["00741200"] = value("CS", "HIGH")
         assertStatus(try await service.create("2.25.341342", high), 0)
-        let subscriptions = try await index.documents(in: .unifiedProcedureStepSubscriptions,
+        let subscriptions = await index.documents(in: .unifiedProcedureStepSubscriptions,
                                                        matching: DICOMQuery(conditions: []))
         XCTAssertEqual(subscriptions.count, 2)
         XCTAssertTrue(subscriptions.contains { $0.metadata["uid"] == "2.25.341342" })
         XCTAssertFalse(subscriptions.contains { $0.metadata["uid"] == uid })
     }
+    private func code(_ text: String = "TEST") -> [String: Any] {
+        ["00080100": value("SH", text), "00080102": value("SH", "99TEST"), "00080104": value("LO", text)]
+    }
+
+    private func sequence(_ items: [[String: Any]]) -> [String: Any] { ["vr": "SQ", "Value": items] }
+
+    func testNestedRequirementsAndAtomicSet() async throws {
+        let service = DICOMUnifiedProcedureStepService()
+        var object = scheduled()
+        object["00404034"] = sequence([["00404009": sequence([code()])]])
+        assertStatus(try await service.create(uid, object), 0x0106)
+        object["00404034"] = sequence([["00404009": sequence([code()]),
+                                        "00404037": value("PN", "DOE^JANE"), "00404036": value("LO", "HOSPITAL")]])
+        assertStatus(try await service.create(uid, object), 0)
+        assertStatus(try await service.set(uid, ["00741200": value("CS", "HIGH"),
+                                                "00404025": sequence([["00080100": value("SH", "BAD")]])]), 0x0106)
+        let stored = try await service.index.document(uid, in: .unifiedProcedureSteps)!
+        XCTAssertEqual(DICOMUnifiedProcedureStepService.value(stored.attributes, "00741200"), "MEDIUM")
+        for tag in ["00100021", "00100024", "00380010", "00380014", "00081080", "00081084", "0040A370"] {
+            assertStatus(try await service.set(uid, [tag: ["vr": "LO"]]), 0x0106)
+        }
+        assertStatus(try await service.set(uid, ["00081195": ["vr": "UI"]]), 0xC301)
+        assertStatus(try await service.set(uid, ["00404011": value("DT", "20261021190000")]), 0x0105)
+    }
+
+    func testCreationStatusAndRequiredValues() async throws {
+        for (tag, vr, text) in [("00741000", "CS", "COMPLETED"), ("00741200", "CS", "URGENT"),
+                                ("00404041", "CS", "UNKNOWN")] {
+            let service = DICOMUnifiedProcedureStepService()
+            var object = scheduled(); object[tag] = value(vr, text)
+            assertStatus(try await service.create(uid, object), tag == "00741000" ? 0xC309 : 0x0106)
+        }
+        for tag in ["00741200", "00741204", "00404005", "00404041", "00741000"] {
+            let service = DICOMUnifiedProcedureStepService()
+            var object = scheduled(); object.removeValue(forKey: tag)
+            assertStatus(try await service.create(uid, object), 0x0120)
+        }
+    }
+
+    func testContentAndReferenceMacros() async throws {
+        let service = DICOMUnifiedProcedureStepService()
+        var object = scheduled()
+        object["00741210"] = sequence([["0040A040": value("CS", "NUMERIC"), "0040A043": sequence([code()]),
+                                        "0040A30A": value("DS", "4")]])
+        assertStatus(try await service.create(uid, object), 0x0106)
+        object["00741210"] = sequence([["0040A040": value("CS", "NUMERIC"), "0040A043": sequence([code()]),
+                                        "0040A30A": value("DS", "4"), "004008EA": sequence([code("mm")])]])
+        object["00404021"] = sequence([["0040E020": value("CS", "DICOM"), "00081199": sequence([
+            ["00081150": value("UI", "1.2.840.10008.5.1.4.1.1.2"), "00081155": value("UI", "2.25.123")]
+        ])]])
+        assertStatus(try await service.create(uid, object), 0x0106)
+        var reference = DICOMUnifiedProcedureStepService.items(object, "00404021")[0]
+        reference["0020000D"] = value("UI", "2.25.10")
+        reference["0020000E"] = value("UI", "2.25.11")
+        reference["0040E025"] = sequence([["00081190": value("UR", "https://example.test/instances/123")]])
+        object["00404021"] = sequence([reference])
+        assertStatus(try await service.create(uid, object), 0)
+    }
+
+    func testCanceledFinalRequirementsAreNestedAndPersist() async throws {
+        let service = DICOMUnifiedProcedureStepService()
+        assertStatus(try await service.create(uid, scheduled()), 0)
+        assertStatus(try await service.changeState(uid, state("IN PROGRESS")), 0)
+        assertStatus(try await service.changeState(uid, state("CANCELED")), 0xC304)
+        assertStatus(try await service.set(uid, ["00081195": value("UI", "2.25.455"),
+            "00741002": sequence([["0074100E": sequence([code("CANCEL")])]])]), 0)
+        assertStatus(try await service.changeState(uid, state("CANCELED")), 0)
+        let stored = try await service.index.document(uid, in: .unifiedProcedureSteps)!
+        XCTAssertNil(stored.attributes["00404052"])
+        XCTAssertNotNil(DICOMUnifiedProcedureStepService.items(stored.attributes, "00741002")[0]["00404052"])
+        assertStatus(try await service.changeState(uid, state("CANCELED")), 0xB304)
+        assertStatus(try await service.changeState(uid, state("COMPLETED")), 0xC300)
+    }
+
+    func testGlobalPreservesSpecificLocksAndSuspendPreservesInstances() async throws {
+        let index = DICOMMemoryArchiveIndex()
+        let service = DICOMUnifiedProcedureStepService(index: index)
+        assertStatus(try await service.create(uid, scheduled()), 0)
+        let unlocked = ["00741234": value("AE", "WATCHER"), "00741230": value("CS", "FALSE")]
+        let locked = ["00741234": value("AE", "WATCHER"), "00741230": value("CS", "TRUE")]
+        assertStatus(try await service.subscription(uid, action: 3, object: unlocked), 0)
+        assertStatus(try await service.subscription(DICOMSOPClass.upsGlobalSubscription, action: 3, object: locked), 0)
+        var sub = await index.document("WATCHER|" + uid, in: .unifiedProcedureStepSubscriptions)
+        XCTAssertEqual(sub?.metadata["lock"], "FALSE")
+        assertStatus(try await service.subscription(uid, action: 3, object: locked), 0)
+        assertStatus(try await service.subscription(DICOMSOPClass.upsGlobalSubscription, action: 3, object: unlocked), 0)
+        sub = await index.document("WATCHER|" + uid, in: .unifiedProcedureStepSubscriptions)
+        XCTAssertEqual(sub?.metadata["lock"], "TRUE")
+        assertStatus(try await service.subscription(DICOMSOPClass.upsGlobalSubscription, action: 5, object: unlocked), 0)
+        assertStatus(try await service.cancel(uid, [:], requestingAE: "SCU"), 0)
+        assertStatus(try await service.get(uid), 0)
+        sub = await index.document("WATCHER|" + uid, in: .unifiedProcedureStepSubscriptions)
+        XCTAssertEqual(sub?.metadata["lock"], "TRUE", "final state does not release a deletion lock")
+        assertStatus(try await service.subscription(uid, action: 4, object: unlocked), 0)
+        sub = await index.document("WATCHER|" + uid, in: .unifiedProcedureStepSubscriptions)
+        XCTAssertNil(sub)
+        assertStatus(try await service.get(uid), 0, file: #filePath, line: #line)
+        assertStatus(try await service.create("2.25.341343", scheduled()), 0)
+        let all = await index.documents(in: .unifiedProcedureStepSubscriptions, matching: DICOMQuery(conditions: []))
+        XCTAssertTrue(all.isEmpty)
+    }
+
+    func testConcurrentClaimHasOneOwner() async throws {
+        let index = DICOMMemoryArchiveIndex()
+        let a = DICOMUnifiedProcedureStepService(index: index)
+        let b = DICOMUnifiedProcedureStepService(index: index)
+        assertStatus(try await a.create(uid, scheduled()), 0)
+        async let first = a.changeState(uid, state("IN PROGRESS", token: "2.25.1"))
+        async let second = b.changeState(uid, state("IN PROGRESS", token: "2.25.2"))
+        let responses = try await [first, second]
+        XCTAssertEqual(responses.filter { $0.status.code == 0 }.count, 1)
+        XCTAssertEqual(responses.filter { $0.status.code == 0xC301 }.count, 1)
+    }
+
+    func testCompletionChecksEveryRequiredPerformedAttribute() async throws {
+        for omitted in ["00404028", "00404050", "00404019", "00404051", "00404033"] {
+            let index = DICOMMemoryArchiveIndex()
+            let service = DICOMUnifiedProcedureStepService(index: index)
+            assertStatus(try await service.create(uid, scheduled()), 0)
+            assertStatus(try await service.changeState(uid, state("IN PROGRESS")), 0)
+            var performed: [String: Any] = ["00404028": sequence([code()]), "00404019": sequence([code()]),
+                "00404050": value("DT", "20261021180000"), "00404051": value("DT", "20261021190000"),
+                "00404033": sequence([])]
+            performed.removeValue(forKey: omitted)
+            var stored = await index.document(uid, in: .unifiedProcedureSteps)!
+            stored.attributes["00741216"] = sequence([performed])
+            _ = try await index.replace(stored, in: .unifiedProcedureSteps)
+            assertStatus(try await service.changeState(uid, state("COMPLETED")), 0xC304)
+        }
+    }
+
+    func testQueryRestrictionsAndSetTypeOneValues() async throws {
+        let service = DICOMUnifiedProcedureStepService()
+        assertStatus(try await service.create(uid, scheduled()), 0)
+        for tag in ["00741202", "00400400", "00404018"] {
+            assertStatus(try await service.set(uid, [tag: ["vr": tag == "00404018" ? "SQ" : "LO"]]), 0x0106)
+        }
+        for keys in [["00081195": value("UI", "")], ["00741000": value("CS", "IN*")],
+                     ["00080018": value("UI", "2.25.*")]] {
+            do {
+                _ = try await service.matches(DICOMJSON.dataSet(keys))
+                XCTFail("forbidden matching key accepted")
+            } catch is DICOMServiceError { }
+        }
+    }
+
+    func testStateTransitionTableAndFinalAttributeProtection() async throws {
+        for initial in ["SCHEDULED", "IN PROGRESS", "COMPLETED", "CANCELED"] {
+            for desired in ["SCHEDULED", "IN PROGRESS", "COMPLETED", "CANCELED"] {
+                for correctToken in [true, false] {
+                    let index = DICOMMemoryArchiveIndex()
+                    let service = DICOMUnifiedProcedureStepService(index: index)
+                    assertStatus(try await service.create(uid, scheduled()), 0)
+                    var stored = await index.document(uid, in: .unifiedProcedureSteps)!
+                    stored.attributes["00741000"] = value("CS", initial)
+                    stored.attributes["00081195"] = value("UI", "2.25.455")
+                    _ = try await index.replace(stored, in: .unifiedProcedureSteps)
+                    let expected: UInt16
+                    if desired == "SCHEDULED" { expected = 0xC303 }
+                    else if !correctToken && initial != "SCHEDULED" { expected = 0xC301 }
+                    else if initial == desired && desired == "COMPLETED" { expected = 0xB306 }
+                    else if initial == desired && desired == "CANCELED" { expected = 0xB304 }
+                    else if initial == "COMPLETED" || initial == "CANCELED" { expected = 0xC300 }
+                    else if desired == "IN PROGRESS" { expected = initial == "SCHEDULED" ? 0 : 0xC302 }
+                    else { expected = initial == "SCHEDULED" ? 0xC310 : 0xC304 }
+                    assertStatus(try await service.changeState(uid, state(desired, token: correctToken ? "2.25.455" : "2.25.999")), expected)
+                }
+            }
+        }
+    }
+
+    func testSubscriptionsSurviveRestartAndUnknownRecipientsFail() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let subscription = ["00741234": value("AE", "WATCHER"), "00741230": value("CS", "TRUE")]
+        let first = DICOMUnifiedProcedureStepService(index: DICOMFileArchiveIndex(directory: directory))
+        assertStatus(try await first.create(uid, scheduled()), 0)
+        assertStatus(try await first.subscription(uid, action: 3, object: subscription), 0)
+        assertStatus(try await first.cancel(uid, [:], requestingAE: "SCU"), 0)
+        let index = DICOMFileArchiveIndex(directory: directory)
+        let restarted = DICOMUnifiedProcedureStepService(index: index, receivingAEs: [])
+        assertStatus(try await restarted.get(uid), 0)
+        let persisted = try await index.document("WATCHER|" + uid, in: .unifiedProcedureStepSubscriptions)
+        XCTAssertEqual(persisted?.metadata["lock"], "TRUE")
+        assertStatus(try await restarted.subscription(uid, action: 3, object: subscription), 0xC308)
+        let disabled = DICOMUnifiedProcedureStepService(index: index, eventReportsSupported: false)
+        assertStatus(try await disabled.subscription(uid, action: 3, object: subscription), 0xC315)
+        assertStatus(try await restarted.subscription(DICOMSOPClass.upsGlobalSubscription, action: 4, object: subscription), 0)
+        let remaining = try await index.documents(in: .unifiedProcedureStepSubscriptions, matching: DICOMQuery(conditions: []))
+        XCTAssertTrue(remaining.isEmpty)
+    }
+
+    func testEventReceiverValidatesRequiredInformation() async throws {
+        let reports = UPSReports()
+        let service = DICOMUnifiedProcedureStepService(receive: { uid, type, data in
+            await reports.record("SOURCE", uid, type, data)
+        })
+        assertStatus(try await service.receiveEvent(uid, type: 1, object: [:]), 0x0120)
+        assertStatus(try await service.receiveEvent(uid, type: 1, object: ["00741000": value("CS", "SCHEDULED"),
+                                                                         "00404041": value("CS", "READY")]), 0)
+        assertStatus(try await service.receiveEvent(uid, type: 6, object: [:]), 0x0113)
+        let events = await reports.types
+        XCTAssertEqual(events, [1])
+    }
+
+    func testEventTriggersAndStatusRecipients() async throws {
+        let reports = UPSReports()
+        let service = DICOMUnifiedProcedureStepService(notify: { ae, uid, type, data in
+            await reports.record(ae, uid, type, data)
+        })
+        var object = scheduled()
+        object["00404034"] = sequence([])
+        assertStatus(try await service.subscription(DICOMSOPClass.upsGlobalSubscription, action: 3,
+            object: ["00741234": value("AE", "WATCHER"), "00741230": value("CS", "TRUE")]), 0)
+        assertStatus(try await service.create(uid, object), 0)
+        assertStatus(try await service.set(uid, ["00404041": value("CS", "UNAVAILABLE")]), 0)
+        assertStatus(try await service.set(uid, ["00404025": sequence([code("STATION")])]), 0)
+        assertStatus(try await service.set(uid, ["00404025": sequence([code("STATION")])]), 0)
+        assertStatus(try await service.set(uid, ["00741002": sequence([["00741006": value("ST", "Working")]])]), 0)
+        try await service.reportStatus(restarted: true, fallbackAEs: ["WATCHER", "FALLBACK"])
+        let events = await reports.types
+        XCTAssertEqual(events, [1, 1, 5, 3, 4, 4], "idempotent set emits no duplicate assignment")
+        assertStatus(try await service.cancel(uid, [:], requestingAE: "SCU"), 0)
+        let finalEvents = await reports.types
+        XCTAssertEqual(Array(finalEvents.suffix(3)), [2, 1, 1])
+    }
+
+}
+
+
+private actor UPSReports {
+    var types: [UInt16] = []
+    func record(_ ae: String, _ uid: String, _ type: UInt16, _ data: DataSet) { types.append(type) }
 }

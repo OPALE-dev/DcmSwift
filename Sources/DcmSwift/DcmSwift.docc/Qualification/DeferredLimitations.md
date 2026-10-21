@@ -266,13 +266,15 @@ conformance without that evidence.
   with content, not against TID 3001; they are kept as received, and no
   Procedure Log instance is made from them. Synchronization Frame of
   Reference UIDs are not compared (no B101H).
-- UPS (PS3.4 CC) has its core DIMSE operations, state lock, specific and
-  global subscriptions (including filtering), and Event reports. Overlapping
-  subscriptions for the same AE, conditional and nested CC.2.5-3 attribute
-  rules, full final-state checks, and deletion after locks are released
-  remain to implement and qualify.
-  The pynetdicom interop script checks a central path; dcm4che and more
-  state/status combinations have not been checked.
+- UPS (PS3.4 CC) retains final instances indefinitely; releasing the last
+  deletion lock does not delete the instance. Events have no durable retry
+  queue. Subscription management assumes one owning service per index;
+  the index's per-document versioning protects concurrent UPS claims/updates,
+  but does not make global subscription fan-out a cross-document transaction.
+  Conditional requirements needing external task, patient, performer, or
+  referenced frame/segment knowledge remain the application's responsibility;
+  code scheme ambiguity and clinical suitability are not inferred.
+  UPS-RS remains a separate PS3.18 phase.
 - DIMSE-N is generic: Print Management behavior is not built in yet.
   Storage Commitment's optional
   Storage Media File-Set attributes are carried but not interpreted, and

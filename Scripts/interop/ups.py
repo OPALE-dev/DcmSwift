@@ -26,7 +26,9 @@ def main(port, notify_port):
     reports = []
 
     def received(event):
-        reports.append((event.event_type, event.event_information.ProcedureStepState))
+        info = event.event_information
+        check(event.request.AffectedSOPClassUID == UnifiedProcedureStepPush, "Event command uses UPS Push UID")
+        reports.append((event.event_type, getattr(info, "ProcedureStepState", None)))
         return 0x0000, None
 
     receiver = AE(ae_title="WATCHER")
@@ -111,6 +113,47 @@ def main(port, notify_port):
             time.sleep(0.1)
         check(reports == [(1, "SCHEDULED"), (1, "IN PROGRESS")],
               f"initial and state-change Event reports: {reports}")
+
+        update = Dataset()
+        update.TransactionUID = token
+        update.InputReadinessState = "UNAVAILABLE"
+        status, _ = assoc.send_n_set(update, UnifiedProcedureStepPush, uid, meta_uid=UnifiedProcedureStepPull)
+        check(status.Status == 0, "N-SET readiness")
+
+        action.ProcedureStepState = "COMPLETED"
+        status, _ = assoc.send_n_action(action, 1, UnifiedProcedureStepPush, uid, meta_uid=UnifiedProcedureStepPull)
+        check(status.Status == 0xC304, "incomplete final attributes refused")
+        code = Dataset()
+        code.CodeValue = "TEST"
+        code.CodingSchemeDesignator = "99TEST"
+        code.CodeMeaning = "Test"
+        performed = Dataset()
+        performed.PerformedStationNameCodeSequence = [code]
+        performed.PerformedWorkitemCodeSequence = [code]
+        performed.PerformedProcedureStepStartDateTime = "20261009140000+0200"
+        performed.PerformedProcedureStepEndDateTime = "20261009140500+0200"
+        performed.OutputInformationSequence = []
+        update = Dataset()
+        update.TransactionUID = token
+        update.UnifiedProcedureStepPerformedProcedureSequence = [performed]
+        status, _ = assoc.send_n_set(update, UnifiedProcedureStepPush, uid, meta_uid=UnifiedProcedureStepPull)
+        check(status.Status == 0, "N-SET complete performed information")
+        status, _ = assoc.send_n_action(action, 1, UnifiedProcedureStepPush, uid, meta_uid=UnifiedProcedureStepPull)
+        check(status.Status == 0, "COMPLETED")
+        status, _ = assoc.send_n_action(action, 1, UnifiedProcedureStepPush, uid, meta_uid=UnifiedProcedureStepPull)
+        check(status.Status == 0xB306, "already completed warning")
+        status, attributes = assoc.send_n_get([0x00741216], UnifiedProcedureStepPush, uid,
+                                             meta_uid=UnifiedProcedureStepPull)
+        check(status.Status == 0 and len(attributes.UnifiedProcedureStepPerformedProcedureSequence) == 1,
+              "final instance retained under deletion lock")
+        status, _ = assoc.send_n_action(subscription, 4, UnifiedProcedureStepPush, uid, meta_uid=UnifiedProcedureStepWatch)
+        check(status.Status == 0, "release deletion lock")
+        for _ in range(30):
+            if len(reports) >= 4:
+                break
+            time.sleep(0.1)
+        check(reports[-2:] == [(1, "IN PROGRESS"), (1, "COMPLETED")],
+              f"readiness and final events: {reports}")
     finally:
         assoc.release()
         listener.shutdown()
