@@ -59,6 +59,14 @@ def fixture(path, uid, modality, series):
     data.TimezoneOffsetFromUTC = "+0000"
     data.ContentDate, data.ContentTime = "20261020", "235959"
     data.Modality = modality
+    data.PatientBirthDate = data.PatientSex = ""
+    data.ReferringPhysicianName = data.AccessionNumber = ""
+    data.StudyID, data.SeriesNumber, data.InstanceNumber = "1", 1, 1
+    data.Manufacturer, data.ConversionType = "Test", "WSD"
+    data.ImageType, data.PatientOrientation = ["DERIVED", "SECONDARY"], ""
+    data.BurnedInAnnotation, data.PresentationLUTShape = "NO", "IDENTITY"
+    data.RescaleIntercept, data.RescaleSlope, data.RescaleType = "0", "1", "US"
+    data.WindowCenter, data.WindowWidth = "127", "256"
     data.Rows, data.Columns, data.SamplesPerPixel = 1, 2, 1
     data.PhotometricInterpretation = "MONOCHROME2"
     data.BitsAllocated = data.BitsStored = 8
@@ -91,6 +99,10 @@ def main(executable):
 
     def store(event):
         received.append(event.dataset)
+        if "FrameExtractionSequence" in event.dataset:
+            result = event.dataset
+            result.file_meta = event.file_meta
+            result.save_as(root / "derived.dcm", enforce_file_format=True)
         return 0
 
     def move_store(event):
@@ -199,6 +211,10 @@ def main(executable):
                     check(matches[-1][0].Status == 0xA900, "unaccepted Query/Retrieve View rejected")
                 finally:
                     association.release()
+                validator = Path(executable).with_name("DcmValidate")
+                if validator.is_file():
+                    validated = subprocess.run([str(validator), str(archive / "ct.dcm"), str(root / "derived.dcm")], capture_output=True, text=True)
+                    check(validated.returncode == 0, "source and derived Secondary Capture pass the local PS3.3 IOD validator: " + validated.stdout.strip())
                 # A separate association proves that absent negotiation retains baseline rules.
                 baseline = ae.associate("127.0.0.1", port, ae_title="QRSCP")
                 try:

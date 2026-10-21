@@ -153,6 +153,12 @@ final class DcmSwiftQueryRetrieveExtensionTests: XCTestCase {
         XCTAssertEqual(dataSet.string(forTag: "FrameTimeVector"), "0\\2000")
         XCTAssertEqual(dataSet.sequence(forTagName: "FrameExtractionSequence")?.items.count, 1)
         XCTAssertEqual(dataSet.sequence(forTagName: "ContributingEquipmentSequence")?.items.count, 1)
+        let repeatedRequest = identifier("FRAME", ["SOPInstanceUID": result.sopInstanceUID])
+        _ = repeatedRequest.set(value: [UInt32(2)], forTagName: "SimpleFrameList")
+        let repeated = try DICOMFrameExtraction.extract(result, identifier: repeatedRequest)
+        let history = try DICOMDataSetCoding.decode(repeated.payload.data(), transferSyntax: repeated.transferSyntaxUID)
+        XCTAssertEqual(history.sequence(forTagName: "FrameExtractionSequence")?.items.count, 2)
+        XCTAssertEqual(history.sequence(forTagName: "ContributingEquipmentSequence")?.items.count, 2)
         _ = request.remove(elementForTagName: "SimpleFrameList")
         _ = request.set(value: [1.0, 2.0], forTagName: "TimeRange")
         let ranged = try DICOMFrameExtraction.extract(item, identifier: request)
@@ -292,6 +298,23 @@ final class DcmSwiftQueryRetrieveExtensionTests: XCTestCase {
         let nestedQuery = try W.dataSet(["00080201": ("SH", ["+0200"]), "00400275": ("SQ", [["0008002A": ("DT", ["20261021010000"])]] )])
         let nestedEntity = try W.dataSet(["00080201": ("SH", ["+0000"]), "00400275": ("SQ", [["0008002A": ("DT", ["20261020230000"])]] )])
         XCTAssertNotNil(try DICOMQueryMatcher(timezoneAdjustment: true).match(nestedQuery, against: nestedEntity))
+    }
+
+    func testFrameDependentVectorsAreRefusedWithoutRewritingThem() throws {
+        let source = try frameSource()
+        let request = identifier("FRAME", ["SOPInstanceUID": "1.2.3.4"])
+        _ = request.set(value: [UInt32(2)], forTagName: "SimpleFrameList")
+        for (tag, attribute) in [
+            "00182003": ["vr": "DS", "Value": ["0", "1", "2", "3"]],
+            "00286020": ["vr": "US", "Value": [2]]
+        ] as [String: [String: Any]] {
+            var object = try DICOMJSON.object(source)
+            object[tag] = attribute
+            let item = try DICOMRetrieveItem(dataSet: DICOMJSON.dataSet(object))
+            XCTAssertThrowsError(try DICOMFrameExtraction.extract(item, identifier: request)) {
+                XCTAssertEqual(($0 as? DICOMServiceError)?.status.code, 0xAA02)
+            }
+        }
     }
 
 }

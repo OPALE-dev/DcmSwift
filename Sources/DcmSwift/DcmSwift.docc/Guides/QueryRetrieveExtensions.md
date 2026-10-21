@@ -68,3 +68,11 @@ The directory accepts DICOM JSON, Part 10 or bare data sets. It is loaded at sta
 `DcmSwiftQueryRetrieveExtensionTests` covers negotiation, hierarchy rules, matching, bulk omission, frame selection and representation, patient responses and real DIMSE loopback. `Scripts/interop/query_retrieve.py` starts an isolated `DcmServer` and an independent pynetdicom C-MOVE receiver; it checks FIND, GET, MOVE, frame provenance/pixels, UTF-8 patient content and failure statuses.
 
 Enhanced Multi-Frame Image Conversion remains unimplemented and unadvertised. Full classic/enhanced view conversion requires coherent derived instances and reference remapping across the retrieved objects (PS3.4 C.3.5); negotiating a flag alone does not provide that behavior. Empty Value Matching and Multiple Value Matching are also declined. External archive, video extraction and clinical template qualification remain outside the evidence above.
+
+Local qualification (2026-10-21): 419 macOS package tests executed, six skipped,
+zero failures; 28 selected Q/R, negotiation, archive and workflow tests passed on
+Linux aarch64 Swift 6.2.4 and iOS 26.2 iPhone 17 Pro Simulator. The independent
+pydicom 3.0.2 / pynetdicom 3.0.4 script passed 26 checks, including source and
+received derived Secondary Capture objects accepted by the local PS3.3 IOD
+validator. The script performs that additional IOD check when `DcmValidate` is
+installed alongside `DcmServer`. The macOS Release build also passed. This is local evidence; CI was not rerun.
