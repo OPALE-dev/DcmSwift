@@ -15,9 +15,13 @@ public enum DICOMSOPClass {
     public static let patientStudyOnlyFind = "1.2.840.10008.5.1.4.1.2.3.1"
     public static let patientStudyOnlyMove = "1.2.840.10008.5.1.4.1.2.3.2"
     public static let patientStudyOnlyGet = "1.2.840.10008.5.1.4.1.2.3.3"
-    public static let compositeInstanceRootGet = "1.2.840.10008.5.1.4.1.2.4.2"
-    public static let compositeInstanceRootMove = "1.2.840.10008.5.1.4.1.2.4.3"
+    public static let compositeInstanceRootGet = "1.2.840.10008.5.1.4.1.2.4.3"
+    public static let compositeInstanceRootMove = "1.2.840.10008.5.1.4.1.2.4.2"
     public static let compositeInstanceRetrieveWithoutBulkDataGet = "1.2.840.10008.5.1.4.1.2.5.3"
+
+    public static let generalRelevantPatientInformationFind = "1.2.840.10008.5.1.4.37.1"
+    public static let breastImagingRelevantPatientInformationFind = "1.2.840.10008.5.1.4.37.2"
+    public static let cardiacRelevantPatientInformationFind = "1.2.840.10008.5.1.4.37.3"
 
     /// Modality Worklist Information Model - FIND (PS3.4 K.6).
     public static let modalityWorklistFind = "1.2.840.10008.5.1.4.31"

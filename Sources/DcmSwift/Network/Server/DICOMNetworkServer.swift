@@ -101,7 +101,7 @@ public final class DICOMServer: Sendable {
     public init(
         configuration: DICOMServerConfiguration, storage: DICOMStorageService? = nil,
         query: DICOMQueryService? = nil, worklist: DICOMQueryService? = nil,
-        upsQuery: DICOMQueryService? = nil, retrieve: DICOMRetrieveService? = nil,
+        upsQuery: DICOMQueryService? = nil, relevantPatientInformation: DICOMQueryService? = nil, retrieve: DICOMRetrieveService? = nil,
         storageCommitment: DICOMStorageCommitmentService? = nil,
         storageCommitmentReceiver: DICOMStorageCommitmentReceiver? = nil,
         storageCommitmentOutbox: DICOMStorageCommitmentOutbox? = nil,
@@ -118,7 +118,7 @@ public final class DICOMServer: Sendable {
             eventLoopGroup: eventLoopGroup)
         dispatcher = DICOMRequestDispatcher(
             verification: true, storage: storage, query: query, worklist: worklist, upsQuery: upsQuery,
-            retrieve: retrieve, normalized: normalized,
+            relevantPatientInformation: relevantPatientInformation, retrieve: retrieve, normalized: normalized,
             storageCommitment: storageCommitment, commitmentReceiver: storageCommitmentReceiver,
             commitmentOutbox: storageCommitmentOutbox,
             outgoingClient: outgoingClient)
@@ -134,9 +134,10 @@ public final class DICOMServer: Sendable {
                     scuRole: retrieve != nil, prefersProposedOrder: true)
             }
         }
-        if query != nil {
+        if let query {
             for model in [DICOMSOPClass.patientRootFind, DICOMSOPClass.studyRootFind, DICOMSOPClass.patientStudyOnlyFind] {
-                syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes)
+                syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes,
+                    queryRetrieveOptions: query.queryRetrieveOptions)
             }
         }
         if worklist != nil {
@@ -147,12 +148,18 @@ public final class DICOMServer: Sendable {
             syntaxes[DICOMSOPClass.upsQuery] = DICOMAbstractSyntaxSupport(
                 transferSyntaxes: configuration.transferSyntaxes)
         }
-        if retrieve != nil {
+        if relevantPatientInformation != nil {
+            for model in DICOMRelevantPatientInformationService.models {
+                syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes)
+            }
+        }
+        if let retrieve {
             for model in [DICOMSOPClass.patientRootMove, DICOMSOPClass.studyRootMove, DICOMSOPClass.patientStudyOnlyMove,
                           DICOMSOPClass.compositeInstanceRootMove, DICOMSOPClass.patientRootGet,
                           DICOMSOPClass.studyRootGet, DICOMSOPClass.patientStudyOnlyGet,
-                          DICOMSOPClass.compositeInstanceRootGet] {
-                syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes)
+                          DICOMSOPClass.compositeInstanceRootGet, DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet] {
+                syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes,
+                    queryRetrieveOptions: retrieve.queryRetrieveOptions)
             }
         }
         // DIMSE-N: this side performs operations, and receives notifications

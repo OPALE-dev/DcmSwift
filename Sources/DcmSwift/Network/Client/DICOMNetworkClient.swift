@@ -147,7 +147,8 @@ public final class DICOMClient: Sendable {
     ///   - body: asynchronous work to run on the established association.
     public func withAssociation<Result>(
         to remote: DICOMRemoteNode, presentationContexts: [DICOMPresentationContextProposal],
-        roleSelections: [DICOMRoleSelection] = [], userIdentity: DICOMUserIdentity? = nil,
+        roleSelections: [DICOMRoleSelection] = [], extendedNegotiations: [DICOMExtendedNegotiation] = [],
+        commonExtendedNegotiations: [DICOMCommonExtendedNegotiation] = [], userIdentity: DICOMUserIdentity? = nil,
         storage: DICOMStorageService? = nil, normalized: [String: DICOMNormalizedService] = [:],
         _ body: (DICOMAssociation) async throws -> Result
     ) async throws -> Result {
@@ -164,7 +165,8 @@ public final class DICOMClient: Sendable {
                 maximumLength: configuration.limits.maximumPDULength,
                 implementationClassUID: DICOMImplementation.classUID,
                 implementationVersionName: DICOMImplementation.versionName,
-                asynchronousOperationsWindow: window, roleSelections: roleSelections, userIdentity: userIdentity))
+                asynchronousOperationsWindow: window, roleSelections: roleSelections, extendedNegotiations: extendedNegotiations,
+                commonExtendedNegotiations: commonExtendedNegotiations, userIdentity: userIdentity))
         // Invalid AE titles or UIDs fail before connecting.
         _ = try DICOMPDUCodec.encode(.associateRequest(request))
 

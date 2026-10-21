@@ -31,6 +31,7 @@ and what remains deliberately limited.
 - <doc:UnifiedProcedureStep>
 - <doc:UPSREST>
 - <doc:UPSRESTArchitecture>
+- <doc:QueryRetrieveExtensions>
 - <doc:DICOMweb>
 - <doc:ArchiveStorage>
 

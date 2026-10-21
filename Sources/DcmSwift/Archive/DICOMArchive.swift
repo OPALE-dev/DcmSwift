@@ -25,7 +25,7 @@ public actor DICOMArchive {
         ("IMAGE", "SOPInstanceUID", ["SOPInstanceUID", "SOPClassUID", "InstanceNumber", "Rows", "Columns",
                                      "BitsAllocated", "NumberOfFrames"]),
     ]
-    static let indexedKeys = levels.flatMap(\.keys)
+    static let indexedKeys = levels.flatMap(\.keys) + ["TimezoneOffsetFromUTC"]
     /// Indexed keywords by tag (8 upper-case hexadecimal digits), and back.
     static let tags: [String: String] = Dictionary(uniqueKeysWithValues: indexedKeys.map {
         ($0, DicomSpec.shared.dataTag(forName: $0)!.code.uppercased())
@@ -218,6 +218,7 @@ public actor DICOMArchive {
 /// `DICOMArchive`, for DIMSE and for DICOMweb.
 public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICOMRetrieveService,
     DICOMStorageCommitmentService, DICOMwebSearchService, DICOMwebRetrieveService, DICOMwebStoreService {
+    public var queryRetrieveOptions: DICOMQueryRetrieveOptions { [.relational, .combinedDateTime, .fuzzyPersonNames, .timezoneAdjustment] }
     public let archive: DICOMArchive
     /// C-MOVE destinations and Storage Commitment SCUs, by AE title.
     public let destinations: [String: DICOMRemoteNode]
@@ -308,7 +309,8 @@ public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICO
     public func find(
         _ identifier: DataSet, informationModel: String, context: DICOMServiceContext
     ) async throws -> AsyncThrowingStream<DataSet, Error> {
-        let matches = try await archive.find(identifier)
+        let level = try DICOMArchiveQueryRetrieve.validate(identifier, model: informationModel, options: context.queryRetrieveOptions, retrieve: false)
+        let matches = try await archive.extendedFind(identifier, level: level, options: context.queryRetrieveOptions)
         if let audit {
             let syntax = context.presentationContext.transferSyntax
             await audit.record(.query(
@@ -325,8 +327,17 @@ public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICO
     public func retrieve(
         _ identifier: DataSet, informationModel: String, context: DICOMServiceContext
     ) async throws -> [DICOMRetrieveItem] {
-        let level = identifier.string(forTag: "QueryRetrieveLevel") ?? ""
-        let records = Array(try await archive.match(identifier, level: level).joined())
+        let level = try DICOMArchiveQueryRetrieve.validate(identifier, model: informationModel, options: context.queryRetrieveOptions, retrieve: true)
+        let composite = [DICOMSOPClass.compositeInstanceRootGet, DICOMSOPClass.compositeInstanceRootMove,
+                         DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet].contains(informationModel)
+        var records: [DICOMArchive.Record] = []
+        if composite {
+            for uid in identifier.textValues(forTag: "SOPInstanceUID") ?? [] {
+                if let record = try await archive.record(uid), !records.contains(where: { $0.attributes["SOPInstanceUID"] == uid }) { records.append(record) }
+            }
+        } else {
+            records = Array(try await archive.extendedMatches(identifier, level: level, options: context.queryRetrieveOptions).joined())
+        }
         if let audit, !records.isEmpty {
             // C-MOVE sends to the Move Destination, C-GET to the requestor.
             let receiver: DICOMAuditMessage.ActiveParticipant
@@ -345,7 +356,14 @@ public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICO
                 patient: patients.first ?? .patient(id: "unknown", name: "unknown"), source: auditSource))
         }
         var items: [DICOMRetrieveItem] = []
-        for record in records { items.append(try await archive.item(record)) }
+        for record in records {
+            var item = try await archive.item(record)
+            if informationModel == DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet {
+                item = try DICOMArchiveQueryRetrieve.withoutBulkData(item)
+            }
+            if level == "FRAME" { item = try DICOMFrameExtraction.extract(item, identifier: identifier) }
+            items.append(item)
+        }
         return items
     }
 

@@ -72,7 +72,7 @@ public struct DICOMQuery: Sendable, Equatable {
     static func conditions(_ keys: [String: Any], path: [String], matcher: DICOMQueryMatcher) -> [Condition] {
         var conditions: [Condition] = []
         var combined: Set<String> = []
-        for pair in matcher.combinedDateTime {
+        for pair in matcher.combinedDateTime where !matcher.timezoneAdjustment {
             guard let date = keys[pair.date] as? [String: Any], let time = keys[pair.time] as? [String: Any],
                   let dateKey = DICOMQueryMatcher.strings(date).first,
                   let timeKey = DICOMQueryMatcher.strings(time).first,
@@ -90,6 +90,11 @@ public struct DICOMQuery: Sendable, Equatable {
                 }
                 continue
             }
+            // These comparisons depend on the negotiated algorithm and on
+            // sibling timezone attributes. A narrower index predicate would
+            // discard valid matches before the core can examine them.
+            if matcher.fuzzyPersonNames && vr == "PN" { continue }
+            if matcher.timezoneAdjustment && ["DA", "TM", "DT"].contains(vr) { continue }
             let values = DICOMQueryMatcher.strings(key)
             guard !DICOMQueryMatcher.isUniversal(values) else { continue }
             if let constraint = constraint(values, vr: vr) {

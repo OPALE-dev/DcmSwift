@@ -36,6 +36,7 @@ public struct DICOMNegotiatedAssociation: Equatable, Sendable {
     public var acceptorImplementationVersionName: String?
     public var userIdentity: DICOMUserIdentity?
     public var extendedNegotiations: [DICOMExtendedNegotiation]
+    public var commonExtendedNegotiations: [DICOMCommonExtendedNegotiation] = []
 
     /// The accepted contexts for an abstract syntax, in ID order.
     public func contexts(for abstractSyntax: String) -> [DICOMAcceptedPresentationContext] {
@@ -55,12 +56,14 @@ public struct DICOMAbstractSyntaxSupport: Sendable {
     /// Choose the first proposed transfer syntax that is supported, rather
     /// than this side's preference: a storage SCP then keeps instances as
     /// the requestor encoded them.
+    public var queryRetrieveOptions: DICOMQueryRetrieveOptions
     public var prefersProposedOrder: Bool
 
-    public init(transferSyntaxes: [String], scpRole: Bool = true, scuRole: Bool = false, prefersProposedOrder: Bool = false) {
+    public init(transferSyntaxes: [String], scpRole: Bool = true, scuRole: Bool = false, prefersProposedOrder: Bool = false, queryRetrieveOptions: DICOMQueryRetrieveOptions = []) {
         self.transferSyntaxes = transferSyntaxes
         self.scpRole = scpRole
         self.scuRole = scuRole
+        self.queryRetrieveOptions = queryRetrieveOptions
         self.prefersProposedOrder = prefersProposedOrder
     }
 }
@@ -199,11 +202,26 @@ public enum DICOMAssociationNegotiator {
             windowReply = window
         }
 
+        var extendedReplies: [DICOMExtendedNegotiation] = []
+        var seenExtensions = Set<String>()
+        for proposal in request.userInformation.extendedNegotiations {
+            guard seenExtensions.insert(proposal.sopClassUID).inserted,
+                  accepted.values.contains(where: { $0.abstractSyntax == proposal.sopClassUID }),
+                  let support = policy.abstractSyntaxes[proposal.sopClassUID],
+                  let fields = DICOMQueryRetrieveOptions.fields(for: proposal.sopClassUID),
+                  zip(fields, proposal.applicationInformation).allSatisfy({ !$0.0.isEmpty || $0.1 == 0 }),
+                  let offered = try? DICOMQueryRetrieveOptions(negotiation: proposal),
+                  var reply = try? offered.intersection(support.queryRetrieveOptions).negotiation(for: proposal.sopClassUID)
+            else { continue }
+            reply.applicationInformation = Array(reply.applicationInformation.prefix(proposal.applicationInformation.count))
+            extendedReplies.append(reply)
+        }
         let identity = request.userInformation.userIdentity
         let userInformation = DICOMUserInformation(
             maximumLength: policy.maximumLength, implementationClassUID: policy.implementationClassUID,
             implementationVersionName: policy.implementationVersionName, asynchronousOperationsWindow: windowReply,
             roleSelections: request.userInformation.roleSelections.compactMap { roleReplies[$0.sopClassUID] },
+            extendedNegotiations: extendedReplies,
             userIdentityServerResponse: identity?.positiveResponseRequested == true ? serverResponse : nil)
         let accept = DICOMAssociateAccept(
             calledAETitle: request.calledAETitle, callingAETitle: request.callingAETitle,
@@ -217,7 +235,8 @@ public enum DICOMAssociationNegotiator {
             requestorImplementationVersionName: request.userInformation.implementationVersionName,
             acceptorImplementationClassUID: policy.implementationClassUID,
             acceptorImplementationVersionName: policy.implementationVersionName,
-            userIdentity: identity, extendedNegotiations: request.userInformation.extendedNegotiations)
+            userIdentity: identity, extendedNegotiations: extendedReplies,
+            commonExtendedNegotiations: request.userInformation.commonExtendedNegotiations)
         return .success((accept, negotiated))
     }
 
@@ -251,6 +270,21 @@ public enum DICOMAssociationNegotiator {
                 id: result.id, abstractSyntax: proposal.abstractSyntax, transferSyntax: result.transferSyntax,
                 requestorIsSCU: scu, requestorIsSCP: scp)
         }
+        var seenExtensions = Set<String>()
+        for reply in accept.userInformation.extendedNegotiations {
+            guard seenExtensions.insert(reply.sopClassUID).inserted,
+                  let proposal = request.userInformation.extendedNegotiations.first(where: { $0.sopClassUID == reply.sopClassUID }),
+                  accepted.values.contains(where: { $0.abstractSyntax == reply.sopClassUID }) else {
+                throw DICOMPDUError(.invalidPDUParameterValue, "unsolicited extended negotiation")
+            }
+            if DICOMQueryRetrieveOptions.fields(for: reply.sopClassUID) != nil {
+                let offered = try DICOMQueryRetrieveOptions(negotiation: proposal)
+                let granted = try DICOMQueryRetrieveOptions(negotiation: reply)
+                guard granted.isSubset(of: offered), reply.applicationInformation.count <= proposal.applicationInformation.count else {
+                    throw DICOMPDUError(.invalidPDUParameterValue, "unproposed Query/Retrieve option")
+                }
+            }
+        }
         var window = DICOMAsynchronousOperationsWindow(maximumInvoked: 1, maximumPerformed: 1)
         if let reply = accept.userInformation.asynchronousOperationsWindow,
            request.userInformation.asynchronousOperationsWindow != nil {
@@ -266,6 +300,7 @@ public enum DICOMAssociationNegotiator {
             acceptorImplementationClassUID: accept.userInformation.implementationClassUID,
             acceptorImplementationVersionName: accept.userInformation.implementationVersionName,
             userIdentity: request.userInformation.userIdentity,
-            extendedNegotiations: accept.userInformation.extendedNegotiations)
+            extendedNegotiations: accept.userInformation.extendedNegotiations,
+            commonExtendedNegotiations: request.userInformation.commonExtendedNegotiations)
     }
 }

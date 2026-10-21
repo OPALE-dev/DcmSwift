@@ -342,3 +342,16 @@ The target is broad coverage of the standard, but claims remain capability
 specific. This register is complete only when each applicable item is either
 implemented and qualified or explicitly documented as out of product scope
 with a reason. A passing parser test alone never closes an item.
+
+### Query/Retrieve extensions
+
+Negotiated relational and temporal/fuzzy matching, Composite Instance Root,
+Retrieve Without Bulk Data, and Relevant Patient Information are implemented
+within the scope in <doc:QueryRetrieveExtensions>. Classic/enhanced multi-frame
+view conversion is still absent and its negotiation option is declined. FRAME
+extraction is limited to the declared native multi-frame Secondary Capture
+representations and timing attributes; enhanced images, compressed/video,
+functional groups, overlays and curves are refused with a defined failure.
+Patient information providers remain responsible for full PS3.16 template and
+clinical content qualification. No external archive or CI result is implied by
+local loopback evidence.

@@ -12,6 +12,8 @@ public struct DICOMServiceContext: Sendable {
     public var peerCertificate: NIOSSLCertificate? = nil
     /// The Move Destination (0000,0600) of a C-MOVE request.
     public var moveDestination: String? = nil
+    public var commonExtendedNegotiation: DICOMCommonExtendedNegotiation? = nil
+    public var queryRetrieveOptions: DICOMQueryRetrieveOptions = []
     let cancelled: @Sendable () async -> Bool
 
     /// Whether the requestor cancelled the operation (C-CANCEL).
@@ -101,7 +103,14 @@ public protocol DICOMStorageService: Sendable {
 }
 
 /// Answers C-FIND requests (PS3.4 C.4.1).
-public protocol DICOMQueryService: Sendable {
+public protocol DICOMQueryRetrieveCapability: Sendable {
+    var queryRetrieveOptions: DICOMQueryRetrieveOptions { get }
+}
+public extension DICOMQueryRetrieveCapability {
+    var queryRetrieveOptions: DICOMQueryRetrieveOptions { [] }
+}
+
+public protocol DICOMQueryService: DICOMQueryRetrieveCapability {
     /// The matches of `identifier` in the information model (a FIND SOP
     /// Class UID). Each match is answered with a Pending response.
     func find(
@@ -110,7 +119,7 @@ public protocol DICOMQueryService: Sendable {
 }
 
 /// Answers C-MOVE and C-GET requests (PS3.4 C.4.2, C.4.3).
-public protocol DICOMRetrieveService: Sendable {
+public protocol DICOMRetrieveService: DICOMQueryRetrieveCapability {
     /// The instances matching `identifier` in the information model (a MOVE
     /// or GET SOP Class UID).
     func retrieve(
