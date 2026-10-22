@@ -159,10 +159,10 @@ def main(executable):
                     evt_handlers=[(evt.EVT_C_STORE, store)])
                 check(association.is_established, "association")
                 try:
-                    check(association.acceptor.sop_class_extended[FIND] == bytes([1, 1, 1, 1, 0, 0, 0]), "only implemented FIND options accepted")
-                    check(association.acceptor.sop_class_extended[GET] == bytes([1, 0]), "relational retrieve accepted, conversion refused")
-                    check(all(association.acceptor.sop_class_extended[sop] == bytes([0, 0]) for sop in [ROOT_GET, ROOT_MOVE, BULK_GET]),
-                          "Annex Y/Z reserved byte and conversion refusal")
+                    check(association.acceptor.sop_class_extended[FIND] == bytes([1, 1, 1, 1, 1, 0, 0]), "only implemented FIND options accepted")
+                    check(association.acceptor.sop_class_extended[GET] == bytes([1, 1]), "relational retrieve and conversion accepted")
+                    check(all(association.acceptor.sop_class_extended[sop] == bytes([0, 1]) for sop in [ROOT_GET, ROOT_MOVE, BULK_GET]),
+                          "Annex Y/Z reserved byte and conversion acceptance")
                     matches = list(association.send_c_find(query("STUDY", Modality="CT", PatientName="Anne Muller", StudyInstanceUID="", NumberOfStudyRelatedInstances=""), FIND))
                     pending = [data for status, data in matches if status.Status == 0xFF00]
                     check(len(pending) == 1 and int(pending[0].NumberOfStudyRelatedInstances) == 2, "relational/fuzzy FIND returns complete study counts")
@@ -207,8 +207,8 @@ def main(executable):
                     check(result.Status == 0 and moved[-1].SOPInstanceUID == uid, "Composite Instance Root MOVE uses independent storage association")
                     result = list(association.send_c_get(query("FRAME", SOPInstanceUID=uid), ROOT_GET))[-1][0]
                     check(result.Status == 0xAA04, "invalid frame selector returns AA04 over DIMSE")
-                    matches = list(association.send_c_find(query("STUDY", QueryRetrieveView="CLASSIC"), FIND))
-                    check(matches[-1][0].Status == 0xA900, "unaccepted Query/Retrieve View rejected")
+                    matches = list(association.send_c_find(query("STUDY", QueryRetrieveView="INVALID"), FIND))
+                    check(matches[-1][0].Status == 0xA900, "invalid Query/Retrieve View rejected")
                 finally:
                     association.release()
                 validator = Path(executable).with_name("DcmValidate")

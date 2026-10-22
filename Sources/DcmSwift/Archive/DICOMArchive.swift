@@ -218,7 +218,7 @@ public actor DICOMArchive {
 /// `DICOMArchive`, for DIMSE and for DICOMweb.
 public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICOMRetrieveService,
     DICOMStorageCommitmentService, DICOMwebSearchService, DICOMwebRetrieveService, DICOMwebStoreService {
-    public var queryRetrieveOptions: DICOMQueryRetrieveOptions { [.relational, .combinedDateTime, .fuzzyPersonNames, .timezoneAdjustment] }
+    public var queryRetrieveOptions: DICOMQueryRetrieveOptions { [.relational, .combinedDateTime, .fuzzyPersonNames, .timezoneAdjustment, .enhancedMultiFrameConversion] }
     public let archive: DICOMArchive
     /// C-MOVE destinations and Storage Commitment SCUs, by AE title.
     public let destinations: [String: DICOMRemoteNode]
@@ -310,6 +310,7 @@ public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICO
         _ identifier: DataSet, informationModel: String, context: DICOMServiceContext
     ) async throws -> AsyncThrowingStream<DataSet, Error> {
         let level = try DICOMArchiveQueryRetrieve.validate(identifier, model: informationModel, options: context.queryRetrieveOptions, retrieve: false)
+        let archive = try await self.archive.queryRetrieveView(identifier)
         let matches = try await archive.extendedFind(identifier, level: level, options: context.queryRetrieveOptions)
         if let audit {
             let syntax = context.presentationContext.transferSyntax
@@ -328,6 +329,7 @@ public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICO
         _ identifier: DataSet, informationModel: String, context: DICOMServiceContext
     ) async throws -> [DICOMRetrieveItem] {
         let level = try DICOMArchiveQueryRetrieve.validate(identifier, model: informationModel, options: context.queryRetrieveOptions, retrieve: true)
+        let archive = try await self.archive.queryRetrieveView(identifier)
         let composite = [DICOMSOPClass.compositeInstanceRootGet, DICOMSOPClass.compositeInstanceRootMove,
                          DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet].contains(informationModel)
         var records: [DICOMArchive.Record] = []

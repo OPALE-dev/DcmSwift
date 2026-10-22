@@ -19,14 +19,19 @@ enum DICOMArchiveQueryRetrieve {
                 try invalid("invalid Timezone Offset From UTC")
             }
         }
-        if identifier.element(forTagName: "QueryRetrieveView") != nil { try invalid("Enhanced Multi-Frame Image Conversion is not supported") }
+        if identifier.element(forTagName: "QueryRetrieveView") != nil {
+            guard options.contains(.enhancedMultiFrameConversion),
+                  let view = identifier.string(forTag: "QueryRetrieveView"), DICOMEnhancedMultiFrameConversion.View(rawValue: view) != nil else {
+                try invalid("invalid or unnegotiated Query/Retrieve View")
+            }
+        }
         let level = identifier.string(forTag: "QueryRetrieveLevel") ?? ""
         if composite {
             guard ["IMAGE", "FRAME"].contains(level),
                   model != DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet || level == "IMAGE",
                   identifier.element(forTagName: "SpecificCharacterSet") == nil else { try invalid("invalid Composite Instance Root identifier") }
             try requireUID(identifier, keyword: "SOPInstanceUID", list: level == "IMAGE")
-            let allowed: Set<String> = ["QueryRetrieveLevel", "SOPInstanceUID", "SimpleFrameList", "CalculatedFrameList", "TimeRange"]
+            let allowed: Set<String> = ["QueryRetrieveLevel", "SOPInstanceUID", "SimpleFrameList", "CalculatedFrameList", "TimeRange", "QueryRetrieveView"]
             guard identifier.allElements.allSatisfy({ allowed.contains($0.name) }),
                   level == "FRAME" || identifier.allElements.allSatisfy({ !["SimpleFrameList", "CalculatedFrameList", "TimeRange"].contains($0.name) }) else {
                 try invalid("unexpected key in Composite Instance Root identifier")
@@ -61,7 +66,7 @@ enum DICOMArchiveQueryRetrieve {
                 guard let value = identifier.string(forTag: "PatientID"), !value.isEmpty,
                       !value.contains("*"), !value.contains("?"), !value.contains("\\") else { try invalid("Patient ID is required") }
             } else { try requireUID(identifier, keyword: hierarchy[depth].unique, list: true) }
-            let uniqueKeys = Set(hierarchy.prefix(depth + 1).map(\.unique) + ["QueryRetrieveLevel", "SpecificCharacterSet", "IssuerOfPatientID"])
+            let uniqueKeys = Set(hierarchy.prefix(depth + 1).map(\.unique) + ["QueryRetrieveLevel", "SpecificCharacterSet", "IssuerOfPatientID", "QueryRetrieveView"])
             guard identifier.allElements.allSatisfy({ uniqueKeys.contains($0.name) }) else { try invalid("retrieval accepts unique keys only") }
         }
         return level
@@ -151,6 +156,10 @@ extension DICOMArchive {
             let response = DataSet()
             for key in requested {
                 if key == "SpecificCharacterSet" { continue }
+                if key == "QueryRetrieveView" {
+                    _ = response.set(value: identifier.string(forTag: key) ?? "", forTagName: key)
+                    continue
+                }
                 if let value = Self.value(of: key, in: group, level: level) { _ = response.set(value: value, forTagName: key) }
                 else if let element = identifier.element(forTagName: key), element.vr != .SQ { _ = response.set(value: "", forTagName: key) }
             }
