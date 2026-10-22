@@ -153,6 +153,23 @@ final class DcmSwiftJSONTests: XCTestCase {
         }
     }
 
+    func testUndeclaredUnicodeDecodesAsUTF8() throws {
+        // A UPS-RS update without Specific Character Set, nested non-ASCII text.
+        let json = """
+        {"00741216": {"vr": "SQ", "Value": [{"00404028": {"vr": "SQ", "Value": [
+          {"00080100": {"vr": "SH", "Value": ["IA_LAB"]}, "00080104": {"vr": "LO", "Value": ["Moteur d’IA simulé"]}}]}}]}}
+        """
+        let dataSet = try XCTUnwrap(try DICOMJSON.decode(Data(json.utf8)).first)
+        XCTAssertEqual(dataSet.textValues(forTag: "SpecificCharacterSet"), ["ISO_IR 192"])
+        let encoded = try DICOMJSON.object(dataSet)
+        let item = try XCTUnwrap(((try attribute(encoded, "00741216")["Value"] as? [[String: Any]])?.first))
+        let code = try XCTUnwrap(((item["00404028"] as? [String: Any])?["Value"] as? [[String: Any]])?.first)
+        XCTAssertEqual((code["00080104"] as? [String: Any])?["Value"] as? [String], ["Moteur d’IA simulé"])
+        // ASCII-only objects gain nothing.
+        let plain = try XCTUnwrap(try DICOMJSON.decode(Data(#"{"00100020": {"vr": "LO", "Value": ["P1"]}}"#.utf8)).first)
+        XCTAssertNil(plain.element(forTagName: "SpecificCharacterSet"))
+    }
+
     func testDecodingArraysNumbersAndCharacterSets() throws {
         let json = """
         [{"00080005": {"vr": "CS", "Value": ["ISO_IR 100"]},

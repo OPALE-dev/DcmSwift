@@ -302,14 +302,31 @@ public enum DICOMJSON {
 
     /// A data set from a DICOM JSON Model object, in Explicit VR Little
     /// Endian, its strings encoded in its Specific Character Set.
+    ///
+    /// JSON text is Unicode (PS3.18 F.2): an object without Specific Character Set
+    /// whose strings leave ASCII is declared ISO_IR 192 (UTF-8) instead of failing
+    /// to encode in the default repertoire. ASCII-only objects are left unchanged.
     public static func dataSet(_ object: [String: Any], options: DecodingOptions = DecodingOptions()) throws -> DataSet {
         let dataSet = DataSet()
         dataSet.vrMethod = .Explicit
         dataSet.byteOrder = .LittleEndian
+        var object = object
+        if object["00080005"] == nil, containsNonASCII(object) {
+            object["00080005"] = ["vr": "CS", "Value": ["ISO_IR 192"]]
+        }
         let elements = try decodeAttributes(object, dataSet: dataSet, parent: nil, characterSet: nil, options: options)
         for element in elements { dataSet.add(element: element) }
         dataSet.sortElements()
         return dataSet
+    }
+
+    private static func containsNonASCII(_ value: Any) -> Bool {
+        switch value {
+        case let text as String: return text.unicodeScalars.contains { !$0.isASCII }
+        case let object as [String: Any]: return object.values.contains(where: containsNonASCII)
+        case let array as [Any]: return array.contains(where: containsNonASCII)
+        default: return false
+        }
     }
 
     private static func decodeAttributes(
