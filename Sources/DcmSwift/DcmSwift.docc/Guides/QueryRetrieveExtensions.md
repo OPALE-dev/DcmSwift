@@ -81,6 +81,7 @@ Local qualification on 2026-10-22:
 | `query_retrieve.py`, pynetdicom 3.0.4 / pydicom 3.0.2 | 26 checks passed |
 | `enhanced_views.py`, same peers, with `DcmValidate` | 34 checks passed |
 | Linux aarch64 / Swift 6.2.4 in Docker: conversion, Q/R, negotiation, archive and workflow suites | 38 tests passed when the run completes |
+| iOS 26.2 Simulator / iPhone 17 Pro: the same suites | 38 tests passed |
 
 On that Docker host, about half of the XCTest runs stall in XCTest's asynchronous tear-down with no Swift worker thread left. Older suites (archive, UPS) stall the same way, so this is not specific to these extensions; it is not explained yet. These are local results; CI was not rerun.
 
