@@ -48,6 +48,10 @@ final class DcmSwiftUPSRESTTests: XCTestCase {
                                 object: ["00741000": value("CS", "IN PROGRESS"), "00081195": value("UI", "2.25.7")]), 200)
         check(try await request(server, "POST", "/workitems/" + uid + "?transactionuid=2.25.8",
                                 object: ["00404041": value("CS", "UNAVAILABLE")]), 400)
+        check(try await request(server, "POST", "/workitems/" + uid + "?2.25.8",
+                                object: ["00404041": value("CS", "UNAVAILABLE")]), 400)
+        check(try await request(server, "POST", "/workitems/" + uid + "?2.25.7",
+                                object: ["00404041": value("CS", "INCOMPLETE")]), 200)
         check(try await request(server, "POST", "/workitems/" + uid + "?transactionuid=2.25.7",
                                 object: ["00404041": value("CS", "UNAVAILABLE")]), 200)
         let read = try await request(server, "GET", "/workitems/" + uid)

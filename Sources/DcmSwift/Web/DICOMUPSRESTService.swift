@@ -45,7 +45,10 @@ public struct DICOMUPSRESTService: Sendable {
             }
             if path.count == 2 && request.method == "POST" {
                 var changes = try await payload(request, maximum: configuration.maximumRequestLength)
-                if let token = query["transactionuid"] ?? query["transactionUID"] ?? query["TransactionUID"] ?? query["TransactionUid"] {
+                // PS3.18 11.6 writes the Transaction UID as the bare query (`/workitems/{uid}?{TransactionUID}`);
+                // a named parameter is also accepted.
+                let bare = query.first { $0.value.isEmpty && Self.validUID($0.key) }?.key
+                if let token = query["transactionuid"] ?? query["transactionUID"] ?? query["TransactionUID"] ?? query["TransactionUid"] ?? bare {
                     if let supplied = DICOMUnifiedProcedureStepService.value(changes, "00081195"), token != supplied {
                         throw DICOMwebHTTPError(400, "conflicting Transaction UIDs")
                     }
