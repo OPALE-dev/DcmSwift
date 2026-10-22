@@ -145,7 +145,11 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
     /// Creates a SCHEDULED instance. The required Type 1/2 top-level
     /// attributes of CC.2.5-3 are checked; the SCP supplies its own UIDs,
     /// worklist label, and modification time.
-    func create(_ requestedUID: String?, _ object: [String: Any]) async throws -> DICOMNormalizedResponse {
+    ///
+    /// Public so that an embedding application can create its own work items
+    /// with the same validation, subscriptions and events as an N-CREATE.
+    /// `object` is in the DICOM JSON Model; the response carries the DIMSE status.
+    public func create(_ requestedUID: String?, _ object: [String: Any]) async throws -> DICOMNormalizedResponse {
         let uid = requestedUID ?? DICOMDataSetBuilder.newUID()
         guard try await index.document(uid, in: .unifiedProcedureSteps) == nil else {
             return DICOMNormalizedResponse(status: .duplicateSOPInstance)
@@ -207,8 +211,10 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         return DICOMNormalizedResponse(status: .success, sopInstanceUID: uid)
     }
 
-    /// Applies CC.1.1-2 and CC.2.1-2, including optimistic locking.
-    func changeState(_ uid: String, _ action: [String: Any], requestingAE: String? = nil) async throws -> DICOMNormalizedResponse {
+    /// Applies CC.1.1-2 and CC.2.1-2, including optimistic locking: the
+    /// N-ACTION Change UPS State. `action` holds Procedure Step State and
+    /// Transaction UID.
+    public func changeState(_ uid: String, _ action: [String: Any], requestingAE: String? = nil) async throws -> DICOMNormalizedResponse {
         guard var document = try await index.document(uid, in: .unifiedProcedureSteps) else { return Self.reply(0xC307) }
         let old = Self.value(document.attributes, Tag.state) ?? ""
         guard let desired = Self.value(action, Tag.state),
@@ -272,7 +278,7 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
     }
 
     /// N-SET is restricted to the owning Transaction UID while IN PROGRESS.
-    func set(_ uid: String, _ changes: [String: Any]) async throws -> DICOMNormalizedResponse {
+    public func set(_ uid: String, _ changes: [String: Any]) async throws -> DICOMNormalizedResponse {
         guard var document = try await index.document(uid, in: .unifiedProcedureSteps) else { return Self.reply(0xC307) }
         let state = Self.value(document.attributes, Tag.state) ?? ""
         if state == "COMPLETED" || state == "CANCELED" { return Self.reply(0xC300) }
@@ -316,7 +322,8 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         return DICOMNormalizedResponse(status: .success)
     }
 
-    func get(_ uid: String, _ tags: [UInt32] = []) async throws -> DICOMNormalizedResponse {
+    /// N-GET: the instance without its Transaction UID; `tags` limits the attributes.
+    public func get(_ uid: String, _ tags: [UInt32] = []) async throws -> DICOMNormalizedResponse {
         guard var object = try await index.document(uid, in: .unifiedProcedureSteps)?.attributes else {
             return Self.reply(0xC307)
         }
@@ -330,7 +337,8 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         return DICOMNormalizedResponse(status: .success, dataSet: try DICOMJSON.dataSet(object))
     }
 
-    func cancel(_ uid: String, _ reason: [String: Any], requestingAE: String) async throws -> DICOMNormalizedResponse {
+    /// N-ACTION Request UPS Cancel on behalf of `requestingAE` (CC.2.2).
+    public func cancel(_ uid: String, _ reason: [String: Any], requestingAE: String) async throws -> DICOMNormalizedResponse {
         guard var document = try await index.document(uid, in: .unifiedProcedureSteps) else { return Self.reply(0xC307) }
         let state = Self.value(document.attributes, Tag.state)
         if state == "CANCELED" { return Self.reply(0xB304) }

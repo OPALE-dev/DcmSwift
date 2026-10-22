@@ -76,6 +76,10 @@ carry the instance's Specific Character Set when present.
 
 `DICOMUnifiedProcedureStepService` accepts a `DICOMArchiveIndex`, an outgoing
 `notify` callback and an incoming `receive` callback for Event reports.
+The host can also act on its own work items with `create`, `changeState`,
+`set`, `get` and `cancel`: they apply the same validation, ownership rules,
+subscriptions and events as the corresponding DIMSE operations, and return
+the DIMSE status.
 Optional `receivingAEs` and `eventReportsSupported` parameters let a host
 advertise its actual notification capabilities. `DICOMUPSNotifier` handles
 Event associations to configured remote nodes.
