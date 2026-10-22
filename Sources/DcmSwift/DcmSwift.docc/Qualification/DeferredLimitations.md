@@ -347,11 +347,13 @@ with a reason. A passing parser test alone never closes an item.
 
 Negotiated relational and temporal/fuzzy matching, Composite Instance Root,
 Retrieve Without Bulk Data, and Relevant Patient Information are implemented
-within the scope in <doc:QueryRetrieveExtensions>. Classic/enhanced multi-frame
-view conversion is still absent and its negotiation option is declined. FRAME
-extraction is limited to the declared native multi-frame Secondary Capture
-representations and timing attributes; enhanced images, compressed/video,
-functional groups, overlays and curves are refused with a defined failure.
-Patient information providers remain responsible for full PS3.16 template and
-clinical content qualification. No external archive or CI result is implied by
-local loopback evidence.
+within the scope in <doc:QueryRetrieveExtensions>. Classic/enhanced CT/MR/PET
+views and native/independently compressed FRAME extraction are implemented.
+<doc:EnhancedMultiFrameConversion> declares the supported representation profile:
+no general overlay/curve-to-GSPS conversion, encrypted attribute conversion,
+ambiguous coordinate/by-reference SR expansion, unsupported video extraction,
+or invention of unrecoverable mandatory acquisition metadata. Conversion is
+atomic and currently rebuilds the complete catalogue view for each request.
+Empty and Multiple Value Matching are declined. Patient information providers
+remain responsible for full PS3.16 template and clinical content qualification.
+No external archive or CI result is implied by local loopback evidence.

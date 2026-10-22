@@ -198,11 +198,13 @@ sockets.
 See <doc:QueryRetrieveExtensions> for the accepted negotiation layout, matching
 algorithms, identifier rules, corrected Composite Instance Root UIDs, bulk-free
 retrieval and the separate Relevant Patient Information provider. The archive
-supports the first four FIND options and relational MOVE/GET. Annex Y and Z
-retain the reserved first byte; conversion is declined. Native Secondary Capture
-FRAME extraction supports all three selectors within the declared representation
-subset. Enhanced/classic view conversion, compressed/video and enhanced image
-frame extraction are not advertised as implemented. Full clinical SR template
+supports relational, combined date/time, fuzzy PN, timezone and enhanced conversion
+FIND options, plus relational/conversion MOVE/GET. Annex Y and Z retain the
+reserved first byte. Classic/Enhanced CT/MR/PET views, reference closure and
+native/independently compressed Secondary Capture or enhanced image FRAME
+extraction follow the profile in <doc:EnhancedMultiFrameConversion>. All three
+selectors are supported. Unsupported video, presentation conversion and
+ambiguous reference structures fail explicitly. Full clinical SR template
 validation remains the provider application's responsibility.
 
 ### Archive storage

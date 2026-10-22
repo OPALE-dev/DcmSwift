@@ -10,7 +10,7 @@ Implement the optional Query/Retrieve behavior through accepted association nego
 - Composite Instance Root retrieval addresses instances directly by SOP Instance UID. FRAME requests must either create conforming derived instances with extraction provenance or return a defined failure; returning the original as an extracted instance is forbidden.
 - Retrieve Without Bulk Data omits exactly the top-level attributes in PS3.4 Z.1.3 and Waveform Data inside Waveform Sequence; it preserves icon pixels, identifiers and other attributes. These incomplete objects are not suitable for ordinary archive storage.
 - Relevant Patient Information Query is a separate provider of actual template-constrained SR content, not an image-derived clinical summary. Enforce exact patient identity, supported template, and at most one result (PS3.4 Q).
-- Enhanced Multi-Frame Image Conversion, Empty Value Matching and Multiple Value Matching remain unadvertised until their full semantics are implemented. Query/Retrieve View is rejected when conversion has not been accepted.
+- Enhanced Multi-Frame Image Conversion is offered by the archive within the representation profile in <doc:EnhancedMultiFrameConversion>. Empty Value Matching and Multiple Value Matching are declined. Query/Retrieve View is rejected when conversion has not been accepted.
 
 ## Evidence
 
@@ -45,11 +45,15 @@ Index adapters receive compatible candidate predicates. Complete entities are fe
 
 Use `compositeInstanceRootGet` or `compositeInstanceRootMove` with Query/Retrieve Level `IMAGE` and one or more SOP Instance UIDs. No Study or Series UID is required. The corrected UIDs are `.4.3` for GET and `.4.2` for MOVE; earlier public constants had these reversed.
 
-For `FRAME`, supply exactly one SOP Instance UID and exactly one of Simple Frame List, Calculated Frame List or Time Range. Frame numbers are one-based and increasing. The native extractor supports multi-frame Secondary Capture single-bit, unsigned grayscale byte/word, and RGB byte images, with Frame Time or Frame Time Vector. It packs selected bits, normalizes Big Endian samples, preserves patient/study/series identity, creates a new instance UID, adjusts timing, appends Frame Extraction and Contributing Equipment provenance, and removes private attributes. Repeated extractions append provenance rather than replacing its history.
+For `FRAME`, supply exactly one SOP Instance UID and exactly one of Simple Frame List, Calculated Frame List or Time Range. Frame numbers are one-based and increasing. The extractor supports native and independently encapsulated multi-frame Secondary Capture single-bit, unsigned grayscale byte/word, and RGB byte images, with Frame Time or Frame Time Vector. It packs selected bits, normalizes Big Endian samples, preserves patient/study/series identity, creates a new instance UID, adjusts timing, appends Frame Extraction and Contributing Equipment provenance, and removes private attributes. Repeated extractions append provenance rather than replacing its history.
 
-Enhanced CT/MR/PET, compressed/video frames, per-frame functional groups, overlays, curves and other unsupported frame-dependent structures are refused rather than copied inconsistently. AA00 means no selected frames, AA01 an unsupported SOP Class, AA02 an unsupported/invalid extraction representation, AA03 missing temporal information, and AA04 an invalid frame selector. This is a declared subset of Annex Y extraction, not a claim to extract every storage SOP Class.
+True and Legacy Converted Enhanced CT/MR/PET extraction selects functional groups and recomputes dimension ordinals while retaining geometry. Independent compressed frames are copied without re-encoding. Collection codecs can decode when Image Pixel attributes stay unchanged. Video, overlays, curves and other unsupported frame-dependent structures are refused rather than copied inconsistently. AA00 means no selected frames, AA01 an unsupported SOP Class, AA02 an unsupported/invalid extraction representation, AA03 missing temporal information, and AA04 an invalid frame selector. This is a declared subset of Annex Y extraction, not a claim to extract every storage SOP Class.
 
 For `compositeInstanceRetrieveWithoutBulkDataGet`, use `IMAGE` and the SOP Instance UID list. Top-level Pixel Data (including float/double), Pixel Data Provider URL, Spectroscopy Data, repeating overlay/curve/audio data and Encapsulated Document are removed. Waveform samples are removed inside Waveform Sequence. Icon Image pixels, private attributes, waveform descriptors, other attributes and all identifiers are preserved. The source object remains unchanged. The receiving application must handle this deliberately incomplete object without treating it as a complete stored image.
+
+## Classic and enhanced views
+
+Negotiate `.enhancedMultiFrameConversion`, then supply Query/Retrieve View (0008,0053) as `CLASSIC` or `ENHANCED`. FIND, GET and MOVE use the same deterministic derived identities. Conversion precedes matching and follows dependent references, including SRs and cycles. The source archive remains unchanged. See <doc:EnhancedMultiFrameConversion> for supported modalities, provenance, metadata handling and atomic failures.
 
 ## Relevant Patient Information
 
@@ -63,16 +67,21 @@ DcmServer --aet QRSCP --patient-information-directory ./patient-information
 
 The directory accepts DICOM JSON, Part 10 or bare data sets. It is loaded at startup; the templates declared by its records form the supported set. The API also permits declaring supported templates for which no patient record currently exists. This service works with or without `--storage-directory`.
 
-## Qualification and remaining work
+## Qualification
 
-`DcmSwiftQueryRetrieveExtensionTests` covers negotiation, hierarchy rules, matching, bulk omission, frame selection and representation, patient responses and real DIMSE loopback. `Scripts/interop/query_retrieve.py` starts an isolated `DcmServer` and an independent pynetdicom C-MOVE receiver; it checks FIND, GET, MOVE, frame provenance/pixels, UTF-8 patient content and failure statuses.
+`DcmSwiftQueryRetrieveExtensionTests` covers negotiation, hierarchy rules, matching, bulk omission, frame selection, patient responses and real DIMSE loopback. `DcmSwiftEnhancedConversionTests` covers CT/MR/PET conversion, source information and geometry, true Enhanced CT recovery, compressed extraction, all three selectors, reference closure with cycles, SR item expansion, timezone precedence and stable archive views after reopening.
 
-Enhanced Multi-Frame Image Conversion remains unimplemented and unadvertised. Full classic/enhanced view conversion requires coherent derived instances and reference remapping across the retrieved objects (PS3.4 C.3.5); negotiating a flag alone does not provide that behavior. Empty Value Matching and Multiple Value Matching are also declined. External archive, video extraction and clinical template qualification remain outside the evidence above.
+`Scripts/interop/query_retrieve.py` uses independent pydicom/pynetdicom peers for FIND/GET/MOVE, extraction, patient content and statuses. `Scripts/interop/enhanced_views.py` verifies CT views, dependent SR references, extraction, inverse conversion, restart-stable UIDs and unchanged source files. Both validate received IODs when `DcmValidate` is installed alongside `DcmServer`.
 
-Local qualification (2026-10-21): 419 macOS package tests executed, six skipped,
-zero failures; 28 selected Q/R, negotiation, archive and workflow tests passed on
-Linux aarch64 Swift 6.2.4 and iOS 26.2 iPhone 17 Pro Simulator. The independent
-pydicom 3.0.2 / pynetdicom 3.0.4 script passed 26 checks, including source and
-received derived Secondary Capture objects accepted by the local PS3.3 IOD
-validator. The script performs that additional IOD check when `DcmValidate` is
-installed alongside `DcmServer`. The macOS Release build also passed. This is local evidence; CI was not rerun.
+Local qualification on 2026-10-22:
+
+| Check | Result |
+| --- | --- |
+| macOS full SwiftPM suite | 429 tests, 6 skipped, 0 failures |
+| `query_retrieve.py`, pynetdicom 3.0.4 / pydicom 3.0.2 | 26 checks passed |
+| `enhanced_views.py`, same peers, with `DcmValidate` | 34 checks passed |
+| Linux aarch64 / Swift 6.2.4 in Docker: conversion, Q/R, negotiation, archive and workflow suites | 38 tests passed when the run completes |
+
+On that Docker host, about half of the XCTest runs stall in XCTest's asynchronous tear-down with no Swift worker thread left. Older suites (archive, UPS) stall the same way, so this is not specific to these extensions; it is not explained yet. These are local results; CI was not rerun.
+
+External archive exchange, video extraction and clinical SR template qualification remain outside this local evidence. Empty Value Matching and Multiple Value Matching remain declined.

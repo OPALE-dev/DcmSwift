@@ -190,17 +190,26 @@ final class DcmSwiftEnhancedConversionTests: XCTestCase {
                 payload: item.payload, moveOriginatorAETitle: nil, moveOriginatorMessageID: nil, sourceAETitle: "SCU"))
         }
         let services = DICOMArchiveServices(archive: archive)
-        let w = DcmSwiftQueryRetrieveExtensionTests()
-        let query = w.identifier("IMAGE", ["QueryRetrieveView": "ENHANCED", "SOPInstanceUID": "", "SOPClassUID": ""])
-        let context = w.context(DICOMSOPClass.studyRootFind, options: [.enhancedMultiFrameConversion, .relational])
+        func identifier(_ level: String, _ attributes: [String: String]) -> DataSet {
+            let result = DataSet(); _ = result.set(value: level, forTagName: "QueryRetrieveLevel")
+            for (key, value) in attributes { _ = result.set(value: value, forTagName: key) }
+            return result
+        }
+        func context(_ model: String, options: DICOMQueryRetrieveOptions) -> DICOMServiceContext {
+            DICOMServiceContext(callingAETitle: "SCU", calledAETitle: "SCP", remoteAddress: "localhost", userIdentity: nil,
+                presentationContext: .init(id: 1, abstractSyntax: model, transferSyntax: TransferSyntax.explicitVRLittleEndian),
+                queryRetrieveOptions: options, cancelled: { false })
+        }
+        let query = identifier("IMAGE", ["QueryRetrieveView": "ENHANCED", "SOPInstanceUID": "", "SOPClassUID": ""])
+        let queryContext = context(DICOMSOPClass.studyRootFind, options: [.enhancedMultiFrameConversion, .relational])
         var found: [DataSet] = []
-        for try await match in try await services.find(query, informationModel: DICOMSOPClass.studyRootFind, context: context) { found.append(match) }
+        for try await match in try await services.find(query, informationModel: DICOMSOPClass.studyRootFind, context: queryContext) { found.append(match) }
         XCTAssertEqual(found.count, 1)
         XCTAssertEqual(found[0].string(forTag: "QueryRetrieveView"), "ENHANCED")
         let uid = try XCTUnwrap(found[0].string(forTag: "SOPInstanceUID"))
-        let request = w.identifier("IMAGE", ["QueryRetrieveView": "ENHANCED", "SOPInstanceUID": uid])
+        let request = identifier("IMAGE", ["QueryRetrieveView": "ENHANCED", "SOPInstanceUID": uid])
         let items = try await services.retrieve(request, informationModel: DICOMSOPClass.compositeInstanceRootGet,
-            context: w.context(DICOMSOPClass.compositeInstanceRootGet, options: .enhancedMultiFrameConversion))
+            context: context(DICOMSOPClass.compositeInstanceRootGet, options: .enhancedMultiFrameConversion))
         XCTAssertEqual(items.map(\.sopInstanceUID), [uid])
         let original = try await archive.record(sourceData[0].string(forTag: "SOPInstanceUID")!)
         let derived = try await archive.record(uid)
@@ -211,7 +220,7 @@ final class DcmSwiftEnhancedConversionTests: XCTestCase {
         let stable = try await again.record(uid)
         XCTAssertNotNil(stable)
         let metadata = try await services.retrieve(request, informationModel: DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet,
-            context: w.context(DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet, options: .enhancedMultiFrameConversion))
+            context: context(DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet, options: .enhancedMultiFrameConversion))
         XCTAssertNil(try decode(metadata[0]).element(forTagName: "PixelData"))
         XCTAssertEqual(metadata[0].sopInstanceUID, uid)
     }
