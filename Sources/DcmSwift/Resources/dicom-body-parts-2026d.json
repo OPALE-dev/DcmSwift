@@ -1,0 +1,1596 @@
+{
+  "edition": "2026d",
+  "entries": {
+    "3RDVENTRICLE": {
+      "meaning": "Third ventricle",
+      "scheme": "SCT",
+      "value": "49841001"
+    },
+    "4THVENTRICLE": {
+      "meaning": "Fourth ventricle",
+      "scheme": "SCT",
+      "value": "35918002"
+    },
+    "ABDOMEN": {
+      "meaning": "Abdomen",
+      "scheme": "SCT",
+      "value": "818981001"
+    },
+    "ABDOMENPELVIS": {
+      "meaning": "Abdomen and Pelvis",
+      "scheme": "SCT",
+      "value": "818982008"
+    },
+    "ABDOMINALAORTA": {
+      "meaning": "Abdominal aorta",
+      "scheme": "SCT",
+      "value": "7832008"
+    },
+    "ACA": {
+      "meaning": "Anterior cerebral artery",
+      "scheme": "SCT",
+      "value": "60176003"
+    },
+    "ACJOINT": {
+      "meaning": "Acromioclavicular joint",
+      "scheme": "SCT",
+      "value": "85856004"
+    },
+    "ADRENAL": {
+      "meaning": "Adrenal gland",
+      "scheme": "SCT",
+      "value": "23451007"
+    },
+    "AMNIOTICFLUID": {
+      "meaning": "Amniotic fluid",
+      "scheme": "SCT",
+      "value": "77012006"
+    },
+    "ANKLE": {
+      "meaning": "Ankle joint",
+      "scheme": "SCT",
+      "value": "70258002"
+    },
+    "ANTCARDIACV": {
+      "meaning": "Anterior cardiac vein",
+      "scheme": "SCT",
+      "value": "194996006"
+    },
+    "ANTCOMMA": {
+      "meaning": "Anterior communicating artery",
+      "scheme": "SCT",
+      "value": "8012006"
+    },
+    "ANTECUBITALV": {
+      "meaning": "Antecubital vein",
+      "scheme": "SCT",
+      "value": "128553008"
+    },
+    "ANTSPINALA": {
+      "meaning": "Anterior spinal artery",
+      "scheme": "SCT",
+      "value": "17388009"
+    },
+    "ANTTIBIALA": {
+      "meaning": "Anterior tibial artery",
+      "scheme": "SCT",
+      "value": "68053000"
+    },
+    "ANUS": {
+      "meaning": "Anus",
+      "scheme": "SCT",
+      "value": "53505006"
+    },
+    "ANUSRECTUMSIGMD": {
+      "meaning": "Anus, rectum and sigmoid colon",
+      "scheme": "SCT",
+      "value": "110612005"
+    },
+    "AORTA": {
+      "meaning": "Aorta",
+      "scheme": "SCT",
+      "value": "15825003"
+    },
+    "AORTICARCH": {
+      "meaning": "Aortic arch",
+      "scheme": "SCT",
+      "value": "57034009"
+    },
+    "APPENDIX": {
+      "meaning": "Appendix",
+      "scheme": "SCT",
+      "value": "66754008"
+    },
+    "ARTERY": {
+      "meaning": "Artery",
+      "scheme": "SCT",
+      "value": "51114001"
+    },
+    "ASCAORTA": {
+      "meaning": "Ascending aorta",
+      "scheme": "SCT",
+      "value": "54247002"
+    },
+    "ASCENDINGCOLON": {
+      "meaning": "Ascending colon",
+      "scheme": "SCT",
+      "value": "9040008"
+    },
+    "AXILLA": {
+      "meaning": "Axilla",
+      "scheme": "SCT",
+      "value": "91470000"
+    },
+    "AXILLARYA": {
+      "meaning": "Axillary Artery",
+      "scheme": "SCT",
+      "value": "67937003"
+    },
+    "AXILLARYV": {
+      "meaning": "Axillary vein",
+      "scheme": "SCT",
+      "value": "68705008"
+    },
+    "AZYGOSVEIN": {
+      "meaning": "Azygos vein",
+      "scheme": "SCT",
+      "value": "72107004"
+    },
+    "BACK": {
+      "meaning": "Back",
+      "scheme": "SCT",
+      "value": "77568009"
+    },
+    "BASILARA": {
+      "meaning": "Basilar artery",
+      "scheme": "SCT",
+      "value": "59011009"
+    },
+    "BILEDUCT": {
+      "meaning": "Bile duct",
+      "scheme": "SCT",
+      "value": "28273000"
+    },
+    "BILIARYTRACT": {
+      "meaning": "Biliary tract",
+      "scheme": "SCT",
+      "value": "34707002"
+    },
+    "BLADDER": {
+      "meaning": "Bladder",
+      "scheme": "SCT",
+      "value": "89837001"
+    },
+    "BLADDERURETHRA": {
+      "meaning": "Bladder and urethra",
+      "scheme": "SCT",
+      "value": "110837003"
+    },
+    "BRACHIALA": {
+      "meaning": "Brachial artery",
+      "scheme": "SCT",
+      "value": "17137000"
+    },
+    "BRACHIALV": {
+      "meaning": "Brachial vein",
+      "scheme": "SCT",
+      "value": "20115005"
+    },
+    "BRAIN": {
+      "meaning": "Brain",
+      "scheme": "SCT",
+      "value": "12738006"
+    },
+    "BREAST": {
+      "meaning": "Breast",
+      "scheme": "SCT",
+      "value": "76752008"
+    },
+    "BRONCHUS": {
+      "meaning": "Bronchus",
+      "scheme": "SCT",
+      "value": "955009"
+    },
+    "BULB": {
+      "meaning": "Carotid bulb",
+      "scheme": "SCT",
+      "value": "21479005"
+    },
+    "BUTTOCK": {
+      "meaning": "Buttock",
+      "scheme": "SCT",
+      "value": "46862004"
+    },
+    "CALCANEUS": {
+      "meaning": "Calcaneus",
+      "scheme": "SCT",
+      "value": "80144004"
+    },
+    "CALF": {
+      "meaning": "Calf of leg",
+      "scheme": "SCT",
+      "value": "53840002"
+    },
+    "CARDIOVASCSYS": {
+      "meaning": "Cardiovascular system",
+      "scheme": "SCT",
+      "value": "113257007"
+    },
+    "CAROTID": {
+      "meaning": "Carotid Artery",
+      "scheme": "SCT",
+      "value": "69105007"
+    },
+    "CCA": {
+      "meaning": "Common carotid artery",
+      "scheme": "SCT",
+      "value": "32062004"
+    },
+    "CELIACA": {
+      "meaning": "Celiac artery",
+      "scheme": "SCT",
+      "value": "57850000"
+    },
+    "CEPHALICV": {
+      "meaning": "Cephalic vein",
+      "scheme": "SCT",
+      "value": "20699002"
+    },
+    "CEREBELLUM": {
+      "meaning": "Cerebellum",
+      "scheme": "SCT",
+      "value": "113305005"
+    },
+    "CEREBHEMISPHERE": {
+      "meaning": "Cerebral hemisphere",
+      "scheme": "SCT",
+      "value": "372073000"
+    },
+    "CEREBRALA": {
+      "meaning": "Cerebral artery",
+      "scheme": "SCT",
+      "value": "88556005"
+    },
+    "CERVIX": {
+      "meaning": "Cervix",
+      "scheme": "SCT",
+      "value": "71252005"
+    },
+    "CFA": {
+      "meaning": "Common femoral artery",
+      "scheme": "SCT",
+      "value": "181347005"
+    },
+    "CFV": {
+      "meaning": "Common femoral vein",
+      "scheme": "SCT",
+      "value": "397363009"
+    },
+    "CHEEK": {
+      "meaning": "Cheek",
+      "scheme": "SCT",
+      "value": "60819002"
+    },
+    "CHEST": {
+      "meaning": "Chest",
+      "scheme": "SCT",
+      "value": "816094009"
+    },
+    "CHESTABDOMEN": {
+      "meaning": "Chest and Abdomen",
+      "scheme": "SCT",
+      "value": "416550000"
+    },
+    "CHESTABDPELVIS": {
+      "meaning": "Chest, Abdomen and Pelvis",
+      "scheme": "SCT",
+      "value": "416775004"
+    },
+    "CHOROIDPLEXUS": {
+      "meaning": "Choroid plexus",
+      "scheme": "SCT",
+      "value": "80621003"
+    },
+    "CIRCLEOFWILLIS": {
+      "meaning": "Circle of Willis",
+      "scheme": "SCT",
+      "value": "11279006"
+    },
+    "CLAVICLE": {
+      "meaning": "Clavicle",
+      "scheme": "SCT",
+      "value": "51299004"
+    },
+    "COCCYX": {
+      "meaning": "Coccyx",
+      "scheme": "SCT",
+      "value": "64688005"
+    },
+    "COLON": {
+      "meaning": "Colon",
+      "scheme": "SCT",
+      "value": "71854001"
+    },
+    "COMILIACA": {
+      "meaning": "Common iliac artery",
+      "scheme": "SCT",
+      "value": "73634005"
+    },
+    "COMILIACV": {
+      "meaning": "Common iliac vein",
+      "scheme": "SCT",
+      "value": "46027005"
+    },
+    "COMMONBILEDUCT": {
+      "meaning": "Common bile duct",
+      "scheme": "SCT",
+      "value": "79741001"
+    },
+    "CORNEA": {
+      "meaning": "Cornea",
+      "scheme": "SCT",
+      "value": "28726007"
+    },
+    "CORONARYARTERY": {
+      "meaning": "Coronary artery",
+      "scheme": "SCT",
+      "value": "41801008"
+    },
+    "CORONARYSINUS": {
+      "meaning": "Coronary sinus",
+      "scheme": "SCT",
+      "value": "90219004"
+    },
+    "CSPINE": {
+      "meaning": "Cervical spine",
+      "scheme": "SCT",
+      "value": "122494005"
+    },
+    "CTSPINE": {
+      "meaning": "Cervico-thoracic spine",
+      "scheme": "SCT",
+      "value": "1217257000"
+    },
+    "CULDESAC": {
+      "meaning": "Rectouterine pouch",
+      "scheme": "SCT",
+      "value": "53843000"
+    },
+    "DESCAORTA": {
+      "meaning": "Descending aorta",
+      "scheme": "SCT",
+      "value": "281130003"
+    },
+    "DESCENDINGCOLON": {
+      "meaning": "Descending colon",
+      "scheme": "SCT",
+      "value": "32622004"
+    },
+    "DUODENUM": {
+      "meaning": "Duodenum",
+      "scheme": "SCT",
+      "value": "38848004"
+    },
+    "EAC": {
+      "meaning": "External auditory canal",
+      "scheme": "SCT",
+      "value": "84301002"
+    },
+    "EAR": {
+      "meaning": "Ear",
+      "scheme": "SCT",
+      "value": "117590005"
+    },
+    "ECA": {
+      "meaning": "External carotid artery",
+      "scheme": "SCT",
+      "value": "22286001"
+    },
+    "ELBOW": {
+      "meaning": "Elbow joint",
+      "scheme": "SCT",
+      "value": "16953009"
+    },
+    "ENDOARTERIAL": {
+      "meaning": "Endo-arterial",
+      "scheme": "SCT",
+      "value": "51114001"
+    },
+    "ENDOCARDIAC": {
+      "meaning": "Endo-cardiac",
+      "scheme": "SCT",
+      "value": "80891009"
+    },
+    "ENDOESOPHAGEAL": {
+      "meaning": "Endo-esophageal",
+      "scheme": "SCT",
+      "value": "32849002"
+    },
+    "ENDOMETRIUM": {
+      "meaning": "Endometrium",
+      "scheme": "SCT",
+      "value": "2739003"
+    },
+    "ENDONASAL": {
+      "meaning": "Endo-nasal",
+      "scheme": "SCT",
+      "value": "53342003"
+    },
+    "ENDONASOPHARYNYX": {
+      "meaning": "Endo-nasopharyngeal",
+      "scheme": "SCT",
+      "value": "18962004"
+    },
+    "ENDORECTAL": {
+      "meaning": "Endo-rectal",
+      "scheme": "SCT",
+      "value": "34402009"
+    },
+    "ENDORENAL": {
+      "meaning": "Endo-renal",
+      "scheme": "SCT",
+      "value": "64033007"
+    },
+    "ENDOURETERIC": {
+      "meaning": "Endo-ureteric",
+      "scheme": "SCT",
+      "value": "87953007"
+    },
+    "ENDOURETHRAL": {
+      "meaning": "Endo-urethral",
+      "scheme": "SCT",
+      "value": "13648007"
+    },
+    "ENDOVAGINAL": {
+      "meaning": "Endo-vaginal",
+      "scheme": "SCT",
+      "value": "76784001"
+    },
+    "ENDOVASCULAR": {
+      "meaning": "Endo-vascular",
+      "scheme": "SCT",
+      "value": "59820001"
+    },
+    "ENDOVENOUS": {
+      "meaning": "Endo-venous",
+      "scheme": "SCT",
+      "value": "29092000"
+    },
+    "ENDOVESICAL": {
+      "meaning": "Endo-vesical",
+      "scheme": "SCT",
+      "value": "48367006"
+    },
+    "EPIDIDYMIS": {
+      "meaning": "Epididymis",
+      "scheme": "SCT",
+      "value": "87644002"
+    },
+    "EPIGASTRIC": {
+      "meaning": "Epigastric region",
+      "scheme": "SCT",
+      "value": "27947004"
+    },
+    "ESOPHAGUS": {
+      "meaning": "Esophagus",
+      "scheme": "SCT",
+      "value": "32849002"
+    },
+    "EXTILIACA": {
+      "meaning": "External iliac artery",
+      "scheme": "SCT",
+      "value": "113269004"
+    },
+    "EXTILIACV": {
+      "meaning": "External iliac vein",
+      "scheme": "SCT",
+      "value": "63507001"
+    },
+    "EXTJUGV": {
+      "meaning": "External jugular vein",
+      "scheme": "SCT",
+      "value": "71585003"
+    },
+    "EXTREMITY": {
+      "meaning": "Extremity",
+      "scheme": "SCT",
+      "value": "66019005"
+    },
+    "EYE": {
+      "meaning": "Eye",
+      "scheme": "SCT",
+      "value": "81745001"
+    },
+    "EYELID": {
+      "meaning": "Eyelid",
+      "scheme": "SCT",
+      "value": "80243003"
+    },
+    "FACE": {
+      "meaning": "Face",
+      "scheme": "SCT",
+      "value": "89545001"
+    },
+    "FACIALA": {
+      "meaning": "Facial artery",
+      "scheme": "SCT",
+      "value": "23074001"
+    },
+    "FEMORALA": {
+      "meaning": "Femoral artery",
+      "scheme": "SCT",
+      "value": "7657000"
+    },
+    "FEMORALV": {
+      "meaning": "Femoral vein",
+      "scheme": "SCT",
+      "value": "83419000"
+    },
+    "FEMUR": {
+      "meaning": "Femur",
+      "scheme": "SCT",
+      "value": "71341001"
+    },
+    "FIBULA": {
+      "meaning": "Fibula",
+      "scheme": "SCT",
+      "value": "87342007"
+    },
+    "FINGER": {
+      "meaning": "Finger",
+      "scheme": "SCT",
+      "value": "7569003"
+    },
+    "FLANK": {
+      "meaning": "Flank",
+      "scheme": "SCT",
+      "value": "58602004"
+    },
+    "FONTANEL": {
+      "meaning": "Fontanel of skull",
+      "scheme": "SCT",
+      "value": "79361005"
+    },
+    "FOOT": {
+      "meaning": "Foot",
+      "scheme": "SCT",
+      "value": "56459004"
+    },
+    "FOREARM": {
+      "meaning": "Forearm",
+      "scheme": "SCT",
+      "value": "14975008"
+    },
+    "GALLBLADDER": {
+      "meaning": "Gallbladder",
+      "scheme": "SCT",
+      "value": "28231008"
+    },
+    "GASTRICV": {
+      "meaning": "Gastric vein",
+      "scheme": "SCT",
+      "value": "110568007"
+    },
+    "GENICULARA": {
+      "meaning": "Genicular artery",
+      "scheme": "SCT",
+      "value": "128559007"
+    },
+    "GESTSAC": {
+      "meaning": "Gestational sac",
+      "scheme": "SCT",
+      "value": "300571009"
+    },
+    "GLUTEAL": {
+      "meaning": "Gluteal region",
+      "scheme": "SCT",
+      "value": "46862004"
+    },
+    "GSV": {
+      "meaning": "Great saphenous vein",
+      "scheme": "SCT",
+      "value": "60734001"
+    },
+    "HAND": {
+      "meaning": "Hand",
+      "scheme": "SCT",
+      "value": "85562004"
+    },
+    "HEAD": {
+      "meaning": "Head",
+      "scheme": "SCT",
+      "value": "69536005"
+    },
+    "HEADNECK": {
+      "meaning": "Head and Neck",
+      "scheme": "SCT",
+      "value": "774007"
+    },
+    "HEART": {
+      "meaning": "Heart",
+      "scheme": "SCT",
+      "value": "80891009"
+    },
+    "HEPATICA": {
+      "meaning": "Hepatic artery",
+      "scheme": "SCT",
+      "value": "76015000"
+    },
+    "HEPATICV": {
+      "meaning": "Hepatic vein",
+      "scheme": "SCT",
+      "value": "8993003"
+    },
+    "HIP": {
+      "meaning": "Hip joint",
+      "scheme": "SCT",
+      "value": "24136001"
+    },
+    "HUMERUS": {
+      "meaning": "Humerus",
+      "scheme": "SCT",
+      "value": "85050009"
+    },
+    "HYPOGASTRIC": {
+      "meaning": "Hypogastric region",
+      "scheme": "SCT",
+      "value": "11708003"
+    },
+    "HYPOPHARYNX": {
+      "meaning": "Hypopharynx",
+      "scheme": "SCT",
+      "value": "81502006"
+    },
+    "IAC": {
+      "meaning": "Internal Auditory Canal",
+      "scheme": "SCT",
+      "value": "361078006"
+    },
+    "ICA": {
+      "meaning": "Internal carotid artery",
+      "scheme": "SCT",
+      "value": "86117002"
+    },
+    "ILEUM": {
+      "meaning": "Ileum",
+      "scheme": "SCT",
+      "value": "34516001"
+    },
+    "ILIACA": {
+      "meaning": "Iliac artery",
+      "scheme": "SCT",
+      "value": "10293006"
+    },
+    "ILIACV": {
+      "meaning": "Iliac vein",
+      "scheme": "SCT",
+      "value": "244411005"
+    },
+    "ILIUM": {
+      "meaning": "Ilium",
+      "scheme": "SCT",
+      "value": "22356005"
+    },
+    "INFMESA": {
+      "meaning": "Inferior mesenteric artery",
+      "scheme": "SCT",
+      "value": "33795007"
+    },
+    "INFVENACAVA": {
+      "meaning": "Inferior vena cava",
+      "scheme": "SCT",
+      "value": "64131007"
+    },
+    "INGUINAL": {
+      "meaning": "Inguinal region",
+      "scheme": "SCT",
+      "value": "26893007"
+    },
+    "INNOMINATEA": {
+      "meaning": "Innominate artery",
+      "scheme": "SCT",
+      "value": "12691009"
+    },
+    "INNOMINATEV": {
+      "meaning": "Innominate vein",
+      "scheme": "SCT",
+      "value": "8887007"
+    },
+    "INTILIACA": {
+      "meaning": "Internal iliac artery",
+      "scheme": "SCT",
+      "value": "90024005"
+    },
+    "INTJUGULARV": {
+      "meaning": "Internal jugular vein",
+      "scheme": "SCT",
+      "value": "12123001"
+    },
+    "INTMAMMARYA": {
+      "meaning": "Internal mammary artery",
+      "scheme": "SCT",
+      "value": "69327007"
+    },
+    "INTRACRANIAL": {
+      "meaning": "Intracranial",
+      "scheme": "SCT",
+      "value": "1101003"
+    },
+    "JAW": {
+      "meaning": "Jaw region",
+      "scheme": "SCT",
+      "value": "661005"
+    },
+    "JEJUNUM": {
+      "meaning": "Jejunum",
+      "scheme": "SCT",
+      "value": "21306003"
+    },
+    "JOINT": {
+      "meaning": "Joint",
+      "scheme": "SCT",
+      "value": "39352004"
+    },
+    "KIDNEY": {
+      "meaning": "Kidney",
+      "scheme": "SCT",
+      "value": "64033007"
+    },
+    "KNEE": {
+      "meaning": "Knee",
+      "scheme": "SCT",
+      "value": "72696002"
+    },
+    "LACRIMALA": {
+      "meaning": "Lacrimal artery",
+      "scheme": "SCT",
+      "value": "59749000"
+    },
+    "LARGEINTESTINE": {
+      "meaning": "Large intestine",
+      "scheme": "SCT",
+      "value": "14742008"
+    },
+    "LARYNX": {
+      "meaning": "Larynx",
+      "scheme": "SCT",
+      "value": "4596009"
+    },
+    "LATRIUM": {
+      "meaning": "Left atrium",
+      "scheme": "SCT",
+      "value": "82471001"
+    },
+    "LATVENTRICLE": {
+      "meaning": "Lateral Ventricle",
+      "scheme": "SCT",
+      "value": "66720007"
+    },
+    "LFEMORALA": {
+      "meaning": "Left femoral artery",
+      "scheme": "SCT",
+      "value": "113270003"
+    },
+    "LHEPATICV": {
+      "meaning": "Left hepatic vein",
+      "scheme": "SCT",
+      "value": "273202007"
+    },
+    "LHYPOCHONDRIAC": {
+      "meaning": "Left hypochondriac region",
+      "scheme": "SCT",
+      "value": "133945003"
+    },
+    "LINGUALA": {
+      "meaning": "Lingual artery",
+      "scheme": "SCT",
+      "value": "113264009"
+    },
+    "LINGUINAL": {
+      "meaning": "Left inguinal region",
+      "scheme": "SCT",
+      "value": "85119005"
+    },
+    "LIVER": {
+      "meaning": "Liver",
+      "scheme": "SCT",
+      "value": "10200004"
+    },
+    "LLQ": {
+      "meaning": "Left lower quadrant of abdomen",
+      "scheme": "SCT",
+      "value": "68505006"
+    },
+    "LLUMBAR": {
+      "meaning": "Left lumbar region",
+      "scheme": "SCT",
+      "value": "1017210004"
+    },
+    "LOWERLEG": {
+      "meaning": "Lower leg",
+      "scheme": "SCT",
+      "value": "30021000"
+    },
+    "LOWERLIMB": {
+      "meaning": "Lower limb",
+      "scheme": "SCT",
+      "value": "61685007"
+    },
+    "LOWERTRUNK": {
+      "meaning": "Lower trunk",
+      "scheme": "SCT",
+      "value": "63337009"
+    },
+    "LPORTALV": {
+      "meaning": "Left portal vein",
+      "scheme": "SCT",
+      "value": "70253006"
+    },
+    "LPULMONARYA": {
+      "meaning": "Left pulmonary artery",
+      "scheme": "SCT",
+      "value": "50408007"
+    },
+    "LSPINE": {
+      "meaning": "Lumbar spine",
+      "scheme": "SCT",
+      "value": "122496007"
+    },
+    "LSSPINE": {
+      "meaning": "Lumbo-sacral spine",
+      "scheme": "SCT",
+      "value": "1217253001"
+    },
+    "LSUPPULMONARYV": {
+      "meaning": "Superior left pulmonary vein",
+      "scheme": "SCT",
+      "value": "43863001"
+    },
+    "LUMBAR": {
+      "meaning": "Lumbar region",
+      "scheme": "SCT",
+      "value": "52612000"
+    },
+    "LUMBARA": {
+      "meaning": "Lumbar artery",
+      "scheme": "SCT",
+      "value": "34635009"
+    },
+    "LUMEN": {
+      "meaning": "Lumen of blood vessel",
+      "scheme": "SCT",
+      "value": "91747007"
+    },
+    "LUNG": {
+      "meaning": "Lung",
+      "scheme": "SCT",
+      "value": "39607008"
+    },
+    "LUQ": {
+      "meaning": "Left upper quadrant of abdomen",
+      "scheme": "SCT",
+      "value": "86367003"
+    },
+    "LVENTRICLE": {
+      "meaning": "Left ventricle",
+      "scheme": "SCT",
+      "value": "87878005"
+    },
+    "MANDIBLE": {
+      "meaning": "Mandible",
+      "scheme": "SCT",
+      "value": "91609006"
+    },
+    "MASTOID": {
+      "meaning": "Mastoid bone",
+      "scheme": "SCT",
+      "value": "59066005"
+    },
+    "MAXILLA": {
+      "meaning": "Maxilla",
+      "scheme": "SCT",
+      "value": "70925003"
+    },
+    "MCA": {
+      "meaning": "Middle cerebral artery",
+      "scheme": "SCT",
+      "value": "17232002"
+    },
+    "MEDIASTINUM": {
+      "meaning": "Mediastinum",
+      "scheme": "SCT",
+      "value": "72410000"
+    },
+    "MESENTRICA": {
+      "meaning": "Mesenteric artery",
+      "scheme": "SCT",
+      "value": "86570000"
+    },
+    "MESENTRICV": {
+      "meaning": "Mesenteric vein",
+      "scheme": "SCT",
+      "value": "128583004"
+    },
+    "MIDHEPATICV": {
+      "meaning": "Middle hepatic vein",
+      "scheme": "SCT",
+      "value": "273099000"
+    },
+    "MORISONSPOUCH": {
+      "meaning": "Morisons pouch",
+      "scheme": "SCT",
+      "value": "243977002"
+    },
+    "MOUTH": {
+      "meaning": "Mouth",
+      "scheme": "SCT",
+      "value": "123851003"
+    },
+    "NASOPHARYNX": {
+      "meaning": "Nasopharynx",
+      "scheme": "SCT",
+      "value": "360955006"
+    },
+    "NECK": {
+      "meaning": "Neck",
+      "scheme": "SCT",
+      "value": "45048000"
+    },
+    "NECKCHEST": {
+      "meaning": "Neck and Chest",
+      "scheme": "SCT",
+      "value": "417437006"
+    },
+    "NECKCHESTABDOMEN": {
+      "meaning": "Neck, Chest and Abdomen",
+      "scheme": "SCT",
+      "value": "416152001"
+    },
+    "NECKCHESTABDPELV": {
+      "meaning": "Neck, Chest, Abdomen and Pelvis",
+      "scheme": "SCT",
+      "value": "416319003"
+    },
+    "NOSE": {
+      "meaning": "Nose",
+      "scheme": "SCT",
+      "value": "45206002"
+    },
+    "OCCIPTALV": {
+      "meaning": "Occipital vein",
+      "scheme": "SCT",
+      "value": "32114007"
+    },
+    "OCCPITALA": {
+      "meaning": "Occipital artery",
+      "scheme": "SCT",
+      "value": "31145008"
+    },
+    "OPHTHALMICA": {
+      "meaning": "Ophthalmic artery",
+      "scheme": "SCT",
+      "value": "53549008"
+    },
+    "OPTICCANAL": {
+      "meaning": "Optic canal",
+      "scheme": "SCT",
+      "value": "55024004"
+    },
+    "ORBIT": {
+      "meaning": "Orbital structure",
+      "scheme": "SCT",
+      "value": "363654007"
+    },
+    "OVARY": {
+      "meaning": "Ovary",
+      "scheme": "SCT",
+      "value": "15497006"
+    },
+    "PANCBILEDUCT": {
+      "meaning": "Pancreatic duct and bile duct systems",
+      "scheme": "SCT",
+      "value": "110621006"
+    },
+    "PANCREAS": {
+      "meaning": "Pancreas",
+      "scheme": "SCT",
+      "value": "15776009"
+    },
+    "PANCREATICDUCT": {
+      "meaning": "Pancreatic duct",
+      "scheme": "SCT",
+      "value": "69930009"
+    },
+    "PARASTERNAL": {
+      "meaning": "Parasternal",
+      "scheme": "SCT",
+      "value": "91691001"
+    },
+    "PARATHYROID": {
+      "meaning": "Parathyroid",
+      "scheme": "SCT",
+      "value": "111002"
+    },
+    "PAROTID": {
+      "meaning": "Parotid gland",
+      "scheme": "SCT",
+      "value": "45289007"
+    },
+    "PATELLA": {
+      "meaning": "Patella",
+      "scheme": "SCT",
+      "value": "64234005"
+    },
+    "PCA": {
+      "meaning": "Posterior cerebral artery",
+      "scheme": "SCT",
+      "value": "70382005"
+    },
+    "PELVIS": {
+      "meaning": "Pelvis",
+      "scheme": "SCT",
+      "value": "816092008"
+    },
+    "PELVISLOWEXTREMT": {
+      "meaning": "Pelvis and lower extremities",
+      "scheme": "SCT",
+      "value": "1231522001"
+    },
+    "PENILEA": {
+      "meaning": "Penile artery",
+      "scheme": "SCT",
+      "value": "282044005"
+    },
+    "PENIS": {
+      "meaning": "Penis",
+      "scheme": "SCT",
+      "value": "18911002"
+    },
+    "PERINEUM": {
+      "meaning": "Perineum",
+      "scheme": "SCT",
+      "value": "38864007"
+    },
+    "PERONEALA": {
+      "meaning": "Peroneal artery",
+      "scheme": "SCT",
+      "value": "8821006"
+    },
+    "PHANTOM": {
+      "meaning": "Phantom",
+      "scheme": "SCT",
+      "value": "706342009"
+    },
+    "PHARYNX": {
+      "meaning": "Pharynx",
+      "scheme": "SCT",
+      "value": "54066008"
+    },
+    "PHARYNXLARYNX": {
+      "meaning": "Pharynx and larynx",
+      "scheme": "SCT",
+      "value": "312535008"
+    },
+    "PLACENTA": {
+      "meaning": "Placenta",
+      "scheme": "SCT",
+      "value": "78067005"
+    },
+    "POPLITEALA": {
+      "meaning": "Popliteal artery",
+      "scheme": "SCT",
+      "value": "43899006"
+    },
+    "POPLITEALFOSSA": {
+      "meaning": "Popliteal fossa",
+      "scheme": "SCT",
+      "value": "32361000"
+    },
+    "POPLITEALV": {
+      "meaning": "Popliteal vein",
+      "scheme": "SCT",
+      "value": "56849005"
+    },
+    "PORTALV": {
+      "meaning": "Portal vein",
+      "scheme": "SCT",
+      "value": "32764006"
+    },
+    "POSCOMMA": {
+      "meaning": "Posterior communicating artery",
+      "scheme": "SCT",
+      "value": "43119007"
+    },
+    "POSTIBIALA": {
+      "meaning": "Posterior tibial artery",
+      "scheme": "SCT",
+      "value": "13363002"
+    },
+    "PROFFEMA": {
+      "meaning": "Profunda femoris artery",
+      "scheme": "SCT",
+      "value": "31677005"
+    },
+    "PROFFEMV": {
+      "meaning": "Profunda femoris vein",
+      "scheme": "SCT",
+      "value": "23438002"
+    },
+    "PROSTATE": {
+      "meaning": "Prostate",
+      "scheme": "SCT",
+      "value": "41216001"
+    },
+    "PULMONARYA": {
+      "meaning": "Pulmonary artery",
+      "scheme": "SCT",
+      "value": "81040000"
+    },
+    "PULMONARYV": {
+      "meaning": "Pulmonary vein",
+      "scheme": "SCT",
+      "value": "122972007"
+    },
+    "RADIALA": {
+      "meaning": "Radial artery",
+      "scheme": "SCT",
+      "value": "45631007"
+    },
+    "RADIUS": {
+      "meaning": "Radius",
+      "scheme": "SCT",
+      "value": "62413002"
+    },
+    "RADIUSULNA": {
+      "meaning": "Radius and ulna",
+      "scheme": "SCT",
+      "value": "110535000"
+    },
+    "RATRIUM": {
+      "meaning": "Right atrium",
+      "scheme": "SCT",
+      "value": "73829009"
+    },
+    "RECTUM": {
+      "meaning": "Rectum",
+      "scheme": "SCT",
+      "value": "34402009"
+    },
+    "RENALA": {
+      "meaning": "Renal artery",
+      "scheme": "SCT",
+      "value": "2841007"
+    },
+    "RENALV": {
+      "meaning": "Renal vein",
+      "scheme": "SCT",
+      "value": "56400007"
+    },
+    "RETROPERITONEUM": {
+      "meaning": "Retroperitoneum",
+      "scheme": "SCT",
+      "value": "82849001"
+    },
+    "RFEMORALA": {
+      "meaning": "Right femoral artery",
+      "scheme": "SCT",
+      "value": "69833005"
+    },
+    "RHEPATICV": {
+      "meaning": "Right hepatic vein",
+      "scheme": "SCT",
+      "value": "272998002"
+    },
+    "RHYPOCHONDRIAC": {
+      "meaning": "Right hypochondriac region",
+      "scheme": "SCT",
+      "value": "133946002"
+    },
+    "RIB": {
+      "meaning": "Rib",
+      "scheme": "SCT",
+      "value": "113197003"
+    },
+    "RINGUINAL": {
+      "meaning": "Right inguinal region",
+      "scheme": "SCT",
+      "value": "37117007"
+    },
+    "RLQ": {
+      "meaning": "Right lower quadrant of abdomen",
+      "scheme": "SCT",
+      "value": "48544008"
+    },
+    "RLUMBAR": {
+      "meaning": "Right lumbar region",
+      "scheme": "SCT",
+      "value": "1017211000"
+    },
+    "RPORTALV": {
+      "meaning": "Right portal vein",
+      "scheme": "SCT",
+      "value": "73931004"
+    },
+    "RPULMONARYA": {
+      "meaning": "Right pulmonary artery",
+      "scheme": "SCT",
+      "value": "78480002"
+    },
+    "RSUPPULMONARYV": {
+      "meaning": "Superior right pulmonary vein",
+      "scheme": "SCT",
+      "value": "8629005"
+    },
+    "RUQ": {
+      "meaning": "Right upper quadrant of abdomen",
+      "scheme": "SCT",
+      "value": "50519007"
+    },
+    "RVENTRICLE": {
+      "meaning": "Right ventricle",
+      "scheme": "SCT",
+      "value": "53085002"
+    },
+    "SAPHENOUSV": {
+      "meaning": "Saphenous vein",
+      "scheme": "SCT",
+      "value": "362072009"
+    },
+    "SCALP": {
+      "meaning": "Scalp",
+      "scheme": "SCT",
+      "value": "41695006"
+    },
+    "SCAPULA": {
+      "meaning": "Scapula",
+      "scheme": "SCT",
+      "value": "79601000"
+    },
+    "SCJOINT": {
+      "meaning": "Sternoclavicular joint",
+      "scheme": "SCT",
+      "value": "7844006"
+    },
+    "SCLERA": {
+      "meaning": "Sclera",
+      "scheme": "SCT",
+      "value": "18619003"
+    },
+    "SCROTUM": {
+      "meaning": "Scrotum",
+      "scheme": "SCT",
+      "value": "20233005"
+    },
+    "SELLA": {
+      "meaning": "Sella turcica",
+      "scheme": "SCT",
+      "value": "42575006"
+    },
+    "SEMVESICLE": {
+      "meaning": "Seminal vesicle",
+      "scheme": "SCT",
+      "value": "64739004"
+    },
+    "SESAMOID": {
+      "meaning": "Sesamoid bones of foot",
+      "scheme": "SCT",
+      "value": "58742003"
+    },
+    "SFA": {
+      "meaning": "Superficial femoral artery",
+      "scheme": "SCT",
+      "value": "181349008"
+    },
+    "SFJ": {
+      "meaning": "Saphenofemoral junction",
+      "scheme": "SCT",
+      "value": "128587003"
+    },
+    "SFV": {
+      "meaning": "Superficial femoral vein",
+      "scheme": "SCT",
+      "value": "397364003"
+    },
+    "SHOULDER": {
+      "meaning": "Shoulder",
+      "scheme": "SCT",
+      "value": "16982005"
+    },
+    "SIGMOID": {
+      "meaning": "Sigmoid colon",
+      "scheme": "SCT",
+      "value": "60184004"
+    },
+    "SIJOINT": {
+      "meaning": "Sacroiliac joint",
+      "scheme": "SCT",
+      "value": "39723000"
+    },
+    "SKULL": {
+      "meaning": "Skull",
+      "scheme": "SCT",
+      "value": "89546000"
+    },
+    "SMA": {
+      "meaning": "Superior mesenteric artery",
+      "scheme": "SCT",
+      "value": "42258001"
+    },
+    "SMALLINTESTINE": {
+      "meaning": "Small intestine",
+      "scheme": "SCT",
+      "value": "30315005"
+    },
+    "SPINALCORD": {
+      "meaning": "Spinal cord",
+      "scheme": "SCT",
+      "value": "2748008"
+    },
+    "SPINE": {
+      "meaning": "Spine",
+      "scheme": "SCT",
+      "value": "421060004"
+    },
+    "SPLEEN": {
+      "meaning": "Spleen",
+      "scheme": "SCT",
+      "value": "78961009"
+    },
+    "SPLENICA": {
+      "meaning": "Splenic artery",
+      "scheme": "SCT",
+      "value": "22083002"
+    },
+    "SPLENICV": {
+      "meaning": "Splenic vein",
+      "scheme": "SCT",
+      "value": "35819009"
+    },
+    "SSPINE": {
+      "meaning": "Sacrum",
+      "scheme": "SCT",
+      "value": "54735007"
+    },
+    "STERNUM": {
+      "meaning": "Sternum",
+      "scheme": "SCT",
+      "value": "56873002"
+    },
+    "STOMACH": {
+      "meaning": "Stomach",
+      "scheme": "SCT",
+      "value": "69695003"
+    },
+    "SUBCLAVIANA": {
+      "meaning": "Subclavian artery",
+      "scheme": "SCT",
+      "value": "36765005"
+    },
+    "SUBCLAVIANV": {
+      "meaning": "Subclavian vein",
+      "scheme": "SCT",
+      "value": "9454009"
+    },
+    "SUBCOSTAL": {
+      "meaning": "Subcostal",
+      "scheme": "SCT",
+      "value": "19695001"
+    },
+    "SUBMANDIBULAR": {
+      "meaning": "Submandibular gland",
+      "scheme": "SCT",
+      "value": "54019009"
+    },
+    "SUPRACLAVICULAR": {
+      "meaning": "Supraclavicular region of neck",
+      "scheme": "SCT",
+      "value": "77621008"
+    },
+    "SUPRAPUBIC": {
+      "meaning": "Suprapubic region",
+      "scheme": "SCT",
+      "value": "11708003"
+    },
+    "SUPTHYROIDA": {
+      "meaning": "Superior thyroid artery",
+      "scheme": "SCT",
+      "value": "72021004"
+    },
+    "SVC": {
+      "meaning": "Superior vena cava",
+      "scheme": "SCT",
+      "value": "48345005"
+    },
+    "TESTIS": {
+      "meaning": "Testis",
+      "scheme": "SCT",
+      "value": "40689003"
+    },
+    "THALAMUS": {
+      "meaning": "Thalamus",
+      "scheme": "SCT",
+      "value": "42695009"
+    },
+    "THIGH": {
+      "meaning": "Thigh",
+      "scheme": "SCT",
+      "value": "68367000"
+    },
+    "THORACICAORTA": {
+      "meaning": "Thoracic aorta",
+      "scheme": "SCT",
+      "value": "113262008"
+    },
+    "THORAX": {
+      "meaning": "Chest",
+      "scheme": "SCT",
+      "value": "816094009"
+    },
+    "THUMB": {
+      "meaning": "Thumb",
+      "scheme": "SCT",
+      "value": "76505004"
+    },
+    "THYMUS": {
+      "meaning": "Thymus",
+      "scheme": "SCT",
+      "value": "9875009"
+    },
+    "THYROID": {
+      "meaning": "Thyroid",
+      "scheme": "SCT",
+      "value": "69748006"
+    },
+    "TIBIA": {
+      "meaning": "Tibia",
+      "scheme": "SCT",
+      "value": "12611008"
+    },
+    "TIBIAFIBULA": {
+      "meaning": "Tibia and fibula",
+      "scheme": "SCT",
+      "value": "110536004"
+    },
+    "TLSPINE": {
+      "meaning": "Thoraco-lumbar spine",
+      "scheme": "SCT",
+      "value": "1217256009"
+    },
+    "TMJ": {
+      "meaning": "Temporomandibular joint",
+      "scheme": "SCT",
+      "value": "53620006"
+    },
+    "TOE": {
+      "meaning": "Toe",
+      "scheme": "SCT",
+      "value": "29707007"
+    },
+    "TONGUE": {
+      "meaning": "Tongue",
+      "scheme": "SCT",
+      "value": "21974007"
+    },
+    "TRACHEA": {
+      "meaning": "Trachea",
+      "scheme": "SCT",
+      "value": "44567001"
+    },
+    "TRACHEABRONCHUS": {
+      "meaning": "Trachea and bronchus",
+      "scheme": "SCT",
+      "value": "110726009"
+    },
+    "TRANSVERSECOLON": {
+      "meaning": "Transverse colon",
+      "scheme": "SCT",
+      "value": "485005"
+    },
+    "TRUNK": {
+      "meaning": "Trunk",
+      "scheme": "SCT",
+      "value": "22943007"
+    },
+    "TSPINE": {
+      "meaning": "Thoracic spine",
+      "scheme": "SCT",
+      "value": "122495006"
+    },
+    "ULNA": {
+      "meaning": "Ulna",
+      "scheme": "SCT",
+      "value": "23416004"
+    },
+    "ULNARA": {
+      "meaning": "Ulnar artery",
+      "scheme": "SCT",
+      "value": "44984001"
+    },
+    "UMBILICAL": {
+      "meaning": "Umbilical region",
+      "scheme": "SCT",
+      "value": "90290004"
+    },
+    "UMBILICALA": {
+      "meaning": "Umbilical artery",
+      "scheme": "SCT",
+      "value": "50536004"
+    },
+    "UMBILICALV": {
+      "meaning": "Umbilical vein",
+      "scheme": "SCT",
+      "value": "284639000"
+    },
+    "UPPERARM": {
+      "meaning": "Upper arm",
+      "scheme": "SCT",
+      "value": "40983000"
+    },
+    "UPPERLIMB": {
+      "meaning": "Upper limb",
+      "scheme": "SCT",
+      "value": "53120007"
+    },
+    "UPPERTRUNK": {
+      "meaning": "Upper trunk",
+      "scheme": "SCT",
+      "value": "67734004"
+    },
+    "UPRURINARYTRACT": {
+      "meaning": "Upper urinary tract",
+      "scheme": "SCT",
+      "value": "431491007"
+    },
+    "URETER": {
+      "meaning": "Ureter",
+      "scheme": "SCT",
+      "value": "87953007"
+    },
+    "URETHRA": {
+      "meaning": "Urethra",
+      "scheme": "SCT",
+      "value": "13648007"
+    },
+    "UTERUS": {
+      "meaning": "Uterus",
+      "scheme": "SCT",
+      "value": "35039007"
+    },
+    "VAGINA": {
+      "meaning": "Vagina",
+      "scheme": "SCT",
+      "value": "76784001"
+    },
+    "VEIN": {
+      "meaning": "Vein",
+      "scheme": "SCT",
+      "value": "29092000"
+    },
+    "VERTEBRALA": {
+      "meaning": "Vertebral artery",
+      "scheme": "SCT",
+      "value": "85234005"
+    },
+    "VULVA": {
+      "meaning": "Vulva",
+      "scheme": "SCT",
+      "value": "45292006"
+    },
+    "WHOLEBODY": {
+      "meaning": "Entire body",
+      "scheme": "SCT",
+      "value": "38266002"
+    },
+    "WRIST": {
+      "meaning": "Wrist joint",
+      "scheme": "SCT",
+      "value": "74670003"
+    },
+    "ZYGOMA": {
+      "meaning": "Zygoma",
+      "scheme": "SCT",
+      "value": "13881006"
+    }
+  },
+  "table": "PS3.16 L-1"
+}

@@ -47,7 +47,14 @@ public enum DICOMFrameExtraction {
     }
 
     public static func extract(_ item: DICOMRetrieveItem, identifier: DataSet) throws -> DICOMRetrieveItem {
-        do { return try extractNative(item, identifier: identifier) }
+        do {
+            guard identifier.string(forTag: "QueryRetrieveLevel") == "FRAME",
+                  identifier.textValues(forTag: "SOPInstanceUID") == [item.sopInstanceUID] else { throw failure(0xAA04, "frame request does not identify source instance") }
+            if (DICOMEnhancedMultiFrameConversion.legacyClasses + DICOMEnhancedMultiFrameConversion.trueClasses).contains(item.sopClassUID) {
+                return try extractEnhanced(item, identifier: identifier)
+            }
+            return try extractNative(item, identifier: identifier)
+        }
         catch let error as DICOMServiceError { throw error }
         catch { throw failure(0xAA02, "cannot extract frames: \(error)") }
     }
@@ -56,8 +63,10 @@ public enum DICOMFrameExtraction {
         let supported = ["1.2.840.10008.5.1.4.1.1.7.1", "1.2.840.10008.5.1.4.1.1.7.2",
                          "1.2.840.10008.5.1.4.1.1.7.3", "1.2.840.10008.5.1.4.1.1.7.4"]
         guard supported.contains(item.sopClassUID) else { throw failure(0xAA01, "frame extraction is supported for multi-frame Secondary Capture") }
-        guard DICOMAssociation.isUncompressed(item.transferSyntaxUID) else { throw failure(0xAA02, "compressed frame extraction is not supported") }
         let dataSet = try DICOMDataSetCoding.decode(item.payload.data(), transferSyntax: item.transferSyntaxUID)
+        guard dataSet.string(forTag: "SOPInstanceUID") == item.sopInstanceUID, dataSet.string(forTag: "SOPClassUID") == item.sopClassUID else {
+            throw failure(0xAA02, "source DICOM identity mismatch")
+        }
         let description = try DICOMPixelDescription(dataset: dataSet)
         let type = supported.firstIndex(of: item.sopClassUID)!
         let validPixels = description.sampleFormat == .integer && !description.isSigned &&
@@ -65,8 +74,7 @@ public enum DICOMFrameExtraction {
              type == 1 ? description.bitsAllocated == 8 && description.samplesPerPixel == 1 && description.photometricInterpretation == .monochrome2 :
              type == 2 ? description.bitsAllocated == 16 && description.samplesPerPixel == 1 && description.photometricInterpretation == .monochrome2 :
                          description.bitsAllocated == 8 && description.samplesPerPixel == 3 && description.photometricInterpretation == .rgb)
-        guard validPixels, description.bitsAllocated <= 8 || dataSet.element(forTagName: "PixelData")?.vr == .OW else { throw failure(0xAA02, "unsupported Secondary Capture pixel layout") }
-        let native = try DICOMNativePixelData(dataset: dataSet, description: description)
+        guard validPixels, description.isEncapsulated || description.bitsAllocated <= 8 || dataSet.element(forTagName: "PixelData")?.vr == .OW else { throw failure(0xAA02, "unsupported Secondary Capture pixel layout") }
         var object = try DICOMJSON.object(dataSet, options: .init(numbersAsStrings: true))
         func strings(_ tag: String) -> [String] { DICOMQueryMatcher.strings(object[tag] as? [String: Any] ?? [:]) }
         // Reject frame-indexed structures whose semantics this extractor cannot
@@ -91,30 +99,8 @@ public enum DICOMFrameExtraction {
         if times?.allSatisfy({ $0.isFinite }) == false { times = nil }
         let selected = try frames(identifier, count: description.numberOfFrames, times: times)
         guard times != nil else { throw failure(0xAA02, "invalid frame timing") }
-        var pixels = Data(count: (selected.count * description.bitsPerFrame + 7) / 8)
-        var outputBit = 0
-        for frame in selected {
-            var bytes = [UInt8](try native.frameData(frame - 1))
-            if dataSet.transferSyntax?.byteOrder == .BigEndian, description.bitsAllocated > 8 {
-                let width = description.bitsAllocated / 8
-                for i in stride(from: 0, to: bytes.count, by: width) { bytes.replaceSubrange(i..<(i + width), with: bytes[i..<(i + width)].reversed()) }
-            }
-            if description.bitsAllocated == 1 {
-                let inputBit = ((frame - 1) * description.bitsPerFrame) % 8
-                for bit in 0..<description.bitsPerFrame {
-                    if bytes[(inputBit + bit) / 8] & (1 << ((inputBit + bit) % 8)) != 0 { pixels[outputBit / 8] |= 1 << (outputBit % 8) }
-                    outputBit += 1
-                }
-            } else {
-                let start = outputBit / 8
-                pixels.replaceSubrange(start..<(start + bytes.count), with: bytes)
-                outputBit += description.bitsPerFrame
-            }
-        }
-        // Re-encode native frames as little endian. JSON export/import also
-        // normalizes every numeric attribute when the original was Big Endian.
-        if pixels.count % 2 == 1 { pixels.append(0) }
-        object["7FE00010"] = ["vr": description.bitsAllocated <= 8 ? "OB" : "OW", "InlineBinary": pixels.base64EncodedString()]
+        let encoding = try pixelSubset(dataSet, frames: selected)
+        object["7FE00010"] = encoding.attribute
         object["00280008"] = ["vr": "IS", "Value": [String(selected.count)]]
         object["00080018"] = ["vr": "UI", "Value": [UID.generate()]]
         if let times {
@@ -170,6 +156,6 @@ public enum DICOMFrameExtraction {
         }
         object = stripPrivate(object)
         for tag in ["00287FE0", "7FE00001", "7FE00002", "00209161", "00209162", "00209163", "00209228", "00082142", "00082143", "00180040", "00182140"] { object.removeValue(forKey: tag) }
-        return try DICOMRetrieveItem(dataSet: DICOMJSON.dataSet(object))
+        return try DICOMRetrieveItem(dataSet: DICOMJSON.dataSet(object), transferSyntaxUID: encoding.syntax)
     }
 }

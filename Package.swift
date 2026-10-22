@@ -144,6 +144,7 @@ let package = Package(
                 .process("Resources/dicom-command-dictionary-2026d.json"),
                 .process("Resources/dicom-terminology-2026d.json"),
                 .process("Resources/dicom-iods-2026d.json"),
+                .process("Resources/dicom-body-parts-2026d.json"),
                 .process("Resources/dicom-deidentification-2026d.json"),
                 .copy("Resources/CharacterSets")
             ]),
