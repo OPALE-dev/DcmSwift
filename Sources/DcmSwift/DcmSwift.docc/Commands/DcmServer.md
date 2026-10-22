@@ -126,10 +126,12 @@ DcmServer -a LOG --event-log-directory ./events
 ## Query/Retrieve extensions and patient information
 
 Archive queries negotiate relational matching, combined Study Date/Time ranges,
-fuzzy person names and timezone adjustment. Composite Instance Root retrieval,
-native Secondary Capture frame extraction and Retrieve Without Bulk Data are
-available through their dedicated SOP Classes. See <doc:QueryRetrieveExtensions>
-for identifier rules and the declared extraction limits.
+fuzzy person names and timezone adjustment. Negotiate enhanced conversion and
+supply Query/Retrieve View `CLASSIC` or `ENHANCED` for CT/MR/PET views. Composite
+Instance Root retrieval, Secondary Capture/enhanced frame extraction and
+Retrieve Without Bulk Data use their dedicated SOP Classes. See
+<doc:QueryRetrieveExtensions> for identifier rules and
+<doc:EnhancedMultiFrameConversion> for conversion and extraction limits.
 
 `--patient-information-directory` serves Relevant Patient Information FIND from
 response identifiers supplied as DICOM JSON or data sets. The records and their

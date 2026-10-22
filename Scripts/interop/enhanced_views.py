@@ -21,6 +21,7 @@ ENH = "1.2.840.10008.5.1.4.1.1.2.2"
 SR = "1.2.840.10008.5.1.4.1.1.88.34"
 FIND = "1.2.840.10008.5.1.4.1.2.2.1"
 GET = "1.2.840.10008.5.1.4.1.2.4.3"
+MOVE = "1.2.840.10008.5.1.4.1.2.4.2"
 
 
 def check(value, description):
@@ -97,16 +98,17 @@ def extension(sop, fields):
 
 
 class Server:
-    def __init__(self, executable, root):
+    def __init__(self, executable, root, move_port):
         self.executable, self.root, self.process = executable, root, None
         self.port = None
+        self.move_port = move_port
         self.log = tempfile.TemporaryFile()
 
     def start(self):
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", 0))
             self.port = probe.getsockname()[1]
-        self.process = subprocess.Popen([self.executable, "--aet", "VIEWS", "--host", "127.0.0.1", "--port", str(self.port), "--storage-directory", str(self.root)], stdout=self.log, stderr=self.log)
+        self.process = subprocess.Popen([self.executable, "--aet", "VIEWS", "--host", "127.0.0.1", "--port", str(self.port), "--storage-directory", str(self.root), "--destination", f"VIEWDEST=127.0.0.1:{self.move_port}"], stdout=self.log, stderr=self.log)
         for _ in range(100):
             if self.process.poll() is not None:
                 self.log.seek(0)
@@ -140,9 +142,9 @@ def connect(server, received):
         received.append(data)
         return 0
     ae = AE(ae_title="VIEWSCU")
-    for sop in [FIND, GET, CT, ENH, SR]:
+    for sop in [FIND, GET, MOVE, CT, ENH, SR]:
         ae.add_requested_context(sop, [ExplicitVRLittleEndian])
-    assoc = ae.associate("127.0.0.1", server.port, ae_title="VIEWS", ext_neg=[extension(FIND, [1, 1, 1, 1, 1]), extension(GET, [0, 1])]
+    assoc = ae.associate("127.0.0.1", server.port, ae_title="VIEWS", ext_neg=[extension(FIND, [1, 1, 1, 1, 1]), extension(GET, [0, 1]), extension(MOVE, [0, 1])]
         + [build_role(sop, scu_role=False, scp_role=True) for sop in [CT, ENH, SR]], evt_handlers=[(evt.EVT_C_STORE, store)])
     check(assoc.is_established, "association")
     check(assoc.acceptor.sop_class_extended[FIND] == bytes([1, 1, 1, 1, 1]), "conversion accepted for FIND")
@@ -177,8 +179,16 @@ def main(executable):
         first.mkdir(); second.mkdir()
         images, source_sr = fixture(first)
         digests = {file.name: hashlib.sha256(file.read_bytes()).digest() for file in first.iterdir()}
-        server, inverse = Server(executable, first), Server(executable, second)
-        received = []
+        received, moved = [], []
+        def store_moved(event):
+            moved.append(event.dataset)
+            return 0
+        receiver = AE(ae_title="VIEWDEST")
+        for sop in [CT, ENH, SR]:
+            receiver.add_supported_context(sop, [ExplicitVRLittleEndian])
+        listener = receiver.start_server(("127.0.0.1", 0), block=False, evt_handlers=[(evt.EVT_C_STORE, store_moved)])
+        move_port = listener.server_address[1]
+        server, inverse = Server(executable, first, move_port), Server(executable, second, move_port)
         try:
             server.start()
             assoc = connect(server, received)
@@ -189,6 +199,15 @@ def main(executable):
                 sr_uid = next(uid for uid, sop in catalogue.items() if sop == SR)
                 enhanced = get(assoc, enhanced_uid, "ENHANCED", received)
                 sr = get(assoc, sr_uid, "ENHANCED", received)
+                query = Dataset()
+                query.QueryRetrieveLevel, query.QueryRetrieveView, query.SOPInstanceUID = "IMAGE", "ENHANCED", enhanced_uid
+                responses = list(assoc.send_c_move(query, "VIEWDEST", MOVE))
+                check(responses[-1][0].Status == 0 and len(moved) == 1 and moved[-1].SOPInstanceUID == enhanced_uid
+                      and moved[-1].PixelData == enhanced.PixelData, "MOVE delivers the same converted view identity and pixels")
+                query.QueryRetrieveLevel, query.SimpleFrameList = "FRAME", [2]
+                responses = list(assoc.send_c_move(query, "VIEWDEST", MOVE))
+                check(responses[-1][0].Status == 0 and len(moved) == 2 and moved[-1].SOPInstanceUID != enhanced_uid
+                      and moved[-1].PixelData == images[1].PixelData, "MOVE extracts an enhanced frame over an independent storage association")
                 check(enhanced.PixelData == images[0].PixelData + images[1].PixelData and int(enhanced.NumberOfFrames) == 2, "combined pixels preserved")
                 check(str(enhanced.StudyInstanceUID) == str(images[0].StudyInstanceUID) and enhanced.SeriesInstanceUID != images[0].SeriesInstanceUID, "study preserved and new series")
                 ref = sr.ContentSequence[0].ReferencedSOPSequence[0]
@@ -232,6 +251,7 @@ def main(executable):
             check({file.name: hashlib.sha256(file.read_bytes()).digest() for file in first.iterdir()} == digests, "stored originals unchanged")
         finally:
             server.close(); inverse.close()
+            listener.shutdown()
 
 
 if __name__ == "__main__":

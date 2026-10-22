@@ -32,6 +32,7 @@ and what remains deliberately limited.
 - <doc:UPSREST>
 - <doc:UPSRESTArchitecture>
 - <doc:QueryRetrieveExtensions>
+- <doc:EnhancedMultiFrameConversion>
 - <doc:DICOMweb>
 - <doc:ArchiveStorage>
 
