@@ -560,7 +560,8 @@ public struct DICOMwebOriginServer: Sendable {
                 return
             }
             let payload = try sink.finish(skipping: Int(header.dataSetOffset))
-            let parsed = try DICOMDataSetCoding.decode(payload.data(), transferSyntax: header.transferSyntaxUID)
+            let parsed = try Self.storeDataSet(payload, transferSyntax: header.transferSyntaxUID,
+                                               maximumLength: configuration.maximumRequestLength)
             // The data set identifies the instance; File Meta Information that
             // disagrees with it is not trusted (PS3.10 7.1).
             let sopClass = parsed.string(forTag: "SOPClassUID").flatMap { $0.isEmpty ? nil : $0 } ?? header.sopClassUID
@@ -599,6 +600,27 @@ public struct DICOMwebOriginServer: Sendable {
             reference.reason = DICOMwebStoreResponse.processingFailure
             response.failed.append(reference)
         }
+    }
+
+    /// File-backed parts retain their Part 10 header before the payload offset.
+    /// Kept separate so tests can assert that large binary values stay deferred.
+    static func storeDataSet(_ payload: DICOMDataSetPayload, transferSyntax: String,
+                             maximumLength: Int) throws -> DataSet {
+        let limits = DicomReadLimits(maximumElementValueLength: maximumLength,
+                                    maximumInflatedDataSetLength: 256 << 20)
+        guard !TransferSyntax.deflatesDataSet(transferSyntax) || payload.length <= 64 << 20 else {
+            throw DICOMCommandError("Deflated STOW dataset exceeds bounded decoder capacity")
+        }
+        if let file = payload.fileURL {
+            let input = DicomInputStream(url: file)
+            input.bulkDataLoadingPolicy = .lazy(minimumLength: 1 << 20)
+            input.limits = limits
+            guard let dataset = try input.readDataset(enforceVR: false), !dataset.isCorrupted else {
+                throw DICOMCommandError("cannot parse the STOW data set")
+            }
+            return dataset
+        }
+        return try DICOMDataSetCoding.decode(payload.data(), transferSyntax: transferSyntax, limits: limits)
     }
 
     // MARK: Capabilities (PS3.18 8.9, Annex H)
