@@ -266,3 +266,9 @@ Contributors:
 DcmSwift is released under the [MIT License](LICENSE). The vendored OpenJPEG,
 OpenJPH, and libjxl libraries keep their own licenses, reproduced in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+### STOW memory behavior (2026-10-23)
+
+The origin server consumes the request body incrementally and limits the complete multipart payload with `maximumRequestLength`. Each DICOM part spills to `temporaryDirectory` above `memoryLimit`. Spilled Part 10 files are decoded in place with deferred binary values (at least 1 MiB), including metadata after Pixel Data, before invoking `DICOMwebStoreService`. Small in-memory parts use the bounded memory decoder. Store service implementations and metadata can have additional allocations; this is not a global memory quota or disk reservation. Deflated STOW datasets are limited to 64 MiB compressed and 256 MiB inflated because inflation still uses memory. The service continues to support only `application/dicom` parts, not separate Metadata and Bulk Data.
+
+Synthetic mandatory tests in `DcmSwiftWebServerTests` cover deferred native Pixel Data, metadata following Pixel Data, file-backed RLE and Deflated parts, split multipart boundaries and cleanup after truncation. The independent oracle test remains optional.

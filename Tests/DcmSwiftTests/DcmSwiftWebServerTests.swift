@@ -167,6 +167,82 @@ final class DcmSwiftWebServerTests: XCTestCase {
 
     // MARK: Store (PS3.18 10.5, Annex I)
 
+    func testSpilledSTOWDecodeDefersPixelDataAndReadsFollowingElements() throws {
+        let ds = Self.image(sopClass: "1.2.840.10008.5.1.4.1.1.4", instance: Self.mrInstance,
+                            series: Self.mrSeries, seriesNumber: "1", modality: "MR",
+                            rows: 1024, columns: 1024, frames: nil)
+        let pixels = DataElement(withTagName: "PixelData", dataset: ds)!
+        pixels.vr = .OW
+        XCTAssertTrue(pixels.setValue(Data(repeating: 42, count: 2 << 20)))
+        ds.add(element: pixels)
+        let following = DataElement(withTag: DataTag(withGroup: "7fe1", element: "0010"), dataset: ds)
+        following.vr = .LO
+        XCTAssertTrue(following.setValue("AFTER PIXELS"))
+        ds.add(element: following)
+        let part = DICOMPart10Header.encodeMetaInformation(sopClassUID: "1.2.840.10008.5.1.4.1.1.4",
+            sopInstanceUID: Self.mrInstance, transferSyntaxUID: TransferSyntax.explicitVRLittleEndian, sourceAETitle: nil)
+            + (try DICOMDataSetCoding.encode(ds, transferSyntax: TransferSyntax.explicitVRLittleEndian))
+        let sink = DataSetSink(memoryLimit: 1024, maximumLength: 4 << 20, directory: directory)
+        for offset in stride(from: 0, to: part.count, by: 65536) {
+            try sink.append(part.subdata(in: offset..<min(offset + 65536, part.count)))
+        }
+        let header = try DICOMPart10Header.parse(sink.head, totalLength: UInt64(sink.length))
+        let payload = try sink.finish(skipping: Int(header.dataSetOffset))
+        let parsed = try DICOMwebOriginServer.storeDataSet(payload, transferSyntax: header.transferSyntaxUID,
+                                                         maximumLength: 4 << 20)
+        let parsedPixels = try XCTUnwrap(parsed.element(forTagName: "PixelData"))
+        XCTAssertNotNil(parsedPixels.bulkDataReference)
+        XCTAssertEqual(parsedPixels.length, 2 << 20)
+        XCTAssertEqual(parsed.allElements.first { $0.tagCode() == "7fe10010" }?.value as? String, "AFTER PIXELS")
+        XCTAssertEqual(try parsedPixels.bulkDataReference?.load(), Data(repeating: 42, count: 2 << 20))
+    }
+
+    func testSpilledSTOWSupportsRLEAndBoundedDeflatedDatasets() async throws {
+        let native = try Self.mrPart10()
+        let meta = try DICOMPart10Header.parse(native, totalLength: UInt64(native.count))
+        let dataset = try DICOMDataSetCoding.decode(Data(native.dropFirst(Int(meta.dataSetOffset))),
+                                                   transferSyntax: meta.transferSyntaxUID)
+        let deflatedSyntax = "1.2.840.10008.1.2.1.99"
+        let deflated = DICOMPart10Header.encodeMetaInformation(sopClassUID: meta.sopClassUID,
+            sopInstanceUID: meta.sopInstanceUID, transferSyntaxUID: deflatedSyntax, sourceAETitle: nil)
+            + (try DICOMDataSetCoding.encode(dataset, transferSyntax: deflatedSyntax))
+        let services = DICOMArchiveServices(archive: DICOMArchive(directory: directory))
+        let origin = DICOMwebOriginServer(configuration: .init(basePath: "/dicomweb", memoryLimit: 1,
+                                                               temporaryDirectory: directory), store: services)
+        for part in [try Self.ctPart10(), deflated] {
+            let body = DICOMwebMultipart.Writer.encode([(.init([("Content-Type", "application/dicom")]), part)], boundary: "b")
+            let response = await origin.respond(to: .init(method: "POST", target: "/dicomweb/studies",
+                headers: .init([("Content-Type", "multipart/related; type=application/dicom; boundary=b"),
+                                ("Accept", "application/dicom+json")]), body: body), origin: Self.origin)
+            let responseBody = try await response.collectBody()
+            XCTAssertEqual(response.status, 200, String(decoding: responseBody, as: UTF8.self))
+        }
+        // This length-only payload has no backing allocation. The guard must fire before decoding.
+        let tooLarge = DICOMDataSetPayload(file: directory.appendingPathComponent("absent"), length: (64 << 20) + 1)
+        XCTAssertThrowsError(try DICOMwebOriginServer.storeDataSet(tooLarge, transferSyntax: deflatedSyntax,
+                                                                 maximumLength: 128 << 20))
+    }
+
+    func testStreamingSTOWAcceptsSplitBoundariesAndCleansTruncatedParts() async throws {
+        let partHeaders = DICOMwebMultipart.Headers([("Content-Type", "application/dicom")])
+        let body = DICOMwebMultipart.Writer.encode([(partHeaders, try Self.mrPart10())], boundary: "stream")
+        let spool = directory.appendingPathComponent("spool")
+        try FileManager.default.createDirectory(at: spool, withIntermediateDirectories: true)
+        let services = DICOMArchiveServices(archive: DICOMArchive(directory: directory))
+        let streamedServer = DICOMwebOriginServer(configuration: .init(basePath: "/dicomweb", memoryLimit: 1, temporaryDirectory: spool), store: services)
+        for (length, expected) in [(body.count, 200), (body.count / 2, 400)] {
+            let request = DICOMwebHTTPRequest(method: "POST", path: "/dicomweb/studies",
+                headers: .init([("Content-Type", "multipart/related; type=application/dicom; boundary=stream"), ("Accept", "application/dicom+json")]),
+                body: AsyncThrowingStream { continuation in
+                    for byte in body.prefix(length) { continuation.yield(Data([byte])) }
+                    continuation.finish()
+                })
+            let response = await streamedServer.respond(to: request, origin: Self.origin)
+            XCTAssertEqual(response.status, expected)
+            XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: spool.path), [])
+        }
+    }
+
     func testStoreReturnsTheStoreInstancesResponseModule() async throws {
         var part = DICOMwebMultipart.Headers()
         part["Content-Type"] = "application/dicom"
