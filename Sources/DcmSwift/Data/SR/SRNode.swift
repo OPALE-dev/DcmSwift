@@ -42,7 +42,8 @@ public enum RelationshipType:String {
 
 
 public class SRNode: CustomStringConvertible {
-    public var parent:SRNode?
+    /// Non-owning navigation: the root owns its descendants through `nodes`.
+    public weak var parent:SRNode?
     public var nodes:[SRNode] = []
     public var level:Int = 1
     

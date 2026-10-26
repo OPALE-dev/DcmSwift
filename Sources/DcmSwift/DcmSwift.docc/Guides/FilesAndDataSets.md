@@ -52,6 +52,20 @@ _ = dataset.set(value: "12345678", forTagName: "PatientID")
 print(dataset.toData().toHex())
 ```
 
+## Ownership and retained elements
+
+A `DataSet` owns its elements; sequences own their items and items own their
+children. The `DataElement.dataset` and `DataElement.parent` navigation links
+are weak: keeping a leaf does not retain its entire tree or sibling Pixel Data.
+Keep the root data set alive while navigating or editing a complete tree.
+After its owners are released, a retained element's navigation links become
+`nil`. Its own loaded bytes or deferred file reference remain usable, and its
+decoded character repertoire or last text-encoding context remains available.
+This ownership rule applies equally to constructed and decoded data sets,
+including nested sequences. It changes no DICOM encoding or transfer syntax.
+
+Structured Report trees follow the same ownership direction: `SRNode.nodes` owns the children, while `SRNode.parent` is a weak navigation link. Retaining a child does not retain its ancestors; keep the root alive while traversing upwards.
+
 ## Values
 
 | Value kind | API |
