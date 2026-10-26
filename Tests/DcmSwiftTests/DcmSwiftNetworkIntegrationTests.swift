@@ -1,4 +1,5 @@
 import XCTest
+import Logging
 #if canImport(Glibc)
 import Glibc
 #else
@@ -151,6 +152,41 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
     }
 
     // MARK: Tests
+
+    private struct CapturedLog: Sendable { let message: String; let fields: Logging.Logger.Metadata }
+    private struct DiagnosticLogHandler: LogHandler {
+        let entries: NIOLockedValueBox<[CapturedLog]>
+        var metadata: Logging.Logger.Metadata = [:]
+        var logLevel: Logging.Logger.Level = .debug
+        subscript(metadataKey key: String) -> Logging.Logger.MetadataValue? {get{metadata[key]}set{metadata[key]=newValue}}
+        func log(level: Logging.Logger.Level, message: Logging.Logger.Message, metadata supplied: Logging.Logger.Metadata?, source: String, file: String, function: String, line: UInt) {
+            entries.withLockedValue { $0.append(.init(message:message.description,fields:metadata.merging(supplied ?? [:]){_,new in new})) }
+        }
+    }
+    func testNegotiationAndDIMSELogsRetainNetworkContextAndCorrelateResponses() async throws {
+        let entries=NIOLockedValueBox<[CapturedLog]>([])
+        var config=configuration()
+        config.logger=Logging.Logger(label:"synthetic.diagnostics",factory:{_ in DiagnosticLogHandler(entries:entries)})
+        let server=try DICOMServer(configuration:config)
+        try await withServer(server) { port in
+            _ = try await client().withAssociation(to:.init(aeTitle:"SCP",host:"127.0.0.1",port:port),presentationContexts:.proposals(abstractSyntaxes:[DICOMSOPClass.verification,"1.2.3.999"])) { try await $0.echo() }
+        }
+        let logs=entries.withLockedValue{$0}
+        let accepted=try XCTUnwrap(logs.first{$0.fields["event"] == "association.accepted"})
+        XCTAssertEqual(accepted.fields["called_ae"],"SCP")
+        XCTAssertEqual(accepted.fields["remote_ip"],"127.0.0.1")
+        XCTAssertNotNil(accepted.fields["calling_ae"]);XCTAssertNotNil(accepted.fields["requestor_max_pdu"])
+        let context=try XCTUnwrap(logs.first{$0.fields["event"] == "association.context.accepted"})
+        XCTAssertEqual(context.fields["association_id"],accepted.fields["association_id"])
+        XCTAssertEqual(context.fields["sop_class"],.string(DICOMSOPClass.verification))
+        XCTAssertNotNil(context.fields["transfer_syntax"])
+        XCTAssertTrue(logs.contains{$0.fields["event"] == "association.context.refused" && $0.fields["reason"] == "abstractSyntaxNotSupported"})
+        let response=try XCTUnwrap(logs.first{$0.fields["event"] == "service.response"})
+        XCTAssertEqual(response.fields["status"],"0x0000")
+        XCTAssertEqual(response.fields["association_id"],accepted.fields["association_id"])
+        XCTAssertNotNil(response.fields["message_id"])
+        XCTAssertFalse(logs.contains{$0.fields["dataset"] != nil || $0.fields["user_identity"] != nil})
+    }
 
     func testEchoAndRelease() async throws {
         let server = try DICOMServer(configuration: configuration())

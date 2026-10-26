@@ -291,7 +291,13 @@ public final class DICOMServer: Sendable {
         channel: Channel, admitted: Bool, release: @Sendable () -> Void
     ) async throws {
         let configuration = self.configuration
-        let logger = configuration.logger
+        var logger = configuration.logger
+        logger[metadataKey: "association_id"] = .string(UUID().uuidString.lowercased())
+        logger[metadataKey: "remote_ip"] = .string(channel.remoteAddress?.ipAddress ?? "unknown")
+        logger[metadataKey: "remote_port"] = .string(String(channel.remoteAddress?.port ?? 0))
+        logger[metadataKey: "local_ip"] = .string(channel.localAddress?.ipAddress ?? "unknown")
+        logger[metadataKey: "local_port"] = .string(String(channel.localAddress?.port ?? 0))
+        logger[metadataKey: "tls"] = .string(String(configuration.tls != nil))
         var iterator = inbound.makeAsyncIterator()
         var machine = DICOMAssociationStateMachine(role: .acceptor)
         _ = machine.handle(.transportConnectIndication)
@@ -316,13 +322,15 @@ public final class DICOMServer: Sendable {
             return
         }
 
+        logger[metadataKey: "calling_ae"] = .string(request.callingAETitle)
+        logger[metadataKey: "called_ae"] = .string(request.calledAETitle)
         let answer: Result<(DICOMAssociateAccept, DICOMNegotiatedAssociation), DICOMAssociateReject> = admitted
             ? DICOMAssociationNegotiator.respond(to: request, policy: policy)
             : .failure(DICOMAssociateReject(result: .transient, reason: .localLimitExceeded))
         switch answer {
         case .failure(let reject):
             release()
-            logger.info("rejecting \(request.callingAETitle) at \(channel.remoteAddress?.description ?? "?"): \(reject.reason)")
+            logger.info("Association refused", metadata: ["event": "association.refused", "reason": .string(String(describing: reject.reason))])
             if let audit = configuration.audit {
                 let host = DICOMAuditMessage.host(of: channel.remoteAddress?.description)
                 let source = configuration.auditSource ?? DICOMAuditSource(id: configuration.aeTitle)
@@ -338,7 +346,27 @@ public final class DICOMServer: Sendable {
             await Self.awaitClose(&iterator, channel: channel, artim: configuration.timeouts.artim)
         case .success(let (accept, negotiated)):
             for case .send(let pdu) in machine.handle(.associateAcceptPrimitive(accept)) { try await outbound.write(pdu) }
-            logger.info("association with \(request.callingAETitle) at \(channel.remoteAddress?.description ?? "?"): \(negotiated.presentationContexts.count) contexts")
+            logger.info("Association accepted", metadata: ["event": "association.accepted",
+                "accepted_contexts": .string(String(negotiated.presentationContexts.count)),
+                "proposed_contexts": .string(String(request.presentationContexts.count)),
+                "requestor_max_pdu": .string(String(negotiated.requestorMaximumLength)),
+                "acceptor_max_pdu": .string(String(negotiated.acceptorMaximumLength)),
+                "async_invoked": .string(String(negotiated.asynchronousOperationsWindow.maximumInvoked)),
+                "async_performed": .string(String(negotiated.asynchronousOperationsWindow.maximumPerformed)),
+                "implementation_class": .string(negotiated.requestorImplementationClassUID ?? ""),
+                "implementation_version": .string(negotiated.requestorImplementationVersionName ?? "")])
+            for context in request.presentationContexts {
+                if let accepted = negotiated.presentationContexts[context.id] {
+                    logger.info("Presentation context accepted", metadata: ["event": "association.context.accepted",
+                        "context_id": .string(String(accepted.id)), "sop_class": .string(accepted.abstractSyntax),
+                        "transfer_syntax": .string(accepted.transferSyntax),
+                        "requestor_scu": .string(String(accepted.requestorIsSCU)), "requestor_scp": .string(String(accepted.requestorIsSCP))])
+                } else {
+                    logger.info("Presentation context refused", metadata: ["event": "association.context.refused",
+                        "context_id": .string(String(context.id)), "sop_class": .string(context.abstractSyntax),
+                        "reason": .string(accept.presentationContexts.first(where: { $0.id == context.id }).map { String(describing: $0.result) } ?? "not_negotiated")])
+                }
+            }
             if let audit = configuration.audit, let identity = negotiated.userIdentity {
                 let host = DICOMAuditMessage.host(of: channel.remoteAddress?.description)
                 await audit.record(.userAuthentication(
@@ -357,6 +385,7 @@ public final class DICOMServer: Sendable {
             await DICOMAssociationRuntime.serve(
                 runtime: runtime, association: DICOMAssociation(runtime: runtime), iterator: &iterator,
                 dispatcher: dispatcher)
+            logger.debug("Association handler ended", metadata: ["event": "association.closed"])
         }
     }
 

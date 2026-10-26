@@ -25,7 +25,19 @@ struct DICOMRequestDispatcher: Sendable {
     var outgoingClient: DICOMClient?
 
     func perform(_ request: DICOMMessage, on association: DICOMAssociation) async {
+        let started = DispatchTime.now().uptimeNanoseconds
+        let context = association.negotiated.presentationContexts[request.presentationContextID]
+        association.runtime.logger.debug("DIMSE service started", metadata: ["event": "service.started",
+            "dimse_command": .string(String(describing: request.command.field)),
+            "message_id": .string(String(request.command.messageID ?? 0)),
+            "context_id": .string(String(request.presentationContextID)),
+            "sop_class": .string(context?.abstractSyntax ?? ""), "transfer_syntax": .string(context?.transferSyntax ?? "")])
         await handle(request, on: association)
+        association.runtime.logger.debug("DIMSE service handler finished", metadata: ["event": "service.finished",
+            "dimse_command": .string(String(describing: request.command.field)),
+            "message_id": .string(String(request.command.messageID ?? 0)),
+            "context_id": .string(String(request.presentationContextID)),
+            "duration_ms": .string(String((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000))])
         await association.runtime.finishedPerforming(request.command.messageID ?? 0)
     }
 
