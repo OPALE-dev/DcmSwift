@@ -25,8 +25,13 @@ public class DataElement : DicomObject {
     public var endOffset:Int        = 0
     public var length:Int           = 0
     
-    public var parent:DataElement?
-    public var dataset:DataSet?
+    /// Non-owning navigation links. Keep the root DataSet alive while navigating/editing its tree.
+    public weak var parent:DataElement?
+    public weak var dataset:DataSet? {
+        didSet { if let dataset { detachedCharacterSet = dataset.characterSet } }
+    }
+    // Retained leaves must still decode text without retaining their entire owner and its pixels.
+    private var detachedCharacterSet:DICOMCharacterSet?
     public var tag:DataTag
     private var storedData:Data?
     public internal(set) var bulkDataReference:DICOMBulkDataReference?
@@ -93,7 +98,7 @@ public class DataElement : DicomObject {
     public internal(set) var characterSet:DICOMCharacterSet?
 
     public var effectiveCharacterSet:DICOMCharacterSet {
-        return characterSet ?? dataset?.characterSet ?? .defaultRepertoire
+        return characterSet ?? dataset?.characterSet ?? detachedCharacterSet ?? .defaultRepertoire
     }
     
     private var dataValues:[DataValue] = []
@@ -119,6 +124,7 @@ public class DataElement : DicomObject {
     
     init(withTag tag:DataTag, dataset:DataSet? = nil, parent:DataElement? = nil) {
         self.dataset    = dataset
+        self.detachedCharacterSet = dataset?.characterSet
         self.tag        = tag
         
         if let p = parent {
@@ -136,6 +142,7 @@ public class DataElement : DicomObject {
         }
        
         self.dataset = dataset
+        self.detachedCharacterSet = dataset.characterSet
         
         if let p = parent {
             self.parent = p
@@ -176,7 +183,9 @@ public class DataElement : DicomObject {
         if let string = val as? String {
             let encoded: Data?
             if usesSpecificCharacterSet {
-                encoded = effectiveCharacterSet.encode(string, vr: self.vr)
+                let context = effectiveCharacterSet
+                encoded = context.encode(string, vr: self.vr)
+                if encoded != nil { detachedCharacterSet = context }
             } else {
                 encoded = string.data(using: .ascii)
             }
