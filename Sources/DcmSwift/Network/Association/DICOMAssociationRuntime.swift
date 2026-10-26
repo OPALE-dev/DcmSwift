@@ -118,6 +118,13 @@ actor DICOMAssociationRuntime {
                 throw DICOMNetworkError.connectionClosed
             }
         }
+        if let status = message.command.statusValue, !status.isPending {
+            logger.log(level: status.isSuccess || status.code == 0xFE00 ? .debug : .warning, "DIMSE response sent", metadata: [
+                "event": "service.response", "dimse_command": .string(String(describing: message.command.field)),
+                "message_id": .string(String(message.command.messageIDBeingRespondedTo ?? 0)),
+                "context_id": .string(String(message.presentationContextID)),
+                "status": .string(String(format: "0x%04X", status.code))])
+        }
     }
 
     /// Sends a request and returns the queue its responses arrive on.
@@ -234,18 +241,18 @@ actor DICOMAssociationRuntime {
             return
         }
         if let pduError = error as? DICOMPDUError {
-            logger.warning("invalid PDU from \(remoteAddress): \(pduError.message)")
+            logger.warning("invalid PDU from \(remoteAddress): \(pduError.message)", metadata:["reason":"invalid_pdu"])
             fail(.protocolViolation(pduError.message))
             _ = await perform(machine.handle(.invalidPDU(pduError.reason)))
         } else if let networkError = error as? DICOMNetworkError {
-            logger.warning("association with \(remoteAddress): \(networkError)")
+            logger.warning("association with \(remoteAddress): \(networkError)", metadata:["reason":.string(networkError.operationalLogCode)])
             fail(networkError)
             await sendAbort()
         } else {
             // A TLS failure drops the connection (PS3.15 B.12): an A-P-ABORT
             // with DICOMNetworkError.tls as the provider reason.
             let networkError = DICOMNetworkError.from(error)
-            if case .tls = networkError { logger.warning("association with \(remoteAddress): \(networkError)") }
+            if case .tls = networkError { logger.warning("association with \(remoteAddress): \(networkError)", metadata:["reason":.string(networkError.operationalLogCode)]) }
             fail(networkError)
         }
         channel.close(promise: nil)
@@ -457,4 +464,19 @@ actor DICOMAssociationRuntime {
 
     /// Whether the association reached its end.
     var isFinished: Bool { machine.state == .idle }
+}
+
+private extension DICOMNetworkError {
+    var operationalLogCode: String {
+        switch self {
+        case .associationRejected: return "association_rejected"
+        case .associationAborted: return "association_aborted"
+        case .protocolViolation: return "protocol_violation"
+        case .timeout: return "timeout"
+        case .connectionClosed: return "connection_closed"
+        case .noPresentationContext: return "no_presentation_context"
+        case .invalidState: return "invalid_association_state"
+        case .tls: return "tls_failure"
+        }
+    }
 }
