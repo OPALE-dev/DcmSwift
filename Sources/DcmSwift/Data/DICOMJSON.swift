@@ -160,10 +160,20 @@ public enum DICOMJSON {
     /// The element with its dictionary VR, when it is UN and that VR is
     /// unambiguous. UN Values are encoded as in Implicit VR Little Endian.
     static func resolvingUnknownVR(_ element: DataElement) -> DataElement {
-        guard element.vr == .UN, !(element is DataSequence), let data = element.data else { return element }
+        guard element.vr == .UN, !(element is DataSequence) else { return element }
         // Private Creators are LO (PS3.5 7.8.1).
         let candidates = element.tag.isPrivateCreator ? [.LO] : DicomSpec.shared.vrsForTag(withCode: element.tag.code)
         guard candidates.count == 1, let vr = candidates.first, vr != .UN else { return element }
+        if vr != .SQ, !element.isDataLoaded, let reference = element.bulkDataReference {
+            let resolved = DataElement(withTag: element.tag, dataset: element.dataset, parent: element.parent)
+            resolved.vr = vr
+            resolved.byteOrder = .LittleEndian
+            resolved.characterSet = element.characterSet
+            resolved.deferData(to: reference)
+            resolved.length = element.length
+            return resolved
+        }
+        guard let data = element.data else { return element }
         if vr == .SQ {
             // The Items, as encoded in Implicit VR Little Endian.
             var bytes = element.tag.data(withByteOrder: .LittleEndian)
@@ -212,11 +222,12 @@ public enum DICOMJSON {
             attribute["BulkDataURI"] = uri
             return attribute
         }
-        guard element.length > 0, let data = element.data, !data.isEmpty else { return attribute }
-        if let uri = options.bulkDataURI?(element) {
+        // A referenced Value Field must not be materialized merely to emit its URI.
+        if element.length > 0, let uri = options.bulkDataURI?(element) {
             attribute["BulkDataURI"] = uri
             return attribute
         }
+        guard element.length > 0, let data = element.data, !data.isEmpty else { return attribute }
 
         func numbers<T>(_ values: [T]?, _ convert: (T) -> Any) throws -> [Any] {
             guard let values else { throw DICOMJSONError("\(tag) \(vr) has a length that is not a multiple of its size") }

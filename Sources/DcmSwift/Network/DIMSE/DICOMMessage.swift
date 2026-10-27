@@ -55,6 +55,16 @@ public final class DICOMDataSetPayload: @unchecked Sendable {
         return nil
     }
 
+    /// A lazy Part 10 decode is valid only when this payload is exactly that file's dataset.
+    /// Arbitrary file slices and spooled raw datasets must retain the byte-decoder fallback.
+    func part10File(transferSyntax: String) -> URL? {
+        guard case .file(let url, let offset, _) = storage,
+              let header = try? DICOMPart10Header.read(url),
+              header.dataSetOffset == offset, header.dataSetLength == length,
+              header.transferSyntaxUID == transferSyntax else { return nil }
+        return url
+    }
+
     /// All bytes in memory.
     public func data() throws -> Data {
         switch storage {
@@ -73,32 +83,37 @@ public final class DICOMDataSetPayload: @unchecked Sendable {
         }
     }
 
-    /// Reads the bytes in chunks of at most `chunk` bytes.
-    func chunks(of chunk: Int) throws -> AnyIterator<Data> {
+    /// A throwing reader for pull-driven HTTP responses. It keeps one file descriptor,
+    /// propagates I/O failures and rejects a truncated payload instead of silently ending it.
+    func chunkReader(of chunk: Int) throws -> () throws -> Data? {
         switch storage {
         case .memory(let data):
-            var position = 0
-            return AnyIterator {
-                guard position < data.count else { return nil }
-                defer { position += chunk }
-                return data.subdata(
-                    in: (data.startIndex + position)..<(data.startIndex + Swift.min(position + chunk, data.count)))
+            var position=0
+            return {
+                guard position < data.count else {return nil}
+                let end=Swift.min(position+chunk,data.count)
+                defer {position=end}
+                return data.subdata(in:(data.startIndex+position)..<(data.startIndex+end))
             }
-        case .file(let url, let offset, _):
-            let file = try DICOMPOSIXFile.open(reading: url)
-            try file.seek(to: offset)
-            var remaining = length
-            // A read error ends the sequence early; the receiver sees a
-            // shorter data set and the sender fails on the length check.
-            return AnyIterator {
-                guard remaining > 0, let data = try? file.read(upTo: Swift.min(chunk, remaining)), !data.isEmpty else {
-                    return nil
-                }
-                remaining -= data.count
-                return data
+        case .file(let url,let offset,_):
+            let file=try DICOMPOSIXFile.open(reading:url)
+            try file.seek(to:offset)
+            var remaining=length
+            return {
+                guard remaining > 0 else {return nil}
+                let bytes=try file.read(upTo:Swift.min(chunk,remaining))
+                guard !bytes.isEmpty else {throw DICOMCommandError("stored data set ended before its declared length")}
+                remaining-=bytes.count;return bytes
             }
         }
     }
+
+    /// Legacy DIMSE iterator: the receiver and fragmenter enforce the declared length.
+    func chunks(of chunk: Int) throws -> AnyIterator<Data> {
+        let read=try chunkReader(of:chunk)
+        return AnyIterator {try? read()}
+    }
+
 }
 
 /// Splits a message into P-DATA-TF PDUs that fit the peer's Maximum Length
@@ -299,6 +314,19 @@ public enum DICOMDataSetCoding {
             return try DICOMDeflate.compress(explicit)
         }
         return dataset.DIMSEData(transferSyntax: syntax)
+    }
+
+    /// Decodes a payload using deferred binary values when it is an exact stored Part 10
+    /// dataset. Raw file slices, memory and deflated payloads keep the bounded byte decoder.
+    public static func decode(_ payload: DICOMDataSetPayload, transferSyntax uid: String,
+        limits: DicomReadLimits = DicomReadLimits(), bulkDataLoadingPolicy: DICOMBulkDataLoadingPolicy = .eager) throws -> DataSet {
+        if case .lazy = bulkDataLoadingPolicy, !TransferSyntax.deflatesDataSet(uid), let url=payload.part10File(transferSyntax:uid) {
+            let stream=DicomInputStream(url:url)
+            stream.limits=limits;stream.bulkDataLoadingPolicy=bulkDataLoadingPolicy
+            guard let dataset=try stream.readDataset(enforceVR:false) else {throw DICOMCommandError("cannot parse the stored data set")}
+            dataset.transferSyntax=TransferSyntax(uid);return dataset
+        }
+        return try decode(payload.data(),transferSyntax:uid,limits:limits)
     }
 
     /// Decodes data set bytes; `limits` bounds the parser.
