@@ -145,7 +145,7 @@ public struct DICOMEncapsulatedPixelData {
         }
         var data = Data()
         for index in frameFragments[frame] {
-            data.append(try fragments[index].loadData())
+            data.append(try Self.fragmentBytes(fragments[index]))
         }
         if let frameLengths {
             data = data.prefix(frameLengths[frame])
@@ -179,7 +179,7 @@ public struct DICOMEncapsulatedPixelData {
         return try collections.frame(frame, units: units.count) { unit in
             var data = Data()
             for index in units[unit] {
-                data.append(try fragments[index].loadData())
+                data.append(try Self.fragmentBytes(fragments[index]))
             }
             let frames = try decoder.decodeCollection(data, description: description.decodedFrame())
             guard !frames.isEmpty else {
@@ -187,6 +187,12 @@ public struct DICOMEncapsulatedPixelData {
             }
             return frames
         }
+    }
+
+    /// Do not retain every encoded frame in the dataset while a long cine is streamed.
+    private static func fragmentBytes(_ fragment: DataItem) throws -> Data {
+        if !fragment.isDataLoaded,let reference=fragment.bulkDataReference {return try reference.load()}
+        return try fragment.loadData()
     }
 
     /// Fragments that begin a codestream, used when an empty Basic Offset
@@ -201,8 +207,8 @@ public struct DICOMEncapsulatedPixelData {
         }
         var starts: [Int] = []
         for (index, fragment) in fragments.enumerated() {
-            guard let data = try? fragment.loadData() else { return nil }
-            let head = [UInt8](data.prefix(4))
+            guard let data = try? fragment.loadData(range:0..<min(4,fragment.length)) else { return nil }
+            let head = [UInt8](data)
             if markers.contains(where: { head.starts(with: $0) }) { starts.append(index) }
         }
         return starts.first == 0 ? starts : nil

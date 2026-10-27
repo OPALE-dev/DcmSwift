@@ -73,3 +73,30 @@ try await server.run()
 
 The conformance details, and what is not supported yet, are in
 <doc:Conformance> and <doc:DeferredLimitations>.
+
+## Large objects and streamed responses
+
+Stored Part 10 datasets are decoded with deferred binary values for metadata and frames.
+The lazy path is used only when the payload is exactly the file's dataset, with the same
+transfer syntax, offset and length. Raw dataset slices, memory payloads and deflated
+syntaxes keep the bounded byte decoder. `DICOMDataSetCoding.decode` also exposes this
+choice for a `DICOMDataSetPayload`; existing byte-based calls retain their behavior.
+A `BulkDataURI` can be encoded without reading the corresponding value.
+
+Instance and frame response streams produce data only as their consumer advances.
+The HTTP adapter awaits each write. File reads use chunks of at most one MiB; frames
+are encoded or decoded one at a time on the bounded blocking pool, and encoded
+file-backed fragments are not accumulated in the dataset. JPEG 2000 Part 2 component
+collections remain decoded one collection at a time. A consumer must iterate or cancel
+the stream rather than collect the entire response when it needs bounded memory.
+
+Resource lookup, frame-number validation and content negotiation happen before the
+response. A later file, truncation or codec failure terminates the stream; an HTTP 200
+header alone does not establish receipt of the complete body. Multipart frame responses
+may use chunked transfer and omit per-part lengths when the encoded length is not known.
+
+A retrieve service can optionally implement ``DICOMwebDataSetRetrieveService`` to apply
+metadata/clinical projections to a lazy dataset for metadata and frame resources, without
+creating a second complete pixel file. The application remains responsible for its access,
+identity, signature and integrity checks. Part 10 instance retrieval keeps using the
+service's original `instances` method.

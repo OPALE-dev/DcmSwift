@@ -80,9 +80,7 @@ enum DICOMwebTranscoding {
 
     /// The data set of an instance.
     static func dataSet(_ item: DICOMRetrieveItem) throws -> DataSet {
-        let dataSet = try DICOMDataSetCoding.decode(item.payload.data(), transferSyntax: item.transferSyntaxUID)
-        dataSet.transferSyntax = TransferSyntax(item.transferSyntaxUID)
-        return dataSet
+        try DICOMDataSetCoding.decode(item.payload,transferSyntax:item.transferSyntaxUID,bulkDataLoadingPolicy:.lazy(minimumLength:1))
     }
 
     /// Pixel Data attributes that metadata replaces by a Bulk Data URI.

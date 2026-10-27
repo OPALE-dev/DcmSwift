@@ -343,19 +343,12 @@ public struct DICOMwebOriginServer: Sendable {
     private static func stream(
         _ parts: [(Data?, Data, DICOMDataSetPayload)], trailer: Data = Data()
     ) -> AsyncThrowingStream<Data, Error> {
-        AsyncThrowingStream { continuation in
-            do {
-                for (header, meta, payload) in parts {
-                    if let header { continuation.yield(header) }
-                    continuation.yield(meta)
-                    for chunk in try payload.chunks(of: 1 << 20) { continuation.yield(chunk) }
-                }
-                if !trailer.isEmpty { continuation.yield(trailer) }
-                continuation.finish()
-            } catch {
-                continuation.finish(throwing: error)
-            }
-        }
+        DICOMwebPayloadBody(parts,trailer:trailer).stream()
+    }
+
+    private func dataSet(_ item: DICOMRetrieveItem, context: DICOMwebRequestContext) async throws -> DataSet {
+        if let provider=retrieve as? any DICOMwebDataSetRetrieveService {return try await provider.dataSet(for:item,context:context)}
+        return try DICOMwebTranscoding.dataSet(item)
     }
 
     private func metadataResponse(
@@ -367,7 +360,7 @@ public struct DICOMwebOriginServer: Sendable {
         var dataSets: [DataSet] = []
         var options: [DICOMJSON.EncodingOptions] = []
         for item in items {
-            let dataSet = try DICOMwebTranscoding.dataSet(item)
+            let dataSet = try await dataSet(item,context:context)
             let study = dataSet.string(forTag: "StudyInstanceUID") ?? resource.study ?? ""
             let series = dataSet.string(forTag: "SeriesInstanceUID") ?? resource.series ?? ""
             let instanceURL = "\(context.baseURI)/studies/\(study)/series/\(series)/instances/\(item.sopInstanceUID)"
@@ -409,11 +402,11 @@ public struct DICOMwebOriginServer: Sendable {
     ) async throws -> DICOMwebHTTPResponse {
         let items = try await items(resource, context)
         let accept = Self.acceptQueryParameter(request.query)
-        var writer = DICOMwebMultipart.Writer()
-        var body = Data()
+        let writer = DICOMwebMultipart.Writer()
+        var selections: [DICOMwebFrameSelection] = []
         var commonType: DICOMwebMediaType?
         for item in items {
-            let dataSet = try DICOMwebTranscoding.dataSet(item)
+            let dataSet = try await dataSet(item,context:context)
             let description: DICOMPixelDescription
             do { description = try DICOMPixelDescription(dataset: dataSet) } catch {
                 if resource.instance != nil { throw DICOMwebHTTPError(404, "The instance has no Pixel Data") }
@@ -433,37 +426,28 @@ public struct DICOMwebOriginServer: Sendable {
                                              ? item.transferSyntaxUID : TransferSyntax.explicitVRLittleEndian)
             let part = selected.relatedType ?? selected
             let compressed = part != .octetStream && part.essence != "application/octet-stream"
-            let frames: [Data]
-            do { frames = try DICOMwebTranscoding.frames(dataSet, numbers: numbers, compressed: compressed) } catch let error as DICOMPixelDataError {
-                if case .frameOutOfRange = error { throw DICOMwebHTTPError(404, String(describing: error)) }
-                throw error
+            for number in numbers where number < 1 || number > description.numberOfFrames {
+                throw DICOMwebHTTPError(404,"Frame number is outside the instance")
             }
+            let source: DICOMwebFrameSelection.Source = description.isEncapsulated
+                ? .encapsulated(try DICOMEncapsulatedPixelData(dataset:dataSet))
+                : .native(try DICOMNativePixelData(dataset:dataSet))
             let study = dataSet.string(forTag: "StudyInstanceUID") ?? resource.study ?? ""
             let series = dataSet.string(forTag: "SeriesInstanceUID") ?? resource.series ?? ""
             let instanceURL = "\(context.baseURI)/studies/\(study)/series/\(series)/instances/\(item.sopInstanceUID)"
             var partHeaders = DICOMwebMultipart.Headers()
             partHeaders["Content-Type"] = (compressed ? part : DICOMwebMediaType.octetStream
                 .with("transfer-syntax", TransferSyntax.explicitVRLittleEndian)).description
-            if compressed || resource.kind == .frames {
-                // One part per frame (PS3.18 8.7.3.3).
-                for (number, frame) in zip(numbers, frames) {
-                    partHeaders["Content-Location"] = resource.kind == .frames
-                        ? "\(instanceURL)/frames/\(number)" : "\(instanceURL)/pixeldata"
-                    body += writer.part(partHeaders, body: frame)
-                }
-            } else {
-                // Uncompressed multi-frame Pixel Data is one representation.
-                partHeaders["Content-Location"] = "\(instanceURL)/pixeldata"
-                body += writer.part(partHeaders, body: frames.reduce(Data(), +))
-            }
+            selections.append(.init(source:source,numbers:numbers,compressed:compressed,
+                onePart:!compressed && resource.kind != .frames,isFrameResource:resource.kind == .frames,
+                headers:partHeaders,instanceURL:instanceURL))
             commonType = commonType ?? (compressed ? part : .octetStream)
         }
         guard let commonType else { throw DICOMwebHTTPError(404, "No Pixel Data in \(resource.path)") }
-        body += writer.close()
         var headers = DICOMwebMultipart.Headers()
         headers["Content-Type"] = DICOMwebMediaType.multipartRelated(
             DICOMwebMediaType(type: commonType.type, subtype: commonType.subtype), boundary: writer.boundary).description
-        return DICOMwebHTTPResponse(status: 200, headers: headers, body: .data(request.method == "HEAD" ? Data() : body))
+        return DICOMwebHTTPResponse(status: 200, headers: headers, body: request.method == "HEAD" ? .empty : .stream(DICOMwebFrameBody(selections,writer:writer).stream(),length:nil))
     }
 
     // MARK: Store

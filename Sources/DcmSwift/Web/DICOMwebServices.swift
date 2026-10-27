@@ -41,6 +41,13 @@ public protocol DICOMwebRetrieveService: Sendable {
     ) async throws -> [DICOMRetrieveItem]
 }
 
+/// Optional dataset projection for metadata and frames. A server may apply clinical overlays
+/// to a lazy dataset without creating a second file containing the complete Pixel Data.
+/// Instance/Part 10 retrieval continues to use `instances` unchanged.
+public protocol DICOMwebDataSetRetrieveService: DICOMwebRetrieveService {
+    func dataSet(for item: DICOMRetrieveItem, context: DICOMwebRequestContext) async throws -> DataSet
+}
+
 /// The outcome of storing one instance (PS3.18 Annex I).
 public enum DICOMwebStoreResult: Equatable, Sendable {
     case stored
