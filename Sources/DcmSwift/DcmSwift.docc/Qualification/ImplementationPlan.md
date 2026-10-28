@@ -333,13 +333,19 @@ services, then UPS, then its RESTful version.
 
 ## Phase 7 — Report templates
 
+Done: TID 2000 (with TID 2002 sections) and TID 2010 written and read; CT
+dose reports (TID 10011) written; CT, projection X-ray, radiopharmaceutical
+and patient dose reports read; Mammography and Chest CAD findings and
+ultrasound measurements read; validation of SR documents against the rows
+of these templates, their Context Groups and the SOP Class constraints;
+TID 2000 to HL7 CDA R2 and back (see <doc:StructuredReports>).
+
 | Status | Area | Effort | Scope | Normative source | Oracle |
 | :-: | --- | :-: | --- | --- | --- |
-| ☐ | Key Objects | S | Key Object Selection documents (TID 2010) read and made | PS3.16 TID 2010; PS3.3 A.35.4 | highdicom; DCMTK `dsrdump` |
-| ☐ | Radiation dose | L | <ul><li>CT, projection X-ray, and radiopharmaceutical dose reports (TID 10011, 10001, 10021)</li><li>Patient Radiation Dose (TID 10030)</li></ul> | PS3.16 | PixelMed; DCMTK `dsrdump` |
-| ☐ | Clinical reports | L | <ul><li>Basic Diagnostic Imaging Report (TID 2000)</li><li>CAD: mammography and chest (TID 4000, 4100)</li><li>Ultrasound: OB-GYN, vascular, echocardiography (TID 5000, 5100, 5200)</li></ul> | PS3.16 | DCMTK `dsrdump`; dicom3tools |
-| ☐ | Template validation | XL | Template and Context Group constraints checked on SR content and coded attributes | PS3.16 Annex A, B | dicom3tools `dciodvfy` |
-| ☐ | Other representations | L | <ul><li>SR to HL7 CDA imaging reports</li><li>The transformations of PS3.21 (AIM)</li></ul> | PS3.20; PS3.21 | Schematron and schemas of PS3.20 |
+| ◐ | Radiation dose | M | <ul><li>Builders for projection X-ray, radiopharmaceutical, and patient dose reports</li><li>Typed rows of TID 10030 (dose model, organ doses)</li></ul> | PS3.16 | PixelMed; DCMTK `dsrdump` |
+| ◐ | Clinical reports | L | <ul><li>CAD and ultrasound builders</li><li>Typed readers for the CAD detections and analyses, OB-GYN fetus and biometry groups, and echocardiography sections</li></ul> | PS3.16 | DCMTK `dsrdump`; dicom3tools |
+| ◐ | Template validation | L | <ul><li>Conditions of MC and UC rows</li><li>Row-level definitions of TID 10030, the CAD and ultrasound sub-templates, and the other templates of Annex A</li><li>Context Groups defined by rules rather than lists</li></ul> | PS3.16 Annex A, B | dicom3tools `dciodvfy` |
+| ◐ | Other representations | L | <ul><li>PS3.20 and C-CDA template identifiers, checked with their Schematron</li><li>CDA entries other than the section narrative read back</li><li>The transformations of PS3.21 (AIM)</li></ul> | PS3.20; PS3.21 | Schematron and schemas of PS3.20 |
 
 ## Phase 8 — Advanced imaging objects
 
