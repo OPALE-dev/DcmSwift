@@ -224,10 +224,21 @@ conformance without that evidence.
 - IOD validation (PS3.3) evaluates only the conditions that test attributes
   (about three in five), does not apply Defined Terms and Context Groups, and
   does not report attributes the IOD does not allow.
-- PS3.16: of the Templates (TID) of Annex A, only TID 1500 and 1501 have a
-  builder; other templates are written through the content tree. Context Groups are not yet applied to the
-  attributes and Content Items that reference them, which belongs to IOD
-  validation.
+- PS3.16: TID 1500/1501, 2000/2002, 2010 and the CT dose report (10011) have
+  builders; the projection X-ray, radiopharmaceutical and patient dose reports,
+  Mammography and Chest CAD, and the ultrasound reports are read but not made.
+  Other templates are written through the content tree.
+- SR template validation (`DICOMSRTemplateValidator`) checks the rows of the
+  templates it knows (TID 2000, 2010, 1500, 10011, 10001, 10021; the top level
+  of 4000 and 4100; the title of 10030, 5000, 5100, 5200), coded values
+  against listed Context Groups, and the value types of Basic Text SR,
+  Enhanced SR and Key Object Selection. MC and UC conditions are not
+  evaluated (such rows are optional), and groups defined by rules are not
+  checked. IOD validation does not apply Context Groups to other attributes.
+- TID 2000 to HL7 CDA R2 follows the PS3.20 mapping without writing the
+  PS3.20 or C-CDA template identifiers, so no conformance to those templates
+  is claimed; reading a CDA keeps the section narrative only. AIM (PS3.21) is
+  not supported.
 - Semantic APIs read Structured Reports, waveforms, segmentations, parametric
   maps, encapsulated documents, and radiotherapy objects, each checked
   against an independent tool; making them is limited to Structured Reports,

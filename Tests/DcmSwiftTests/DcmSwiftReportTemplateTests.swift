@@ -57,6 +57,9 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
         XCTAssertEqual(back.sections[1].observations[0].inferredFrom.first?.reference.sopInstanceUID, image.sopInstanceUID)
         XCTAssertEqual(back.sections[2].observer, .person(name: "Durand^Paul", organization: nil, role: nil))
         XCTAssertTrue(back.text.contains("Nodule de 8 mm"))
+        // Accented text survives encoding: UTF-8 is declared when no context gives a character set.
+        XCTAssertEqual(back.sections[2].observations.first?.value, .text("Contrôle à 3 mois"))
+        XCTAssertEqual(dataSet.string(forTag: "SpecificCharacterSet"), "ISO_IR 192")
         // The evidence names the referenced study and series.
         let evidence = DICOMStructuredReport.hierarchicalReferences(dataSet.element(forTagName: "CurrentRequestedProcedureEvidenceSequence"))
         XCTAssertEqual(evidence.first?.seriesInstanceUID, image.seriesInstanceUID)
@@ -72,7 +75,7 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
                                    studyInstanceUID: image.studyInstanceUID, seriesInstanceUID: "1.2.826.0.1.3680043.10.9.12")
         let selection = DICOMKeyObjectSelection(title: DICOMKeyObjectSelection.Titles.rejectedForQualityReasons,
                                                 modifiers: [DICOMCode("111210", scheme: "DCM", meaning: "Motion blur")],
-                                                observers: [.person(name: "Tech^Anne")], description: "Flou",
+                                                observers: [.person(name: "Tech^Anne")], description: "Flou cinétique",
                                                 references: [image, second, pdf])
         let (read, dataSet) = try roundTrip(selection.document())
         XCTAssertEqual(dataSet.string(forTag: "Modality"), "KO")
@@ -81,7 +84,7 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
         var back = try XCTUnwrap(DICOMKeyObjectSelection(document: read))
         XCTAssertTrue(back.title.sameConcept(as: DICOMKeyObjectSelection.Titles.rejectedForQualityReasons))
         XCTAssertEqual(back.modifiers.first?.value, "111210")
-        XCTAssertEqual(back.description, "Flou")
+        XCTAssertEqual(back.description, "Flou cinétique")
         XCTAssertEqual(back.references.map(\.sopInstanceUID), [image, second, pdf].map(\.sopInstanceUID))
         XCTAssertTrue(read.root.children.contains { if case .composite = $0.value { return true }; return false })
         back.locate(in: dataSet)
@@ -339,6 +342,79 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
         for document in documents {
             let report = DICOMIODValidator().validate(document.dataSet(context: context))
             XCTAssertEqual(report.findings.map { "\($0.module) \($0.path) \($0.message)" }, [], document.sopClassUID)
+        }
+    }
+
+    // MARK: CDA
+
+    func testDiagnosticImagingReportToCDAAndBack() throws {
+        typealias H = DICOMDiagnosticImagingReport.Headings
+        let report = DICOMDiagnosticImagingReport(language: DICOMCode("fr-FR", scheme: "RFC5646", meaning: "French (France)"),
+            observers: [.person(name: "Martin^Claire", organization: "Radiologie <Nord> & Co")],
+            procedures: [DICOMCode("77477000", scheme: "SCT", meaning: "CT")],
+            sections: [
+                .init(heading: H.findings, observations: [.text("Nodule de 8 mm.\n\nPas d'adénopathie.", concept: H.finding),
+                                                          .init(concept: H.finding, value: .code(DICOMCode("27925004", scheme: "SCT", meaning: "Nodule")))]),
+                .init(heading: H.conclusions, observations: [.text("Contrôle à 3 mois", concept: H.conclusion)]),
+            ])
+        let xml = DICOMReportCDA.document(report, header: .init(documentID: "1.2.826.0.1.3680043.10.9.500", effectiveTime: "20261028120000",
+            patient: .init(id: "PAT-1", issuer: "1.2.250.1.71.4.2.1", name: "SYNTHETIC^Anna", birthDate: "19700101", sex: "F"),
+            custodian: "Elena", studyInstanceUID: image.studyInstanceUID, accessionNumber: "ACC1"), references: [image])
+        XCTAssertTrue(xml.contains("<id root=\"1.2.250.1.71.4.2.1\" extension=\"PAT-1\"/>"))
+        XCTAssertTrue(xml.contains("codeSystem=\"2.16.840.1.113883.6.1\""))
+        XCTAssertTrue(xml.contains("Radiologie &lt;Nord&gt; &amp; Co"))
+        XCTAssertTrue(xml.contains("<observation classCode=\"DGIMG\" moodCode=\"EVN\"><id root=\"\(image.sopInstanceUID)\"/>"))
+        XCTAssertTrue(xml.contains("xsi:type=\"CD\" code=\"27925004\""))
+        let back = try XCTUnwrap(DICOMReportCDA.report(cda: Data(xml.utf8)))
+        XCTAssertEqual(back.language?.value, "fr-FR")
+        XCTAssertEqual(back.sections.map(\.heading.value), ["59776-5", "55110-1"])
+        XCTAssertEqual(back.sections[0].observations.count, 3)
+        XCTAssertEqual(back.sections[0].observations.first?.value, .text("Nodule de 8 mm."))
+        XCTAssertEqual(back.sections[1].observations.first?.concept.value, "121077")
+        XCTAssertNil(DICOMReportCDA.report(cda: Data("<html/>".utf8)))
+    }
+
+    // MARK: Cross-check export
+
+    /// Writes the documents of the builders to DCMSWIFT_SR_EXPORT, for
+    /// Scripts/crosscheck/sr_templates.py (DCMTK dsrdump, pydicom).
+    func testExportTemplateDocuments() throws {
+        guard let directory = ProcessInfo.processInfo.environment["DCMSWIFT_SR_EXPORT"] else {
+            throw XCTSkip("set DCMSWIFT_SR_EXPORT to export the template documents")
+        }
+        typealias H = DICOMDiagnosticImagingReport.Headings
+        let context = DcmSwiftIODValidationTests.secondaryCaptureImage()
+        let reference = DICOMSRReference(sopClassUID: DcmSwiftIODValidationTests.secondaryCapture,
+                                         sopInstanceUID: context.string(forTag: "SOPInstanceUID") ?? "1.2.3")
+        var report = DICOMDiagnosticImagingReport(language: DICOMCode("fr-FR", scheme: "RFC5646", meaning: "French (France)"),
+            observers: [.person(name: "Martin^Claire", organization: "Radiologie")],
+            procedures: [DICOMCode("77477000", scheme: "SCT", meaning: "CT")],
+            sections: [
+                .init(heading: H.indications, observations: [.text("Douleur", concept: H.indications)]),
+                .init(heading: H.findings, observations: [
+                    .init(concept: H.finding, value: .text("Nodule de 8 mm"), inferredFrom: [.init(reference: reference)]),
+                    .init(concept: H.finding, value: .code(DICOMCode("27925004", scheme: "SCT", meaning: "Nodule")))],
+                      images: [.init(purpose: DICOMCode("121080", scheme: "DCM", meaning: "Best illustration of finding"), reference: reference)]),
+                .init(heading: H.conclusions, observations: [.text("Contrôle à 3 mois", concept: H.conclusion)]),
+            ]).document(verificationFlag: "VERIFIED")
+        report.preliminaryFlag = "FINAL"
+        report.verifyingObservers = [.init(name: "Martin^Claire", organization: "Radiologie", dateTime: "20261028120000")]
+        let documents: [(String, DICOMStructuredReport)] = [
+            ("tid2000", report),
+            ("tid2010", DICOMKeyObjectSelection(title: DICOMKeyObjectSelection.Titles.ofInterest, description: "Clé", references: [reference]).document()),
+            ("tid10011", DICOMRadiationDoseReport.ct(device: .device(uid: "1.2.826.0.1.3680043.10.9.99", name: "CT1", manufacturer: "Synthetic",
+                model: "CT-1", serialNumber: "42"), studyInstanceUID: context.string(forTag: "StudyInstanceUID") ?? "1.2.3",
+                start: "20261028100000", end: "20261028100500", acquisitions: [.init(protocolName: "Thorax",
+                targetRegion: DICOMCode("43799004", scheme: "SCT", meaning: "Chest"), ctdiVol: 6.2, dlp: 210.5, exposureTime: 4.1,
+                scanningLength: 340, singleCollimationWidth: 0.625, totalCollimationWidth: 40, pitchFactor: 0.984, kvp: 120,
+                maximumTubeCurrent: 300, tubeCurrent: 180, exposureTimePerRotation: 0.5)], softwareVersions: "1.0")),
+        ]
+        for (name, document) in documents {
+            XCTAssertEqual(DICOMSRTemplateValidator.validate(document).filter { $0.severity == .error }, [], name)
+            let dataSet = document.dataSet(context: context)
+            dataSet.hasPreamble = true
+            _ = dataSet.set(value: "1.2.826.0.1.3680043.10.999", forTagName: "ImplementationClassUID")
+            XCTAssertTrue(try DicomOutputStream(url: URL(fileURLWithPath: directory).appendingPathComponent(name + ".dcm")).write(dataset: dataSet))
         }
     }
 }

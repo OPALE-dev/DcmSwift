@@ -204,8 +204,9 @@ reserved first byte. Classic/Enhanced CT/MR/PET views, reference closure and
 native/independently compressed Secondary Capture or enhanced image FRAME
 extraction follow the profile in <doc:EnhancedMultiFrameConversion>. All three
 selectors are supported. Unsupported video, presentation conversion and
-ambiguous reference structures fail explicitly. Full clinical SR template
-validation remains the provider application's responsibility.
+ambiguous reference structures fail explicitly. SR template validation
+covers the templates listed under Structured Reports; validation of other
+clinical templates remains the provider application's responsibility.
 
 ### Archive storage
 
@@ -387,18 +388,26 @@ highdicom reads DcmSwift's Segmentations back with the masks on the right
 source images; dicom-validator finds nothing in them it does not also report
 in highdicom's (it finds the Functional Group Sequences unexpected).
 
-## Structured Reports (PS3.3 C.17, PS3.16 TID 1500)
+## Structured Reports (PS3.3 C.17, PS3.16 templates)
 
 | Content | Support |
 | --- | --- |
 | Reading | Every SR SOP Class: the document flags and template, and the content tree with every Value Type (CONTAINER, TEXT, CODE, NUM with units or qualifier, DATETIME, DATE, TIME, UIDREF, PNAME, COMPOSITE, IMAGE, WAVEFORM, SCOORD, SCOORD3D, TCOORD), by-reference relationships, observation date times and UIDs; TABLE read as attributes |
 | Writing | The same tree, as a Comprehensive 3D SR by default, with the Patient and Study of a context instance and its Current Requested Procedure Evidence |
-| Templates | TID 1500 Measurement Report with language, person observer, procedure reported, Image Library, and TID 1501 Measurement Groups (tracking identifier and UID, finding, finding site, TID 300 measurements); other templates through the content tree |
+| Header | Completion, Verification and Preliminary Flags, Verifying Observer Sequence, Predecessor Documents Sequence, Current Requested Procedure Evidence grouped by study and series, equipment; Key Object Selection documents without the SR flags |
+| Templates | <ul><li>TID 1500 Measurement Report with language, person observer, procedure reported, Image Library, and TID 1501 Measurement Groups (tracking identifier and UID, finding, finding site, TID 300 measurements)</li><li>TID 2000 Basic Diagnostic Imaging Report, written and read: title (CID 7000), language (TID 1204), observers (TID 1002 to 1004), procedures reported, TID 2002 sections (CID 7001) with text and coded observations (CID 7002) and image references (CID 7003)</li><li>TID 2010 Key Object Selection, written and read</li><li>TID 10011 CT Radiation Dose written; TID 10011, 10001, 10021 and 10030 read: accumulated values, events with their numeric and coded values</li><li>TID 4000 and 4100 CAD read: processing summary, algorithms, findings with rendering intent, certainty and coordinates</li><li>TID 5000, 5100 and 5200 read: measurements with their containers and modifiers</li><li>Other templates through the content tree</li></ul> |
+| Template validation | Rows of TID 2000, 2010, 1500, 10011, 10001, 10021; top level of 4000 and 4100; titles of 10030, 5000, 5100, 5200. Context Groups of concept names and coded values; value types of Basic Text SR, Enhanced SR and Key Object Selection; flags. MC and UC conditions not evaluated |
+| HL7 CDA | TID 2000 to CDA R2 with LOINC sections and a DICOM Object Catalog; CDA sections read back as TID 2000. Template identifiers of PS3.20 not written |
 
 highdicom reads the TID 1500 reports DcmSwift makes, with their Measurement
 Groups and measurements; dicom-validator and DCMTK's dsrdump find no error
 in them. On a highdicom report with a planar ROI and on the SR files of
 pydicom and the local corpus (24 reports), the content trees equal pydicom's.
+`Scripts/crosscheck/sr_templates.py` writes the TID 2000, TID 2010 and CT
+dose documents of the builders and has DCMTK's dsrdump read them with
+relationship content constraints checked: no error, and the declared
+template is found; the documents pass DcmSwift's IOD and template
+validation. DCMTK does not check template constraints itself.
 
 ## Character sets
 

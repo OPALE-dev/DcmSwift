@@ -394,6 +394,11 @@ public struct DICOMStructuredReport: Sendable {
             builder.set("StudyTime", time)
             builder.set("StudyInstanceUID", DICOMDataSetBuilder.newUID())
         }
+        // Text that is not ASCII needs a character set; UTF-8 when the
+        // context gives none.
+        if builder.dataSet.string(forTag: "SpecificCharacterSet")?.isEmpty ?? true, needsUnicode {
+            builder.set("SpecificCharacterSet", "ISO_IR 192")
+        }
         // SR Document Series (Key Object Document Series), General Equipment.
         builder.set("Modality", isKeyObjectSelection ? "KO" : "SR")
         builder.set("SeriesInstanceUID", DICOMDataSetBuilder.newUID())
@@ -456,6 +461,22 @@ public struct DICOMStructuredReport: Sendable {
         }
         root.write(to: builder, in: nil)
         return builder.finish()
+    }
+
+    /// Whether a text of the document falls outside the default repertoire.
+    var needsUnicode: Bool {
+        var texts = verifyingObservers.flatMap { [$0.name, $0.organization] }
+        if let equipment { texts += [equipment.manufacturer, equipment.modelName, equipment.serialNumber, equipment.softwareVersions] }
+        for (_, item) in root.flattened() {
+            if let concept = item.conceptName { texts.append(concept.meaning) }
+            switch item.value {
+            case .text(let text), .personName(let text): texts.append(text)
+            case .code(let code): texts.append(code.meaning)
+            case .number(_, let units, let qualifier): texts += [units?.meaning, qualifier?.meaning].compactMap { $0 }
+            default: break
+            }
+        }
+        return texts.contains { $0.unicodeScalars.contains { $0.value > 0x7E || ($0.value < 0x20 && !"\n\r\t\u{0C}\u{1B}".unicodeScalars.contains($0)) } }
     }
 
     /// The instances of a SOP Instance Reference Macro sequence grouped by
