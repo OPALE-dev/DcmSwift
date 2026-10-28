@@ -9,12 +9,39 @@ public struct DICOMSRReference: Sendable, Equatable {
     public var frames: [Int]
     /// Referenced Segment Number (0062,000B).
     public var segments: [Int]
+    /// Study and series of the referenced instance, for the evidence
+    /// sequences of the document; the context data set's when absent.
+    public var studyInstanceUID: String?
+    public var seriesInstanceUID: String?
 
-    public init(sopClassUID: String, sopInstanceUID: String, frames: [Int] = [], segments: [Int] = []) {
+    public init(sopClassUID: String, sopInstanceUID: String, frames: [Int] = [], segments: [Int] = [],
+                studyInstanceUID: String? = nil, seriesInstanceUID: String? = nil) {
         self.sopClassUID = sopClassUID
         self.sopInstanceUID = sopInstanceUID
         self.frames = frames
         self.segments = segments
+        self.studyInstanceUID = studyInstanceUID
+        self.seriesInstanceUID = seriesInstanceUID
+    }
+}
+
+/// An observer who verified a document: an item of the Verifying Observer
+/// Sequence (0040,A073).
+public struct DICOMSRVerifyingObserver: Sendable, Equatable {
+    /// Verifying Observer Name (0040,A075).
+    public var name: String
+    /// Verifying Organization (0040,A027).
+    public var organization: String
+    /// Verification DateTime (0040,A030), DT.
+    public var dateTime: String
+    /// Verifying Observer Identification Code Sequence (0040,A088).
+    public var identification: DICOMCode?
+
+    public init(name: String, organization: String = "", dateTime: String, identification: DICOMCode? = nil) {
+        self.name = name
+        self.organization = organization
+        self.dateTime = dateTime
+        self.identification = identification
     }
 }
 
@@ -263,6 +290,14 @@ public struct DICOMStructuredReport: Sendable {
     public static let comprehensiveSR = "1.2.840.10008.5.1.4.1.1.88.33"
     public static let comprehensive3DSR = "1.2.840.10008.5.1.4.1.1.88.34"
     public static let enhancedSR = "1.2.840.10008.5.1.4.1.1.88.22"
+    public static let basicTextSR = "1.2.840.10008.5.1.4.1.1.88.11"
+    public static let keyObjectSelection = "1.2.840.10008.5.1.4.1.1.88.59"
+    public static let mammographyCAD = "1.2.840.10008.5.1.4.1.1.88.50"
+    public static let chestCAD = "1.2.840.10008.5.1.4.1.1.88.65"
+    public static let xRayRadiationDose = "1.2.840.10008.5.1.4.1.1.88.67"
+    public static let radiopharmaceuticalRadiationDose = "1.2.840.10008.5.1.4.1.1.88.68"
+    public static let patientRadiationDose = "1.2.840.10008.5.1.4.1.1.88.73"
+    public static let enhancedXRayRadiationDose = "1.2.840.10008.5.1.4.1.1.88.76"
 
     public var sopClassUID: String
     /// Completion Flag (0040,A491): PARTIAL or COMPLETE.
@@ -274,6 +309,17 @@ public struct DICOMStructuredReport: Sendable {
     public var template: (mappingResource: String, identifier: String)?
     /// The root content item, a CONTAINER.
     public var root: DICOMSRContentItem
+    /// Preliminary Flag (0040,A496): PRELIMINARY or FINAL, when stated.
+    public var preliminaryFlag: String?
+    /// Verifying Observer Sequence (0040,A073): required when VERIFIED.
+    public var verifyingObservers: [DICOMSRVerifyingObserver] = []
+    /// Predecessor Documents Sequence (0040,A360): the documents this one
+    /// replaces, such as the version before a correction.
+    public var predecessorDocuments: [DICOMSRReference] = []
+
+    /// A Key Object Selection Document (PS3.3 A.35.4) has no completion,
+    /// verification, or preliminary flag.
+    public var isKeyObjectSelection: Bool { sopClassUID == Self.keyObjectSelection }
 
     public init(sopClassUID: String = DICOMStructuredReport.comprehensive3DSR, completionFlag: String = "COMPLETE",
                 verificationFlag: String = "UNVERIFIED", template: (mappingResource: String, identifier: String)? = nil,
@@ -292,6 +338,16 @@ public struct DICOMStructuredReport: Sendable {
         sopClassUID = sopClass
         completionFlag = dataSet.element(forTagName: "CompletionFlag")?.decodedTexts?.first ?? ""
         verificationFlag = dataSet.element(forTagName: "VerificationFlag")?.decodedTexts?.first ?? ""
+        preliminaryFlag = dataSet.element(forTagName: "PreliminaryFlag")?.decodedTexts?.first
+        verifyingObservers = ((dataSet.element(forTagName: "VerifyingObserverSequence") as? DataSequence)?.items ?? []).map { item in
+            DICOMSRVerifyingObserver(
+                name: item.element(withName: "VerifyingObserverName")?.decodedTexts?.first ?? "",
+                organization: item.element(withName: "VerifyingOrganization")?.decodedTexts?.first ?? "",
+                dateTime: item.element(withName: "VerificationDateTime")?.decodedTexts?.first ?? "",
+                identification: (item.element(withName: "VerifyingObserverIdentificationCodeSequence") as? DataSequence)?
+                    .items.first.flatMap(DICOMCode.init(item:)))
+        }
+        predecessorDocuments = Self.hierarchicalReferences(dataSet.element(forTagName: "PredecessorDocumentsSequence"))
         if let item = (dataSet.element(forTagName: "ContentTemplateSequence") as? DataSequence)?.items.first {
             template = (item.element(withName: "MappingResource")?.decodedTexts?.first ?? "",
                         item.element(withName: "TemplateIdentifier")?.decodedTexts?.first ?? "")
@@ -320,19 +376,41 @@ public struct DICOMStructuredReport: Sendable {
             builder.set("StudyTime", time)
             builder.set("StudyInstanceUID", DICOMDataSetBuilder.newUID())
         }
-        // SR Document Series, General Equipment.
-        builder.set("Modality", "SR")
+        // SR Document Series (Key Object Document Series), General Equipment.
+        builder.set("Modality", isKeyObjectSelection ? "KO" : "SR")
         builder.set("SeriesInstanceUID", DICOMDataSetBuilder.newUID())
         builder.set("SeriesNumber", String(seriesNumber))
         builder.sequence("ReferencedPerformedProcedureStepSequence", items: [])
         builder.set("Manufacturer", "DcmSwift")
         // SR Document General.
         builder.set("InstanceNumber", String(instanceNumber))
-        builder.set("CompletionFlag", completionFlag)
-        builder.set("VerificationFlag", verificationFlag)
+        if !isKeyObjectSelection {
+            builder.set("CompletionFlag", completionFlag)
+            builder.set("VerificationFlag", verificationFlag)
+            if let preliminaryFlag { builder.set("PreliminaryFlag", preliminaryFlag) }
+            if !verifyingObservers.isEmpty {
+                builder.sequence("VerifyingObserverSequence", items: verifyingObservers.map { observer in
+                    { item in
+                        builder.set("VerifyingObserverName", observer.name, in: item)
+                        builder.set("VerifyingOrganization", observer.organization, in: item)
+                        builder.set("VerificationDateTime", observer.dateTime, in: item)
+                        if let code = observer.identification {
+                            builder.code("VerifyingObserverIdentificationCodeSequence", code, in: item)
+                        } else {
+                            builder.sequence("VerifyingObserverIdentificationCodeSequence", in: item, items: [])
+                        }
+                    }
+                })
+            }
+            builder.sequence("PerformedProcedureCodeSequence", items: [])
+        }
         builder.set("ContentDate", day)
         builder.set("ContentTime", time)
-        builder.sequence("PerformedProcedureCodeSequence", items: [])
+        let contextStudy = context?.string(forTag: "StudyInstanceUID"), contextSeries = context?.string(forTag: "SeriesInstanceUID")
+        if !predecessorDocuments.isEmpty {
+            Self.writeHierarchical("PredecessorDocumentsSequence", predecessorDocuments, builder: builder,
+                                   study: contextStudy, series: contextSeries)
+        }
         // Current Requested Procedure Evidence: the instances referenced.
         let references = root.flattened().compactMap { entry -> DICOMSRReference? in
             switch entry.item.value {
@@ -340,21 +418,9 @@ public struct DICOMStructuredReport: Sendable {
             default: return nil
             }
         }
-        if !references.isEmpty, let context {
-            builder.sequence("CurrentRequestedProcedureEvidenceSequence", items: [{ study in
-                builder.set("StudyInstanceUID", context.string(forTag: "StudyInstanceUID") ?? "", in: study)
-                builder.sequence("ReferencedSeriesSequence", in: study, items: [{ series in
-                    builder.set("SeriesInstanceUID", context.string(forTag: "SeriesInstanceUID") ?? "", in: series)
-                    var seen = Set<String>()
-                    let unique = references.filter { seen.insert($0.sopInstanceUID).inserted }
-                    builder.sequence("ReferencedSOPSequence", in: series, items: unique.map { reference in
-                        { item in
-                            builder.set("ReferencedSOPClassUID", reference.sopClassUID, in: item)
-                            builder.set("ReferencedSOPInstanceUID", reference.sopInstanceUID, in: item)
-                        }
-                    })
-                }])
-            }])
+        if !references.isEmpty {
+            Self.writeHierarchical("CurrentRequestedProcedureEvidenceSequence", references, builder: builder,
+                                   study: contextStudy, series: contextSeries)
         }
         // SR Document Content: the root's attributes at the top level.
         if let template {
@@ -365,5 +431,59 @@ public struct DICOMStructuredReport: Sendable {
         }
         root.write(to: builder, in: nil)
         return builder.finish()
+    }
+
+    /// The instances of a SOP Instance Reference Macro sequence grouped by
+    /// study and series (PS3.3 C.17.2.1); references without a study or
+    /// series take the context's, and are left out when it has none.
+    static func writeHierarchical(_ name: String, _ references: [DICOMSRReference], builder: DICOMDataSetBuilder,
+                                  study: String?, series: String?) {
+        var seen = Set<String>()
+        var studies: [(uid: String, series: [(uid: String, references: [DICOMSRReference])])] = []
+        for reference in references where seen.insert(reference.sopInstanceUID).inserted {
+            guard let studyUID = reference.studyInstanceUID ?? study,
+                  let seriesUID = reference.seriesInstanceUID ?? series else { continue }
+            if let s = studies.firstIndex(where: { $0.uid == studyUID }) {
+                if let r = studies[s].series.firstIndex(where: { $0.uid == seriesUID }) {
+                    studies[s].series[r].references.append(reference)
+                } else {
+                    studies[s].series.append((seriesUID, [reference]))
+                }
+            } else {
+                studies.append((studyUID, [(seriesUID, [reference])]))
+            }
+        }
+        guard !studies.isEmpty else { return }
+        builder.sequence(name, items: studies.map { study in
+            { studyItem in
+                builder.set("StudyInstanceUID", study.uid, in: studyItem)
+                builder.sequence("ReferencedSeriesSequence", in: studyItem, items: study.series.map { series in
+                    { seriesItem in
+                        builder.set("SeriesInstanceUID", series.uid, in: seriesItem)
+                        builder.sequence("ReferencedSOPSequence", in: seriesItem, items: series.references.map { reference in
+                            { item in
+                                builder.set("ReferencedSOPClassUID", reference.sopClassUID, in: item)
+                                builder.set("ReferencedSOPInstanceUID", reference.sopInstanceUID, in: item)
+                            }
+                        })
+                    }
+                })
+            }
+        })
+    }
+
+    /// Reads a Hierarchical SOP Instance Reference sequence back.
+    static func hierarchicalReferences(_ element: DataElement?) -> [DICOMSRReference] {
+        ((element as? DataSequence)?.items ?? []).flatMap { study -> [DICOMSRReference] in
+            let studyUID = study.element(withName: "StudyInstanceUID")?.decodedTexts?.first
+            return ((study.element(withName: "ReferencedSeriesSequence") as? DataSequence)?.items ?? []).flatMap { series in
+                let seriesUID = series.element(withName: "SeriesInstanceUID")?.decodedTexts?.first
+                return ((series.element(withName: "ReferencedSOPSequence") as? DataSequence)?.items ?? []).map { item in
+                    DICOMSRReference(sopClassUID: item.element(withName: "ReferencedSOPClassUID")?.decodedTexts?.first ?? "",
+                                     sopInstanceUID: item.element(withName: "ReferencedSOPInstanceUID")?.decodedTexts?.first ?? "",
+                                     studyInstanceUID: studyUID, seriesInstanceUID: seriesUID)
+                }
+            }
+        }
     }
 }
