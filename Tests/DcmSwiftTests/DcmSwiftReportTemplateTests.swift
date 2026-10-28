@@ -276,4 +276,70 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
             XCTAssertEqual(terminology.membership(of: element, in: 7002), .member, "\(element)")
         }
     }
+
+    // MARK: Template validation
+
+    private func errors(_ issues: [DICOMSRValidationIssue]) -> [DICOMSRValidationIssue] { issues.filter { $0.severity == .error } }
+
+    func testDocumentsMadeByTheBuildersValidate() {
+        typealias H = DICOMDiagnosticImagingReport.Headings
+        let report = DICOMDiagnosticImagingReport(observers: [.person(name: "Martin^Claire")],
+            sections: [.init(heading: H.findings, observations: [.text("RAS", concept: H.finding)], images: [.init(reference: image)])])
+        XCTAssertEqual(DICOMSRTemplateValidator.validate(report.document()), [])
+        XCTAssertEqual(DICOMSRTemplateValidator.validate(DICOMKeyObjectSelection(description: "Clé", references: [image]).document()), [])
+        let dose = DICOMRadiationDoseReport.ct(device: .device(uid: "1.2.3.99"), studyInstanceUID: "1.2.3", start: "20261028100000",
+            end: "20261028100100", acquisitions: [.init(protocolName: "Thorax", targetRegion: DICOMCode("43799004", scheme: "SCT", meaning: "Chest"),
+            ctdiVol: 5, dlp: 200, exposureTime: 3, scanningLength: 300, singleCollimationWidth: 0.6, totalCollimationWidth: 38.4,
+            pitchFactor: 1, kvp: 120, maximumTubeCurrent: 200, tubeCurrent: 150, exposureTimePerRotation: 0.5)])
+        XCTAssertEqual(errors(DICOMSRTemplateValidator.validate(dose)), [], "\(DICOMSRTemplateValidator.validate(dose))")
+    }
+
+    func testValidationReportsTemplateAndIODErrors() {
+        typealias H = DICOMDiagnosticImagingReport.Headings
+        // TID 2000 without any section, VERIFIED without verifier, a NUM in Basic Text SR.
+        var document = DICOMDiagnosticImagingReport(sections: []).document(verificationFlag: "VERIFIED")
+        document.root.children.append(DICOMSRContentItem("CONTAINS", H.finding, .number(3, units: nil, qualifier: nil)))
+        let issues = errors(DICOMSRTemplateValidator.validate(document))
+        XCTAssertTrue(issues.contains { $0.message.contains("missing CONTAINS CONTAINER from CID 7001") }, "\(issues)")
+        XCTAssertTrue(issues.contains { $0.message.contains("Verifying Observer") })
+        XCTAssertTrue(issues.contains { $0.path == "1.1" && $0.message.contains("NUM is not allowed") })
+
+        // Key Object Selection: non-extensible, needs a reference.
+        var ko = DICOMKeyObjectSelection(references: []).document()
+        ko.root.children.append(DICOMSRContentItem("CONTAINS", H.finding, .text("hors gabarit")))
+        let koIssues = errors(DICOMSRTemplateValidator.validate(ko))
+        XCTAssertTrue(koIssues.contains { $0.message.contains("missing CONTAINS IMAGE/WAVEFORM/COMPOSITE") }, "\(koIssues)")
+        XCTAssertTrue(koIssues.contains { $0.message.contains("is not part of the template") })
+
+        // CT dose: a coded value outside a non-extensible group, a missing total.
+        typealias C = DICOMRadiationDoseReport.Codes
+        var dose = DICOMRadiationDoseReport.ct(device: .device(uid: "1.2.3.99"), studyInstanceUID: "1.2.3", start: "20261028100000",
+            end: "20261028100100", acquisitions: [.init(protocolName: "Thorax", targetRegion: DICOMCode("43799004", scheme: "SCT", meaning: "Chest"),
+            ctdiVol: 5, dlp: 200, exposureTime: 3, scanningLength: 300, singleCollimationWidth: 0.6, totalCollimationWidth: 38.4,
+            kvp: 120, maximumTubeCurrent: 200, tubeCurrent: 150)])
+        let accumulated = dose.root.children.firstIndex { $0.conceptName?.sameConcept(as: C.ctAccumulatedDoseData) == true }!
+        dose.root.children[accumulated].children.removeAll { $0.conceptName?.sameConcept(as: C.ctDoseLengthProductTotal) == true }
+        dose.root.children[0] = DICOMSRContentItem("HAS OBS CONTEXT", DICOMSRCodes.observerType, .code(DICOMCode("999", scheme: "DCM", meaning: "Robot")))
+        let doseIssues = errors(DICOMSRTemplateValidator.validate(dose))
+        XCTAssertTrue(doseIssues.contains { $0.message.contains("missing CONTAINS NUM (113813") }, "\(doseIssues)")
+        XCTAssertTrue(doseIssues.contains { $0.message.contains("missing HAS CONCEPT MOD CODE (121058") })
+        XCTAssertTrue(doseIssues.contains { $0.message.contains("not in CID 270") })
+    }
+
+    /// The data sets of the builders also pass IOD validation (PS3.3).
+    func testBuilderDataSetsPassIODValidation() throws {
+        typealias H = DICOMDiagnosticImagingReport.Headings
+        let context = DcmSwiftIODValidationTests.secondaryCaptureImage()
+        let documents = [
+            DICOMDiagnosticImagingReport(sections: [.init(heading: H.findings, observations: [.text("RAS", concept: H.finding)])]).document(),
+            DICOMKeyObjectSelection(references: [image]).document(),
+            DICOMRadiationDoseReport.ct(device: .device(uid: "1.2.3.99", manufacturer: "Synthetic", model: "CT-1", serialNumber: "42"),
+                studyInstanceUID: "1.2.3", start: "20261028100000", end: "20261028100100", acquisitions: [], softwareVersions: "1.0"),
+        ]
+        for document in documents {
+            let report = DICOMIODValidator().validate(document.dataSet(context: context))
+            XCTAssertEqual(report.findings.map { "\($0.module) \($0.path) \($0.message)" }, [], document.sopClassUID)
+        }
+    }
 }
+

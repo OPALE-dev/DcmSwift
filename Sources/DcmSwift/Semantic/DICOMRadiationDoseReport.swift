@@ -262,8 +262,10 @@ public struct DICOMRadiationDoseReport: Sendable {
 
     /// A CT Radiation Dose report (TID 10011) of one study, made by an
     /// irradiating device, with its accumulated DLP and its acquisitions.
+    /// The equipment module takes the device's manufacturer, model, and
+    /// serial number, with `softwareVersions`.
     public static func ct(device: DICOMSRObserver, studyInstanceUID: String, start: String, end: String,
-                          acquisitions: [CTAcquisition]) -> DICOMStructuredReport {
+                          acquisitions: [CTAcquisition], softwareVersions: String? = nil) -> DICOMStructuredReport {
         func num(_ concept: DICOMCode, _ value: Double, _ units: DICOMCode) -> DICOMSRContentItem {
             DICOMSRContentItem("CONTAINS", concept, .number(value, units: units, qualifier: nil))
         }
@@ -316,9 +318,13 @@ public struct DICOMRadiationDoseReport: Sendable {
             ])
         }
         children.append(DICOMSRContentItem("CONTAINS", Codes.sourceOfDoseInformation, .code(Codes.automatedDataCollection)))
-        return DICOMStructuredReport(sopClassUID: DICOMStructuredReport.xRayRadiationDose, completionFlag: "COMPLETE",
-                                     verificationFlag: "UNVERIFIED", template: (mappingResource: "DCMR", identifier: "10011"),
-                                     root: DICOMSRContentItem(nil, Codes.xRayRadiationDoseReport, .container(continuity: "SEPARATE"),
-                                                              children: children))
+        var document = DICOMStructuredReport(sopClassUID: DICOMStructuredReport.xRayRadiationDose, completionFlag: "COMPLETE",
+                                             verificationFlag: "UNVERIFIED", template: (mappingResource: "DCMR", identifier: "10011"),
+                                             root: DICOMSRContentItem(nil, Codes.xRayRadiationDoseReport, .container(continuity: "SEPARATE"),
+                                                                      children: children))
+        if case .device(_, _, let manufacturer?, let model?, let serial?) = device, let softwareVersions {
+            document.equipment = .init(manufacturer: manufacturer, modelName: model, serialNumber: serial, softwareVersions: softwareVersions)
+        }
+        return document
     }
 }
