@@ -93,7 +93,7 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
 
     func testCTDoseReportRoundTrip() throws {
         typealias C = DICOMRadiationDoseReport.Codes
-        let chest = DICOMCode("43799004", scheme: "SCT", meaning: "Chest")
+        let chest = DICOMCode("816094009", scheme: "SCT", meaning: "Chest")
         let acquisitions = [
             DICOMRadiationDoseReport.CTAcquisition(protocolName: "Thorax", targetRegion: chest, ctdiVol: 6.2, dlp: 210.5,
                 exposureTime: 4.1, scanningLength: 340, singleCollimationWidth: 0.625, totalCollimationWidth: 40, pitchFactor: 0.984,
@@ -117,7 +117,7 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
         XCTAssertEqual(report.events[0].value(C.meanCTDIvol)?.value, 6.2)
         XCTAssertEqual(report.events[0].value(C.kvp)?.units?.value, "kV")
         XCTAssertEqual(report.events[1].type?.value, "113805")
-        XCTAssertEqual(report.events[0].targetRegion?.value, "43799004")
+        XCTAssertEqual(report.events[0].targetRegion?.value, "816094009")
         guard case .device(let uid, let name, _, _, _)? = report.observers.first else { return XCTFail("device observer") }
         XCTAssertEqual(uid, "1.2.826.0.1.3680043.10.9.99")
         XCTAssertEqual(name, "CT_SALLE1")
@@ -291,7 +291,7 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
         XCTAssertEqual(DICOMSRTemplateValidator.validate(report.document()), [])
         XCTAssertEqual(DICOMSRTemplateValidator.validate(DICOMKeyObjectSelection(description: "Clé", references: [image]).document()), [])
         let dose = DICOMRadiationDoseReport.ct(device: .device(uid: "1.2.3.99"), studyInstanceUID: "1.2.3", start: "20261028100000",
-            end: "20261028100100", acquisitions: [.init(protocolName: "Thorax", targetRegion: DICOMCode("43799004", scheme: "SCT", meaning: "Chest"),
+            end: "20261028100100", acquisitions: [.init(protocolName: "Thorax", targetRegion: DICOMCode("816094009", scheme: "SCT", meaning: "Chest"),
             ctdiVol: 5, dlp: 200, exposureTime: 3, scanningLength: 300, singleCollimationWidth: 0.6, totalCollimationWidth: 38.4,
             pitchFactor: 1, kvp: 120, maximumTubeCurrent: 200, tubeCurrent: 150, exposureTimePerRotation: 0.5)])
         XCTAssertEqual(errors(DICOMSRTemplateValidator.validate(dose)), [], "\(DICOMSRTemplateValidator.validate(dose))")
@@ -317,7 +317,7 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
         // CT dose: a coded value outside a non-extensible group, a missing total.
         typealias C = DICOMRadiationDoseReport.Codes
         var dose = DICOMRadiationDoseReport.ct(device: .device(uid: "1.2.3.99"), studyInstanceUID: "1.2.3", start: "20261028100000",
-            end: "20261028100100", acquisitions: [.init(protocolName: "Thorax", targetRegion: DICOMCode("43799004", scheme: "SCT", meaning: "Chest"),
+            end: "20261028100100", acquisitions: [.init(protocolName: "Thorax", targetRegion: DICOMCode("816094009", scheme: "SCT", meaning: "Chest"),
             ctdiVol: 5, dlp: 200, exposureTime: 3, scanningLength: 300, singleCollimationWidth: 0.6, totalCollimationWidth: 38.4,
             kvp: 120, maximumTubeCurrent: 200, tubeCurrent: 150)])
         let accumulated = dose.root.children.firstIndex { $0.conceptName?.sameConcept(as: C.ctAccumulatedDoseData) == true }!
@@ -405,12 +405,13 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
             ("tid10011", DICOMRadiationDoseReport.ct(device: .device(uid: "1.2.826.0.1.3680043.10.9.99", name: "CT1", manufacturer: "Synthetic",
                 model: "CT-1", serialNumber: "42"), studyInstanceUID: context.string(forTag: "StudyInstanceUID") ?? "1.2.3",
                 start: "20261028100000", end: "20261028100500", acquisitions: [.init(protocolName: "Thorax",
-                targetRegion: DICOMCode("43799004", scheme: "SCT", meaning: "Chest"), ctdiVol: 6.2, dlp: 210.5, exposureTime: 4.1,
+                targetRegion: DICOMCode("816094009", scheme: "SCT", meaning: "Chest"), ctdiVol: 6.2, dlp: 210.5, exposureTime: 4.1,
                 scanningLength: 340, singleCollimationWidth: 0.625, totalCollimationWidth: 40, pitchFactor: 0.984, kvp: 120,
                 maximumTubeCurrent: 300, tubeCurrent: 180, exposureTimePerRotation: 0.5)], softwareVersions: "1.0")),
         ]
         for (name, document) in documents {
-            XCTAssertEqual(DICOMSRTemplateValidator.validate(document).filter { $0.severity == .error }, [], name)
+            // Neither errors nor warnings: the builders and their example codes follow PS3.16 2026d.
+            XCTAssertEqual(DICOMSRTemplateValidator.validate(document), [], name)
             let dataSet = document.dataSet(context: context)
             dataSet.hasPreamble = true
             _ = dataSet.set(value: "1.2.826.0.1.3680043.10.999", forTagName: "ImplementationClassUID")
