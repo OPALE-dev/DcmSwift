@@ -316,6 +316,24 @@ public struct DICOMStructuredReport: Sendable {
     /// Predecessor Documents Sequence (0040,A360): the documents this one
     /// replaces, such as the version before a correction.
     public var predecessorDocuments: [DICOMSRReference] = []
+    /// The equipment that made the document (General and Enhanced General
+    /// Equipment); "DcmSwift" when none is given. Dose SR IODs require all
+    /// four values.
+    public var equipment: Equipment?
+
+    public struct Equipment: Sendable, Equatable {
+        public var manufacturer: String
+        public var modelName: String
+        public var serialNumber: String
+        public var softwareVersions: String
+
+        public init(manufacturer: String, modelName: String, serialNumber: String, softwareVersions: String) {
+            self.manufacturer = manufacturer
+            self.modelName = modelName
+            self.serialNumber = serialNumber
+            self.softwareVersions = softwareVersions
+        }
+    }
 
     /// A Key Object Selection Document (PS3.3 A.35.4) has no completion,
     /// verification, or preliminary flag.
@@ -381,7 +399,14 @@ public struct DICOMStructuredReport: Sendable {
         builder.set("SeriesInstanceUID", DICOMDataSetBuilder.newUID())
         builder.set("SeriesNumber", String(seriesNumber))
         builder.sequence("ReferencedPerformedProcedureStepSequence", items: [])
-        builder.set("Manufacturer", "DcmSwift")
+        if let equipment {
+            builder.set("Manufacturer", equipment.manufacturer)
+            builder.set("ManufacturerModelName", equipment.modelName)
+            builder.set("DeviceSerialNumber", equipment.serialNumber)
+            builder.set("SoftwareVersions", equipment.softwareVersions)
+        } else {
+            builder.set("Manufacturer", "DcmSwift")
+        }
         // SR Document General.
         builder.set("InstanceNumber", String(instanceNumber))
         if !isKeyObjectSelection {
