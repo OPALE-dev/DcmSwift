@@ -504,6 +504,10 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
         XCTAssertEqual(report.sections[0].observations.last?.value, .date("20261028"))
         XCTAssertEqual(report.sections[4].observations[1].value, .personName("Martin^Claire"))
         XCTAssertTrue(report.text.contains("Irradiation Authorizing: Martin Claire"))
+        // A document declaring another template is not read as a diagnostic imaging report.
+        var other = document
+        other.template = (mappingResource: "DCMR", identifier: "3300")
+        XCTAssertNil(DICOMDiagnosticImagingReport(document: other))
         // Without the mandatory Impressions section, and with both forms of Target Region (XOR).
         var broken = document
         broken.root.children.remove(at: 4)
