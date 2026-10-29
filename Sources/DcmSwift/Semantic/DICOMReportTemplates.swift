@@ -141,6 +141,12 @@ public struct DICOMDiagnosticImagingReport: Sendable {
         public enum Value: Sendable, Equatable {
             case text(String)
             case code(DICOMCode)
+            /// A person, such as the one who authorised the irradiation (TID 2008).
+            case personName(String)
+            /// DICOM DA, TM and DT values, such as the study date (TID 2007).
+            case date(String)
+            case time(String)
+            case dateTime(String)
         }
 
         public var concept: DICOMCode
@@ -267,6 +273,10 @@ public struct DICOMDiagnosticImagingReport: Sendable {
                 switch observation.value {
                 case .text(let text): value = .text(text)
                 case .code(let code): value = .code(code)
+                case .personName(let name): value = .personName(name)
+                case .date(let date): value = .date(date)
+                case .time(let time): value = .time(time)
+                case .dateTime(let dateTime): value = .dateTime(dateTime)
                 }
                 return DICOMSRContentItem("CONTAINS", observation.concept, value,
                                           children: observation.inferredFrom.map { image($0, relationship: "INFERRED FROM") })
@@ -284,7 +294,8 @@ public struct DICOMDiagnosticImagingReport: Sendable {
     public init?(document: DICOMStructuredReport) {
         let root = document.root
         guard case .container = root.value, let title = root.conceptName else { return nil }
-        let declared = document.template?.identifier == "2000"
+        // TID 2000, or TID 2006, which adds fixed sections and radiation exposure information (TID 2008).
+        let declared = ["2000", "2006"].contains(document.template?.identifier ?? "")
         let titled = DICOMTerminology.shared.membership(of: title, in: 7000) == .member
         guard declared || titled else { return nil }
         self.title = title
@@ -306,6 +317,10 @@ public struct DICOMDiagnosticImagingReport: Sendable {
                 switch child.value {
                 case .text(let text): return Observation(concept: concept, value: .text(text), inferredFrom: inferred)
                 case .code(let code): return Observation(concept: concept, value: .code(code), inferredFrom: inferred)
+                case .personName(let name): return Observation(concept: concept, value: .personName(name), inferredFrom: inferred)
+                case .date(let date): return Observation(concept: concept, value: .date(date), inferredFrom: inferred)
+                case .time(let time): return Observation(concept: concept, value: .time(time), inferredFrom: inferred)
+                case .dateTime(let dateTime): return Observation(concept: concept, value: .dateTime(dateTime), inferredFrom: inferred)
                 default: return nil
                 }
             }
@@ -321,6 +336,8 @@ public struct DICOMDiagnosticImagingReport: Sendable {
                 switch observation.value {
                 case .text(let text): return text
                 case .code(let code): return observation.concept.meaning + ": " + code.meaning
+                case .personName(let name): return observation.concept.meaning + ": " + name.replacingOccurrences(of: "^", with: " ")
+                case .date(let value), .time(let value), .dateTime(let value): return observation.concept.meaning + ": " + value
                 }
             }).joined(separator: "\n")
         }.joined(separator: "\n\n")

@@ -91,12 +91,23 @@ if let dose = DICOMRadiationDoseReport(document: document) {
 
 ``DICOMSRTemplateValidator`` checks a document against the template it
 declares, the Context Groups of its codes, and the constraints of its SOP
-Class:
+Class. Every template of PS3.16 Annex A is known: ``DICOMSRTemplateLibrary``
+holds them, generated from the Standard by
+`Scripts/generate-dicom-sr-templates.py`, and expands included templates
+with their parameters:
 
 ```swift
 for issue in DICOMSRTemplateValidator.validate(document) {
     print(issue)    // "error 1.4: missing CONTAINS NUM (113813, DCM, "CT Dose Length Product Total")"
 }
+DICOMSRTemplateLibrary.shared.name(of: "2006")   // "Imaging Report With Conditional Radiation Exposure…"
+```
+
+To regenerate the resource for a new edition of the Standard:
+
+```sh
+python3 Scripts/generate-dicom-sr-templates.py part16.xml \
+    Sources/DcmSwift/Resources/dicom-sr-templates-2026d.json
 ```
 
 ## HL7 CDA

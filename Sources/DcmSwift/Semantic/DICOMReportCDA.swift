@@ -175,6 +175,10 @@ public enum DICOMReportCDA {
                     }
                 case .code(let value):
                     xml += "<paragraph>\(escape(observation.concept.meaning)): \(escape(value.meaning))</paragraph>"
+                case .personName(let name):
+                    xml += "<paragraph>\(escape(observation.concept.meaning)): \(escape(name.replacingOccurrences(of: "^", with: " ")))</paragraph>"
+                case .date(let value), .time(let value), .dateTime(let value):
+                    xml += "<paragraph>\(escape(observation.concept.meaning)): \(escape(value))</paragraph>"
                 }
             }
             xml += "</text>"

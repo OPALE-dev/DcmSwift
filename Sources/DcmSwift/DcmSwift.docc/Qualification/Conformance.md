@@ -205,8 +205,9 @@ native/independently compressed Secondary Capture or enhanced image FRAME
 extraction follow the profile in <doc:EnhancedMultiFrameConversion>. All three
 selectors are supported. Unsupported video, presentation conversion and
 ambiguous reference structures fail explicitly. SR template validation
-covers the templates listed under Structured Reports; validation of other
-clinical templates remains the provider application's responsibility.
+covers every template of PS3.16 Annex A within the limits stated under
+Structured Reports; conditions on values and clinical content remain the
+provider application's responsibility.
 
 ### Archive storage
 
@@ -395,8 +396,8 @@ in highdicom's (it finds the Functional Group Sequences unexpected).
 | Reading | Every SR SOP Class: the document flags and template, and the content tree with every Value Type (CONTAINER, TEXT, CODE, NUM with units or qualifier, DATETIME, DATE, TIME, UIDREF, PNAME, COMPOSITE, IMAGE, WAVEFORM, SCOORD, SCOORD3D, TCOORD), by-reference relationships, observation date times and UIDs; TABLE read as attributes |
 | Writing | The same tree, as a Comprehensive 3D SR by default, with the Patient and Study of a context instance and its Current Requested Procedure Evidence |
 | Header | Completion, Verification and Preliminary Flags, Verifying Observer Sequence, Predecessor Documents Sequence, Current Requested Procedure Evidence grouped by study and series, equipment; Key Object Selection documents without the SR flags |
-| Templates | <ul><li>TID 1500 Measurement Report with language, person observer, procedure reported, Image Library, and TID 1501 Measurement Groups (tracking identifier and UID, finding, finding site, TID 300 measurements)</li><li>TID 2000 Basic Diagnostic Imaging Report, written and read: title (CID 7000), language (TID 1204), observers (TID 1002 to 1004), procedures reported, TID 2002 sections (CID 7001) with text and coded observations (CID 7002) and image references (CID 7003)</li><li>TID 2010 Key Object Selection, written and read</li><li>TID 10011 CT Radiation Dose written; TID 10011, 10001, 10021 and 10030 read: accumulated values, events with their numeric and coded values</li><li>TID 4000 and 4100 CAD read: processing summary, algorithms, findings with rendering intent, certainty and coordinates</li><li>TID 5000, 5100 and 5200 read: measurements with their containers and modifiers</li><li>Other templates through the content tree</li></ul> |
-| Template validation | Rows of TID 2000, 2010, 1500, 10011, 10001, 10021; top level of 4000 and 4100; titles of 10030, 5000, 5100, 5200. Context Groups of concept names and coded values; value types of Basic Text SR, Enhanced SR and Key Object Selection; flags. MC and UC conditions not evaluated |
+| Templates | <ul><li>TID 1500 Measurement Report with language, person observer, procedure reported, Image Library, and TID 1501 Measurement Groups (tracking identifier and UID, finding, finding site, TID 300 measurements)</li><li>TID 2000 Basic Diagnostic Imaging Report, written and read, and TID 2006 read (fixed sections, procedure description of TID 2007 with its dates, radiation exposure and protection information of TID 2008 with the authorising person): title (CID 7000), language (TID 1204), observers (TID 1002 to 1004), procedures reported, TID 2002 sections (CID 7001) with text and coded observations (CID 7002) and image references (CID 7003)</li><li>TID 2010 Key Object Selection, written and read</li><li>TID 10011 CT Radiation Dose written; TID 10011, 10001, 10021 and 10030 read: accumulated values, events with their numeric and coded values</li><li>TID 4000 and 4100 CAD read: processing summary, algorithms, findings with rendering intent, certainty and coordinates</li><li>TID 5000, 5100 and 5200 read: measurements with their containers and modifiers</li><li>Other templates through the content tree</li></ul> |
+| Template validation | Every template of PS3.16 2026d Annex A (425 tables), generated from the Standard's DocBook source by `Scripts/generate-dicom-sr-templates.py`: rows, nesting, relationships, value types, concept names (codes, defined terms, Context Groups, alternatives), multiplicity, requirement, included templates with their parameters, coded values and units, extensibility. Conditions on the presence of sibling rows (XOR, at least one of, required if absent, present iff: 252 of 742) are evaluated; conditions on values and prose are not. A code outside a baseline group (BCID) is accepted, outside an extensible defined group (DCID) is a warning, outside a non-extensible one an error. Value types of Basic Text SR, Enhanced SR and Key Object Selection; flags |
 | HL7 CDA | TID 2000 to CDA R2 with LOINC sections and a DICOM Object Catalog; CDA sections read back as TID 2000. Template identifiers of PS3.20 not written |
 
 highdicom reads the TID 1500 reports DcmSwift makes, with their Measurement
@@ -407,7 +408,10 @@ pydicom and the local corpus (24 reports), the content trees equal pydicom's.
 dose documents of the builders and has DCMTK's dsrdump read them with
 relationship content constraints checked: no error, and the declared
 template is found; the documents pass DcmSwift's IOD and template
-validation. DCMTK does not check template constraints itself.
+validation. DCMTK does not check template constraints itself. The two
+TID 1500 documents of highdicom's test data validate without error
+(`DCMSWIFT_SR_SAMPLES`); the only findings are two warnings on SRT codes of
+2019 that the current Context Groups replace with SNOMED CT codes.
 
 ## Character sets
 

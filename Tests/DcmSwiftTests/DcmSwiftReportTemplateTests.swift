@@ -286,7 +286,8 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
 
     func testDocumentsMadeByTheBuildersValidate() {
         typealias H = DICOMDiagnosticImagingReport.Headings
-        let report = DICOMDiagnosticImagingReport(observers: [.person(name: "Martin^Claire")],
+        let report = DICOMDiagnosticImagingReport(language: DICOMCode("en-US", scheme: "RFC5646", meaning: "English (United States)"),
+            observers: [.person(name: "Martin^Claire")],
             sections: [.init(heading: H.findings, observations: [.text("RAS", concept: H.finding)], images: [.init(reference: image)])])
         XCTAssertEqual(DICOMSRTemplateValidator.validate(report.document()), [])
         XCTAssertEqual(DICOMSRTemplateValidator.validate(DICOMKeyObjectSelection(description: "Clé", references: [image]).document()), [])
@@ -299,11 +300,13 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
 
     func testValidationReportsTemplateAndIODErrors() {
         typealias H = DICOMDiagnosticImagingReport.Headings
-        // TID 2000 without any section, VERIFIED without verifier, a NUM in Basic Text SR.
+        // TID 2000 without its mandatory language (TID 1204), VERIFIED without verifier, a NUM in
+        // Basic Text SR outside any section (TID 2000 is not extensible). Sections are optional.
         var document = DICOMDiagnosticImagingReport(sections: []).document(verificationFlag: "VERIFIED")
         document.root.children.append(DICOMSRContentItem("CONTAINS", H.finding, .number(3, units: nil, qualifier: nil)))
         let issues = errors(DICOMSRTemplateValidator.validate(document))
-        XCTAssertTrue(issues.contains { $0.message.contains("missing CONTAINS CONTAINER from CID 7001") }, "\(issues)")
+        XCTAssertTrue(issues.contains { $0.message.contains("missing HAS CONCEPT MOD CODE (121049") }, "\(issues)")
+        XCTAssertTrue(issues.contains { $0.path == "1.1" && $0.message.contains("is not part of the template") }, "\(issues)")
         XCTAssertTrue(issues.contains { $0.message.contains("Verifying Observer") })
         XCTAssertTrue(issues.contains { $0.path == "1.1" && $0.message.contains("NUM is not allowed") })
 
@@ -311,7 +314,7 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
         var ko = DICOMKeyObjectSelection(references: []).document()
         ko.root.children.append(DICOMSRContentItem("CONTAINS", H.finding, .text("hors gabarit")))
         let koIssues = errors(DICOMSRTemplateValidator.validate(ko))
-        XCTAssertTrue(koIssues.contains { $0.message.contains("missing CONTAINS IMAGE/WAVEFORM/COMPOSITE") }, "\(koIssues)")
+        XCTAssertTrue(koIssues.contains { $0.message.contains("at least one of IMAGE, WAVEFORM, COMPOSITE is required") }, "\(koIssues)")
         XCTAssertTrue(koIssues.contains { $0.message.contains("is not part of the template") })
 
         // CT dose: a coded value outside a non-extensible group, a missing total.
@@ -417,6 +420,97 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
             _ = dataSet.set(value: "1.2.826.0.1.3680043.10.999", forTagName: "ImplementationClassUID")
             XCTAssertTrue(try DicomOutputStream(url: URL(fileURLWithPath: directory).appendingPathComponent(name + ".dcm")).write(dataset: dataSet))
         }
+    }
+
+    // MARK: Library generated from PS3.16
+
+    /// Every template of the resource expands, within bounded time, and the
+    /// rows of a few templates match the Standard.
+    func testEveryTemplateOfTheStandardExpands() throws {
+        let library = DICOMSRTemplateLibrary.shared
+        XCTAssertEqual(library.edition, "2026d")
+        XCTAssertGreaterThan(library.identifiers.count, 400)
+        let start = Date()
+        var rows = 0
+        func count(_ row: DICOMSRTemplate.Row) -> Int { 1 + row.children.map(count).reduce(0, +) }
+        for identifier in library.identifiers {
+            if let template = library.template(identifier) { rows += count(template.root) }
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(start), 20, "expansion of all templates")
+        XCTAssertGreaterThan(rows, 10_000)
+        // TID 2000: non-extensible root, language mandatory, sections of CID 7001.
+        let report = try XCTUnwrap(library.template("2000"))
+        XCTAssertFalse(report.extensible)
+        XCTAssertTrue(report.root.children.contains { $0.relationship == "HAS CONCEPT MOD" && $0.requirement == .mandatory
+            && { if case .code(let code) = $0.concept { return code.value == "121049" } else { return false } }($0) })
+        XCTAssertTrue(report.root.children.contains { if case .group(7001, true) = $0.concept { return true } else { return false } })
+        // TID 2010: at least one reference, as a condition between rows 8, 9 and 10.
+        let selection = try XCTUnwrap(library.template("2010"))
+        XCTAssertEqual(selection.root.children.filter { if case .atLeastOne = $0.presence { return true } else { return false } }.count, 3)
+        XCTAssertEqual(library.name(of: "2006"), "Imaging Report With Conditional Radiation Exposure and Protection Information")
+    }
+
+    /// Validates the SR documents of DCMSWIFT_SR_SAMPLES (documents made by
+    /// other tools) and prints their issues; DCMSWIFT_SR_SAMPLES_STRICT=1 also
+    /// fails on any error.
+    func testValidateSampleDocuments() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let directory = environment["DCMSWIFT_SR_SAMPLES"] else {
+            throw XCTSkip("set DCMSWIFT_SR_SAMPLES to a folder of SR documents")
+        }
+        let files = try FileManager.default.contentsOfDirectory(atPath: directory).filter { $0.hasSuffix(".dcm") }.sorted()
+        XCTAssertFalse(files.isEmpty)
+        for file in files {
+            let input = DicomInputStream(url: URL(fileURLWithPath: directory).appendingPathComponent(file))
+            let dataSet = try XCTUnwrap(try input.readDataset(), file)
+            let document = try XCTUnwrap(DICOMStructuredReport(dataSet: dataSet), file)
+            let issues = DICOMSRTemplateValidator.validate(document)
+            print("SAMPLE \(file) TID \(document.template?.identifier ?? "-"): \(issues.isEmpty ? "no issue" : issues.map(\.description).joined(separator: " | "))")
+            if environment["DCMSWIFT_SR_SAMPLES_STRICT"] == "1" {
+                XCTAssertEqual(issues.filter { $0.severity == .error }, [], file)
+            }
+        }
+    }
+
+    /// TID 2006: fixed sections, procedure description (TID 2007) and radiation
+    /// exposure and protection information (TID 2008), read and validated.
+    func testImagingReportWithRadiationExposureInformation() throws {
+        func ln(_ value: String, _ meaning: String) -> DICOMCode { DICOMCode(value, scheme: "LN", meaning: meaning) }
+        func dcm(_ value: String, _ meaning: String) -> DICOMCode { DICOMCode(value, scheme: "DCM", meaning: meaning) }
+        func section(_ heading: DICOMCode, _ children: [DICOMSRContentItem]) -> DICOMSRContentItem {
+            DICOMSRContentItem("CONTAINS", heading, .container(continuity: "SEPARATE"), children: children)
+        }
+        let root = DICOMSRContentItem(nil, ln("18748-4", "Diagnostic Imaging Report"), .container(continuity: "SEPARATE"), children: [
+            DICOMSRContentItem("HAS CONCEPT MOD", DICOMSRCodes.language, .code(DICOMCode("fr-FR", scheme: "RFC5646", meaning: "French (France)"))),
+            section(ln("55111-9", "Current Procedure Descriptions"), [
+                DICOMSRContentItem("CONTAINS", dcm("123014", "Target Region"), .code(DICOMCode("816094009", scheme: "SCT", meaning: "Chest"))),
+                DICOMSRContentItem("CONTAINS", dcm("121065", "Procedure Description"), .text("Scanner thoracique sans injection")),
+                DICOMSRContentItem("CONTAINS", dcm("111060", "Study Date"), .date("20261028")),
+            ]),
+            section(ln("11329-0", "History"), [DICOMSRContentItem("CONTAINS", ln("11329-0", "History"), .text("Tabagisme"))]),
+            section(ln("55115-0", "Request"), [DICOMSRContentItem("CONTAINS", ln("55115-0", "Request"), .text("Toux persistante"))]),
+            section(ln("19005-8", "Impressions"), [DICOMSRContentItem("CONTAINS", dcm("121073", "Impression"), .text("Pas d'anomalie"))]),
+            section(ln("73569-6", "Radiation Exposure and Protection Information"), [
+                DICOMSRContentItem("CONTAINS", ln("18785-6", "Indications for Procedure"), .text("Toux persistante")),
+                DICOMSRContentItem("CONTAINS", dcm("113850", "Irradiation Authorizing"), .personName("Martin^Claire")),
+                DICOMSRContentItem("CONTAINS", dcm("113921", "Radiation Exposure"), .text("PDL 210 mGy.cm")),
+            ]),
+        ])
+        let document = DICOMStructuredReport(sopClassUID: DICOMStructuredReport.basicTextSR, completionFlag: "COMPLETE",
+                                             verificationFlag: "UNVERIFIED", template: (mappingResource: "DCMR", identifier: "2006"), root: root)
+        XCTAssertEqual(DICOMSRTemplateValidator.validate(document), [])
+        let report = try XCTUnwrap(DICOMDiagnosticImagingReport(document: document))
+        XCTAssertEqual(report.sections.count, 5)
+        XCTAssertEqual(report.sections[0].observations.last?.value, .date("20261028"))
+        XCTAssertEqual(report.sections[4].observations[1].value, .personName("Martin^Claire"))
+        XCTAssertTrue(report.text.contains("Irradiation Authorizing: Martin Claire"))
+        // Without the mandatory Impressions section, and with both forms of Target Region (XOR).
+        var broken = document
+        broken.root.children.remove(at: 4)
+        broken.root.children[1].children.insert(DICOMSRContentItem("CONTAINS", dcm("123014", "Target Region"), .text("Thorax")), at: 0)
+        let issues = DICOMSRTemplateValidator.validate(broken).filter { $0.severity == .error }.map(\.message)
+        XCTAssertTrue(issues.contains { $0.contains("missing CONTAINS CONTAINER (19005-8") }, "\(issues)")
+        XCTAssertTrue(issues.contains { $0.contains("only one of") && $0.contains("Target Region") }, "\(issues)")
     }
 }
 
