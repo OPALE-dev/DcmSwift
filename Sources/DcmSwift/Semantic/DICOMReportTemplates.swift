@@ -296,7 +296,9 @@ public struct DICOMDiagnosticImagingReport: Sendable {
         guard case .container = root.value, let title = root.conceptName else { return nil }
         // TID 2000, or TID 2006, which adds fixed sections and radiation exposure information (TID 2008).
         let declared = ["2000", "2006"].contains(document.template?.identifier ?? "")
-        let titled = DICOMTerminology.shared.membership(of: title, in: 7000) == .member
+        // Without a declared template, a title of CID 7000 is enough; a document that declares
+        // another template (a cardiology or CAD report…) is not read as a diagnostic report.
+        let titled = document.template == nil && DICOMTerminology.shared.membership(of: title, in: 7000) == .member
         guard declared || titled else { return nil }
         self.title = title
         language = root.code(of: DICOMSRCodes.language)
