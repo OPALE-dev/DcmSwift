@@ -508,6 +508,12 @@ final class DcmSwiftReportTemplateTests: XCTestCase {
         var other = document
         other.template = (mappingResource: "DCMR", identifier: "3300")
         XCTAssertNil(DICOMDiagnosticImagingReport(document: other))
+        // Loosely, a defined term (TID 2006 has none at this level; TID 2007's target region is one)
+        // takes at most its multiplicity: a second Target Region of another code is not counted against it.
+        var extra = document
+        extra.root.children[1].children.append(DICOMSRContentItem("CONTAINS", dcm("999999", "Other"), .text("x")))
+        XCTAssertFalse(DICOMSRTemplateValidator.validate(extra).contains { $0.message.contains("at most 1 allowed") },
+                       "\(DICOMSRTemplateValidator.validate(extra))")
         // Without the mandatory Impressions section, and with both forms of Target Region (XOR).
         var broken = document
         broken.root.children.remove(at: 4)

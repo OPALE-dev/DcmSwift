@@ -231,7 +231,14 @@ public enum DICOMSRTemplateValidator {
             var assigned = [Int?](repeating: nil, count: item.children.count)
             for loosely in [false, true] {
                 for (index, child) in item.children.enumerated() where assigned[index] == nil {
-                    let candidates = row.children.indices.filter { fits(child, row.children[$0], loosely: loosely) }
+                    // A defined term stands for its meaning under another code: loosely, it takes an item
+                    // only while it has room, so unrelated items are not all counted against it.
+                    let candidates = row.children.indices.filter { index in
+                        let candidate = row.children[index]
+                        guard fits(child, candidate, loosely: loosely) else { return false }
+                        guard loosely, case .defined = candidate.concept, let maximum = candidate.maximum else { return true }
+                        return assigned.filter { $0 == index }.count < maximum
+                    }
                     assigned[index] = candidates.count < 2 ? candidates.first : candidates.min { a, b in
                         errors(child, against: row.children[a]) < errors(child, against: row.children[b])
                     }
@@ -287,7 +294,11 @@ public enum DICOMSRTemplateValidator {
                       !optional.contains(instance(origin)) || used.contains(instance(origin)) else { continue }
                 let mandatory = row.requirement == .mandatoryConditional
                 func known(_ origins: [String]) -> [String]? { origins.allSatisfy { present[$0] != nil } ? origins : nil }
-                func names(_ origins: [String]) -> String { origins.compactMap { label[$0] }.joined(separator: ", ") }
+                func names(_ origins: [String]) -> String {
+                    // Rows that differ only by their value set read the same: each name once.
+                    var seen = Set<String>()
+                    return origins.compactMap { label[$0] }.filter { seen.insert($0).inserted }.joined(separator: ", ")
+                }
                 switch presence {
                 case .exclusive(let others):
                     guard let set = known(Array(Set(others + [origin])).sorted()) else { continue }
