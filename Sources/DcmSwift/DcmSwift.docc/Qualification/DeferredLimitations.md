@@ -228,13 +228,15 @@ conformance without that evidence.
   builders; the projection X-ray, radiopharmaceutical and patient dose reports,
   Mammography and Chest CAD, and the ultrasound reports are read but not made.
   Other templates are written through the content tree.
-- SR template validation (`DICOMSRTemplateValidator`) checks the rows of the
-  templates it knows (TID 2000, 2010, 1500, 10011, 10001, 10021; the top level
-  of 4000 and 4100; the title of 10030, 5000, 5100, 5200), coded values
-  against listed Context Groups, and the value types of Basic Text SR,
-  Enhanced SR and Key Object Selection. MC and UC conditions are not
-  evaluated (such rows are optional), and groups defined by rules are not
-  checked. IOD validation does not apply Context Groups to other attributes.
+- SR template validation (`DICOMSRTemplateValidator`) checks every template
+  of PS3.16 Annex A, generated from the Standard. Not evaluated: MC and UC
+  conditions on values or written as prose (490 of 742; such rows are
+  optional), constraints written as prose in value set cells (147 rows),
+  Context Groups defined by rules, and the content of six included templates
+  whose tables do not have the usual columns (TID 1604 to 1607, 1701, 5030),
+  nor content nested more than 12 inclusions deep. When several rows fit an
+  item, the one whose check finds fewest errors is chosen. IOD validation
+  does not apply Context Groups to other attributes.
 - TID 2000 to HL7 CDA R2 follows the PS3.20 mapping without writing the
   PS3.20 or C-CDA template identifiers, so no conformance to those templates
   is claimed; reading a CDA keeps the section narrative only. AIM (PS3.21) is

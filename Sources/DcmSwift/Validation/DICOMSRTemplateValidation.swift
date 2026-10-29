@@ -3,18 +3,35 @@ import Foundation
 /// A PS3.16 template as rows (PS3.16 6.1): the content items a container may
 /// hold, their relationship, value type, concept name, cardinality, and
 /// requirement. Conditions of MC and UC rows are not evaluated: such rows
-/// are checked as optional.
+/// are checked as optional. The templates of the Standard are generated
+/// from PS3.16 (``DICOMSRTemplateLibrary``).
 public struct DICOMSRTemplate: Sendable {
     /// The concept name a row asks for.
     public enum Concept: Sendable {
         /// Enumerated value: this code (EV).
         case code(DICOMCode)
-        /// A Context Group: defined (DCID) or baseline (BCID). A code outside
-        /// an extensible group is accepted; outside a baseline group it is
-        /// reported as a warning.
+        /// A Context Group: defined (DCID), whose codes are required (an
+        /// extensible group may be extended, reported as a warning), or
+        /// baseline (BCID), whose codes are suggested (any code is accepted).
         case group(Int, baseline: Bool)
+        /// A code of any of these Context Groups.
+        case groups([Int], baseline: Bool)
+        /// Defined term (DT): this code, which another code may replace.
+        case defined(DICOMCode)
         /// Any concept name, or none.
         case any
+    }
+
+    /// Conditions of PS3.16 tables on the presence of other rows.
+    public enum Presence: Sendable, Equatable {
+        /// Exactly one of these rows (MC), at most one (UC).
+        case exclusive([String])
+        /// At least one of these rows.
+        case atLeastOne([String])
+        /// Required when all these rows are absent.
+        case ifAbsent([String])
+        /// Required when this row is present, forbidden otherwise.
+        case ifAndOnlyIfPresent([String])
     }
 
     public enum Requirement: String, Sendable {
@@ -31,7 +48,25 @@ public struct DICOMSRTemplate: Sendable {
         public var valueTypes: [String]
         public var concept: Concept
         /// Context Group of a CODE value.
-        public var valueGroup: Int?
+        public var valueGroup: Int? {
+            get { if case .group(let cid, _) = value { return cid } else { return nil } }
+            set { value = newValue.map { .group($0, baseline: false) } }
+        }
+        /// Constraint on a CODE value: code, defined term, or Context Group.
+        public var value: Concept?
+        /// Constraint on the units of a NUM value.
+        public var units: Concept?
+        /// The row's content is accepted without looking inside: an included
+        /// template that is missing, recursive, or nested too deep.
+        public var unchecked = false
+        /// Where the row comes from: template instance and row number.
+        public var origin: String?
+        /// Condition on the presence of sibling rows (by origin), evaluated
+        /// for MC and UC rows; other conditions are not evaluated.
+        public var presence: Presence?
+        /// The row comes from an optional inclusion: its conditions apply
+        /// only once a row of that inclusion is present.
+        public var optionalInclusion = false
         public var minimum: Int
         public var maximum: Int?
         public var requirement: Requirement
@@ -42,7 +77,7 @@ public struct DICOMSRTemplate: Sendable {
             self.relationship = relationship
             self.valueTypes = valueTypes
             self.concept = concept
-            self.valueGroup = valueGroup
+            self.value = valueGroup.map { .group($0, baseline: false) }
             self.minimum = minimum
             self.maximum = maximum
             self.requirement = requirement
@@ -87,13 +122,8 @@ public struct DICOMSRValidationIssue: Sendable, Equatable, CustomStringConvertib
 /// relationships allowed by its SOP Class, flags) and against the template
 /// it declares, or one given, using the Context Groups of the terminology.
 public enum DICOMSRTemplateValidator {
-    /// The templates the validator knows, by identifier.
-    public static let templates: [String: DICOMSRTemplate] = Dictionary(uniqueKeysWithValues: [
-        DICOMSRTemplates.basicDiagnosticImagingReport, DICOMSRTemplates.keyObjectSelection, DICOMSRTemplates.measurementReport,
-        DICOMSRTemplates.ctRadiationDose, DICOMSRTemplates.projectionXRayRadiationDose, DICOMSRTemplates.radiopharmaceuticalRadiationDose,
-        DICOMSRTemplates.patientRadiationDose, DICOMSRTemplates.mammographyCAD, DICOMSRTemplates.chestCAD,
-        DICOMSRTemplates.obstetricGynecologicUltrasound, DICOMSRTemplates.vascularUltrasound, DICOMSRTemplates.echocardiography,
-    ].map { ($0.identifier, $0) })
+    /// The templates of the Standard, generated from PS3.16.
+    public static var library: DICOMSRTemplateLibrary { .shared }
 
     /// Validates a document; without `template`, the declared one is used
     /// (Content Template Sequence, mapping resource DCMR), if known.
@@ -101,7 +131,7 @@ public enum DICOMSRTemplateValidator {
                                 terminology: DICOMTerminology = .shared) -> [DICOMSRValidationIssue] {
         var issues = header(document)
         issues += sopClassConstraints(document)
-        let chosen = template ?? document.template.flatMap { $0.mappingResource == "DCMR" ? templates[$0.identifier] : nil }
+        let chosen = template ?? document.template.flatMap { $0.mappingResource == "DCMR" ? library.template($0.identifier) : nil }
         if let chosen {
             var checker = Checker(terminology: terminology, extensible: chosen.extensible)
             checker.check(document.root, path: [1], against: chosen.root)
@@ -171,13 +201,20 @@ public enum DICOMSRTemplateValidator {
         func fits(_ item: DICOMSRContentItem, _ row: DICOMSRTemplate.Row, loosely: Bool) -> Bool {
             guard row.relationship == nil || item.relationship == row.relationship,
                   row.valueTypes.contains(item.value.valueType) else { return false }
+            // A reference may go without concept name (its purpose): the row's constraint applies when it has one.
+            if item.conceptName == nil, ["IMAGE", "COMPOSITE", "WAVEFORM"].contains(item.value.valueType) { return true }
             switch row.concept {
             case .any: return true
             case .code(let code): return item.conceptName?.sameConcept(as: code) == true
-            case .group(let cid, _):
+            case .defined(let code): return loosely ? item.conceptName != nil : item.conceptName?.sameConcept(as: code) == true
+            case .group(let cid, let baseline):
                 guard let concept = item.conceptName else { return false }
                 let membership = terminology.membership(of: concept, in: cid)
-                return membership == .member || (loosely && membership != .notAllowed)
+                return membership == .member || (loosely && (baseline || membership != .notAllowed))
+            case .groups(let cids, let baseline):
+                guard let concept = item.conceptName else { return false }
+                let memberships = cids.map { terminology.membership(of: concept, in: $0) }
+                return memberships.contains(.member) || (loosely && (baseline || memberships.contains { $0 != .notAllowed }))
             }
         }
 
@@ -188,13 +225,19 @@ public enum DICOMSRTemplateValidator {
             }
             checkConcept(item, path: path, row: row)
             checkValue(item, path: path, row: row)
-            // Assign each child to the first row it fits strictly, then loosely.
+            if row.unchecked { return }
+            // Assign each child to a row it fits strictly, then loosely. When several rows fit (the
+            // same concept in several included templates), the one whose check finds fewest errors wins.
             var assigned = [Int?](repeating: nil, count: item.children.count)
             for loosely in [false, true] {
                 for (index, child) in item.children.enumerated() where assigned[index] == nil {
-                    assigned[index] = row.children.firstIndex { fits(child, $0, loosely: loosely) }
+                    let candidates = row.children.indices.filter { fits(child, row.children[$0], loosely: loosely) }
+                    assigned[index] = candidates.count < 2 ? candidates.first : candidates.min { a, b in
+                        errors(child, against: row.children[a]) < errors(child, against: row.children[b])
+                    }
                 }
             }
+            checkPresence(row.children, counts: row.children.indices.map { index in assigned.filter { $0 == index }.count }, path: path)
             for (rowIndex, childRow) in row.children.enumerated() {
                 let matched = item.children.indices.filter { assigned[$0] == rowIndex }
                 if matched.count < childRow.minimum && childRow.requirement == .mandatory {
@@ -215,198 +258,107 @@ public enum DICOMSRTemplateValidator {
             }
         }
 
+        /// Errors a trial check of an item against a row finds.
+        func errors(_ item: DICOMSRContentItem, against row: DICOMSRTemplate.Row) -> Int {
+            var trial = Checker(terminology: terminology, extensible: extensible)
+            trial.check(item, path: [], against: row)
+            return trial.issues.filter { $0.severity == .error }.count
+        }
+
+        /// Presence conditions between sibling rows: each finding once.
+        mutating func checkPresence(_ rows: [DICOMSRTemplate.Row], counts: [Int], path: [Int]) {
+            var present: [String: Bool] = [:], label: [String: String] = [:]
+            for (index, row) in rows.enumerated() {
+                guard let origin = row.origin else { continue }
+                present[origin] = (present[origin] ?? false) || counts[index] > 0
+                label[origin] = label[origin] ?? "\(row.valueTypes.joined(separator: "/")) \(describe(row.concept))".trimmingCharacters(in: .whitespaces)
+            }
+            // Instances of optional inclusions with nothing present: their conditions do not apply.
+            func instance(_ origin: String) -> Substring { origin.prefix { $0 != "#" } }
+            let optional = Set(rows.filter(\.optionalInclusion).compactMap { $0.origin.map(instance) })
+            let used = Set(present.filter(\.value).keys.map(instance))
+            var reported = Set<String>()
+            func once(_ message: String) {
+                if reported.insert(message).inserted { report(.error, path, message) }
+            }
+            for row in rows {
+                guard let origin = row.origin, let presence = row.presence,
+                      row.requirement == .mandatoryConditional || row.requirement == .userOptionConditional,
+                      !optional.contains(instance(origin)) || used.contains(instance(origin)) else { continue }
+                let mandatory = row.requirement == .mandatoryConditional
+                func known(_ origins: [String]) -> [String]? { origins.allSatisfy { present[$0] != nil } ? origins : nil }
+                func names(_ origins: [String]) -> String { origins.compactMap { label[$0] }.joined(separator: ", ") }
+                switch presence {
+                case .exclusive(let others):
+                    guard let set = known(Array(Set(others + [origin])).sorted()) else { continue }
+                    let count = set.filter { present[$0] == true }.count
+                    if count > 1 { once("only one of \(names(set)) may be present") }
+                    if count == 0, mandatory { once("one of \(names(set)) is required") }
+                case .atLeastOne(let set):
+                    guard let set = known(set) else { continue }
+                    if mandatory, !set.contains(where: { present[$0] == true }) { once("at least one of \(names(set)) is required") }
+                case .ifAbsent(let others):
+                    guard let others = known(others) else { continue }
+                    if mandatory, present[origin] != true, !others.contains(where: { present[$0] == true }) {
+                        once("\(label[origin] ?? "") is required when \(names(others)) \(others.count > 1 ? "are" : "is") absent")
+                    }
+                case .ifAndOnlyIfPresent(let others):
+                    guard let others = known(others) else { continue }
+                    let condition = others.allSatisfy { present[$0] == true }
+                    if condition, mandatory, present[origin] != true { once("\(label[origin] ?? "") is required when \(names(others)) is present") }
+                    if !condition, present[origin] == true { once("\(label[origin] ?? "") is only allowed when \(names(others)) is present") }
+                }
+            }
+        }
+
         mutating func checkConcept(_ item: DICOMSRContentItem, path: [Int], row: DICOMSRTemplate.Row) {
-            guard case .group(let cid, let baseline) = row.concept, let concept = item.conceptName else { return }
-            if terminology.membership(of: concept, in: cid) == .allowedByExtension && baseline {
-                report(.warning, path, "concept name \(concept) is not in baseline CID \(cid)")
+            guard case .group(let cid, false) = row.concept, let concept = item.conceptName else { return }
+            if terminology.membership(of: concept, in: cid) == .allowedByExtension {
+                report(.warning, path, "concept name \(concept) is not listed in CID \(cid)")
             }
         }
 
         mutating func checkValue(_ item: DICOMSRContentItem, path: [Int], row: DICOMSRTemplate.Row) {
-            guard let cid = row.valueGroup, case .code(let value) = item.value else { return }
-            switch terminology.membership(of: value, in: cid) {
-            case .notAllowed: report(.error, path, "coded value \(value) is not in CID \(cid)")
-            case .allowedByExtension: report(.warning, path, "coded value \(value) is not listed in CID \(cid)")
-            case .member, .undetermined: break
+            switch item.value {
+            case .code(let value): check(value, against: row.value, path: path, what: "coded value")
+            case .number(_, let units?, _): check(units, against: row.units, path: path, what: "units")
+            default: break
+            }
+        }
+
+        mutating func check(_ code: DICOMCode, against constraint: DICOMSRTemplate.Concept?, path: [Int], what: String) {
+            switch constraint {
+            case .group(let cid, let baseline)?:
+                guard !baseline else { break }
+                switch terminology.membership(of: code, in: cid) {
+                case .notAllowed: report(.error, path, "\(what) \(code) is not in CID \(cid)")
+                case .allowedByExtension: report(.warning, path, "\(what) \(code) is not listed in CID \(cid)")
+                case .member, .undetermined: break
+                }
+            case .groups(let cids, let baseline)?:
+                guard !baseline else { break }
+                let memberships = cids.map { terminology.membership(of: code, in: $0) }
+                if memberships.contains(.member) || memberships.contains(.undetermined) { break }
+                let list = cids.map { "CID \($0)" }.joined(separator: ", ")
+                if memberships.allSatisfy({ $0 == .notAllowed }) { report(.error, path, "\(what) \(code) is not in \(list)") }
+                else { report(.warning, path, "\(what) \(code) is not listed in \(list)") }
+            case .code(let expected)?:
+                if !code.sameConcept(as: expected) { report(.error, path, "\(what) \(code) should be \(expected)") }
+            case .defined(let expected)?:
+                if !code.sameConcept(as: expected) { report(.warning, path, "\(what) \(code) differs from the defined term \(expected)") }
+            case .any?, nil: break
             }
         }
 
         func describe(_ concept: DICOMSRTemplate.Concept) -> String {
             switch concept {
-            case .code(let code): return code.description
+            case .code(let code), .defined(let code): return code.description
             case .group(let cid, _): return "from CID \(cid)"
+            case .groups(let cids, _): return "from " + cids.map { "CID \($0)" }.joined(separator: " or ")
             case .any: return ""
             }
         }
     }
-}
-
-/// The rows of the templates the validator knows. Included templates are
-/// written in place; rows the validator cannot check (conditions, by
-/// reference content) are optional.
-public enum DICOMSRTemplates {
-    typealias Row = DICOMSRTemplate.Row
-    static let dcm = DICOMSRCodes.dcm
-
-    /// TID 1204 Language of Content Item and Descendants.
-    static let language = Row.optional("HAS CONCEPT MOD", "CODE", .code(DICOMSRCodes.language))
-
-    /// TID 1002 Observer Context, with TID 1003 and 1004, all optional here.
-    static let observerContext: [Row] = [
-        .optional("HAS OBS CONTEXT", "CODE", .code(DICOMSRCodes.observerType), valueGroup: 270, many: true),
-        .optional("HAS OBS CONTEXT", "PNAME", .code(DICOMSRCodes.personObserverName), many: true),
-        .optional("HAS OBS CONTEXT", "TEXT", .code(DICOMSRCodes.personObserverOrganization), many: true),
-        .optional("HAS OBS CONTEXT", "CODE", .code(DICOMSRCodes.personObserverRoleInOrganization), many: true),
-        .optional("HAS OBS CONTEXT", "CODE", .code(DICOMSRCodes.personObserverRoleInProcedure), many: true),
-        .optional("HAS OBS CONTEXT", "UIDREF", .code(DICOMSRCodes.deviceObserverUID), many: true),
-        .optional("HAS OBS CONTEXT", "TEXT", .code(DICOMSRCodes.deviceObserverName), many: true),
-        .optional("HAS OBS CONTEXT", "TEXT", .code(DICOMSRCodes.deviceObserverManufacturer), many: true),
-        .optional("HAS OBS CONTEXT", "TEXT", .code(DICOMSRCodes.deviceObserverModelName), many: true),
-        .optional("HAS OBS CONTEXT", "TEXT", .code(DICOMSRCodes.deviceObserverSerialNumber), many: true),
-    ]
-
-    static func root(_ concept: DICOMSRTemplate.Concept, _ children: [Row]) -> Row {
-        Row(nil, ["CONTAINER"], concept, children: children)
-    }
-
-    static func container(_ code: DICOMCode, _ minimum: Int = 1, _ maximum: Int? = 1,
-                          _ requirement: DICOMSRTemplate.Requirement = .mandatory, _ children: [Row]) -> Row {
-        Row("CONTAINS", ["CONTAINER"], .code(code), minimum, maximum, requirement, children: children)
-    }
-
-    static func item(_ type: String, _ code: DICOMCode, valueGroup: Int? = nil, _ relationship: String = "CONTAINS",
-                     _ minimum: Int = 1, _ maximum: Int? = 1, _ requirement: DICOMSRTemplate.Requirement = .mandatory) -> Row {
-        Row(relationship, [type], .code(code), valueGroup: valueGroup, minimum, maximum, requirement)
-    }
-
-    /// TID 2000 Basic Diagnostic Imaging Report, sections of TID 2002.
-    public static let basicDiagnosticImagingReport: DICOMSRTemplate = {
-        let image = Row.optional("INFERRED FROM", "IMAGE", .any, many: true)
-        let section = Row("CONTAINS", ["CONTAINER"], .group(7001, baseline: false), 1, nil, .mandatory, children: observerContext + [
-            .optional("CONTAINS", "TEXT", .group(7002, baseline: false), many: true, children: [image]),
-            .optional("CONTAINS", "CODE", .group(7002, baseline: false), many: true, children: [image]),
-            .optional("CONTAINS", "IMAGE", .any, many: true),
-        ])
-        return DICOMSRTemplate(identifier: "2000", name: "Basic Diagnostic Imaging Report", root: root(.group(7000, baseline: false),
-            [language] + observerContext + [.optional("HAS CONCEPT MOD", "CODE", .code(DICOMSRCodes.procedureReported), many: true), section]))
-    }()
-
-    /// TID 2010 Key Object Selection.
-    public static let keyObjectSelection = DICOMSRTemplate(identifier: "2010", name: "Key Object Selection", extensible: false,
-        root: root(.group(7010, baseline: false), [
-            .optional("HAS CONCEPT MOD", "CODE", .code(DICOMSRCodes.documentTitleModifier), many: true),
-            language,
-        ] + observerContext + [
-            .optional("CONTAINS", "TEXT", .code(DICOMSRCodes.keyObjectDescription)),
-            Row("CONTAINS", ["IMAGE", "WAVEFORM", "COMPOSITE"], .any, 1, nil, .mandatory),
-        ]))
-
-    /// TID 1500 Measurement Report with TID 1501 groups.
-    public static let measurementReport: DICOMSRTemplate = {
-        let group = container(dcm("125007", "Measurement Group"), 1, nil, .mandatory, [
-            item("TEXT", dcm("112039", "Tracking Identifier"), "HAS OBS CONTEXT"),
-            item("UIDREF", dcm("112040", "Tracking Unique Identifier"), "HAS OBS CONTEXT"),
-            .optional("CONTAINS", "CODE", .code(dcm("121071", "Finding"))),
-            .optional("HAS CONCEPT MOD", "CODE", .code(DICOMCode("363698007", scheme: "SCT", meaning: "Finding Site"))),
-            .optional("CONTAINS", "NUM", .any, many: true),
-        ])
-        return DICOMSRTemplate(identifier: "1500", name: "Measurement Report", root: root(.code(dcm("126000", "Imaging Measurement Report")),
-            [language] + observerContext + [
-                item("CODE", DICOMSRCodes.procedureReported, "HAS CONCEPT MOD", 1, nil),
-                container(dcm("111028", "Image Library"), 0, 1, .userOption, []),
-                container(dcm("126010", "Imaging Measurements"), 0, 1, .mandatoryConditional, [group]),
-            ]))
-    }()
-
-    /// TID 10011 CT Radiation Dose, with TID 10012 and 10013.
-    public static let ctRadiationDose: DICOMSRTemplate = {
-        typealias C = DICOMRadiationDoseReport.Codes
-        let source = container(C.ctXRaySourceParameters, 1, nil, .mandatory, [
-            item("TEXT", C.identificationOfTheXRaySource), item("NUM", C.kvp), item("NUM", C.maximumXRayTubeCurrent),
-            item("NUM", C.xRayTubeCurrent), item("NUM", C.exposureTimePerRotation, "CONTAINS", 0, 1, .mandatoryConditional),
-        ])
-        let acquisition = container(C.ctAcquisition, 1, nil, .mandatory, [
-            item("TEXT", C.acquisitionProtocol, "CONTAINS", 0, 1, .userOption),
-            item("CODE", C.targetRegion, valueGroup: 4030),
-            item("CODE", C.ctAcquisitionType, valueGroup: 10013),
-            item("UIDREF", C.irradiationEventUID),
-            container(C.ctAcquisitionParameters, 1, 1, .mandatory, [
-                item("NUM", C.exposureTime), item("NUM", C.scanningLength), item("NUM", C.nominalSingleCollimationWidth),
-                item("NUM", C.nominalTotalCollimationWidth), item("NUM", C.pitchFactor, "CONTAINS", 0, 1, .mandatoryConditional),
-                item("NUM", C.numberOfXRaySources), source,
-            ]),
-            container(C.ctDose, 0, 1, .mandatoryConditional, [
-                item("NUM", C.meanCTDIvol), item("CODE", C.ctdiwPhantomType, valueGroup: 4052), item("NUM", C.dlp),
-            ]),
-        ])
-        return DICOMSRTemplate(identifier: "10011", name: "CT Radiation Dose", root: root(.code(C.xRayRadiationDoseReport),
-            [language] + observerContext + [
-                item("CODE", DICOMSRCodes.procedureReported, "HAS CONCEPT MOD"),
-                .optional("HAS OBS CONTEXT", "CODE", .code(C.deviceRoleInProcedure), many: true),
-                item("DATETIME", C.startOfXRayIrradiation), item("DATETIME", C.endOfXRayIrradiation),
-                item("CODE", C.scopeOfAccumulation, valueGroup: 10000, "HAS ACQ CONTEXT"),
-                container(C.ctAccumulatedDoseData, 1, 1, .mandatory, [
-                    item("NUM", C.totalNumberOfIrradiationEvents), item("NUM", C.ctDoseLengthProductTotal),
-                    item("NUM", C.ctEffectiveDoseTotal, "CONTAINS", 0, 1, .userOption),
-                ]),
-                acquisition,
-                .optional("CONTAINS", "CODE", .code(C.sourceOfDoseInformation), valueGroup: 10021, many: true),
-            ]))
-    }()
-
-    /// TID 10001 Projection X-Ray Radiation Dose, with TID 10002 and 10003.
-    public static let projectionXRayRadiationDose: DICOMSRTemplate = {
-        typealias C = DICOMRadiationDoseReport.Codes
-        return DICOMSRTemplate(identifier: "10001", name: "Projection X-Ray Radiation Dose", root: root(.code(C.xRayRadiationDoseReport),
-            [language] + observerContext + [
-                item("CODE", DICOMSRCodes.procedureReported, "HAS CONCEPT MOD"),
-                container(C.accumulatedXRayDoseData, 1, nil, .mandatory, [item("CODE", C.irradiationEventXRayData.with("113764", "Acquisition Plane"), valueGroup: 10003)]),
-                container(C.irradiationEventXRayData, 0, nil, .userOption, [
-                    item("UIDREF", C.irradiationEventUID), item("DATETIME", C.dateTimeStarted),
-                    item("CODE", C.irradiationEventType, valueGroup: 10002),
-                ]),
-            ]))
-    }()
-
-    /// TID 10021 Radiopharmaceutical Radiation Dose, with TID 10022.
-    public static let radiopharmaceuticalRadiationDose: DICOMSRTemplate = {
-        typealias C = DICOMRadiationDoseReport.Codes
-        return DICOMSRTemplate(identifier: "10021", name: "Radiopharmaceutical Radiation Dose",
-            root: root(.code(C.radiopharmaceuticalRadiationDoseReport), [language] + observerContext + [
-                container(C.radiopharmaceuticalAdministration, 1, nil, .mandatory, [
-                    item("UIDREF", C.administrationEventUID), item("NUM", C.administeredActivity),
-                ]),
-            ]))
-    }()
-
-    /// TID 10030 Patient Radiation Dose: the title only is checked.
-    public static let patientRadiationDose = DICOMSRTemplate(identifier: "10030", name: "Patient Radiation Dose",
-        root: root(.code(DICOMRadiationDoseReport.Codes.patientRadiationDoseReport), [language] + observerContext))
-
-    static func cad(_ identifier: String, _ name: String, _ title: DICOMCode) -> DICOMSRTemplate {
-        DICOMSRTemplate(identifier: identifier, name: name, root: root(.code(title), [language] + observerContext + [
-            item("CODE", DICOMCADReport.Codes.summary, valueGroup: 6047),
-            container(dcm("111028", "Image Library"), 1, 1, .mandatory, []),
-        ]))
-    }
-
-    /// TID 4000 Mammography CAD: top-level rows.
-    public static let mammographyCAD = cad("4000", "Mammography CAD Document Root", DICOMCADReport.Codes.mammographyCADReport)
-    /// TID 4100 Chest CAD: top-level rows.
-    public static let chestCAD = cad("4100", "Chest CAD Document Root", DICOMCADReport.Codes.chestCADReport)
-
-    static func ultrasound(_ identifier: String, _ name: String, _ title: DICOMCode) -> DICOMSRTemplate {
-        DICOMSRTemplate(identifier: identifier, name: name, root: root(.code(title), [language] + observerContext))
-    }
-
-    /// TID 5000 OB-GYN Ultrasound Procedure Report: the title is checked.
-    public static let obstetricGynecologicUltrasound = ultrasound("5000", "OB-GYN Ultrasound Procedure Report",
-                                                                  DICOMUltrasoundReport.Codes.obstetricGynecologicReport)
-    /// TID 5100 Vascular Ultrasound Report: the title is checked.
-    public static let vascularUltrasound = ultrasound("5100", "Vascular Ultrasound Report", DICOMUltrasoundReport.Codes.vascularReport)
-    /// TID 5200 Echocardiography Procedure Report: the title is checked.
-    public static let echocardiography = ultrasound("5200", "Echocardiography Procedure Report",
-                                                    DICOMUltrasoundReport.Codes.echocardiographyReport)
 }
 
 extension DICOMCode {

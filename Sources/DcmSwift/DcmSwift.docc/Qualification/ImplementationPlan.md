@@ -335,16 +335,17 @@ services, then UPS, then its RESTful version.
 
 Done: TID 2000 (with TID 2002 sections) and TID 2010 written and read; CT
 dose reports (TID 10011) written; CT, projection X-ray, radiopharmaceutical
-and patient dose reports read; Mammography and Chest CAD findings and
-ultrasound measurements read; validation of SR documents against the rows
-of these templates, their Context Groups and the SOP Class constraints;
-TID 2000 to HL7 CDA R2 and back (see <doc:StructuredReports>).
+and patient dose reports read; TID 2006 read; Mammography and Chest CAD
+findings and ultrasound measurements read; validation of SR documents
+against every template of PS3.16 Annex A, generated from the Standard, with
+the presence conditions between rows, the Context Groups and the SOP Class
+constraints; TID 2000 to HL7 CDA R2 and back (see <doc:StructuredReports>).
 
 | Status | Area | Effort | Scope | Normative source | Oracle |
 | :-: | --- | :-: | --- | --- | --- |
 | ◐ | Radiation dose | M | <ul><li>Builders for projection X-ray, radiopharmaceutical, and patient dose reports</li><li>Typed rows of TID 10030 (dose model, organ doses)</li></ul> | PS3.16 | PixelMed; DCMTK `dsrdump` |
 | ◐ | Clinical reports | L | <ul><li>CAD and ultrasound builders</li><li>Typed readers for the CAD detections and analyses, OB-GYN fetus and biometry groups, and echocardiography sections</li></ul> | PS3.16 | DCMTK `dsrdump`; dicom3tools |
-| ◐ | Template validation | L | <ul><li>Conditions of MC and UC rows</li><li>Row-level definitions of TID 10030, the CAD and ultrasound sub-templates, and the other templates of Annex A</li><li>Context Groups defined by rules rather than lists</li></ul> | PS3.16 Annex A, B | dicom3tools `dciodvfy` |
+| ◐ | Template validation | M | <ul><li>Conditions on values (IF value of Row n = …) and conditions written as prose</li><li>Constraints written as prose in value set cells</li><li>The six templates whose tables have other columns (TID 1604 to 1607, 1701, 5030)</li><li>Context Groups defined by rules rather than lists</li></ul> | PS3.16 Annex A, B | dicom3tools `dciodvfy` |
 | ◐ | Other representations | L | <ul><li>PS3.20 and C-CDA template identifiers, checked with their Schematron</li><li>CDA entries other than the section narrative read back</li><li>The transformations of PS3.21 (AIM)</li></ul> | PS3.20; PS3.21 | Schematron and schemas of PS3.20 |
 
 ## Phase 8 — Advanced imaging objects

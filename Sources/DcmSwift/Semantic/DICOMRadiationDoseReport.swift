@@ -264,22 +264,27 @@ public struct DICOMRadiationDoseReport: Sendable {
     /// irradiating device, with its accumulated DLP and its acquisitions.
     /// The equipment module takes the device's manufacturer, model, and
     /// serial number, with `softwareVersions`.
+    /// A CT Radiation Dose report (TID 10011) of one study. `intent` is the
+    /// procedure intent (CID 3629), diagnostic by default.
     public static func ct(device: DICOMSRObserver, studyInstanceUID: String, start: String, end: String,
-                          acquisitions: [CTAcquisition], softwareVersions: String? = nil) -> DICOMStructuredReport {
+                          acquisitions: [CTAcquisition], softwareVersions: String? = nil,
+                          intent: DICOMCode = DICOMCode("261004008", scheme: "SCT", meaning: "Diagnostic Intent")) -> DICOMStructuredReport {
         func num(_ concept: DICOMCode, _ value: Double, _ units: DICOMCode) -> DICOMSRContentItem {
             DICOMSRContentItem("CONTAINS", concept, .number(value, units: units, qualifier: nil))
         }
         let mGy = ucum("mGy", "mGy"), mGycm = ucum("mGy.cm", "mGy.cm"), s = ucum("s", "s"), mm = ucum("mm", "mm")
         let ratio = ucum("{ratio}", "ratio"), kV = ucum("kV", "kV"), mA = ucum("mA", "mA")
-        var children = [DICOMSRContentItem("HAS CONCEPT MOD", DICOMSRCodes.procedureReported, .code(Codes.computedTomography))]
+        var children = [DICOMSRContentItem("HAS CONCEPT MOD", DICOMSRCodes.procedureReported, .code(Codes.computedTomography), children: [
+            DICOMSRContentItem("HAS CONCEPT MOD", DICOMCode("363703001", scheme: "SCT", meaning: "Has Intent"), .code(intent)),
+        ])]
         children += device.items
         if case .device = device {
             children.append(DICOMSRContentItem("HAS OBS CONTEXT", Codes.deviceRoleInProcedure, .code(Codes.irradiatingDevice)))
         }
         children += [
-            DICOMSRContentItem("CONTAINS", Codes.startOfXRayIrradiation, .dateTime(start)),
-            DICOMSRContentItem("CONTAINS", Codes.endOfXRayIrradiation, .dateTime(end)),
-            DICOMSRContentItem("HAS ACQ CONTEXT", Codes.scopeOfAccumulation, .code(Codes.study), children: [
+            DICOMSRContentItem("HAS OBS CONTEXT", Codes.startOfXRayIrradiation, .dateTime(start)),
+            DICOMSRContentItem("HAS OBS CONTEXT", Codes.endOfXRayIrradiation, .dateTime(end)),
+            DICOMSRContentItem("HAS OBS CONTEXT", Codes.scopeOfAccumulation, .code(Codes.study), children: [
                 DICOMSRContentItem("HAS PROPERTIES", Codes.studyInstanceUID, .uidReference(studyInstanceUID)),
             ]),
             DICOMSRContentItem("CONTAINS", Codes.ctAccumulatedDoseData, .container(continuity: "SEPARATE"), children: [
