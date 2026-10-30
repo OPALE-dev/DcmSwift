@@ -407,6 +407,63 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
         }
     }
 
+    /// A server that stops accepting frees its port at once but lets the associations in progress
+    /// finish: a new server can take the port while an old association keeps working.
+    func testStopAcceptingKeepsAssociationsAndFreesThePort() async throws {
+        let old = try DICOMServer(configuration: configuration())
+        let ready = AsyncStream<Int>.makeStream()
+        let oldTask = Task { try await old.run { ready.continuation.yield($0) } }
+        var iterator = ready.stream.makeAsyncIterator()
+        guard let port = await iterator.next() else { throw DICOMNetworkError.connectionClosed }
+        var replacementConfiguration = configuration("NEXT")
+        replacementConfiguration.port = port
+        let replacement = try DICOMServer(configuration: replacementConfiguration)
+        let contexts = DICOMPresentationContextProposal.proposals(abstractSyntaxes: [DICOMSOPClass.verification])
+        let replacementTask = NIOLockedValueBox<Task<Void, Error>?>(nil)
+        defer { replacementTask.withLockedValue { $0?.cancel() } }
+        let statuses = try await client().withAssociation(
+            to: DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port), presentationContexts: contexts
+        ) { association -> [DICOMStatus] in
+            let before = try await association.echo()
+            await old.stopAccepting()
+            // The port is free: the replacement binds it while this association is still open.
+            let bound = AsyncStream<Int>.makeStream()
+            replacementTask.withLockedValue { $0 = Task { try await replacement.run { bound.continuation.yield($0) } } }
+            var boundIterator = bound.stream.makeAsyncIterator()
+            let replacementPort = await boundIterator.next()
+            XCTAssertEqual(replacementPort, port)
+            let other = try await self.client().withAssociation(
+                to: DICOMRemoteNode(aeTitle: "NEXT", host: "127.0.0.1", port: port), presentationContexts: contexts
+            ) { try await $0.echo() }
+            XCTAssertEqual(other, .success, "new associations reach the replacement")
+            return [before, try await association.echo()]
+        }
+        XCTAssertEqual(statuses, [.success, .success], "the association in progress was not cut")
+        // With its last association released, the old server ends by itself, without cancellation.
+        try await oldTask.value
+        XCTAssertEqual(old.activeAssociations, 0)
+    }
+
+    /// The calling AE titles can follow a list changed while the server runs.
+    func testCallingAETitlesCanChangeWithoutRestart() async throws {
+        let allowed = NIOLockedValueBox<Set<String>>(["SCU"])
+        var live = configuration()
+        live.acceptsCallingAETitle = { title in allowed.withLockedValue { $0.contains(title) } }
+        try await withServer(try DICOMServer(configuration: live)) { port in
+            let contexts = DICOMPresentationContextProposal.proposals(abstractSyntaxes: [DICOMSOPClass.verification])
+            let node = DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port)
+            do {
+                try await client("LATER").withAssociation(to: node, presentationContexts: contexts) { _ in }
+                XCTFail("an AE title not yet declared was accepted")
+            } catch DICOMNetworkError.associationRejected(let reject) {
+                XCTAssertEqual(reject.reason, .callingAETitleNotRecognized)
+            }
+            allowed.withLockedValue { _ = $0.insert("LATER") }
+            let status = try await client("LATER").withAssociation(to: node, presentationContexts: contexts) { try await $0.echo() }
+            XCTAssertEqual(status, .success)
+        }
+    }
+
     func testRejectionsAndLimits() async throws {
         var limited = configuration()
         limited.maximumAssociations = 1
