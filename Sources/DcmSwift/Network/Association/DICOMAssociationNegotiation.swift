@@ -75,6 +75,10 @@ public struct DICOMAcceptorPolicy: Sendable {
     public var acceptsAnyCalledAETitle: Bool
     /// Calling AE titles allowed; nil accepts any.
     public var allowedCallingAETitles: Set<String>?
+    /// Decides on the calling AE title when each request arrives, after
+    /// `allowedCallingAETitles`: lets the acceptor follow a list that changes
+    /// while it serves, without being restarted.
+    public var acceptsCallingAETitle: (@Sendable (String) -> Bool)?
     /// Supported abstract syntaxes, by UID.
     public var abstractSyntaxes: [String: DICOMAbstractSyntaxSupport]
     /// The Maximum Length Received announced; 0 means no limit.
@@ -93,9 +97,11 @@ public struct DICOMAcceptorPolicy: Sendable {
         acceptsAnyCalledAETitle: Bool = false, allowedCallingAETitles: Set<String>? = nil,
         maximumLength: UInt32 = 1 << 16, implementationClassUID: String = DICOMImplementation.classUID,
         implementationVersionName: String? = DICOMImplementation.versionName, maximumOperationsPerformed: UInt16 = 1,
-        authenticate: (@Sendable (DICOMUserIdentity?) -> [UInt8]?)? = nil
+        authenticate: (@Sendable (DICOMUserIdentity?) -> [UInt8]?)? = nil,
+        acceptsCallingAETitle: (@Sendable (String) -> Bool)? = nil
     ) {
         self.aeTitle = aeTitle
+        self.acceptsCallingAETitle = acceptsCallingAETitle
         self.abstractSyntaxes = abstractSyntaxes
         self.acceptsAnyCalledAETitle = acceptsAnyCalledAETitle
         self.allowedCallingAETitles = allowedCallingAETitles
@@ -131,6 +137,9 @@ public enum DICOMAssociationNegotiator {
             return .failure(DICOMAssociateReject(result: .permanent, reason: .calledAETitleNotRecognized))
         }
         if let allowed = policy.allowedCallingAETitles, !allowed.contains(request.callingAETitle) {
+            return .failure(DICOMAssociateReject(result: .permanent, reason: .callingAETitleNotRecognized))
+        }
+        if let accepts = policy.acceptsCallingAETitle, !accepts(request.callingAETitle) {
             return .failure(DICOMAssociateReject(result: .permanent, reason: .callingAETitleNotRecognized))
         }
         var serverResponse: [UInt8] = []

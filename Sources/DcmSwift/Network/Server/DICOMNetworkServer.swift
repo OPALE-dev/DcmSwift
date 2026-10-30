@@ -15,6 +15,10 @@ public struct DICOMServerConfiguration: Sendable {
     public var acceptsAnyCalledAETitle: Bool
     /// Calling AE titles allowed; nil allows any.
     public var allowedCallingAETitles: Set<String>?
+    /// Decides on the calling AE title of each new association, after
+    /// `allowedCallingAETitles`; it may follow a list that changes while the
+    /// server runs (see `DICOMAcceptorPolicy.acceptsCallingAETitle`).
+    public var acceptsCallingAETitle: (@Sendable (String) -> Bool)?
     /// Associations served at once; more are rejected (transient, local
     /// limit exceeded).
     public var maximumAssociations: Int
@@ -49,9 +53,11 @@ public struct DICOMServerConfiguration: Sendable {
         storageSOPClasses: [String] = DICOMSOPClass.allStorage, maximumOperationsPerformed: UInt16 = 1,
         authenticate: (@Sendable (DICOMUserIdentity?) -> [UInt8]?)? = nil,
         audit: DICOMAuditRecorder? = nil, auditSource: DICOMAuditSource? = nil,
-        logger: Logging.Logger = Logging.Logger(label: "DcmSwift.network.server")
+        logger: Logging.Logger = Logging.Logger(label: "DcmSwift.network.server"),
+        acceptsCallingAETitle: (@Sendable (String) -> Bool)? = nil
     ) {
         self.aeTitle = aeTitle
+        self.acceptsCallingAETitle = acceptsCallingAETitle
         self.host = host
         self.port = port
         self.acceptsAnyCalledAETitle = acceptsAnyCalledAETitle
@@ -83,6 +89,8 @@ public final class DICOMServer: Sendable {
     private let dispatcher: DICOMRequestDispatcher
     private let policy: DICOMAcceptorPolicy
     private let active = NIOLockedValueBox(0)
+    /// The listening socket while `run` accepts connections.
+    private let listening = NIOLockedValueBox<Channel?>(nil)
 
     /// - Parameters:
     ///   - configuration: local AE, listener, security, and protocol limits.
@@ -181,11 +189,19 @@ public final class DICOMServer: Sendable {
             allowedCallingAETitles: configuration.allowedCallingAETitles,
             maximumLength: configuration.limits.maximumPDULength,
             maximumOperationsPerformed: configuration.maximumOperationsPerformed,
-            authenticate: configuration.authenticate)
+            authenticate: configuration.authenticate, acceptsCallingAETitle: configuration.acceptsCallingAETitle)
     }
 
     /// The number of associations being served.
     public var activeAssociations: Int { active.withLockedValue { $0 } }
+
+    /// Stops accepting connections and frees the port, without touching the
+    /// associations in progress: `run` returns once they have all ended.
+    /// Cancelling the task of `run` still ends them at once.
+    public func stopAccepting() async {
+        guard let channel = listening.withLockedValue({ $0 }) else { return }
+        try? await channel.close()
+    }
 
     /// Binds and serves until the task is cancelled. `onBound` receives the
     /// bound port once connections are accepted.
@@ -228,6 +244,8 @@ public final class DICOMServer: Sendable {
                 }
             }
         let port = server.channel.localAddress?.port ?? configuration.port
+        listening.withLockedValue { $0 = server.channel }
+        defer { listening.withLockedValue { $0 = nil } }
         configuration.logger.info("\(configuration.aeTitle) listening on \(configuration.host):\(port)")
         onBound?(port)
 
