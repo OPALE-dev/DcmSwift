@@ -175,8 +175,10 @@ public enum DICOMAssociationNegotiator {
         var roleReplies: [String: DICOMRoleSelection] = [:]
         var seen = Set<UInt8>()
         for proposal in request.presentationContexts {
-            // IDs are odd and unique (PS3.8 9.3.2.2).
-            guard proposal.id % 2 == 1, seen.insert(proposal.id).inserted else {
+            // IDs must be odd and unique (PS3.8 9.3.2.2). Even IDs are tolerated on reception, as
+            // other archives do: some requestors (dcm4che 5 stgcmtscu) propose them. 0 and
+            // duplicates are refused; DcmSwift itself always proposes odd IDs.
+            guard proposal.id != 0, seen.insert(proposal.id).inserted else {
                 results.append(DICOMPresentationContextResult(id: proposal.id, result: .noReason, transferSyntax: ""))
                 continue
             }
