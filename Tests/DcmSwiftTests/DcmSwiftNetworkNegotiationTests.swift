@@ -33,16 +33,18 @@ final class DcmSwiftNetworkNegotiationTests: XCTestCase {
             DICOMPresentationContextProposal(id: 7, abstractSyntax: echo, transferSyntaxes: ["1.2.840.10008.1.2.4.50"]),
             DICOMPresentationContextProposal(id: 8, abstractSyntax: echo, transferSyntaxes: [implicit]),
             DICOMPresentationContextProposal(id: 3, abstractSyntax: echo, transferSyntaxes: [implicit]),
+            DICOMPresentationContextProposal(id: 0, abstractSyntax: echo, transferSyntaxes: [implicit]),
         ])
         let (accept, negotiated) = try DICOMAssociationNegotiator.respond(to: rq, policy: policy).get()
         XCTAssertEqual(accept.presentationContexts.map(\.result),
                        [.acceptance, .acceptance, .abstractSyntaxNotSupported, .transferSyntaxesNotSupported,
-                        .noReason, .noReason])
+                        .acceptance, .noReason, .noReason],
+                       "an even ID is tolerated; a duplicate or 0 is not")
         XCTAssertEqual(accept.presentationContexts[0].transferSyntax, implicit)
         XCTAssertEqual(accept.presentationContexts[1].transferSyntax, jpegLS, "the acceptor's preference")
         XCTAssertEqual(accept.userInformation.maximumLength, 32768)
         XCTAssertEqual(accept.userInformation.implementationClassUID, DICOMImplementation.classUID)
-        XCTAssertEqual(Set(negotiated.presentationContexts.keys), [1, 3])
+        XCTAssertEqual(Set(negotiated.presentationContexts.keys), [1, 3, 8])
         XCTAssertEqual(negotiated.requestorMaximumLength, 16384)
 
         // The requestor sees the same agreement.
