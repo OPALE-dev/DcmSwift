@@ -78,6 +78,21 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
         }
     }
 
+    func testPublishedNegotiationTableIsTheOneTheServerUses() throws {
+        // A conformance statement is built from `abstractSyntaxes`: it must be the server's table.
+        let server = try DICOMServer(configuration: configuration(), storage: MemoryStorage(), query: CountingQuery(count: 0))
+        let table = DICOMServer.abstractSyntaxes(configuration: configuration(),
+            offered: DICOMOfferedServices(storage: true, query: []))
+        XCTAssertEqual(server.supportedAbstractSyntaxes, table)
+        XCTAssertEqual(table[DICOMSOPClass.studyRootFind]?.scpRole, true)
+        XCTAssertNil(table[DICOMSOPClass.studyRootMove], "retrieve not offered")
+        XCTAssertEqual(table[DICOMSOPClass.storage[0]]?.scuRole, false, "no C-GET sub-operations without retrieve")
+        let retrieving = DICOMServer.abstractSyntaxes(configuration: configuration(),
+            offered: DICOMOfferedServices(storage: false, retrieve: []))
+        XCTAssertEqual(retrieving[DICOMSOPClass.storage[0]]?.scpRole, false)
+        XCTAssertEqual(retrieving[DICOMSOPClass.storage[0]]?.scuRole, true)
+    }
+
     func testStoredAlternateSelectedAfterGetAndMoveNegotiation() async throws {
         // No Pixel Data: explicit-VR attributes have the same encoding in an encapsulated syntax.
         let original = try DICOMRetrieveItem(dataSet: instance(905))

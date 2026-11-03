@@ -82,6 +82,32 @@ public struct DICOMServerConfiguration: Sendable {
 /// Storage Commitment, and DIMSE-N services. `run` serves until its task is
 /// cancelled; each association runs in its own child task, so a failing
 /// peer never affects others.
+/// The services an acceptor offers, as negotiation sees them.
+public struct DICOMOfferedServices: Sendable, Equatable {
+    public var storage: Bool
+    /// Query/Retrieve FIND models, with the extended negotiation options; nil when not offered.
+    public var query: DICOMQueryRetrieveOptions?
+    public var worklist: Bool
+    public var upsQuery: Bool
+    public var relevantPatientInformation: Bool
+    /// MOVE and GET models, with the extended negotiation options; nil when not offered.
+    public var retrieve: DICOMQueryRetrieveOptions?
+    /// DIMSE-N SOP Classes (or Meta SOP Classes).
+    public var normalized: [String]
+    public var storageCommitment: Bool
+    public var storageCommitmentReceiver: Bool
+
+    public init(storage: Bool = false, query: DICOMQueryRetrieveOptions? = nil, worklist: Bool = false,
+                upsQuery: Bool = false, relevantPatientInformation: Bool = false,
+                retrieve: DICOMQueryRetrieveOptions? = nil, normalized: [String] = [],
+                storageCommitment: Bool = false, storageCommitmentReceiver: Bool = false) {
+        self.storage = storage; self.query = query; self.worklist = worklist; self.upsQuery = upsQuery
+        self.relevantPatientInformation = relevantPatientInformation; self.retrieve = retrieve
+        self.normalized = normalized; self.storageCommitment = storageCommitment
+        self.storageCommitmentReceiver = storageCommitmentReceiver
+    }
+}
+
 public final class DICOMServer: Sendable {
     public let configuration: DICOMServerConfiguration
     private let group: EventLoopGroup
@@ -131,58 +157,12 @@ public final class DICOMServer: Sendable {
             commitmentOutbox: storageCommitmentOutbox,
             outgoingClient: outgoingClient)
 
-        var syntaxes: [String: DICOMAbstractSyntaxSupport] = [
-            DICOMSOPClass.verification: DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes),
-        ]
-        if storage != nil || retrieve != nil {
-            // Storage contexts: received as SCP, or sent as SCU for C-GET.
-            for sopClass in configuration.storageSOPClasses {
-                syntaxes[sopClass] = DICOMAbstractSyntaxSupport(
-                    transferSyntaxes: configuration.storageTransferSyntaxes, scpRole: storage != nil,
-                    scuRole: retrieve != nil, prefersProposedOrder: true)
-            }
-        }
-        if let query {
-            for model in [DICOMSOPClass.patientRootFind, DICOMSOPClass.studyRootFind, DICOMSOPClass.patientStudyOnlyFind] {
-                syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes,
-                    queryRetrieveOptions: query.queryRetrieveOptions)
-            }
-        }
-        if worklist != nil {
-            syntaxes[DICOMSOPClass.modalityWorklistFind] = DICOMAbstractSyntaxSupport(
-                transferSyntaxes: configuration.transferSyntaxes)
-        }
-        if upsQuery != nil {
-            syntaxes[DICOMSOPClass.upsQuery] = DICOMAbstractSyntaxSupport(
-                transferSyntaxes: configuration.transferSyntaxes)
-        }
-        if relevantPatientInformation != nil {
-            for model in DICOMRelevantPatientInformationService.models {
-                syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes)
-            }
-        }
-        if let retrieve {
-            for model in [DICOMSOPClass.patientRootMove, DICOMSOPClass.studyRootMove, DICOMSOPClass.patientStudyOnlyMove,
-                          DICOMSOPClass.compositeInstanceRootMove, DICOMSOPClass.patientRootGet,
-                          DICOMSOPClass.studyRootGet, DICOMSOPClass.patientStudyOnlyGet,
-                          DICOMSOPClass.compositeInstanceRootGet, DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet] {
-                syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes,
-                    queryRetrieveOptions: retrieve.queryRetrieveOptions)
-            }
-        }
-        // DIMSE-N: this side performs operations, and receives notifications
-        // from requestors granted the SCP role.
-        for sopClass in normalized.keys {
-            syntaxes[sopClass] = DICOMAbstractSyntaxSupport(
-                transferSyntaxes: configuration.transferSyntaxes, scpRole: true, scuRole: true)
-        }
-        if storageCommitment != nil || storageCommitmentReceiver != nil {
-            // A receiver also accepts SCPs that send results without
-            // proposing their role (PS3.4 J.3.3.2 requires it).
-            syntaxes[DICOMSOPClass.storageCommitmentPushModel] = DICOMAbstractSyntaxSupport(
-                transferSyntaxes: configuration.transferSyntaxes, scpRole: true,
-                scuRole: storageCommitmentReceiver != nil)
-        }
+        let syntaxes = Self.abstractSyntaxes(
+            configuration: configuration, offered: DICOMOfferedServices(
+                storage: storage != nil, query: query?.queryRetrieveOptions, worklist: worklist != nil,
+                upsQuery: upsQuery != nil, relevantPatientInformation: relevantPatientInformation != nil,
+                retrieve: retrieve?.queryRetrieveOptions, normalized: Array(normalized.keys),
+                storageCommitment: storageCommitment != nil, storageCommitmentReceiver: storageCommitmentReceiver != nil))
         policy = DICOMAcceptorPolicy(
             aeTitle: configuration.aeTitle, abstractSyntaxes: syntaxes,
             acceptsAnyCalledAETitle: configuration.acceptsAnyCalledAETitle,
@@ -191,6 +171,70 @@ public final class DICOMServer: Sendable {
             maximumOperationsPerformed: configuration.maximumOperationsPerformed,
             authenticate: configuration.authenticate, acceptsCallingAETitle: configuration.acceptsCallingAETitle)
     }
+
+    /// The abstract syntaxes an acceptor offering these services supports, with
+    /// their transfer syntaxes and roles: the table `init` negotiates with. A
+    /// conformance statement (PS3.2) can be built from it without a listener.
+    public static func abstractSyntaxes(
+        configuration: DICOMServerConfiguration, offered: DICOMOfferedServices
+    ) -> [String: DICOMAbstractSyntaxSupport] {
+        var syntaxes: [String: DICOMAbstractSyntaxSupport] = [
+            DICOMSOPClass.verification: DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes),
+        ]
+        if offered.storage || offered.retrieve != nil {
+            // Storage contexts: received as SCP, or sent as SCU for C-GET.
+            for sopClass in configuration.storageSOPClasses {
+                syntaxes[sopClass] = DICOMAbstractSyntaxSupport(
+                    transferSyntaxes: configuration.storageTransferSyntaxes, scpRole: offered.storage,
+                    scuRole: offered.retrieve != nil, prefersProposedOrder: true)
+            }
+        }
+        if let options = offered.query {
+            for model in [DICOMSOPClass.patientRootFind, DICOMSOPClass.studyRootFind, DICOMSOPClass.patientStudyOnlyFind] {
+                syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes,
+                    queryRetrieveOptions: options)
+            }
+        }
+        if offered.worklist {
+            syntaxes[DICOMSOPClass.modalityWorklistFind] = DICOMAbstractSyntaxSupport(
+                transferSyntaxes: configuration.transferSyntaxes)
+        }
+        if offered.upsQuery {
+            syntaxes[DICOMSOPClass.upsQuery] = DICOMAbstractSyntaxSupport(
+                transferSyntaxes: configuration.transferSyntaxes)
+        }
+        if offered.relevantPatientInformation {
+            for model in DICOMRelevantPatientInformationService.models {
+                syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes)
+            }
+        }
+        if let options = offered.retrieve {
+            for model in [DICOMSOPClass.patientRootMove, DICOMSOPClass.studyRootMove, DICOMSOPClass.patientStudyOnlyMove,
+                          DICOMSOPClass.compositeInstanceRootMove, DICOMSOPClass.patientRootGet,
+                          DICOMSOPClass.studyRootGet, DICOMSOPClass.patientStudyOnlyGet,
+                          DICOMSOPClass.compositeInstanceRootGet, DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet] {
+                syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes,
+                    queryRetrieveOptions: options)
+            }
+        }
+        // DIMSE-N: this side performs operations, and receives notifications
+        // from requestors granted the SCP role.
+        for sopClass in offered.normalized {
+            syntaxes[sopClass] = DICOMAbstractSyntaxSupport(
+                transferSyntaxes: configuration.transferSyntaxes, scpRole: true, scuRole: true)
+        }
+        if offered.storageCommitment || offered.storageCommitmentReceiver {
+            // A receiver also accepts SCPs that send results without
+            // proposing their role (PS3.4 J.3.3.2 requires it).
+            syntaxes[DICOMSOPClass.storageCommitmentPushModel] = DICOMAbstractSyntaxSupport(
+                transferSyntaxes: configuration.transferSyntaxes, scpRole: true,
+                scuRole: offered.storageCommitmentReceiver)
+        }
+        return syntaxes
+    }
+
+    /// The abstract syntaxes this acceptor negotiates, by UID.
+    public var supportedAbstractSyntaxes: [String: DICOMAbstractSyntaxSupport] { policy.abstractSyntaxes }
 
     /// The number of associations being served.
     public var activeAssociations: Int { active.withLockedValue { $0 } }
