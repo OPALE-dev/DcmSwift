@@ -42,6 +42,8 @@ public struct DICOMServerConfiguration: Sendable {
     public var audit: DICOMAuditRecorder?
     public var auditSource: DICOMAuditSource?
     public var logger: Logging.Logger
+    /// Announced in accepted associations and in those the server opens.
+    public var implementation: DICOMImplementationIdentity = .dcmSwift
 
     public init(
         aeTitle: String, host: String = "0.0.0.0", port: Int = 11112, acceptsAnyCalledAETitle: Bool = false,
@@ -154,7 +156,8 @@ public final class DICOMServer: Sendable {
         let outgoingClient = retrieve == nil && storageCommitment == nil ? nil : try DICOMClient(
             configuration: DICOMClientConfiguration(
                 aeTitle: configuration.aeTitle, limits: configuration.limits, timeouts: configuration.timeouts,
-                tls: configuration.clientTLS, logger: configuration.logger),
+                tls: configuration.clientTLS, logger: configuration.logger,
+                implementation: configuration.implementation),
             eventLoopGroup: eventLoopGroup)
         dispatcher = DICOMRequestDispatcher(
             verification: true, storage: storage, query: query, worklist: worklist, upsQuery: upsQuery,
@@ -175,6 +178,8 @@ public final class DICOMServer: Sendable {
             acceptsAnyCalledAETitle: configuration.acceptsAnyCalledAETitle,
             allowedCallingAETitles: configuration.allowedCallingAETitles,
             maximumLength: configuration.limits.maximumPDULength,
+            implementationClassUID: configuration.implementation.classUID,
+            implementationVersionName: configuration.implementation.versionName,
             maximumOperationsPerformed: configuration.maximumOperationsPerformed,
             authenticate: configuration.authenticate, acceptsCallingAETitle: configuration.acceptsCallingAETitle)
     }

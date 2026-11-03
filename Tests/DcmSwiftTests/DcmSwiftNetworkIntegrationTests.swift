@@ -228,6 +228,32 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
         XCTAssertEqual(server.activeAssociations, 0)
     }
 
+    /// An application announces its own implementation identity on both sides.
+    func testApplicationsAnnounceTheirOwnImplementationIdentity() async throws {
+        let scp = DICOMImplementationIdentity(classUID: "2.25.1111", versionName: "PRODUCT_SCP_1")
+        let scu = DICOMImplementationIdentity(classUID: "2.25.2222", versionName: "PRODUCT_SCU_1")
+        var settings = configuration()
+        settings.implementation = scp
+        let server = try DICOMServer(configuration: settings)
+        try await withServer(server) { port in
+            let client = try DICOMClient(configuration: DICOMClientConfiguration(
+                aeTitle: "SCU", timeouts: DICOMNetworkTimeouts(connect: .seconds(5), artim: .seconds(5), idle: .seconds(20)),
+                implementation: scu))
+            try await client.withAssociation(
+                to: DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port),
+                presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.verification])
+            ) { association in
+                XCTAssertEqual(association.negotiated.acceptorImplementationClassUID, scp.classUID)
+                XCTAssertEqual(association.negotiated.acceptorImplementationVersionName, scp.versionName)
+                XCTAssertEqual(association.negotiated.requestorImplementationClassUID, scu.classUID)
+                XCTAssertEqual(association.negotiated.requestorImplementationVersionName, scu.versionName)
+                _ = try await association.echo()
+            }
+        }
+        XCTAssertEqual(DICOMClientConfiguration(aeTitle: "SCU").implementation, .dcmSwift)
+        XCTAssertEqual(configuration().implementation, .dcmSwift)
+    }
+
     /// Connections reset by the peer before they are accepted (port probes, clients giving up)
     /// must not stop the server: before, one of them ended the accept loop and every later
     /// association was refused.

@@ -120,6 +120,24 @@ public enum DICOMImplementation {
     public static let versionName = "DCMSWIFT_2.0"
 }
 
+/// The Implementation Class UID and Version Name an application announces in
+/// its associations (PS3.7 D.3.3.2). An application built on DcmSwift should
+/// announce its own, so that peers can tell products apart.
+public struct DICOMImplementationIdentity: Sendable, Equatable {
+    public var classUID: String
+    /// 1 to 16 characters of the default repertoire, or nil to send none.
+    public var versionName: String?
+
+    public init(classUID: String, versionName: String?) {
+        self.classUID = classUID
+        self.versionName = versionName
+    }
+
+    /// DcmSwift's own identity, the default.
+    public static let dcmSwift = DICOMImplementationIdentity(
+        classUID: DICOMImplementation.classUID, versionName: DICOMImplementation.versionName)
+}
+
 /// Association negotiation, on both sides (PS3.8 7.1, PS3.7 Annex D.3.3).
 public enum DICOMAssociationNegotiator {
     /// The acceptor's answer to a request: an A-ASSOCIATE-AC and the
