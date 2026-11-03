@@ -16,12 +16,16 @@ public struct DICOMClientConfiguration: Sendable {
     /// asynchronous operations (PS3.7 D.3.3.3).
     public var maximumOperationsInvoked: UInt16
     public var logger: Logging.Logger
+    /// Announced in the association requests.
+    public var implementation: DICOMImplementationIdentity
 
     public init(
         aeTitle: String, limits: DICOMNetworkLimits = DICOMNetworkLimits(),
         timeouts: DICOMNetworkTimeouts = DICOMNetworkTimeouts(), tls: DICOMTLSConfiguration? = nil,
-        maximumOperationsInvoked: UInt16 = 1, logger: Logging.Logger = Logging.Logger(label: "DcmSwift.network.client")
+        maximumOperationsInvoked: UInt16 = 1, logger: Logging.Logger = Logging.Logger(label: "DcmSwift.network.client"),
+        implementation: DICOMImplementationIdentity = .dcmSwift
     ) {
+        self.implementation = implementation
         self.aeTitle = aeTitle
         self.limits = limits
         self.timeouts = timeouts
@@ -163,8 +167,8 @@ public final class DICOMClient: Sendable {
             presentationContexts: presentationContexts,
             userInformation: DICOMUserInformation(
                 maximumLength: configuration.limits.maximumPDULength,
-                implementationClassUID: DICOMImplementation.classUID,
-                implementationVersionName: DICOMImplementation.versionName,
+                implementationClassUID: configuration.implementation.classUID,
+                implementationVersionName: configuration.implementation.versionName,
                 asynchronousOperationsWindow: window, roleSelections: roleSelections, extendedNegotiations: extendedNegotiations,
                 commonExtendedNegotiations: commonExtendedNegotiations, userIdentity: userIdentity))
         // Invalid AE titles or UIDs fail before connecting.
