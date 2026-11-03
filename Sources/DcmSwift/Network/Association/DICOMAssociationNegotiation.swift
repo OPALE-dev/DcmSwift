@@ -45,7 +45,7 @@ public struct DICOMNegotiatedAssociation: Equatable, Sendable {
 }
 
 /// What an acceptor supports for one abstract syntax.
-public struct DICOMAbstractSyntaxSupport: Sendable {
+public struct DICOMAbstractSyntaxSupport: Sendable, Equatable {
     /// Transfer syntaxes in order of preference.
     public var transferSyntaxes: [String]
     /// This side may act as SCP (the usual acceptor role).
