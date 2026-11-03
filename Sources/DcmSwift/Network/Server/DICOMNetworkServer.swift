@@ -90,8 +90,12 @@ public struct DICOMOfferedServices: Sendable, Equatable {
     public var worklist: Bool
     public var upsQuery: Bool
     public var relevantPatientInformation: Bool
+    /// The FIND models answered; nil answers every model.
+    public var queryModels: Set<String>?
     /// MOVE and GET models, with the extended negotiation options; nil when not offered.
     public var retrieve: DICOMQueryRetrieveOptions?
+    /// The MOVE and GET models answered; nil answers every model.
+    public var retrieveModels: Set<String>?
     /// DIMSE-N SOP Classes (or Meta SOP Classes).
     public var normalized: [String]
     public var storageCommitment: Bool
@@ -100,11 +104,13 @@ public struct DICOMOfferedServices: Sendable, Equatable {
     public init(storage: Bool = false, query: DICOMQueryRetrieveOptions? = nil, worklist: Bool = false,
                 upsQuery: Bool = false, relevantPatientInformation: Bool = false,
                 retrieve: DICOMQueryRetrieveOptions? = nil, normalized: [String] = [],
+                queryModels: Set<String>? = nil, retrieveModels: Set<String>? = nil,
                 storageCommitment: Bool = false, storageCommitmentReceiver: Bool = false) {
         self.storage = storage; self.query = query; self.worklist = worklist; self.upsQuery = upsQuery
         self.relevantPatientInformation = relevantPatientInformation; self.retrieve = retrieve
         self.normalized = normalized; self.storageCommitment = storageCommitment
         self.storageCommitmentReceiver = storageCommitmentReceiver
+        self.queryModels = queryModels; self.retrieveModels = retrieveModels
     }
 }
 
@@ -162,6 +168,7 @@ public final class DICOMServer: Sendable {
                 storage: storage != nil, query: query?.queryRetrieveOptions, worklist: worklist != nil,
                 upsQuery: upsQuery != nil, relevantPatientInformation: relevantPatientInformation != nil,
                 retrieve: retrieve?.queryRetrieveOptions, normalized: Array(normalized.keys),
+                queryModels: query?.informationModels, retrieveModels: retrieve?.informationModels,
                 storageCommitment: storageCommitment != nil, storageCommitmentReceiver: storageCommitmentReceiver != nil))
         policy = DICOMAcceptorPolicy(
             aeTitle: configuration.aeTitle, abstractSyntaxes: syntaxes,
@@ -190,7 +197,8 @@ public final class DICOMServer: Sendable {
             }
         }
         if let options = offered.query {
-            for model in [DICOMSOPClass.patientRootFind, DICOMSOPClass.studyRootFind, DICOMSOPClass.patientStudyOnlyFind] {
+            for model in [DICOMSOPClass.patientRootFind, DICOMSOPClass.studyRootFind, DICOMSOPClass.patientStudyOnlyFind]
+                where offered.queryModels?.contains(model) ?? true {
                 syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes,
                     queryRetrieveOptions: options)
             }
@@ -212,7 +220,8 @@ public final class DICOMServer: Sendable {
             for model in [DICOMSOPClass.patientRootMove, DICOMSOPClass.studyRootMove, DICOMSOPClass.patientStudyOnlyMove,
                           DICOMSOPClass.compositeInstanceRootMove, DICOMSOPClass.patientRootGet,
                           DICOMSOPClass.studyRootGet, DICOMSOPClass.patientStudyOnlyGet,
-                          DICOMSOPClass.compositeInstanceRootGet, DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet] {
+                          DICOMSOPClass.compositeInstanceRootGet, DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet]
+                where offered.retrieveModels?.contains(model) ?? true {
                 syntaxes[model] = DICOMAbstractSyntaxSupport(transferSyntaxes: configuration.transferSyntaxes,
                     queryRetrieveOptions: options)
             }

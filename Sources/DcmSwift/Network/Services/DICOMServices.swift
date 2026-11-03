@@ -105,9 +105,15 @@ public protocol DICOMStorageService: Sendable {
 /// Answers C-FIND requests (PS3.4 C.4.1).
 public protocol DICOMQueryRetrieveCapability: Sendable {
     var queryRetrieveOptions: DICOMQueryRetrieveOptions { get }
+    /// The Query/Retrieve information models (FIND, MOVE or GET SOP Class
+    /// UIDs) this service answers; nil answers every model. Only these are
+    /// accepted at association negotiation, so a requestor never picks a
+    /// model the service would refuse.
+    var informationModels: Set<String>? { get }
 }
 public extension DICOMQueryRetrieveCapability {
     var queryRetrieveOptions: DICOMQueryRetrieveOptions { [] }
+    var informationModels: Set<String>? { nil }
 }
 
 public protocol DICOMQueryService: DICOMQueryRetrieveCapability {
