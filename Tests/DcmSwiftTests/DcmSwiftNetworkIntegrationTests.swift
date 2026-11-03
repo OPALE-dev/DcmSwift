@@ -91,6 +91,15 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
             offered: DICOMOfferedServices(storage: false, retrieve: []))
         XCTAssertEqual(retrieving[DICOMSOPClass.storage[0]]?.scpRole, false)
         XCTAssertEqual(retrieving[DICOMSOPClass.storage[0]]?.scuRole, true)
+        // Only the models a service answers are negotiated.
+        let studyRoot = DICOMServer.abstractSyntaxes(configuration: configuration(), offered: DICOMOfferedServices(
+            query: [], retrieve: [], queryModels: [DICOMSOPClass.studyRootFind],
+            retrieveModels: [DICOMSOPClass.studyRootMove, DICOMSOPClass.studyRootGet]))
+        XCTAssertNotNil(studyRoot[DICOMSOPClass.studyRootFind])
+        XCTAssertNil(studyRoot[DICOMSOPClass.patientRootFind])
+        XCTAssertNil(studyRoot[DICOMSOPClass.patientStudyOnlyFind])
+        XCTAssertNotNil(studyRoot[DICOMSOPClass.studyRootGet])
+        XCTAssertNil(studyRoot[DICOMSOPClass.compositeInstanceRootGet])
     }
 
     func testStoredAlternateSelectedAfterGetAndMoveNegotiation() async throws {
