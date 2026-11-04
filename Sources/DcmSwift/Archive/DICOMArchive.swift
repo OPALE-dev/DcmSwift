@@ -180,8 +180,11 @@ public actor DICOMArchive {
         let groups = try await match(identifier, level: level)
         let requested = identifier.allElements.map(\.name)
         return groups.map { group in
+            // Indexed values are UTF-8: declare it first, or a non-ASCII
+            // value cannot be encoded in the default repertoire.
             let match = DataSet()
-            for keyword in requested {
+            _ = match.set(value: "ISO_IR 192", forTagName: "SpecificCharacterSet")
+            for keyword in requested where keyword != "SpecificCharacterSet" {
                 if let value = Self.value(of: keyword, in: group, level: level) {
                     _ = match.set(value: value, forTagName: keyword)
                 } else if let element = identifier.element(forTagName: keyword), element.vr != .SQ {
