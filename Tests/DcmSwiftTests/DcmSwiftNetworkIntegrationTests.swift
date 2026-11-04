@@ -228,6 +228,22 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
         XCTAssertEqual(server.activeAssociations, 0)
     }
 
+    /// A Storage Commitment result caught in the requestor's release must not wait forever: the
+    /// attempt on the same association is bounded, then the result goes on a new association.
+    func testBoundedAttemptGivesUpOnAStuckSend() async throws {
+        let start = Date()
+        do {
+            try await DICOMRequestDispatcher.bounded(seconds: 1) { try await Task.sleep(nanoseconds: 60_000_000_000) }
+            XCTFail("a stuck send must time out")
+        } catch {}
+        XCTAssertLessThan(Date().timeIntervalSince(start), 5)
+        try await DICOMRequestDispatcher.bounded(seconds: 5) {}
+        do {
+            try await DICOMRequestDispatcher.bounded(seconds: 5) { throw DICOMNetworkError.connectionClosed }
+            XCTFail("the send's own error is returned")
+        } catch let error as DICOMNetworkError { XCTAssertEqual(error, .connectionClosed) }
+    }
+
     /// An application announces its own implementation identity on both sides.
     func testApplicationsAnnounceTheirOwnImplementationIdentity() async throws {
         let scp = DICOMImplementationIdentity(classUID: "2.25.1111", versionName: "PRODUCT_SCP_1")
