@@ -1,5 +1,6 @@
 import Foundation
 import Logging
+import NIOConcurrencyHelpers
 
 /// Performs the requests a peer sends on an association: C-ECHO, C-STORE,
 /// C-FIND, C-MOVE, C-GET, and DIMSE-N, through the configured services. A
@@ -360,7 +361,7 @@ struct DICOMRequestDispatcher: Sendable {
         service: DICOMStorageCommitmentService, outbox: DICOMStorageCommitmentOutbox?, context: DICOMServiceContext
     ) async {
         let logger = association.runtime.logger
-        func send(on association: DICOMAssociation) async throws {
+        @Sendable func send(on association: DICOMAssociation) async throws {
             let response = try await association.nEventReport(
                 sopClassUID: DICOMSOPClass.storageCommitmentPushModel,
                 sopInstanceUID: DICOMSOPClass.storageCommitmentPushModelInstance, eventTypeID: result.eventTypeID,
@@ -371,7 +372,9 @@ struct DICOMRequestDispatcher: Sendable {
         }
         if await association.runtime.acceptsRequests {
             do {
-                try await send(on: association)
+                // The requestor may release at the same moment: a send caught in that release must
+                // not hold the result, which then goes on a new association.
+                try await bounded(seconds: sameAssociationSeconds) { try await send(on: association) }
                 return
             } catch {
                 logger.debug("Storage Commitment result not sent on the same association: \(error)")
@@ -397,6 +400,28 @@ struct DICOMRequestDispatcher: Sendable {
             try await deliver(result, to: destination, client: client)
         } catch {
             await keep("\(destination.aeTitle) unreachable: \(error)")
+        }
+    }
+
+    /// How long a result may take on the requestor's own association before it goes on a new one.
+    static let sameAssociationSeconds: UInt64 = 10
+
+    /// Runs `body`, or throws once `seconds` have passed; `body` is not awaited after that.
+    static func bounded(seconds: UInt64, _ body: @escaping @Sendable () async throws -> Void) async throws {
+        let done = NIOLockedValueBox(false)
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            @Sendable func finish(_ result: Result<Void, Error>) {
+                let first = done.withLockedValue { finished -> Bool in
+                    defer { finished = true }
+                    return !finished
+                }
+                if first { continuation.resume(with: result) }
+            }
+            Task { do { try await body(); finish(.success(())) } catch { finish(.failure(error)) } }
+            Task {
+                try? await Task.sleep(nanoseconds: seconds * 1_000_000_000)
+                finish(.failure(DICOMNetworkError.invalidState("no answer within \(seconds) s")))
+            }
         }
     }
 
