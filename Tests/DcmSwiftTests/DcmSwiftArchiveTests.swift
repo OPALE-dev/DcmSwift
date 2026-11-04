@@ -73,6 +73,35 @@ final class DcmSwiftArchiveTests: XCTestCase {
         func counts() -> (Int, Int) { (instances, associations.count) }
     }
 
+    /// A non-ASCII return value comes back intact and declared (ISO_IR 192).
+    func testFindReturnsNonASCIIValuesDeclaredAsUTF8() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dcmswift-charset-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let archive = DICOMArchive(directory: directory)
+        let item = try DICOMRetrieveItem(dataSet: try W.dataSet([
+            "00080005": ("CS", ["ISO_IR 192"]), "00080016": ("UI", [DICOMSOPClass.storage[0]]),
+            "00080018": ("UI", ["1.2.826.0.1.3680043.2.1125.9.1"]), "0020000D": ("UI", ["1.2.826.0.1.3680043.2.1125.9"]),
+            "0020000E": ("UI", ["1.2.826.0.1.3680043.2.1125.9.0"]), "00100020": ("LO", ["P9"]), "00100010": ("PN", ["Élise^Müller"]),
+        ]))
+        try await archive.store(DICOMReceivedInstance(
+            sopClassUID: item.sopClassUID, sopInstanceUID: item.sopInstanceUID, transferSyntaxUID: item.transferSyntaxUID,
+            payload: item.payload, moveOriginatorAETitle: nil, moveOriginatorMessageID: nil, sourceAETitle: ""))
+        let identifier = DataSet()
+        _ = identifier.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
+        _ = identifier.set(value: "", forTagName: "SpecificCharacterSet")
+        _ = identifier.set(value: "1.2.826.0.1.3680043.2.1125.9", forTagName: "StudyInstanceUID")
+        _ = identifier.set(value: "", forTagName: "PatientName")
+        let matches = try await archive.find(identifier)
+        XCTAssertEqual(matches.count, 1)
+        XCTAssertEqual(matches.first?.string(forTag: "SpecificCharacterSet"), "ISO_IR 192")
+        XCTAssertEqual(matches.first?.string(forTag: "PatientName"), "Élise^Müller")
+        // Encoded and decoded as a peer would: the name survives the wire.
+        let wire = try DICOMDataSetCoding.decode(try DICOMDataSetCoding.encode(matches[0], transferSyntax: "1.2.840.10008.1.2.1"), transferSyntax: "1.2.840.10008.1.2.1")
+        XCTAssertEqual(wire.string(forTag: "PatientName"), "Élise^Müller")
+    }
+
     func testMoveSplitsMoreThan128PresentationContexts() async throws {
         let sopClasses = Array(DICOMSOPClass.allStorage.prefix(130))
         let items = try sopClasses.enumerated().map { index, sopClass -> DICOMRetrieveItem in
