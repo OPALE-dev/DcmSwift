@@ -22,6 +22,7 @@ public enum DICOMArchiveConformance {
         try await versions(makeIndex())
         try await collections(makeIndex())
         try await queries(makeIndex())
+        try await metadataLookup(makeIndex())
     }
 
     static func expect(_ condition: Bool, _ message: @autoclosure () -> String) throws {
@@ -102,6 +103,23 @@ public enum DICOMArchiveConformance {
                    "a deletion leaves other collections alone")
         let other = try await index.documents(in: .worklist, matching: DICOMQuery(conditions: []))
         try expect(other.isEmpty, "an emptied collection has no documents")
+    }
+
+    /// `documents(in:metadata:oneOf:)` returns exactly the documents whose
+    /// metadata value is listed, as UPS subscriptions are looked up.
+    static func metadataLookup(_ index: DICOMArchiveIndex) async throws {
+        let collection = DICOMArchiveCollection.unifiedProcedureStepSubscriptions
+        for (ae, uid) in [("A", "1.2.3"), ("B", "1.2.3"), ("A", "1.2.4"), ("C", DICOMSOPClass.upsGlobalSubscription)] {
+            try await index.insert(DICOMArchiveDocument(id: ae + "|" + uid, attributes: [:],
+                metadata: ["ae": ae, "uid": uid, "lock": "FALSE"]), into: collection)
+        }
+        let one = try await index.documents(in: collection, metadata: "uid", oneOf: ["1.2.3"]).map(\.id)
+        try expect(one.sorted() == ["A|1.2.3", "B|1.2.3"], "metadata lookup found \(one)")
+        let two = try await index.documents(in: collection, metadata: "uid",
+                                            oneOf: ["1.2.4", DICOMSOPClass.upsGlobalSubscription]).map(\.id)
+        try expect(two.sorted() == ["A|1.2.4", "C|" + DICOMSOPClass.upsGlobalSubscription], "metadata lookup found \(two)")
+        try expect(try await index.documents(in: collection, metadata: "uid", oneOf: ["9"]).isEmpty,
+                   "metadata lookup finds nothing for an unknown value")
     }
 
     // MARK: Queries

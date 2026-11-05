@@ -415,9 +415,8 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         } else if action == 4 {
             _ = try await index.delete(id, from: .unifiedProcedureStepSubscriptions)
             if global {
-                let all = try await index.documents(in: .unifiedProcedureStepSubscriptions,
-                                                    matching: DICOMQuery(conditions: []))
-                for item in all where item.metadata["ae"] == ae && item.metadata["uid"] != uid {
+                let all = try await index.documents(in: .unifiedProcedureStepSubscriptions, metadata: "ae", oneOf: [ae])
+                for item in all where item.metadata["uid"] != uid {
                     _ = try await index.delete(item.id, from: .unifiedProcedureStepSubscriptions)
                 }
             }
@@ -445,10 +444,9 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
     }
 
     private func applyGlobalSubscriptions(to uid: String, instance: [String: Any]) async throws {
-        let subscriptions = try await index.documents(in: .unifiedProcedureStepSubscriptions,
-                                                       matching: DICOMQuery(conditions: []))
-        for item in subscriptions where [DICOMSOPClass.upsGlobalSubscription,
-                                         DICOMSOPClass.upsFilteredGlobalSubscription].contains(item.metadata["uid"] ?? "") {
+        let subscriptions = try await index.documents(in: .unifiedProcedureStepSubscriptions, metadata: "uid",
+            oneOf: [DICOMSOPClass.upsGlobalSubscription, DICOMSOPClass.upsFilteredGlobalSubscription])
+        for item in subscriptions {
             guard let ae = item.metadata["ae"] else { continue }
             if item.metadata["uid"] == DICOMSOPClass.upsFilteredGlobalSubscription,
                DICOMQueryMatcher().match(item.attributes, against: instance) == nil { continue }
@@ -460,9 +458,8 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
     }
 
     private func emit(uid: String, event: UInt16, object: [String: Any]) async throws {
-        let subscriptions = try await index.documents(in: .unifiedProcedureStepSubscriptions,
-                                                       matching: DICOMQuery(conditions: []))
-        for item in subscriptions where item.metadata["uid"] == uid {
+        let subscriptions = try await index.documents(in: .unifiedProcedureStepSubscriptions, metadata: "uid", oneOf: [uid])
+        for item in subscriptions {
             if let ae = item.metadata["ae"] { try await emit(to: ae, uid: uid, event: event, object: object) }
         }
     }
