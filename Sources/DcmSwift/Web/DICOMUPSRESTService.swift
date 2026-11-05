@@ -102,8 +102,8 @@ public struct DICOMUPSRESTService: Sendable {
                                                                                    in: .unifiedProcedureStepSubscriptions) : nil
                     var found = existing != nil || filteredExisting != nil
                     if action == 4 && global && !found {
-                        let all = try await steps.index.documents(in: .unifiedProcedureStepSubscriptions, matching: DICOMQuery(conditions: []))
-                        found = all.contains { $0.metadata["ae"] == ae }
+                        found = try await !steps.index.documents(in: .unifiedProcedureStepSubscriptions,
+                                                                  metadata: "ae", oneOf: [ae]).isEmpty
                     }
                     guard found else { throw DICOMwebHTTPError(404, "subscription not found") }
                 }

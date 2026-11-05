@@ -104,6 +104,21 @@ public protocol DICOMArchiveIndex: Sendable {
     /// in a stable order. Conditions that cannot be translated may be
     /// ignored; the caller filters the documents.
     func documents(in collection: DICOMArchiveCollection, matching query: DICOMQuery) async throws -> [DICOMArchiveDocument]
+
+    /// The documents whose `metadata[key]` is one of `values`, in a stable
+    /// order. UPS events use it to find the subscriptions of one work item
+    /// without reading every subscription. The default filters the whole
+    /// collection; a database adapter answers from an index.
+    func documents(in collection: DICOMArchiveCollection, metadata key: String,
+                   oneOf values: Set<String>) async throws -> [DICOMArchiveDocument]
+}
+
+extension DICOMArchiveIndex {
+    public func documents(in collection: DICOMArchiveCollection, metadata key: String,
+                          oneOf values: Set<String>) async throws -> [DICOMArchiveDocument] {
+        try await documents(in: collection, matching: DICOMQuery(conditions: []))
+            .filter { $0.metadata[key].map(values.contains) ?? false }
+    }
 }
 
 /// An index in memory. It ignores query conditions: the services filter
