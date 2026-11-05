@@ -44,14 +44,24 @@ public struct DICOMReceivedInstance: Sendable {
     /// Writes a Part 10 file: the File Meta Information, then the received
     /// bytes unchanged. The file appears atomically.
     public func write(to url: URL) throws {
+        try write(to: url) { _, _ in }
+    }
+
+    /// Writes the Part 10 file and hands every written byte to `observe`, in
+    /// order: the File Meta Information (`false`), then the data set
+    /// (`true`). A caller computes digests of the file and of its data set in
+    /// the same pass, without reading the file again.
+    public func write(to url: URL, observing observe: (Data, _ dataSet: Bool) throws -> Void) throws {
         let partial = url.deletingLastPathComponent()
             .appendingPathComponent(".\(url.lastPathComponent).\(UUID().uuidString).partial")
         do {
             let file = try DICOMPOSIXFile.create(partial)
-            try file.write(DICOMPart10Header.encodeMetaInformation(
+            let meta = DICOMPart10Header.encodeMetaInformation(
                 sopClassUID: sopClassUID, sopInstanceUID: sopInstanceUID, transferSyntaxUID: transferSyntaxUID,
-                sourceAETitle: sourceAETitle.isEmpty ? nil : sourceAETitle))
-            for chunk in try payload.chunks(of: 1 << 20) { try file.write(chunk) }
+                sourceAETitle: sourceAETitle.isEmpty ? nil : sourceAETitle)
+            try file.write(meta)
+            try observe(meta, false)
+            for chunk in try payload.chunks(of: 1 << 20) { try file.write(chunk); try observe(chunk, true) }
             try file.close()
             try DICOMPOSIXFile.rename(partial, replacing: url)
         } catch {

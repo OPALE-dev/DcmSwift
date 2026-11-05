@@ -73,6 +73,29 @@ final class DcmSwiftArchiveTests: XCTestCase {
         func counts() -> (Int, Int) { (instances, associations.count) }
     }
 
+    /// The observed bytes are the written file, and the data set part starts where the header says.
+    func testReceivedInstanceWriteHandsOverEveryWrittenByte() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("dcmswift-observe-\(UUID().uuidString).dcm")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let item = try DICOMRetrieveItem(dataSet: try W.dataSet([
+            "00080016": ("UI", [DICOMSOPClass.storage[0]]), "00080018": ("UI", ["1.2.826.0.1.3680043.2.1125.9.2"]),
+            "0020000D": ("UI", ["1.2.826.0.1.3680043.2.1125.9"]), "00100020": ("LO", ["P9"]),
+        ]))
+        let instance = DICOMReceivedInstance(sopClassUID: item.sopClassUID, sopInstanceUID: item.sopInstanceUID,
+            transferSyntaxUID: item.transferSyntaxUID, payload: item.payload, moveOriginatorAETitle: nil,
+            moveOriginatorMessageID: nil, sourceAETitle: "MOD")
+        var all = Data(), dataSet = Data()
+        try instance.write(to: url) { bytes, isDataSet in
+            all += bytes
+            if isDataSet { dataSet += bytes }
+        }
+        let file = try Data(contentsOf: url)
+        XCTAssertEqual(all, file)
+        let header = try DICOMPart10Header.read(url)
+        XCTAssertEqual(dataSet, file.subdata(in: Int(header.dataSetOffset)..<file.count))
+        XCTAssertEqual(dataSet.count, header.dataSetLength)
+    }
+
     /// A non-ASCII return value comes back intact and declared (ISO_IR 192).
     func testFindReturnsNonASCIIValuesDeclaredAsUTF8() async throws {
         let directory = FileManager.default.temporaryDirectory
