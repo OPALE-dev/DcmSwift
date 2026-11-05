@@ -140,6 +140,15 @@ public actor DICOMArchive {
         try await store.item(at: record.location)
     }
 
+    /// Instances read at the same time by `items(_:)`: a store may verify each one (checksum,
+    /// index lookups) before it is sent.
+    public static let retrieveConcurrency = 8
+
+    /// The instances of `records`, in their order, read by the store together.
+    public func items(_ records: [Record]) async throws -> [DICOMRetrieveItem] {
+        try await store.items(at: records.map(\.location))
+    }
+
     /// The groups of records at `level` matching `identifier`, each the
     /// records of one patient, study, series, or instance, in a stable order.
     public func match(_ identifier: DataSet, level: String) async throws -> [[Record]] {
@@ -361,8 +370,7 @@ public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICO
                 patient: patients.first ?? .patient(id: "unknown", name: "unknown"), source: auditSource))
         }
         var items: [DICOMRetrieveItem] = []
-        for record in records {
-            var item = try await archive.item(record)
+        for var item in try await archive.items(records) {
             if informationModel == DICOMSOPClass.compositeInstanceRetrieveWithoutBulkDataGet {
                 item = try DICOMArchiveQueryRetrieve.withoutBulkData(item)
             }
@@ -440,9 +448,7 @@ public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICO
                 studies: objects.filter { $0.idType != .patientNumber },
                 patient: patients.first ?? .patient(id: "unknown", name: "unknown"), source: auditSource))
         }
-        var items: [DICOMRetrieveItem] = []
-        for record in ordered { items.append(try await archive.item(record)) }
-        return items
+        return try await archive.items(ordered)
     }
 
     public func store(
@@ -465,5 +471,32 @@ public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICO
                                 receiver: local(auditSource.id))
             return .failed(DICOMwebStoreResponse.processingFailure)
         }
+    }
+}
+
+/// `transform` applied to every element, at most `limit` at a time; the results keep the
+/// elements' order. The first error cancels the others and is thrown.
+public func orderedConcurrentMap<Element: Sendable, Result: Sendable>(
+    _ elements: [Element], limit: Int, _ transform: @escaping @Sendable (Element) async throws -> Result
+) async throws -> [Result] {
+    guard limit > 1, elements.count > 1 else {
+        var results: [Result] = []
+        for element in elements { results.append(try await transform(element)) }
+        return results
+    }
+    return try await withThrowingTaskGroup(of: (Int, Result).self) { group in
+        var results = [Result?](repeating: nil, count: elements.count)
+        var next = 0
+        func start() {
+            let index = next
+            group.addTask { (index, try await transform(elements[index])) }
+            next += 1
+        }
+        while next < min(limit, elements.count) { start() }
+        while let (index, result) = try await group.next() {
+            results[index] = result
+            if next < elements.count { start() }
+        }
+        return results.map { $0! }
     }
 }

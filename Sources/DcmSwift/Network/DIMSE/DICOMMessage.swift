@@ -93,7 +93,13 @@ public final class DICOMDataSetPayload: @unchecked Sendable {
                 guard position < data.count else {return nil}
                 let end=Swift.min(position+chunk,data.count)
                 defer {position=end}
-                return data.subdata(in:(data.startIndex+position)..<(data.startIndex+end))
+                // A plain copy: Data.subdata hands large page-aligned copies to vm_copy, which the
+                // kernel serializes per process, so concurrent responses wait for each other.
+                var bytes=Data(count:end-position)
+                bytes.withUnsafeMutableBytes { target in
+                    _=data.copyBytes(to:target.bindMemory(to:UInt8.self),from:(data.startIndex+position)..<(data.startIndex+end))
+                }
+                return bytes
             }
         case .file(let url,let offset,_):
             let file=try DICOMPOSIXFile.open(reading:url)
