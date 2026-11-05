@@ -11,11 +11,24 @@ public protocol DICOMInstanceStore: Sendable {
     /// The instance at a location, to send by C-STORE or over DICOMweb.
     func item(at location: String) async throws -> DICOMRetrieveItem
 
+    /// The instances at several locations, in their order: a store that verifies each instance
+    /// against a database can do it once for a whole retrieval.
+    func items(at locations: [String]) async throws -> [DICOMRetrieveItem]
+
     /// Whether the instance at a location still exists.
     func exists(_ location: String) async -> Bool
 
     /// Removes the instance at a location.
     func remove(_ location: String) async throws
+}
+
+extension DICOMInstanceStore {
+    /// `item(at:)` for each location, `DICOMArchive.retrieveConcurrency` at a time.
+    public func items(at locations: [String]) async throws -> [DICOMRetrieveItem] {
+        try await orderedConcurrentMap(locations, limit: DICOMArchive.retrieveConcurrency) { location in
+            try await self.item(at: location)
+        }
+    }
 }
 
 /// Instances as Part 10 files in a directory, named

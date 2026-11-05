@@ -178,3 +178,40 @@ final class DcmSwiftArchiveTests: XCTestCase {
         XCTAssertEqual(associations, 2)
     }
 }
+
+/// Retrieval reads several instances at a time and keeps their order.
+final class DcmSwiftOrderedConcurrentMapTests: XCTestCase {
+    actor Gauge {
+        var running = 0, peak = 0
+        func enter() { running += 1; peak = max(peak, running) }
+        func leave() { running -= 1 }
+    }
+
+    func testResultsKeepTheOrderAndTheLimitHolds() async throws {
+        let gauge = Gauge()
+        let results = try await orderedConcurrentMap(Array(0..<40), limit: 8) { value -> Int in
+            await gauge.enter()
+            // Earlier elements finish later: completion order differs from element order.
+            try await Task.sleep(nanoseconds: UInt64(40 - value) * 200_000)
+            await gauge.leave()
+            return value * 2
+        }
+        XCTAssertEqual(results, (0..<40).map { $0 * 2 })
+        let peak = await gauge.peak
+        XCTAssertGreaterThan(peak, 1)
+        XCTAssertLessThanOrEqual(peak, 8)
+    }
+
+    func testTheFirstErrorIsThrown() async {
+        struct Failure: Error {}
+        do {
+            _ = try await orderedConcurrentMap(Array(0..<20), limit: 4) { value -> Int in
+                if value == 7 { throw Failure() }
+                return value
+            }
+            XCTFail("expected an error")
+        } catch {
+            XCTAssertTrue(error is Failure)
+        }
+    }
+}
