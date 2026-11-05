@@ -13,6 +13,7 @@ enum DICOMChannel {
         limits: DICOMNetworkLimits, timeouts: DICOMNetworkTimeouts
     ) throws -> Async {
         let pipeline = channel.pipeline.syncOperations
+        try pipeline.addHandler(QuickAcknowledgment())
         if let tls {
             if isServer {
                 try pipeline.addHandler(NIOSSLServerHandler(context: tls))
@@ -59,5 +60,21 @@ private final class IdleTimeoutHandler: ChannelInboundHandler {
             return
         }
         context.fireUserInboundEventTriggered(event)
+    }
+}
+
+/// Acknowledges received segments at once (Linux `TCP_QUICKACK`, reset by the kernel after each
+/// read, so set again on every read). A peer that leaves Nagle's algorithm on holds the small end
+/// of each message until the previous segment is acknowledged; with the kernel's delayed
+/// acknowledgment, every C-STORE then waited about 40 ms before its last bytes arrived. Elsewhere
+/// it does nothing.
+final class QuickAcknowledgment: ChannelInboundHandler {
+    typealias InboundIn = NIOAny
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+        #if os(Linux)
+        // TCP_QUICKACK = 12 (linux/tcp.h).
+        try? context.channel.syncOptions?.setOption(ChannelOptions.tcpOption(.init(rawValue: 12)), value: 1)
+        #endif
+        context.fireChannelRead(data)
     }
 }
