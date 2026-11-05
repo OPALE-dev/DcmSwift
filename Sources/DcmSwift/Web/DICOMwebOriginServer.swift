@@ -77,6 +77,9 @@ public struct DICOMwebServerConfiguration: Sendable {
     /// A stored part larger than this is spilled to a temporary file.
     public var memoryLimit: Int
     public var temporaryDirectory: URL
+    /// Parts of one STOW-RS request stored at the same time, while the next ones are read. The
+    /// response keeps the order of the parts. 1 stores them one after the other.
+    public var storeConcurrency = 1
 
     public init(basePath: String = "", maximumResults: Int = 1000, maximumRequestLength: Int = 4 << 30,
                 memoryLimit: Int = 16 << 20, temporaryDirectory: URL = FileManager.default.temporaryDirectory) {
@@ -468,38 +471,69 @@ public struct DICOMwebOriginServer: Sendable {
         do { parser = try DICOMwebMultipart.Parser(boundary: boundary) } catch {
             return Self.report(400, String(describing: error))
         }
-        var response = DICOMwebStoreResponse()
-        var sink: DataSetSink?
-        var partIsDICOM = false
-        var received = 0
+        // Each part's outcome, in part order: parts are stored concurrently (up to
+        // `storeConcurrency`) while the following ones are read.
+        var outcomes: [Int: DICOMwebStoreResponse] = [:]
+        let limit = max(1, configuration.storeConcurrency)
+        let early: DICOMwebHTTPResponse?
         do {
-            for try await chunk in request.body {
-                received += chunk.count
-                guard received <= configuration.maximumRequestLength else {
-                    return Self.report(413, "The payload exceeds \(configuration.maximumRequestLength) bytes")
+            early = try await withThrowingTaskGroup(of: (Int, DICOMwebStoreResponse).self) { group -> DICOMwebHTTPResponse? in
+                var sink: DataSetSink?
+                var partIsDICOM = false
+                var received = 0, parts = 0, running = 0
+                defer { group.cancelAll() }
+                func collect() async throws {
+                    if let (index, outcome) = try await group.next() { outcomes[index] = outcome; running -= 1 }
                 }
-                for event in try parser.feed(chunk) {
-                    switch event {
-                    case .partStart(let headers):
-                        partIsDICOM = (headers.contentType ?? partType).essence == "application/dicom"
-                        sink = DataSetSink(memoryLimit: configuration.memoryLimit,
-                                           maximumLength: configuration.maximumRequestLength,
-                                           directory: configuration.temporaryDirectory)
-                    case .bodyChunk(let bytes):
-                        if partIsDICOM { try sink?.append(bytes) }
-                    case .partEnd:
-                        defer { sink = nil }
-                        guard partIsDICOM, let sink else {
-                            response.otherFailures.append(DICOMwebStoreResponse.cannotUnderstand)
-                            continue
+                for try await chunk in request.body {
+                    received += chunk.count
+                    guard received <= configuration.maximumRequestLength else {
+                        while running > 0 { try await collect() }
+                        return Self.report(413, "The payload exceeds \(configuration.maximumRequestLength) bytes")
+                    }
+                    for event in try parser.feed(chunk) {
+                        switch event {
+                        case .partStart(let headers):
+                            partIsDICOM = (headers.contentType ?? partType).essence == "application/dicom"
+                            sink = DataSetSink(memoryLimit: configuration.memoryLimit,
+                                               maximumLength: configuration.maximumRequestLength,
+                                               directory: configuration.temporaryDirectory)
+                        case .bodyChunk(let bytes):
+                            if partIsDICOM { try sink?.append(bytes) }
+                        case .partEnd:
+                            let index = parts
+                            parts += 1
+                            defer { sink = nil }
+                            guard partIsDICOM, let complete = sink else {
+                                outcomes[index] = DICOMwebStoreResponse(otherFailures: [DICOMwebStoreResponse.cannotUnderstand])
+                                continue
+                            }
+                            while running >= limit { try await collect() }
+                            // Handed over: the reader no longer touches this sink.
+                            nonisolated(unsafe) let part = complete
+                            group.addTask {
+                                var outcome = DICOMwebStoreResponse()
+                                await self.storePart(part, resource: resource, context: context, into: &outcome)
+                                return (index, outcome)
+                            }
+                            running += 1
                         }
-                        await storePart(sink, resource: resource, context: context, into: &response)
                     }
                 }
+                try parser.finish()
+                while running > 0 { try await collect() }
+                return nil
             }
-            try parser.finish()
         } catch let error as DICOMwebMultipart.ParseError {
             return Self.report(400, error.description)
+        }
+        if let early { return early }
+        var response = DICOMwebStoreResponse()
+        for index in outcomes.keys.sorted() {
+            let outcome = outcomes[index]!
+            response.stored += outcome.stored
+            response.failed += outcome.failed
+            response.otherFailures += outcome.otherFailures
         }
         if response.stored.isEmpty && response.failed.isEmpty && response.otherFailures.isEmpty {
             return Self.report(400, "The payload contains no instance")
