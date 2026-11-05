@@ -556,10 +556,11 @@ public struct DICOMwebOriginServer: Sendable {
                 response.failed.append(reference)
                 return
             }
-            let instance = DICOMReceivedInstance(
+            var instance = DICOMReceivedInstance(
                 sopClassUID: sopClass, sopInstanceUID: sopInstance,
                 transferSyntaxUID: header.transferSyntaxUID, payload: payload, moveOriginatorAETitle: nil,
                 moveOriginatorMessageID: nil, sourceAETitle: "")
+            instance.decodedDataSet = parsed
             let dataSet = parsed
             let study = dataSet.string(forTag: "StudyInstanceUID") ?? ""
             if let target = resource.study, target != study {
