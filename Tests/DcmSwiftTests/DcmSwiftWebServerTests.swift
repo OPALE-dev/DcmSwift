@@ -34,7 +34,7 @@ final class DcmSwiftWebServerTests: XCTestCase {
         values.reduce(into: Data()) { $0.append(contentsOf: [UInt8($1 & 0xFF), UInt8($1 >> 8)]) }
     }
 
-    private static func image(sopClass: String, instance: String, series: String, seriesNumber: String,
+    static func image(sopClass: String, instance: String, series: String, seriesNumber: String,
                               modality: String, rows: Int, columns: Int, frames: Int?) -> DataSet {
         let dataSet = DataSet()
         for (keyword, value) in [("SOPClassUID", sopClass), ("SOPInstanceUID", instance), ("StudyInstanceUID", study),
@@ -263,6 +263,49 @@ final class DcmSwiftWebServerTests: XCTestCase {
             body: DICOMwebMultipart.Writer.encode([(part, try Self.mrPart10())], boundary: "b")), origin: Self.origin)
         XCTAssertEqual(response.status, 200)
         XCTAssertEqual(spy.decoded, [Self.mrInstance])
+    }
+
+    /// Parts of one request are stored concurrently, never more than the limit, and the response
+    /// keeps their order; a failed part does not affect the others.
+    func testStoreConcurrentPartsKeepsTheirOrder() async throws {
+        actor Spy: DICOMwebStoreService {
+            var running = 0, peak = 0
+            func store(_ instance: DICOMReceivedInstance, context: DICOMwebRequestContext) async throws -> DICOMwebStoreResult {
+                running += 1; peak = max(peak, running)
+                // Earlier parts take longer: completion order is the reverse of the part order.
+                let rank = Int(instance.sopInstanceUID.split(separator: ".").last!)!
+                try await Task.sleep(nanoseconds: UInt64(20 - rank) * 5_000_000)
+                running -= 1
+                return rank == 3 ? .failed(DICOMwebStoreResponse.processingFailure) : .stored
+            }
+        }
+        let spy = Spy()
+        var configuration = DICOMwebServerConfiguration(basePath: "/dicomweb")
+        configuration.storeConcurrency = 4
+        let origin = DICOMwebOriginServer(configuration: configuration, store: spy)
+        var part = DICOMwebMultipart.Headers()
+        part["Content-Type"] = "application/dicom"
+        let uids = (0..<10).map { "1.2.826.0.1.3680043.10.999.7.\($0)" }
+        let parts = try uids.map { uid -> (DICOMwebMultipart.Headers, Data) in
+            let dataSet = Self.image(sopClass: "1.2.840.10008.5.1.4.1.1.4", instance: uid, series: Self.mrSeries,
+                                     seriesNumber: "1", modality: "MR", rows: 2, columns: 2, frames: nil)
+            return (part, DICOMPart10Header.encodeMetaInformation(sopClassUID: "1.2.840.10008.5.1.4.1.1.4", sopInstanceUID: uid,
+                transferSyntaxUID: TransferSyntax.explicitVRLittleEndian, sourceAETitle: nil)
+                + (try DICOMDataSetCoding.encode(dataSet, transferSyntax: TransferSyntax.explicitVRLittleEndian)))
+        }
+        var headers = DICOMwebMultipart.Headers()
+        headers["Accept"] = "application/dicom+json"
+        headers["Content-Type"] = "multipart/related; type=application/dicom; boundary=b"
+        let response = await origin.respond(to: DICOMwebHTTPRequest(method: "POST", target: "/dicomweb/studies", headers: headers,
+            body: DICOMwebMultipart.Writer.encode(parts, boundary: "b")), origin: Self.origin)
+        XCTAssertEqual(response.status, 202)
+        let body = try await response.collectBody()
+        let module = try DICOMwebStoreResponse(dataSet: try XCTUnwrap(try DICOMJSON.decode(body).first))
+        XCTAssertEqual(module.stored.map(\.sopInstanceUID), uids.enumerated().filter { $0.offset != 3 }.map(\.element))
+        XCTAssertEqual(module.failed.map(\.sopInstanceUID), [uids[3]])
+        let peak = await spy.peak
+        XCTAssertGreaterThan(peak, 1)
+        XCTAssertLessThanOrEqual(peak, 4)
     }
 
     func testStoreReturnsTheStoreInstancesResponseModule() async throws {
