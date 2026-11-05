@@ -178,15 +178,23 @@ public enum DICOMwebMultipart {
             }
         }
 
+        /// First occurrence of `pattern` in the buffer: memchr for its first byte, memcmp for the
+        /// rest (standard C on every platform; a Swift byte loop cost milliseconds per 512 KiB part).
         private func find(_ pattern: [UInt8]) -> Int? {
             guard buffer.count >= pattern.count, let first = pattern.first else { return nil }
-            var index = 0
-            let last = buffer.count - pattern.count
-            while index <= last {
-                if buffer[index] == first && buffer[index..<(index + pattern.count)].elementsEqual(pattern) { return index }
-                index += 1
+            return buffer.withUnsafeBytes { haystack -> Int? in
+                pattern.withUnsafeBytes { needle -> Int? in
+                    let base = haystack.baseAddress!, last = haystack.count - needle.count
+                    var index = 0
+                    while index <= last {
+                        guard let hit = memchr(base + index, Int32(first), last - index + 1) else { return nil }
+                        index = base.distance(to: UnsafeRawPointer(hit))
+                        if memcmp(base + index, needle.baseAddress!, needle.count) == 0 { return index }
+                        index += 1
+                    }
+                    return nil
+                }
             }
-            return nil
         }
 
         /// The header fields after a delimiter line: transport padding, CRLF,
