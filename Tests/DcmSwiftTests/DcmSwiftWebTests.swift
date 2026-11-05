@@ -130,6 +130,26 @@ final class DcmSwiftWebTests: XCTestCase {
         }
         try parser.finish()
         XCTAssertEqual(bodiesSeen, bodies)
+
+        // Chunks of every size, so a delimiter falls across any boundary of the search.
+        for size in [2, 3, 7, 13, 64, 1000, payload.count] {
+            var parser = try DICOMwebMultipart.Parser(boundary: "abc")
+            var seen: [Data] = [], current = Data()
+            var offset = payload.startIndex
+            while offset < payload.endIndex {
+                let end = min(offset + size, payload.endIndex)
+                for event in try parser.feed(payload[offset..<end]) {
+                    switch event {
+                    case .partStart: current = Data()
+                    case .bodyChunk(let chunk): current += chunk
+                    case .partEnd: seen.append(current)
+                    }
+                }
+                offset = end
+            }
+            try parser.finish()
+            XCTAssertEqual(seen, bodies, "chunks of \(size) bytes")
+        }
     }
 
     func testMultipartPreambleEpilogueAndErrors() throws {
