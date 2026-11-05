@@ -243,6 +243,28 @@ final class DcmSwiftWebServerTests: XCTestCase {
         }
     }
 
+    /// The store receives the data set STOW-RS already decoded, so it need not decode it again.
+    func testStoreHandsOverTheDecodedDataSet() async throws {
+        final class Spy: DICOMwebStoreService, @unchecked Sendable {
+            var decoded: [String] = []
+            func store(_ instance: DICOMReceivedInstance, context: DICOMwebRequestContext) async throws -> DICOMwebStoreResult {
+                decoded.append(instance.decodedDataSet?.string(forTag: "SOPInstanceUID") ?? "none")
+                return .stored
+            }
+        }
+        let spy = Spy()
+        let origin = DICOMwebOriginServer(configuration: .init(basePath: "/dicomweb"), store: spy)
+        var part = DICOMwebMultipart.Headers()
+        part["Content-Type"] = "application/dicom"
+        var headers = DICOMwebMultipart.Headers()
+        headers["Accept"] = "application/dicom+json"
+        headers["Content-Type"] = "multipart/related; type=application/dicom; boundary=b"
+        let response = await origin.respond(to: DICOMwebHTTPRequest(method: "POST", target: "/dicomweb/studies", headers: headers,
+            body: DICOMwebMultipart.Writer.encode([(part, try Self.mrPart10())], boundary: "b")), origin: Self.origin)
+        XCTAssertEqual(response.status, 200)
+        XCTAssertEqual(spy.decoded, [Self.mrInstance])
+    }
+
     func testStoreReturnsTheStoreInstancesResponseModule() async throws {
         var part = DICOMwebMultipart.Headers()
         part["Content-Type"] = "application/dicom"

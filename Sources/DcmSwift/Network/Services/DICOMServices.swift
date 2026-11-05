@@ -35,6 +35,9 @@ public struct DICOMReceivedInstance: Sendable {
     /// The sender's AE title; empty when the instance did not come over
     /// DIMSE, such as one received by STOW-RS.
     public let sourceAETitle: String
+    /// The data set, when the receiver already decoded it (STOW-RS checks the identifiers in it),
+    /// so that the store does not decode it again. Large values may be left unloaded (lazy).
+    nonisolated(unsafe) public var decodedDataSet: DataSet? = nil
 
     /// Decodes the data set.
     public func dataSet(limits: DicomReadLimits = DicomReadLimits()) throws -> DataSet {
