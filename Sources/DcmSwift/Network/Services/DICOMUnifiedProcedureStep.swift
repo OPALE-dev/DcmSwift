@@ -143,7 +143,8 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
     }
 
     /// Creates a SCHEDULED instance. The required Type 1/2 top-level
-    /// attributes of CC.2.5-3 are checked; the SCP supplies its own UIDs,
+    /// attributes of CC.2.5-3 are checked after filling absent Type 2 attributes
+    /// with empty elements (CC.2.5.3); the SCP supplies its own UIDs,
     /// worklist label, and modification time.
     ///
     /// Public so that an embedding application can create its own work items
@@ -156,13 +157,22 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         }
         // Top-level Type 1 and Type 2 N-CREATE attributes in CC.2.5-3.
         let type1 = [Tag.priority, Tag.label, Tag.start, Tag.readiness, Tag.state]
-        let type2 = [Tag.transaction, Tag.worklist, Tag.scheduledParameters,
-                     Tag.stationName, Tag.stationClass, Tag.stationLocation,
-                     Tag.workitem, Tag.comments, Tag.input,
-                     "00100010", "00100021", "00100024", "00101002",
-                     "00100030", "00100040", "00380010", "00380014",
-                     "00081080", "00081084", "0040A370", Tag.progress, Tag.performed]
-        if let missing = (type1 + type2).first(where: { object[$0] == nil }) {
+        let type2 = [(Tag.transaction, "UI"), (Tag.worklist, "LO"),
+                     (Tag.scheduledParameters, "SQ"), (Tag.stationName, "SQ"),
+                     (Tag.stationClass, "SQ"), (Tag.stationLocation, "SQ"),
+                     (Tag.workitem, "SQ"), (Tag.comments, "LT"), (Tag.input, "SQ"),
+                     ("00100010", "PN"), ("00100021", "LO"), ("00100024", "SQ"),
+                     ("00101002", "SQ"), ("00100030", "DA"), ("00100040", "CS"),
+                     ("00380010", "LO"), ("00380014", "SQ"), ("00081080", "LO"),
+                     ("00081084", "SQ"), ("0040A370", "SQ"),
+                     (Tag.progress, "SQ"), (Tag.performed, "SQ")]
+        // CC.2.5.3 permits SCP modifications. Complete absent Type 2
+        // attributes before validation, without replacing supplied elements.
+        var object = object
+        for (tag, vr) in type2 where object[tag] == nil {
+            object[tag] = ["vr": vr]
+        }
+        if let missing = type1.first(where: { object[$0] == nil }) {
             return Self.reply(0x0120, "required UPS attribute \(missing) is missing")
         }
         if let empty = type1.first(where: { !Self.hasValue(object, $0) }) {
@@ -190,18 +200,10 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
         instance[Tag.instance] = Self.attribute("UI", uid)
         instance[Tag.sopClass] = Self.attribute("UI", DICOMSOPClass.upsPush)
         instance[Tag.state] = Self.attribute("CS", "SCHEDULED")
-        instance[Tag.transaction] = ["vr": "UI"]
         if !Self.hasValue(instance, Tag.worklist) {
             instance[Tag.worklist] = Self.attribute("LO", "DEFAULT")
         }
         instance[Tag.modificationTime] = Self.attribute("DT", Self.dateTime())
-        for (tag, vr) in [(Tag.scheduledParameters, "SQ"), (Tag.stationName, "SQ"),
-                          (Tag.stationClass, "SQ"), (Tag.stationLocation, "SQ"),
-                          (Tag.workitem, "SQ"), (Tag.input, "SQ"), (Tag.progress, "SQ"),
-                          (Tag.performed, "SQ")] {
-            instance[tag] = instance[tag] ?? ["vr": vr]
-        }
-        instance[Tag.comments] = instance[Tag.comments] ?? ["vr": "LT"]
         do {
             try await index.insert(DICOMArchiveDocument(id: uid, attributes: instance), into: .unifiedProcedureSteps)
         } catch DICOMArchiveError.duplicate {

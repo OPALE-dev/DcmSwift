@@ -35,6 +35,22 @@ final class DcmSwiftUPSRESTTests: XCTestCase {
         XCTAssertEqual(response.status, status, file: file, line: line)
     }
 
+    func testCreateWithoutType2AttributesUsesSharedCompletion() async throws {
+        let steps = DICOMUnifiedProcedureStepService()
+        let server = origin(steps)
+        let minimal = scheduled().filter {
+            ["00741200", "00741204", "00404005", "00404041", "00741000"].contains($0.key)
+        }
+        check(try await request(server, "POST", "/workitems?workitem=" + uid, object: minimal), 201)
+        let document = try await steps.index.document(uid, in: .unifiedProcedureSteps)
+        let stored = try XCTUnwrap(document).attributes
+        for (tag, expected) in scheduled() where minimal[tag] == nil {
+            let attribute = try XCTUnwrap(stored[tag] as? [String: Any], tag)
+            XCTAssertEqual(attribute["vr"] as? String, (expected as? [String: Any])?["vr"] as? String, tag)
+            if tag != "00741202" { XCTAssertNil(attribute["Value"], tag) }
+        }
+    }
+
     func testCreateRetrieveUpdateClaimAndCancelShareDIMSEState() async throws {
         let steps = DICOMUnifiedProcedureStepService()
         let server = origin(steps)
