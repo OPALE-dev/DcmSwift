@@ -166,6 +166,10 @@ public actor DICOMUnifiedProcedureStepService: DICOMNormalizedService, DICOMQuer
                      ("00380010", "LO"), ("00380014", "SQ"), ("00081080", "LO"),
                      ("00081084", "SQ"), ("0040A370", "SQ"),
                      (Tag.progress, "SQ"), (Tag.performed, "SQ")]
+        // CC.2.5-3 N-CREATE SCU/SCP: Scheduled Workitem Code Sequence is 2/2,
+        // not the 3/1 requirement in the N-SET column. Worklist Label is 2/1.
+        // Do not add Scheduled Human Performers (0040,4034: 2C/2C, conditional)
+        // or Expected Completion DateTime (0040,4011: 3/1, optional for SCU).
         // CC.2.5.3 permits SCP modifications. Complete absent Type 2
         // attributes before validation, without replacing supplied elements.
         var object = object

@@ -59,6 +59,36 @@ final class DcmSwiftUPSTests: XCTestCase {
         }
     }
 
+    // PS3.4 2026d CC.2.5-3, N-CREATE SCU/SCP (not N-SET):
+    // 0040,4018 is 2/2; 0040,4034 is 2C/2C; 0040,4011 is 3/1.
+    func testCreationDistinguishesConditionalAndOptionalAttributes() async throws {
+        let service = DICOMUnifiedProcedureStepService()
+        let minimal = scheduled().filter {
+            ["00741200", "00741204", "00404005", "00404041", "00741000"].contains($0.key)
+        }
+        assertStatus(try await service.create(uid, minimal), 0)
+        let document = try await service.index.document(uid, in: .unifiedProcedureSteps)
+        let stored = try XCTUnwrap(document).attributes
+        XCTAssertEqual(stored["00404018"] as? NSDictionary, ["vr": "SQ"] as NSDictionary)
+        XCTAssertNil(stored["00404034"], "No human performer specified: conditional 2C/2C is absent")
+        XCTAssertNil(stored["00404011"], "SCU-optional 3/1 does not authorize an invented completion time")
+
+        var supplied = minimal
+        supplied["00404011"] = value("DT", "20261112150000+0100")
+        supplied["00404034"] = sequence([[
+            "00404009": sequence([code("HUMAN")]),
+            "00404037": ["vr": "PN", "Value": [["Alphabetic": "TEST^PERFORMER"]]],
+            "00404036": value("LO", "Synthetic organization"),
+        ]])
+        let suppliedUID = uid + ".1"
+        assertStatus(try await service.create(suppliedUID, supplied), 0)
+        let suppliedDocument = try await service.index.document(suppliedUID, in: .unifiedProcedureSteps)
+        let storedSupplied = try XCTUnwrap(suppliedDocument).attributes
+        for tag in ["00404011", "00404034"] {
+            XCTAssertEqual(storedSupplied[tag] as? NSDictionary, supplied[tag] as? NSDictionary, tag)
+        }
+    }
+
     func testCreationPreservesSuppliedType2Elements() async throws {
         let service = DICOMUnifiedProcedureStepService()
         var object = scheduled().filter {
