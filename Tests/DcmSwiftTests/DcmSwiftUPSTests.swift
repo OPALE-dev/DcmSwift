@@ -38,6 +38,48 @@ final class DcmSwiftUPSTests: XCTestCase {
         ["00741000": value("CS", name), "00081195": value("UI", token)]
     }
 
+    func testCreationFillsMissingType2AttributesWithCorrectVRs() async throws {
+        let service = DICOMUnifiedProcedureStepService()
+        let type1: Set<String> = ["00741200", "00741204", "00404005", "00404041", "00741000"]
+        let complete = scheduled()
+        let minimal = complete.filter { type1.contains($0.key) }
+        assertStatus(try await service.create(uid, minimal), 0)
+        let document = try await service.index.document(uid, in: .unifiedProcedureSteps)
+        let stored = try XCTUnwrap(document).attributes
+        for (tag, expected) in complete where !type1.contains(tag) {
+            let attribute = try XCTUnwrap(stored[tag] as? [String: Any], tag)
+            let expectedVR = (expected as? [String: Any])?["vr"] as? String
+            XCTAssertEqual(attribute["vr"] as? String, expectedVR, tag)
+            if tag == "00741202" {
+                XCTAssertEqual(DICOMUnifiedProcedureStepService.value(stored, tag), "DEFAULT")
+            } else {
+                XCTAssertEqual(attribute.count, 1, "\(tag) must be empty, including SQ attributes")
+                XCTAssertNil(attribute["Value"], tag)
+            }
+        }
+    }
+
+    func testCreationPreservesSuppliedType2Elements() async throws {
+        let service = DICOMUnifiedProcedureStepService()
+        var object = scheduled().filter {
+            ["00741200", "00741204", "00404005", "00404041", "00741000"].contains($0.key)
+        }
+        let supplied: [String: Any] = [
+            "00741202": value("LO", "RADIOLOGY"),
+            "00400400": value("LT", "Keep these instructions"),
+            "00100010": ["vr": "PN", "Value": [["Alphabetic": "DOE^JANE"]]],
+            "00404025": sequence([code("STATION")]),
+            "00081195": ["vr": "UI", "Value": [String]()],
+        ]
+        object.merge(supplied) { _, provided in provided }
+        assertStatus(try await service.create(uid, object), 0)
+        let document = try await service.index.document(uid, in: .unifiedProcedureSteps)
+        let stored = try XCTUnwrap(document).attributes
+        for (tag, expected) in supplied {
+            XCTAssertEqual(stored[tag] as? NSDictionary, expected as? NSDictionary, tag)
+        }
+    }
+
     func testCreationStateLockAndFinalRequirements() async throws {
         let index = DICOMMemoryArchiveIndex()
         let service = DICOMUnifiedProcedureStepService(index: index)
@@ -151,10 +193,18 @@ final class DcmSwiftUPSTests: XCTestCase {
             var object = scheduled(); object[tag] = value(vr, text)
             assertStatus(try await service.create(uid, object), tag == "00741000" ? 0xC309 : 0x0106)
         }
-        for tag in ["00741200", "00741204", "00404005", "00404041", "00741000"] {
+        let type1: Set<String> = ["00741200", "00741204", "00404005", "00404041", "00741000"]
+        for tag in type1 {
             let service = DICOMUnifiedProcedureStepService()
-            var object = scheduled(); object.removeValue(forKey: tag)
+            var object = scheduled().filter { type1.contains($0.key) }
+            let attribute = try XCTUnwrap(object.removeValue(forKey: tag) as? [String: Any])
             assertStatus(try await service.create(uid, object), 0x0120)
+            for empty: [String: Any] in [["vr": attribute["vr"]!],
+                                         ["vr": attribute["vr"]!, "Value": [String]()],
+                                         ["vr": attribute["vr"]!, "Value": [""]]] {
+                object[tag] = empty
+                assertStatus(try await service.create(uid, object), 0x0121)
+            }
         }
     }
 

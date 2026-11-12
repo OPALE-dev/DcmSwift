@@ -24,8 +24,8 @@ negotiated Pull, Watch, or Query SOP Class UID.
 
 ## Perform a work item
 
-1. N-CREATE a SCHEDULED UPS using Push. Supply the Type 1 and Type 2
-   attributes in CC.2.5-3. Transaction UID, progress, and performed procedure
+1. N-CREATE a SCHEDULED UPS using Push. Supply the Type 1 attributes
+   in CC.2.5-3. Transaction UID, progress, and performed procedure
    sequences must be empty. The SCP supplies the SOP identifiers,
    modification time, and a default Worklist Label when empty.
 2. Subscribe through Watch, with Deletion Lock TRUE when final information
@@ -44,6 +44,15 @@ negotiated Pull, Watch, or Query SOP Class UID.
    Sequence; the SCP fills a missing cancellation time in that same item.
 6. Read the results with N-GET, then unsubscribe or subscribe without a
    deletion lock to release the lock.
+
+For both DIMSE N-CREATE and UPS-RS creation, the SCP completes absent
+top-level Type 2 attributes from CC.2.5-3 before validation, using the SCP
+modification permission in PS3.4 CC.2.5.3. Each is an empty DICOM JSON
+element with the correct VR (`{"vr": "XX"}`), including empty `SQ` sequences.
+Supplied elements are preserved; the existing default Worklist Label policy
+still applies to an absent or empty label. A missing Type 1 attribute fails
+with `0x0120`; an empty Type 1 attribute fails with `0x0121`. All other
+creation checks still apply, including nested sequence requirements.
 
 Transaction UID is never returned by N-GET or C-FIND. Queries cannot match
 it. UPS states, priorities, readiness, SOP Instance UIDs and code values use
