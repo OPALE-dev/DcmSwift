@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import Socket
 
 
 
@@ -20,51 +19,9 @@ public enum StreamError: LocalizedError {
     case cannotReadStream(message:String)
     case cannotWriteStream(message:String)
     case datasetIsCorrupted(message:String)
+    case unsupportedTransferSyntax(uid:String)
 }
 
-
-
-/**
- Networking related errors
-*/
-public enum NetworkError: LocalizedError {
-    case notReady
-    case cantBind
-    case timeout
-    case connectionResetByPeer
-    case transitionNotFound
-    case internalError
-    case errorComment(message:String)
-    case associationRejected(reason:String)
-    case callingAETitleNotRecognized
-    case calledAETitleNotRecognized
-    
-    public var errorDescription: String? {
-        switch self {
-  
-        case .notReady:
-            return "Association is not ready"
-        case .cantBind:
-            return "Association cant bind"
-        case .timeout:
-            return "Timeout error"
-        case .connectionResetByPeer:
-            return "Connection reset by peer"
-        case .transitionNotFound:
-            return "Transition not found"
-        case .internalError:
-            return "Internal error"
-        case .errorComment(message: let message):
-            return "Error Comment: \(message)"
-        case .associationRejected(reason: let reason):
-            return "Association rejected: \(reason)"
-        case .callingAETitleNotRecognized:
-            return "Calling AE Title not recognized"
-        case .calledAETitleNotRecognized:
-            return "Called AE Title not recognized"
-        }
-    }
-}
 
 
 //
@@ -119,12 +76,6 @@ public enum NetworkError: LocalizedError {
 //    public convenience init(description:String, level:ErrorLevel, realm:ErrorRealm = .general) {
 //        self.init(code: 0, level: level, realm: realm)
 //        self.customDescription = description
-//    }
-//    
-//    
-//    public convenience init(socketError error:Socket.Error) {
-//        self.init(code: Int(error.errorCode), level: .error, realm: .socket)
-//        self.customDescription = error.description
 //    }
 //    
 //    

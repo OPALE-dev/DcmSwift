@@ -1,0 +1,48 @@
+name: Bug report
+description: Something does not work as the DICOM Standard or the documentation says.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not attach files that contain patient data. Report vulnerabilities privately, as described in SECURITY.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: A minimal code sample or command line, and a synthetic or public input file if one is needed.
+    validations:
+      required: true
+  - type: input
+    id: reference
+    attributes:
+      label: DICOM reference
+      description: The part and section of DICOM 2026d that defines the expected behavior, if known.
+      placeholder: PS3.5 7.8
+  - type: input
+    id: revision
+    attributes:
+      label: DcmSwift revision
+      placeholder: commit or tag
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options: [macOS, iOS, Linux]
+    validations:
+      required: true
+  - type: input
+    id: swift
+    attributes:
+      label: Swift version
+      description: Output of `swift --version`.

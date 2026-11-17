@@ -46,7 +46,7 @@ public class UID {
         let uidSplit = uid.components(separatedBy: ".")
         
         // max length up to 64 bytes
-        if uid.count > 64 {
+        if uid.utf8.count > 64 {
             Logger.error("UID \(uid) is larger than 64 bytes")
             return false
         }
@@ -58,18 +58,14 @@ public class UID {
         }
         
         for partString in uidSplit {
-            
-            // contains only digits
-            guard let _ = Int(partString) else {
+            guard !partString.isEmpty,
+                  partString.unicodeScalars.allSatisfy({ CharacterSet.decimalDigits.contains($0) }) else {
                 Logger.error("UID \(uid) needs to be made of integers")
                 return false
             }
             
-            //1st char of a part cannot be a `0`
-            guard let partInt = Int(partString.prefix(1)) else {
-                return false
-            }
-            if partInt == 0 {
+            // Multi-digit components cannot have leading zeroes; the component "0" is valid.
+            if partString.count > 1 && partString.first == "0" {
                 Logger.error("UID \(uid) parts cannot start by '0' digit")
                 return false
             }
@@ -105,12 +101,12 @@ private extension UID {
     }
     
     private func generate() -> String {
-        let comp1 = Int.random(in: 1..<5)
-        let comp2 = Int.random(in: 1..<9999)
-        let comp3 = Int.random(in: 1..<55)
-        
-        self.suffix = "\(comp1).\(comp2).\(comp3).\(Date().timeIntervalSince1970)"
-        
-        return compose(root: self.root, suffix: self.suffix!)
+        let milliseconds = UInt64(Date().timeIntervalSince1970 * 1_000)
+        let random = UInt64.random(in: 0...UInt64.max)
+        self.suffix = "\(milliseconds).\(random)"
+
+        let uid = compose(root: self.root, suffix: self.suffix!)
+        if UID.validate(uid: uid) { return uid }
+        return compose(root: orgRoot, suffix: self.suffix!)
     }
 }

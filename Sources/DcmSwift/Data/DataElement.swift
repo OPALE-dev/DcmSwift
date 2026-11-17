@@ -25,14 +25,81 @@ public class DataElement : DicomObject {
     public var endOffset:Int        = 0
     public var length:Int           = 0
     
-    public var parent:DataElement?
-    public var dataset:DataSet?
+    /// Non-owning navigation links. Keep the root DataSet alive while navigating/editing its tree.
+    public weak var parent:DataElement?
+    public weak var dataset:DataSet? {
+        didSet { if let dataset { detachedCharacterSet = dataset.characterSet } }
+    }
+    // Retained leaves must still decode text without retaining their entire owner and its pixels.
+    private var detachedCharacterSet:DICOMCharacterSet?
     public var tag:DataTag
-    public var data:Data!
+    private var storedData:Data?
+    public internal(set) var bulkDataReference:DICOMBulkDataReference?
+    /// The Bulk Data URI of a value that was not loaded, such as one in
+    /// DICOMweb metadata (PS3.18 F.2.6).
+    public internal(set) var bulkDataURI:String?
+
+    /// Accessing `data` preserves the historical API and materializes lazy
+    /// file-backed Bulk Data on first access. Use `loadData()` when errors must
+    /// be observed explicitly.
+    public var data:Data! {
+        get {
+            if storedData == nil, bulkDataReference != nil {
+                storedData = try? bulkDataReference?.load()
+            }
+            return storedData
+        }
+        set {
+            storedData = newValue
+            bulkDataReference = nil
+        }
+    }
+
+    public var isDataLoaded:Bool { storedData != nil }
+
+    public func loadData() throws -> Data {
+        if let storedData { return storedData }
+        guard let reference = bulkDataReference else { return Data() }
+        let loaded = try reference.load()
+        storedData = loaded
+        return loaded
+    }
+
+    /// Reads a Value Field subrange without forcing a deferred value to become
+    /// resident in memory.
+    public func loadData(range:Range<Int>) throws -> Data {
+        if let storedData {
+            guard range.lowerBound >= 0, range.upperBound <= storedData.count else {
+                throw StreamError.cannotReadStream(message: "Invalid Data Element value range")
+            }
+            return storedData.subdata(in: range)
+        }
+        guard let reference = bulkDataReference else {
+            throw StreamError.cannotReadStream(message: "Data Element has no Value Field")
+        }
+        return try reference.load(range: range)
+    }
+
+    internal func deferData(to reference:DICOMBulkDataReference) {
+        storedData = nil
+        bulkDataReference = reference
+    }
     
     public var vr:VR.VR               = VR.VR.UN
     public var vrMethod:VRMethod      = .Explicit
     public var byteOrder:ByteOrder    = .LittleEndian
+
+    /// Private Creator identifier that reserves this element's block, if found
+    /// in the same Data Set or Sequence Item.
+    public internal(set) var privateCreator:String?
+
+    /// Character repertoire effective when this element was decoded. Nested
+    /// Data Sets may override the repertoire inherited from their container.
+    public internal(set) var characterSet:DICOMCharacterSet?
+
+    public var effectiveCharacterSet:DICOMCharacterSet {
+        return characterSet ?? dataset?.characterSet ?? detachedCharacterSet ?? .defaultRepertoire
+    }
     
     private var dataValues:[DataValue] = []
     
@@ -57,6 +124,7 @@ public class DataElement : DicomObject {
     
     init(withTag tag:DataTag, dataset:DataSet? = nil, parent:DataElement? = nil) {
         self.dataset    = dataset
+        self.detachedCharacterSet = dataset?.characterSet
         self.tag        = tag
         
         if let p = parent {
@@ -74,6 +142,7 @@ public class DataElement : DicomObject {
         }
        
         self.dataset = dataset
+        self.detachedCharacterSet = dataset.characterSet
         
         if let p = parent {
             self.parent = p
@@ -84,69 +153,238 @@ public class DataElement : DicomObject {
     public func setValue(_ val:Any) -> Bool {
         var ret = false
         
-        if  self.vr == .AT {
-            // currently not implemented
-            return ret
+        if self.vr == .AT {
+            let tags: [DataTag]
+            if let tag = val as? DataTag {
+                tags = [tag]
+            } else if let values = val as? [DataTag] {
+                tags = values
+            } else {
+                return false
+            }
+            self.data = tags.reduce(into: Data()) {
+                $0.append($1.data(withByteOrder: self.byteOrder))
+            }
+            self.length = self.data.count
+            self.recalculateParentsLength()
+            return true
         }
-        else if self.vr == .OB ||
-                self.vr == .OW {
-                if let d = val as? Data {
-                    self.data = d
+        else if self.vr == .OB || self.vr == .OD || self.vr == .OF ||
+                self.vr == .OL || self.vr == .OV || self.vr == .OW ||
+                self.vr == .UN {
+            if let data = val as? Data {
+                self.data = data
+                self.length = data.count
+                self.recalculateParentsLength()
+                return true
+            }
+        }
+                
+        if let string = val as? String {
+            let encoded: Data?
+            if usesSpecificCharacterSet {
+                let context = effectiveCharacterSet
+                encoded = context.encode(string, vr: self.vr)
+                if encoded != nil { detachedCharacterSet = context }
+            } else {
+                encoded = string.data(using: .ascii)
+            }
 
-                    return true
+            guard var encoded else { return false }
+            if encoded.count % 2 != 0 {
+                encoded.append(byte: self.vr == .UI ? 0x00 : 0x20)
+            }
+            self.data = encoded
+            self.length = encoded.count
+            self.dataValues = string.components(separatedBy: "\\").enumerated().map {
+                DataValue($0.element, atIndex: $0.offset)
+            }
+            ret = true
+        } else {
+            if let values = val as? [Int16], self.vr == .SS {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint16: UInt16(bitPattern: $1), bigEndian: self.byteOrder == .BigEndian)
                 }
-        }
-                
-        if self.isMultiple {
-            if let string = val as? String {
-                self.data       = string.data(using: .utf8)
-                self.length     = self.data.count
-                self.dataValues = []
-                
-                let slice = string.components(separatedBy: "\\")
-                var index = 0
-                
-                for string in slice {
-                    self.dataValues.append(DataValue(string, atIndex:index))
-                    
-                    index += 1
-                }
-                
+                self.length = self.data.count
                 ret = true
             }
-        } else {
-            if let string = val as? String {
-                self.data = string.data(using: .utf8)
-                self.length = self.data.count
-                
-                if string.count % 2 != 0 {
-                    self.data.append(byte: 0x00)
-                    self.length += 1
+            else if let values = val as? [Int32], self.vr == .SL {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint32: UInt32(bitPattern: $1), bigEndian: self.byteOrder == .BigEndian)
                 }
-                
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [Int64], self.vr == .SV {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint64: UInt64(bitPattern: $1), bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [UInt16], self.vr == .US {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint16: $1, bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [UInt32], self.vr == .UL {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint32: $1, bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [UInt64], self.vr == .UV {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint64: $1, bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [Float32], self.vr == .FL {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint32: $1.bitPattern, bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let values = val as? [Float64], self.vr == .FD {
+                self.data = values.reduce(into: Data()) {
+                    $0.append(uint64: $1.bitPattern, bigEndian: self.byteOrder == .BigEndian)
+                }
+                self.length = self.data.count
+                ret = true
+            }
+            else if let v = val as? Int16 {
+                self.data = Data()
+                self.data.append(uint16: UInt16(bitPattern: v), bigEndian: self.byteOrder == .BigEndian)
+                self.length = self.data.count
+                ret = true
+            }
+            else if let v = val as? Int32 {
+                self.data = Data()
+                self.data.append(uint32: UInt32(bitPattern: v), bigEndian: self.byteOrder == .BigEndian)
+                self.length = self.data.count
+                ret = true
+            }
+            else if let v = val as? Int64 {
+                self.data = Data()
+                self.data.append(uint64: UInt64(bitPattern: v), bigEndian: self.byteOrder == .BigEndian)
+                self.length = self.data.count
                 ret = true
             }
             else if let v = val as? UInt16 {
                 self.data = Data()
-                self.data.append(uint16: v)
+                self.data.append(uint16: v, bigEndian: self.byteOrder == .BigEndian)
                 self.length = self.data.count
                 ret = true
             }
             else if let v = val as? UInt32 {
                 self.data = Data()
-                self.data.append(uint32: v)
+                self.data.append(uint32: v, bigEndian: self.byteOrder == .BigEndian)
                 self.length = self.data.count
                 ret = true
             }
-            else {
-                //print("not supported yet")
+            else if let v = val as? UInt64 {
+                self.data = Data()
+                self.data.append(uint64: v, bigEndian: self.byteOrder == .BigEndian)
+                self.length = self.data.count
+                ret = true
             }
-            
+            else if let v = val as? Float32 {
+                self.data = Data()
+                self.data.append(uint32: v.bitPattern, bigEndian: self.byteOrder == .BigEndian)
+                self.length = self.data.count
+                ret = true
+            }
+            else if let v = val as? Float64 {
+                self.data = Data()
+                self.data.append(uint64: v.bitPattern, bigEndian: self.byteOrder == .BigEndian)
+                self.length = self.data.count
+                ret = true
+            }
         }
         
         self.recalculateParentsLength()
 
         return ret
+    }
+
+    public var int16Values:[Int16]? { fixedWidthValues(for: .SS, width: 2) { $0.toInt16(byteOrder: byteOrder) } }
+    public var int32Values:[Int32]? { fixedWidthValues(for: .SL, width: 4) { $0.toInt32(byteOrder: byteOrder) } }
+    public var int64Values:[Int64]? { fixedWidthValues(for: .SV, width: 8) { $0.toInt64(byteOrder: byteOrder) } }
+    public var uint16Values:[UInt16]? { fixedWidthValues(for: .US, width: 2) { $0.toUInt16(byteOrder: byteOrder) } }
+    public var uint32Values:[UInt32]? { fixedWidthValues(for: .UL, width: 4) { $0.toUInt32(byteOrder: byteOrder) } }
+    public var uint64Values:[UInt64]? { fixedWidthValues(for: .UV, width: 8) { $0.toUInt64(byteOrder: byteOrder) } }
+    public var float32Values:[Float32]? { fixedWidthValues(for: .FL, width: 4) { $0.toFloat32(byteOrder: byteOrder) } }
+    public var float64Values:[Float64]? { fixedWidthValues(for: .FD, width: 8) { $0.toFloat64(byteOrder: byteOrder) } }
+
+    /// Decoded character-string Values. Multi-valued VRs are split on the
+    /// DICOM value delimiter while single-valued text VRs retain backslashes.
+    /// Final Value Field padding is removed from the last Value.
+    public var textValues:[String]? {
+        guard Self.isTextVR(vr), length > 0 else { return length == 0 && Self.isTextVR(vr) ? [] : nil }
+        let decoded: String?
+        if usesSpecificCharacterSet {
+            decoded = effectiveCharacterSet.decode(data, vr: vr)
+        } else {
+            decoded = DICOMCharacterSet.defaultRepertoire.decode(data)
+        }
+        guard var text = decoded else { return nil }
+        while text.last == " " || text.last == "\0" { text.removeLast() }
+        guard Self.usesTextValueDelimiter(vr) else { return [text] }
+        return text.split(separator: "\\", omittingEmptySubsequences: false).map(String.init)
+    }
+
+    /// Structured Values for a PN element, including alphabetic,
+    /// ideographic, and phonetic component groups.
+    public var personNames:[DICOMPersonName]? {
+        guard vr == .PN, let values = textValues else { return nil }
+        let names = values.compactMap(DICOMPersonName.init(rawValue:))
+        return names.count == values.count ? names : nil
+    }
+
+    /// Encodes character-string Values using the element's effective Specific
+    /// Character Set. Individual Values must not contain the value delimiter.
+    @discardableResult
+    public func setTextValues(_ values: [String]) -> Bool {
+        guard Self.isTextVR(vr) else { return false }
+        if Self.usesTextValueDelimiter(vr) {
+            guard values.allSatisfy({ !$0.contains("\\") }) else { return false }
+        } else {
+            guard values.count <= 1 else { return false }
+        }
+        return setValue(values.joined(separator: Self.usesTextValueDelimiter(vr) ? "\\" : ""))
+    }
+
+    /// Encodes structured Person Name Values using the element's effective
+    /// Specific Character Set.
+    @discardableResult
+    public func setPersonNames(_ names: [DICOMPersonName]) -> Bool {
+        guard vr == .PN, names.allSatisfy(\.isValid) else { return false }
+        return setTextValues(names.map(\.rawValue))
+    }
+
+    public var attributeTagValues:[DataTag]? {
+        guard vr == .AT, let data, data.count.isMultiple(of: 4) else { return nil }
+        return data.chunked(into: 4).map { DataTag(withData: $0, byteOrder: byteOrder) }
+    }
+
+    /// Number of Values encoded by this Data Element. A zero-length Value Field
+    /// has no values; bulk byte VRs and Sequences otherwise have VM 1.
+    public var valueMultiplicity:Int {
+        guard length > 0 else { return 0 }
+        switch vr {
+        case .AT: return data.count / 4
+        case .SS, .US: return data.count / 2
+        case .FL, .SL, .UL: return data.count / 4
+        case .FD, .SV, .UV: return data.count / 8
+        case .AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UI, .UR, .UT:
+            return textValues?.count ?? 1
+        default: return 1
+        }
     }
     
 
@@ -163,13 +401,23 @@ public class DataElement : DicomObject {
             return ""
         }
         
-        if self.vr == .UL ||
-           self.vr == .SL {
+        if self.vr == .UL {
+            return self.data.toUInt32(byteOrder: self.byteOrder)
+        }
+        else if self.vr == .SL {
             return self.data.toInt32(byteOrder: self.byteOrder)
         }
-        else if self.vr == .US ||
-                self.vr == .SS {
+        else if self.vr == .SV {
+            return self.data.toInt64(byteOrder: self.byteOrder)
+        }
+        else if self.vr == .US {
+            return self.data.toUInt16(byteOrder: self.byteOrder)
+        }
+        else if self.vr == .SS {
             return self.data.toInt16(byteOrder: self.byteOrder)
+        }
+        else if self.vr == .UV {
+            return self.data.toUInt64(byteOrder: self.byteOrder)
         }
         else if self.vr == .FL {
             return self.data.toFloat32(byteOrder: self.byteOrder)
@@ -187,18 +435,16 @@ public class DataElement : DicomObject {
             return Date(dicomTime: self.data.toString()) as Any
         }
         else if self.vr == .UI ||
-                self.vr == .SH ||
                 self.vr == .AS ||
                 self.vr == .CS ||
-                self.vr == .LO ||
-                self.vr == .ST ||
-                self.vr == .PN ||
-                self.vr == .DS ||
                 self.vr == .DS ||
                 self.vr == .IS ||
-                self.vr == .LT ||
-                self.vr == .AE {
-            return self.data.toString()
+                self.vr == .AE ||
+                self.vr == .UR {
+            return DICOMCharacterSet.defaultRepertoire.decode(self.data) ?? self.data as Any
+        }
+        else if usesSpecificCharacterSet {
+            return effectiveCharacterSet.decode(self.data, vr: self.vr) ?? self.data as Any
         }
         else if self.vr == .AT ||
                 self.vr == .OB ||
@@ -210,6 +456,33 @@ public class DataElement : DicomObject {
         }
         
         return self.data as Any
+    }
+
+    private var usesSpecificCharacterSet: Bool {
+        switch vr {
+        case .LO, .LT, .PN, .SH, .ST, .UC, .UT:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private static func isTextVR(_ vr: VR.VR) -> Bool {
+        switch vr {
+        case .AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UI, .UR, .UT:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private static func usesTextValueDelimiter(_ vr: VR.VR) -> Bool {
+        switch vr {
+        case .LT, .ST, .UR, .UT:
+            return false
+        default:
+            return isTextVR(vr)
+        }
     }
     
     
@@ -246,12 +519,7 @@ public class DataElement : DicomObject {
     
     
     public var isMultiple:Bool  {
-        if let string = self.value as? String {
-            if string.range(of:"\\") != nil {
-                return true
-            }
-        }
-        return false
+        (textValues?.count ?? 0) > 1
     }
     
     /**
@@ -262,12 +530,9 @@ public class DataElement : DicomObject {
     public var values:[DataValue] {
         if self.isMultiple {
             if self.dataValues.count == 0 {
-                if let string = self.value as? String {
-                    let slice = string.components(separatedBy: "\\")
-                    var index = 0
-                    for string in slice {
+                if let textValues {
+                    for (index, string) in textValues.enumerated() {
                         self.dataValues.append(DataValue(string, atIndex:index))
-                        index += 1
                     }
                 }
             }
@@ -280,7 +545,7 @@ public class DataElement : DicomObject {
      
      - Returns: an XML `String` representing the `DataElement`
      */
-    public override func toXML() -> String {
+    public override func toXML(_ pretty: Bool? = true) -> String {
         var xml = "<DicomAttribute Tag=\"\(self.tagCode())\" VR=\"\(self.vr)\" Keyword=\"\(self.name)\">"
         if self.isMultiple {
             for v in self.values {
@@ -318,138 +583,41 @@ public class DataElement : DicomObject {
         // write tag code
         data.append(self.tag.data(withByteOrder: inByteOrder))
         
+        // In Explicit VR, a value too long for a 16-bit length is written as
+        // UN, whose Value is then encoded in Little Endian (PS3.5 6.2.2).
+        var writtenVR = self.vr
+        if inVrMethod == .Explicit, !Self.longExplicitVRs.contains(vr), length > 0xFFFF {
+            writtenVR = .UN
+        }
+
         // write VR (only explicit)
         if inVrMethod == .Explicit  {
-            let vrData = "\(self.vr)".data(using: .ascii)
-            data.append(vrData!)
-            
-            if self.vr == .SQ {
-                data.append(byte: 0x00, count: 2)
-            }
-            else if self.vr == .OB ||
-                self.vr == .OW ||
-                self.vr == .OF ||
-                self.vr == .SQ ||
-                self.vr == .UT ||
-                self.vr == .UN {
+            data.append("\(writtenVR)".data(using: .ascii)!)
+            if Self.longExplicitVRs.contains(writtenVR) {
                 data.append(byte: 0x00, count: 2)
             }
         }
-        
-        
+
         // write length
-        if self.vr == .SQ {
-            var intLength = UInt32(self.length)
-            let lengthData = Data(bytes: &intLength, count: 4)
-            data.append(lengthData)
+        if writtenVR == .SQ {
+            data.append(uint32: UInt32(bitPattern: Int32(self.length)), bigEndian: inByteOrder == .BigEndian)
         }
-        else if self.vr == .OB ||
-            self.vr == .OW ||
-            self.vr == .OF ||
-            self.vr == .UT ||
-            self.vr == .UN {
+        else if inVrMethod == .Implicit || Self.longExplicitVRs.contains(writtenVR) {
             if self.length >= 0 {
-                let intLength = UInt32(self.length)
-                var convertedNumber = inByteOrder == .LittleEndian ?
-                    intLength.littleEndian : intLength.bigEndian
-                
-                let lengthData = Data(bytes: &convertedNumber, count: 4)
-                data.append(lengthData)
+                data.append(uint32: UInt32(self.length), bigEndian: inByteOrder == .BigEndian)
             }
-                // negative length indicate sequence here
-            else if self.length == -1 {
-                // if OB/OW is a Pixel Sequence
-                if let _ = self as? PixelSequence {
-                    //print(pixelSequence)
-                    data.append(byte: 0xff, count: 4)
-                }
+            // A negative length is an undefined length: encapsulated Pixel Data.
+            else if self.length == -1, self is PixelSequence {
+                data.append(byte: 0xff, count: 4)
             }
         }
         else {
-            if inVrMethod == .Explicit {
-                // we only take care of endianneess with Explicit
-                let intLength = UInt16(self.length)
-                var convertedNumber = inByteOrder == .LittleEndian ?
-                    intLength.littleEndian : intLength.bigEndian
-                
-                withUnsafePointer(to: &convertedNumber) {
-                    data.append(UnsafeRawPointer($0).assumingMemoryBound(to: UInt8.self), count: 2)
-                }
-            }
-            else if inVrMethod == .Implicit {
-                var intLength = UInt32(self.length)
-                let lengthData = Data(bytes: &intLength, count: 4)
-                data.append(lengthData)
-            }
+            data.append(uint16: UInt16(self.length), bigEndian: inByteOrder == .BigEndian)
         }
-        
-        
+
         // write value
         if self.data != nil {
-            if  self.vr == .UL {
-                // TODO: fix empty data for UL VR, causing missing data on write !!!
-                data.append(self.data)
-            }
-            else if self.vr == .OB {
-                //print("OB \(type(of: self))")
-                if self is PixelSequence {
-                    let pixelSequence = self as! PixelSequence
-                    //print("PixelSequence")
-                    data.append(pixelSequence.toData(vrMethod: inVrMethod, byteOrder: inByteOrder))
-                } else {
-                    data.append(self.data)
-                }
-            }
-            else if self.vr == .OW {
-                if let pixelSequence = self as? PixelSequence {
-                    data.append(pixelSequence.toData(vrMethod: inVrMethod, byteOrder: inByteOrder))
-                } else {
-                    data.append(self.data)
-                }
-            }
-            else if self.vr == .UI {
-                data.append(self.data)
-            }
-            else if self.vr == .FL {
-                data.append(self.data)
-            }
-            else if self.vr == .FD {
-                data.append(self.data)
-            }
-            else if self.vr == .SL {
-                data.append(self.data)
-            }
-            else if self.vr == .SS {
-                data.append(self.data)
-            }
-            else if self.vr == .US {
-                data.append(self.data)
-            }
-            else if self.vr == .SQ {
-                if let sequence = self as? DataSequence {
-                    data.append(sequence.toData())
-                }
-            }
-            else if self.vr == .SH ||
-                self.vr == .AS ||
-                self.vr == .CS ||
-                self.vr == .DS ||
-                self.vr == .LO ||
-                self.vr == .LT ||
-                self.vr == .ST ||
-                self.vr == .OD ||
-                self.vr == .OF ||
-                self.vr == .AE ||
-                self.vr == .UT ||
-                self.vr == .IS ||
-                self.vr == .PN ||
-                self.vr == .DA ||
-                self.vr == .DT ||
-                self.vr == .UN ||
-                self.vr == .AT ||
-                self.vr == .TM  {
-                data.append(self.data)
-            }
+            data.append(encodedValueData(byteOrder: writtenVR == .UN && vr != .UN ? .LittleEndian : inByteOrder))
         }
         
         return data
@@ -501,6 +669,10 @@ public class DataElement : DicomObject {
     
     
     
+    /// Updates the lengths of the enclosing Items and Sequences after the
+    /// Value changed.
+    func recalculateLengthsOfParents() { recalculateParentsLength() }
+
     // MARK: - Private
     private func recalculateParentsLength() {
         var p = self.parent
@@ -514,5 +686,37 @@ public class DataElement : DicomObject {
             }
             p = p?.parent
         }
+    }
+
+    private func fixedWidthValues<T>(for expectedVR:VR.VR, width:Int, decode:(Data) -> T) -> [T]? {
+        guard vr == expectedVR, let data, data.count.isMultiple(of: width) else { return nil }
+        return data.chunked(into: width).map(decode)
+    }
+
+    /// VRs with a 32-bit length after two reserved bytes in Explicit VR
+    /// (PS3.5 7.1.2).
+    static let longExplicitVRs: Set<VR.VR> = [.OB, .OD, .OF, .OL, .OV, .OW, .SQ, .SV, .UC, .UN, .UR, .UT, .UV]
+
+    func encodedValueData(byteOrder targetByteOrder: ByteOrder) -> Data {
+        guard byteOrder != targetByteOrder else { return data }
+
+        let wordSize: Int
+        switch vr {
+        case .US, .SS, .OW, .AT:
+            wordSize = 2
+        case .UL, .SL, .FL, .OF, .OL:
+            wordSize = 4
+        case .FD, .OD, .OV, .SV, .UV:
+            wordSize = 8
+        default:
+            return data
+        }
+
+        guard data.count.isMultiple(of: wordSize) else { return data }
+        var converted = Data(capacity: data.count)
+        for start in stride(from: 0, to: data.count, by: wordSize) {
+            converted.append(contentsOf: data[start..<start + wordSize].reversed())
+        }
+        return converted
     }
 }

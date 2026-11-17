@@ -1,8 +1,14 @@
 .DS_Store
 /.build
+/Adapters/*/.build/
 /Packages
 /*.xcodeproj
 xcuserdata/
-docs/
 Tests/DcmSwiftTests/Resources/
 __MACOSX/
+.env
+.corpus/
+.reports/
+.derived-data/
+.agent-handoff/
+__pycache__/

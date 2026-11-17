@@ -8,6 +8,9 @@
 
 import Foundation
 
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
 
 
 
@@ -16,6 +19,35 @@ import Foundation
  in order to facilitate the handling of the DICOM standard
  */
 public class DicomSpec: NSObject, XMLParserDelegate {
+
+    private struct DictionaryResource: Decodable {
+        let edition: String
+        let tags: [TagEntry]
+        let uids: [UIDEntry]
+    }
+
+    private struct CommandDictionaryResource: Decodable {
+        let edition: String
+        let tags: [TagEntry]
+    }
+
+    private struct TagEntry: Decodable {
+        let group: String
+        let element: String
+        let name: String
+        let keyword: String
+        let vr: String
+        let vm: String
+        let retired: Bool
+    }
+
+    private struct UIDEntry: Decodable {
+        let uid: String
+        let name: String
+        let keyword: String
+        let type: String
+        let retired: Bool
+    }
 
     
     
@@ -46,8 +78,13 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     public var sopClassesArray:[[String : String]]       = []
     public var transferSyntaxArray:[[String : String]]   = []
     public var sopPairs:[String: [String]] = [:]
+
+    /// Edition of PS3.6 used to populate the runtime dictionary.
+    public private(set) var dictionaryEdition = "unknown"
+    /// Edition of PS3.7 used for the current Command Set fields.
+    public private(set) var commandDictionaryEdition = "legacy-fallback"
     
-    private var parser = XMLParser()
+    private var xmlParser: XMLParser?
     
     /**
      The `validate` flag is aimed to enable nor disable the DICOM specifications
@@ -62,11 +99,17 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     private override init() {
         super.init()
         
-        let data = xmlSpec.data(using: .utf8)
-        self.parser = XMLParser(data: data!)
-        self.parser.delegate = self
-        
-        self.parser.parse()
+        // Retain the legacy dictionary as a fallback, then overlay the generated
+        // PS3.6 registry and PS3.7 Command Set fields.
+        if let data = xmlSpec.data(using: .utf8) {
+            let parser = XMLParser(data: data)
+            parser.delegate = self
+            self.xmlParser = parser
+            _ = parser.parse()
+        }
+        self.dictionaryEdition = "2017c-fallback"
+        _ = loadBundledDictionary()
+        _ = loadBundledCommandDictionary()
         
         self.sopPairs = [
             DicomConstants.verificationSOP: [
@@ -90,6 +133,66 @@ public class DicomSpec: NSObject, XMLParserDelegate {
                 ]
             }
         }
+    }
+
+    private func loadBundledDictionary() -> Bool {
+        guard let url = Bundle.module.url(forResource: "dicom-dictionary-2026d", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let resource = try? JSONDecoder().decode(DictionaryResource.self, from: data) else {
+            return false
+        }
+
+        dictionaryEdition = resource.edition
+        for entry in resource.tags {
+            var attributes = [
+                "group": entry.group,
+                "element": entry.element,
+                "name": entry.name,
+                "keyword": entry.keyword,
+                "vr": entry.vr,
+                "vm": entry.vm
+            ]
+            if entry.retired { attributes["retired"] = "true" }
+            tags[entry.group + entry.element] = attributes
+            tagsByName[entry.keyword] = attributes
+        }
+
+        for entry in resource.uids {
+            var attributes = [
+                "uid": entry.uid,
+                "name": entry.name,
+                "keyword": entry.keyword,
+                "type": entry.type
+            ]
+            if entry.retired { attributes["retired"] = "true" }
+            uids[entry.uid] = attributes
+        }
+
+        sopClassesArray.removeAll(keepingCapacity: true)
+        transferSyntaxArray.removeAll(keepingCapacity: true)
+        for attributes in uids.values {
+            if attributes["type"] == "SOP Class" { sopClassesArray.append(attributes) }
+            if attributes["type"] == "Transfer Syntax" { transferSyntaxArray.append(attributes) }
+        }
+        return true
+    }
+
+    private func loadBundledCommandDictionary() -> Bool {
+        guard let url = Bundle.module.url(forResource: "dicom-command-dictionary-2026d", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let resource = try? JSONDecoder().decode(CommandDictionaryResource.self, from: data) else {
+            return false
+        }
+        commandDictionaryEdition = resource.edition
+        for entry in resource.tags {
+            let attributes = [
+                "group": entry.group, "element": entry.element, "name": entry.name,
+                "keyword": entry.keyword, "vr": entry.vr, "vm": entry.vm
+            ]
+            tags[entry.group + entry.element] = attributes
+            tagsByName[entry.keyword] = attributes
+        }
+        return true
     }
     
     
@@ -127,10 +230,14 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             return 4
         case .SS:
             return 2
+        case .SV:
+            return 8
         case .UL:
             return 4
         case .US:
             return 2
+        case .UV:
+            return 8
         default:
             return 0
         }
@@ -196,7 +303,8 @@ public class DicomSpec: NSObject, XMLParserDelegate {
      
      */
     public static func vr(for vr:String) -> VR.VR? {
-        switch vr {
+        let normalized = vr.replacingOccurrences(of: " ", with: "")
+        switch normalized {
         case "AE":
             return .AE
         case "AS":
@@ -227,6 +335,10 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             return .OD
         case "OF":
             return .OF
+        case "OL":
+            return .OL
+        case "OV":
+            return .OV
         case "OW":
             return .OW
         case "PN":
@@ -241,22 +353,32 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             return .SS
         case "ST":
             return .ST
+        case "SV":
+            return .SV
         case "TM":
             return .TM
+        case "UC":
+            return .UC
         case "UI":
             return .UI
         case "UL":
             return .UL
         case "UN":
             return .UN
+        case "UR":
+            return .UR
         case "US":
             return .US
         case "UT":
             return .UT
-        case "US/SS":
+        case "UV":
+            return .UV
+        case "US/SS", "USorSS", "USorSSorOW":
             return .US
-        case "OB/OW":
+        case "OB/OW", "OBorOW":
             return .OB
+        case "USorOW":
+            return .US
         default:
             return nil
         }
@@ -342,6 +464,40 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         
         return nil
     }
+
+    /// All VRs permitted by the public dictionary for a tag. Some attributes
+    /// have a context-dependent VR such as US/SS or OB/OW.
+    public func vrsForTag(withCode code:String) -> [VR.VR] {
+        guard let encoded = tags[code.lowercased()]?["vr"] else { return [] }
+        switch encoded.replacingOccurrences(of: " ", with: "") {
+        case "US/SS", "USorSS": return [.US, .SS]
+        case "OB/OW", "OBorOW": return [.OB, .OW]
+        case "USorOW": return [.US, .OW]
+        case "USorSSorOW": return [.US, .SS, .OW]
+        default: return DicomSpec.vr(for: encoded).map { [$0] } ?? []
+        }
+    }
+
+    public func vmForTag(withCode code:String) -> String? {
+        return tags[code.lowercased()]?["vm"]
+    }
+
+    public func valueMultiplicity(_ count:Int, isAllowedBy expression:String) -> Bool {
+        let normalized = expression.replacingOccurrences(of: " ", with: "")
+        if normalized == "1-nor1" { return count >= 1 }
+        if let exact = Int(normalized) { return count == exact }
+
+        let bounds = normalized.components(separatedBy: "-")
+        guard bounds.count == 2, let minimum = Int(bounds[0]) else { return false }
+        if bounds[1] == "n" { return count >= minimum }
+        if bounds[1].hasSuffix("n"), let factor = Int(bounds[1].dropLast()) {
+            return count >= minimum && count.isMultiple(of: factor)
+        }
+        if let maximum = Int(bounds[1]) {
+            return (minimum...maximum).contains(count)
+        }
+        return false
+    }
     
     
     /**
@@ -364,10 +520,15 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /**
      Check if the given Transfer Syntax is supported
      by the spec
-     - Parameter transferSyntax: DICOM Transfer Syntax
+     - Parameter ts: DICOM Transfer Syntax
      - Returns: true if the TS is supported by the spec
      */
     public func isSupported(transferSyntax ts:String) -> Bool {
+        return DICOMCapabilities.transferSyntax(ts).isImplemented
+    }
+
+    /// Returns whether the UID is defined by the bundled PS3.6 registry.
+    public func isKnown(transferSyntax ts:String) -> Bool {
         for tss in self.transferSyntaxes() {
             if tss["uid"]! == ts {
                 return true
@@ -381,10 +542,18 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /**
      Check if the given SOP Class is supported
      by the spec
-     - Parameter sopClass: DICOM SOP Class
+     - Parameter sc: DICOM SOP Class
      - Returns: true if the SOP is supported by the spec
      */
     public func isSupported(sopClass sc:String) -> Bool {
+        return sc == DicomConstants.verificationSOP ||
+            sc == DicomConstants.PatientRootQueryRetrieveInformationModelFIND ||
+            sc == DicomConstants.StudyRootQueryRetrieveInformationModelFIND ||
+            DicomConstants.storageSOPClasses.contains(sc)
+    }
+
+    /// Returns whether the UID is defined by the bundled PS3.6 registry.
+    public func isKnown(sopClass sc:String) -> Bool {
         for scs in self.sopClasses() {
             if scs["uid"]! == sc {
                 return true
@@ -397,7 +566,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /**
     Check if the given Transfer Syntax is retired
     by the spec
-    - Parameter transferSyntax: DICOM SOP Class
+    - Parameter sc: DICOM Transfer Syntax
     - Returns: true if the SOP is retired by the spec
     */
     public func isRetired(transferSyntax sc:String) -> Bool {
@@ -415,7 +584,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /**
     Check if the given SOP Class is retired
     by the spec
-    - Parameter sopClass: DICOM SOP Class
+    - Parameter sc: DICOM SOP Class
     - Returns: true if theSOP Class is retired by the spec
     */
     public func isRetired(sopClass sc:String) -> Bool {
@@ -433,7 +602,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     /**
     Check if the given Data Tag is retired
     by the spec
-    - Parameter tag: DICOM DataTag Class
+    - Parameter dataTag: DICOM DataTag Class
     - Returns: true if the Data Tag is retired by the spec
     */
     public func isRetired(tag dataTag:DataTag) -> Bool {
@@ -493,15 +662,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             results.append(ValidationResult(file, message: "No prefix header was found", severity: .Notice))
         }
         
-        if file.dataset.string(forTag: "TransferSyntaxUID") == nil {
-            results.append(ValidationResult(file, message: "Undefined Transfer Syntax", severity: .Warning))
-        }
-        
-        for e in file.dataset.allElements {
-            results.append(contentsOf: validate(dataElement: e))
-        }
-        
-        results.append(contentsOf: file.dataset.internalValidations)
+        results.append(contentsOf: validate(dataSet: file.dataset))
         
         return results
     }
@@ -512,6 +673,8 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         for e in dataset.allElements {
             results.append(contentsOf: validate(dataElement: e))
         }
+
+        results.append(contentsOf: dataset.validateFileMetaInformation())
         
         results.append(contentsOf: dataset.internalValidations)
         
@@ -520,31 +683,59 @@ public class DicomSpec: NSObject, XMLParserDelegate {
     
     public func validate(dataElement element:DataElement) -> [ValidationResult] {
         var results:[ValidationResult] = []
+
+        if element.length >= 0 && !element.length.isMultiple(of: 2) {
+            results.append(ValidationResult(element, message: "Value Field length must be even (\(element.length))", severity: .Error))
+        }
         
         // check individual tags
         if element.name == "TransferSyntaxUID" {
-            if !self.isSupported(transferSyntax: element.value as! String) {
-                results.append(ValidationResult(element, message: "Transfer Syntax is not supported by this implementation [\(element.value)]", severity: .Warning))
+            if let uid = element.value as? String,
+               !self.isSupported(transferSyntax: uid) {
+                results.append(ValidationResult(element, message: "Transfer Syntax is not supported by this implementation [\(uid)]", severity: .Warning))
             }
         }
         else if element.name == "SOPClassUID" {
-            if !self.isSupported(sopClass: element.value as! String) {
-                results.append(ValidationResult(element, message: "Transfer Syntax is not supported by this implementation [\(element.value)]", severity: .Warning))
+            if let uid = element.value as? String,
+               !self.isSupported(sopClass: uid) {
+                results.append(ValidationResult(element, message: "SOP Class is not supported by this implementation [\(uid)]", severity: .Warning))
             }
         }
 
-        // check VR length
-        var desiredLength = DicomSpec.lengthOf(vr: element.vr)
-        if desiredLength != 0 && element.length > desiredLength {
-            results.append(ValidationResult(element, message: "Invalid VR length of \(element.vr) element [\(element.name)] (\(element.length) > \(desiredLength))", severity: .Error))
+        // Fixed-width binary VRs contain one or more complete values.
+        let fixedWidth:Int
+        switch element.vr {
+        case .AT, .FL, .SL, .UL: fixedWidth = 4
+        case .SS, .US: fixedWidth = 2
+        case .FD, .SV, .UV: fixedWidth = 8
+        default: fixedWidth = 0
+        }
+        if fixedWidth > 0 && !element.length.isMultiple(of: fixedWidth) {
+            results.append(ValidationResult(element, message: "Invalid VR length of \(element.vr) element [\(element.name)] (\(element.length) is not a multiple of \(fixedWidth))", severity: .Error))
         }
         
-        // check max VR length
-        desiredLength = DicomSpec.maxLengthOf(vr: element.vr)
-        if desiredLength != 0 && element.length > desiredLength {
-            results.append(ValidationResult(element, message: "Invalid max VR length of \(element.vr) element [\(element.name)] (\(element.length) > \(desiredLength))", severity: .Warning))
+        // Lexical rules of each Value (PS3.5 Table 6.2-1).
+        if element.length > 0, !(element is DataSequence) {
+            switch element.vr {
+            case .AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UI, .UR, .UT:
+                if let values = element.textValues {
+                    for (index, value) in values.enumerated() {
+                        guard let problem = DICOMValueValidation.problem(with: value, vr: element.vr) else { continue }
+                        // ACR-NEMA formats stay readable: a warning.
+                        let severity: ValidationResult.Severity = problem.hasSuffix("not compliant") ? .Warning : .Error
+                        results.append(ValidationResult(
+                            element, message: "Value \(index + 1) of \(element.name) is invalid for \(element.vr): \(problem)",
+                            severity: severity))
+                    }
+                } else {
+                    results.append(ValidationResult(
+                        element, message: "\(element.name) cannot be decoded in its Specific Character Set", severity: .Error))
+                }
+            default:
+                break
+            }
         }
-        
+
         // check if tag is retired
         if self.isRetired(tag: element.tag) {
             results.append(ValidationResult(element, message: "Tag \(element.tag) \(element.name) is retired", severity: .Notice))
@@ -556,9 +747,15 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         }
         
         // check if VR is respected
-        let neededVR = vrForTag(withCode: element.tagCode())
-        if element.name != "Unknow" && element.vr != neededVR {
-            results.append(ValidationResult(element, message: "Value Representation mismatch, \(element.tagCode()) required", severity: .Error))
+        let permittedVRs = vrsForTag(withCode: element.tagCode())
+        if element.name != "Unknow" && !permittedVRs.contains(element.vr) {
+            results.append(ValidationResult(element, message: "Value Representation mismatch, \(element.tagCode()) permits \(permittedVRs)", severity: .Error))
+        }
+
+        if element.length > 0,
+           let vm = vmForTag(withCode: element.tagCode()),
+           !valueMultiplicity(element.valueMultiplicity, isAllowedBy: vm) {
+            results.append(ValidationResult(element, message: "Value Multiplicity mismatch, \(element.tagCode()) requires VM \(vm) but contains \(element.valueMultiplicity)", severity: .Error))
         }
         
         return results

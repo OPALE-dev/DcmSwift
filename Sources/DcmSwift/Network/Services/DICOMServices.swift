@@ -1,0 +1,202 @@
+import Foundation
+import NIOSSL
+
+/// What a service knows about the request it performs.
+public struct DICOMServiceContext: Sendable {
+    public let callingAETitle: String
+    public let calledAETitle: String
+    public let remoteAddress: String
+    public let userIdentity: DICOMUserIdentity?
+    public let presentationContext: DICOMAcceptedPresentationContext
+    /// The certificate the peer presented over TLS, for access control.
+    public var peerCertificate: NIOSSLCertificate? = nil
+    /// The Move Destination (0000,0600) of a C-MOVE request.
+    public var moveDestination: String? = nil
+    public var commonExtendedNegotiation: DICOMCommonExtendedNegotiation? = nil
+    public var queryRetrieveOptions: DICOMQueryRetrieveOptions = []
+    let cancelled: @Sendable () async -> Bool
+
+    /// Whether the requestor cancelled the operation (C-CANCEL).
+    public var isCancelled: Bool {
+        get async { await cancelled() }
+    }
+}
+
+/// A composite instance received by C-STORE, as encoded in the presentation
+/// context's transfer syntax.
+public struct DICOMReceivedInstance: Sendable {
+    public let sopClassUID: String
+    public let sopInstanceUID: String
+    public let transferSyntaxUID: String
+    public let payload: DICOMDataSetPayload
+    /// The AE that asked for this instance with C-MOVE, if any.
+    public let moveOriginatorAETitle: String?
+    public let moveOriginatorMessageID: UInt16?
+    /// The sender's AE title; empty when the instance did not come over
+    /// DIMSE, such as one received by STOW-RS.
+    public let sourceAETitle: String
+    /// The data set, when the receiver already decoded it (STOW-RS checks the identifiers in it),
+    /// so that the store does not decode it again. Large values may be left unloaded (lazy).
+    nonisolated(unsafe) public var decodedDataSet: DataSet? = nil
+
+    /// Decodes the data set.
+    public func dataSet(limits: DicomReadLimits = DicomReadLimits()) throws -> DataSet {
+        try DICOMDataSetCoding.decode(payload.data(), transferSyntax: transferSyntaxUID, limits: limits)
+    }
+
+    /// Writes a Part 10 file: the File Meta Information, then the received
+    /// bytes unchanged. The file appears atomically.
+    public func write(to url: URL) throws {
+        try write(to: url) { _, _ in }
+    }
+
+    /// Writes the Part 10 file and hands every written byte to `observe`, in
+    /// order: the File Meta Information (`false`), then the data set
+    /// (`true`). A caller computes digests of the file and of its data set in
+    /// the same pass, without reading the file again.
+    public func write(to url: URL, observing observe: (Data, _ dataSet: Bool) throws -> Void) throws {
+        let partial = url.deletingLastPathComponent()
+            .appendingPathComponent(".\(url.lastPathComponent).\(UUID().uuidString).partial")
+        do {
+            let file = try DICOMPOSIXFile.create(partial)
+            let meta = DICOMPart10Header.encodeMetaInformation(
+                sopClassUID: sopClassUID, sopInstanceUID: sopInstanceUID, transferSyntaxUID: transferSyntaxUID,
+                sourceAETitle: sourceAETitle.isEmpty ? nil : sourceAETitle)
+            try file.write(meta)
+            try observe(meta, false)
+            for chunk in try payload.chunks(of: 1 << 20) { try file.write(chunk); try observe(chunk, true) }
+            try file.close()
+            try DICOMPOSIXFile.rename(partial, replacing: url)
+        } catch {
+            try? FileManager.default.removeItem(at: partial)
+            throw error
+        }
+    }
+}
+
+/// A composite instance to send by C-STORE, for C-MOVE and C-GET.
+public struct DICOMRetrieveItem: Sendable {
+    public let sopClassUID: String
+    public let sopInstanceUID: String
+    public let transferSyntaxUID: String
+    public let payload: DICOMDataSetPayload
+
+    public init(sopClassUID: String, sopInstanceUID: String, transferSyntaxUID: String, payload: DICOMDataSetPayload) {
+        self.sopClassUID = sopClassUID
+        self.sopInstanceUID = sopInstanceUID
+        self.transferSyntaxUID = transferSyntaxUID
+        self.payload = payload
+    }
+
+    /// The data set of a Part 10 file, read when sent.
+    public init(file url: URL) throws {
+        let header = try DICOMPart10Header.read(url)
+        self.init(
+            sopClassUID: header.sopClassUID, sopInstanceUID: header.sopInstanceUID,
+            transferSyntaxUID: header.transferSyntaxUID,
+            payload: DICOMDataSetPayload(file: url, offset: header.dataSetOffset, length: header.dataSetLength))
+    }
+
+    /// A data set in memory, encoded in `transferSyntaxUID`.
+    public init(dataSet: DataSet, transferSyntaxUID: String = TransferSyntax.explicitVRLittleEndian) throws {
+        guard let sopClass = dataSet.string(forTag: "SOPClassUID"),
+              let sopInstance = dataSet.string(forTag: "SOPInstanceUID") else {
+            throw DICOMCommandError("the data set has no SOP Class or SOP Instance UID")
+        }
+        self.init(
+            sopClassUID: sopClass, sopInstanceUID: sopInstance, transferSyntaxUID: transferSyntaxUID,
+            payload: DICOMDataSetPayload(data: try DICOMDataSetCoding.encode(dataSet, transferSyntax: transferSyntaxUID)))
+    }
+}
+
+/// Receives C-STORE requests (PS3.4 Annex B), on an SCP or during C-GET.
+public protocol DICOMStorageService: Sendable {
+    /// Stores an instance and returns the C-STORE status.
+    func store(_ instance: DICOMReceivedInstance, context: DICOMServiceContext) async throws -> DICOMStatus
+}
+
+/// Answers C-FIND requests (PS3.4 C.4.1).
+public protocol DICOMQueryRetrieveCapability: Sendable {
+    var queryRetrieveOptions: DICOMQueryRetrieveOptions { get }
+    /// The Query/Retrieve information models (FIND, MOVE or GET SOP Class
+    /// UIDs) this service answers; nil answers every model. Only these are
+    /// accepted at association negotiation, so a requestor never picks a
+    /// model the service would refuse.
+    var informationModels: Set<String>? { get }
+}
+public extension DICOMQueryRetrieveCapability {
+    var queryRetrieveOptions: DICOMQueryRetrieveOptions { [] }
+    var informationModels: Set<String>? { nil }
+}
+
+public protocol DICOMQueryService: DICOMQueryRetrieveCapability {
+    /// The matches of `identifier` in the information model (a FIND SOP
+    /// Class UID). Each match is answered with a Pending response.
+    func find(
+        _ identifier: DataSet, informationModel: String, context: DICOMServiceContext
+    ) async throws -> AsyncThrowingStream<DataSet, Error>
+}
+
+/// Answers C-MOVE and C-GET requests (PS3.4 C.4.2, C.4.3).
+public protocol DICOMRetrieveService: DICOMQueryRetrieveCapability {
+    /// The instances matching `identifier` in the information model (a MOVE
+    /// or GET SOP Class UID).
+    func retrieve(
+        _ identifier: DataSet, informationModel: String, context: DICOMServiceContext
+    ) async throws -> [DICOMRetrieveItem]
+
+    /// Stored transfer syntaxes that may be proposed to a C-MOVE destination.
+    /// The service must be able to return these representations after negotiation.
+    func transferSyntaxes(for item: DICOMRetrieveItem, context: DICOMServiceContext) async throws -> [String]
+
+    /// Select an existing representation after C-GET/C-MOVE storage contexts are negotiated.
+    /// The returned item must preserve the SOP class and instance identifiers.
+    func representation(for item: DICOMRetrieveItem, acceptedTransferSyntaxes: [String], context: DICOMServiceContext) async throws -> DICOMRetrieveItem
+
+    /// The C-MOVE destination with this AE title, or nil if unknown.
+    func destination(for aeTitle: String) async -> DICOMRemoteNode?
+}
+
+public extension DICOMRetrieveService {
+    func transferSyntaxes(for item: DICOMRetrieveItem, context: DICOMServiceContext) async throws -> [String] { [item.transferSyntaxUID] }
+    func representation(for item: DICOMRetrieveItem, acceptedTransferSyntaxes: [String], context: DICOMServiceContext) async throws -> DICOMRetrieveItem { item }
+}
+
+/// Sub-operation counts of C-MOVE and C-GET (PS3.7 9.1.3, 9.1.4).
+public struct DICOMRetrieveProgress: Equatable, Sendable {
+    public var remaining: Int
+    public var completed: Int
+    public var failed: Int
+    public var warning: Int
+
+    public init(remaining: Int = 0, completed: Int = 0, failed: Int = 0, warning: Int = 0) {
+        self.remaining = remaining
+        self.completed = completed
+        self.failed = failed
+        self.warning = warning
+    }
+}
+
+/// The final response of C-MOVE or C-GET.
+public struct DICOMRetrieveResult: Sendable {
+    public let status: DICOMStatus
+    public let progress: DICOMRetrieveProgress
+    /// SOP Instance UIDs of failed sub-operations, when reported (Failed
+    /// SOP Instance UID List).
+    public let failedInstances: [String]
+}
+
+extension DataSet {
+    /// Writes the data set as a Part 10 file: the 128-byte preamble, "DICM",
+    /// File Meta Information describing DcmSwift, then the data set in
+    /// `transferSyntaxUID`. The file appears atomically.
+    public func writePart10(to url: URL, transferSyntaxUID: String = TransferSyntax.explicitVRLittleEndian) throws {
+        guard let sopClass = string(forTag: "SOPClassUID"), let sopInstance = string(forTag: "SOPInstanceUID") else {
+            throw DICOMCommandError("the data set has no SOP Class or SOP Instance UID")
+        }
+        try DICOMReceivedInstance(
+            sopClassUID: sopClass, sopInstanceUID: sopInstance, transferSyntaxUID: transferSyntaxUID,
+            payload: DICOMDataSetPayload(data: DICOMDataSetCoding.encode(self, transferSyntax: transferSyntaxUID)),
+            moveOriginatorAETitle: nil, moveOriginatorMessageID: nil, sourceAETitle: "").write(to: url)
+    }
+}

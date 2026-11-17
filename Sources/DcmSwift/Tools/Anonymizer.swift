@@ -8,10 +8,13 @@
 import Foundation
 
 /**
- Class for anonymizing a DICOM file
- 
- - TODO: why not a static class ?
+ Class for anonymizing a DICOM file with a fixed list of attributes.
+
+ - Important: Deprecated: it leaves most identifying attributes, Sequence
+   Items, and private attributes untouched. Use `DICOMDeidentifier`, which
+   applies the Basic Application Level Confidentiality Profile of PS3.15.
  */
+@available(*, deprecated, message: "Use DICOMDeidentifier, which applies PS3.15 Annex E")
 public class Anonymizer {
     
     /// Related to `DataElement`'s `VR`

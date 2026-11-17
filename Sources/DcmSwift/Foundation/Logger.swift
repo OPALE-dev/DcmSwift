@@ -119,9 +119,16 @@ public class Logger {
     }
     
     public static var shared       = Logger()
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd-MM-yyyy HH:mm:ss"
+        return formatter
+    }()
     private var maxLevel: Int       = 6
     public lazy var fileName:String = targetName + ".log"
-    public var outputs:[Output]     = [.Stdout, .File, .Console]
+    /// The console only by default: a library writes no file unless asked
+    /// (`setDestinations`, `addDestination(.File)`).
+    public var outputs:[Output]     = [.Stdout, .Console]
     public var sizeLimit:UInt64     = 1_000_000
     public var timeLimit:TimeLimit  = .Minute
     public var startDate:Date       = Date()
@@ -184,14 +191,11 @@ public class Logger {
      */
     public func output(string:String, _ tag:String?, _ file: String = #file, _ function: String = #function, line: Int = #line, severity:LogLevel) {
         let date = Date()
-        let df = DateFormatter()
-        // formatting date
-        df.dateFormat = "dd-MM-yyyy HH:mm:ss"
         // if tag is nil, tag is name of target
         let tagName:String = tag ?? self.targetName
 
         /* DATE SEVERITY -> [TAG]        MESSAGE */
-        let outputString:String = "\(df.string(from: date)) \(severity.description) -> [\(tagName)]\t \(string)"
+        let outputString:String = "\(Logger.dateFormatter.string(from: date)) \(severity.description) -> [\(tagName)]\t \(string)"
 
         // managing different type of output (console or file)
         for output in outputs {
@@ -216,7 +220,9 @@ public class Logger {
 
      */
     public func consoleLog(message:String) {
-        print(message)
+        // Diagnostics go to standard error, keeping standard output for the
+        // tools' results.
+        FileHandle.standardError.write(Data((message + "\n").utf8))
     }
 
     /**
@@ -241,7 +247,7 @@ public class Logger {
             var isDirectory = ObjCBool(true)
             // if file doesn't exist we create it
             if !FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) {
-                FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
+                _ = FileManager.default.createFile(atPath: fileURL.path, contents: Data(), attributes: nil)
             }
 
             do {
@@ -373,22 +379,22 @@ public class Logger {
     /**/
 
     private func getFileSize() -> UInt64 {
-        var fileSize : UInt64 = 0
-
-        do {
-            if let path = filePath?.path {
-                let attr = try FileManager.default.attributesOfItem(atPath: path)
-                fileSize = attr[FileAttributeKey.size] as! UInt64
-
-                //if you convert to NSDictionary, you can get file size old way as well.
-                let dict = attr as NSDictionary
-                fileSize = dict.fileSize()
-            }
-        } catch {
-            print("Error: \(error)")
+        guard let path = filePath?.path else {
+            return 0
         }
 
-        return fileSize
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: path)
+
+            if let size = attributes[.size] as? NSNumber {
+                return size.uint64Value
+            }
+
+            return 0
+        } catch {
+            // The file may simply not exist yet.
+            return 0
+        }
     }
 
     public static func getSizeLimit() -> UInt64 {

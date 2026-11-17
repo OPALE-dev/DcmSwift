@@ -146,6 +146,20 @@
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "DcmIzer"
+               BuildableName = "DcmIzer"
+               BlueprintName = "DcmIzer"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -180,9 +194,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DcmSR"
-            BuildableName = "DcmSR"
-            BlueprintName = "DcmSR"
+            BlueprintIdentifier = "DcmIzer"
+            BuildableName = "DcmIzer"
+            BlueprintName = "DcmIzer"
             ReferencedContainer = "container:">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -206,9 +220,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DcmSR"
-            BuildableName = "DcmSR"
-            BlueprintName = "DcmSR"
+            BlueprintIdentifier = "DcmIzer"
+            BuildableName = "DcmIzer"
+            BlueprintName = "DcmIzer"
             ReferencedContainer = "container:">
          </BuildableReference>
       </BuildableProductRunnable>
