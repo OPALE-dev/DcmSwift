@@ -1,0 +1,93 @@
+import Foundation
+
+/// Declares what DcmSwift actually does with a Transfer Syntax.
+/// Being present in the PS3.6 UID registry is deliberately not considered support.
+public struct TransferSyntaxCapability: Equatable {
+    public let uid: String
+    public let canReadDataset: Bool
+    public let canWriteDataset: Bool
+    public let canPreservePixelData: Bool
+    public let canDecodePixelData: Bool
+    public let canEncodePixelData: Bool
+    /// Can be negotiated on DIMSE associations: data sets are sent and
+    /// received as encoded, and converted only between uncompressed syntaxes.
+    public let canNegotiateForDIMSE: Bool
+
+    public var isImplemented: Bool { canReadDataset || canWriteDataset }
+}
+
+public enum DICOMCapabilities {
+    private static let nativeUIDs: Set<String> = [
+        TransferSyntax.implicitVRLittleEndian,
+        TransferSyntax.explicitVRLittleEndian,
+        TransferSyntax.explicitVRBigEndian
+    ]
+
+    /// Encapsulated syntaxes whose Data Set and fragment structure can be preserved.
+    /// This does not imply that the compressed frames can be decoded or encoded.
+    private static func isEncapsulatedPixelSyntax(_ uid: String) -> Bool {
+        uid.hasPrefix("1.2.840.10008.1.2.4.") || uid == DICOMRLECodec.transferSyntaxUID
+            || uid == DICOMDeflatedFrameCodec.transferSyntaxUID
+    }
+
+    /// Syntaxes with a built-in frame encoder.
+    private static let encodableUIDs: Set<String> = [
+        DICOMRLECodec.transferSyntaxUID, DICOMDeflatedFrameCodec.transferSyntaxUID,
+        DICOMJPEGLosslessCodec.processFourteen, DICOMJPEGLosslessCodec.firstOrderPrediction,
+        DICOMJPEGBaselineCodec.baseline, DICOMJPEGBaselineCodec.extended,
+        DICOMJPEGLSCodec.lossless, DICOMJPEGLSCodec.nearLossless,
+        DICOMJPEG2000Codec.lossless, DICOMJPEG2000Codec.lossy,
+        DICOMJPEG2000Codec.partTwoLossless, DICOMJPEG2000Codec.partTwo,
+        DICOMJPEGXLCodec.lossless, DICOMJPEGXLCodec.jpegRecompression, DICOMJPEGXLCodec.general,
+        DICOMJPEG2000Codec.htj2kLossless, DICOMJPEG2000Codec.htj2kLosslessRPCL, DICOMJPEG2000Codec.htj2k
+    ]
+
+    public static func transferSyntax(_ uid: String) -> TransferSyntaxCapability {
+        if uid == TransferSyntax.deflatedExplicitVRLittleEndian {
+            return TransferSyntaxCapability(
+                uid: uid,
+                canReadDataset: true,
+                canWriteDataset: true,
+                canPreservePixelData: true,
+                canDecodePixelData: false,
+                canEncodePixelData: false,
+                canNegotiateForDIMSE: true
+            )
+        }
+
+        if nativeUIDs.contains(uid) {
+            return TransferSyntaxCapability(
+                uid: uid,
+                canReadDataset: true,
+                canWriteDataset: true,
+                canPreservePixelData: true,
+                canDecodePixelData: false,
+                canEncodePixelData: false,
+                canNegotiateForDIMSE: true
+            )
+        }
+
+        if isEncapsulatedPixelSyntax(uid) {
+            return TransferSyntaxCapability(
+                uid: uid,
+                canReadDataset: true,
+                canWriteDataset: true,
+                canPreservePixelData: true,
+                // Includes decoders registered by the application.
+                canDecodePixelData: DICOMCodecRegistry.decoder(for: uid) != nil,
+                canEncodePixelData: encodableUIDs.contains(uid),
+                canNegotiateForDIMSE: DICOMTransferSyntaxes.storage.contains(uid)
+            )
+        }
+
+        return TransferSyntaxCapability(
+            uid: uid,
+            canReadDataset: false,
+            canWriteDataset: false,
+            canPreservePixelData: false,
+            canDecodePixelData: false,
+            canEncodePixelData: false,
+            canNegotiateForDIMSE: false
+        )
+    }
+}

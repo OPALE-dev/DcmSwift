@@ -16,7 +16,8 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
     public static let transfersSyntaxes:[String] = [
         TransferSyntax.implicitVRLittleEndian,
         TransferSyntax.explicitVRLittleEndian,
-        TransferSyntax.explicitVRBigEndian
+        TransferSyntax.explicitVRBigEndian,
+        TransferSyntax.deflatedExplicitVRLittleEndian
     ]
     
     
@@ -47,7 +48,10 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
         TransferSyntax.JPEG2000LosslessOnly,
         TransferSyntax.JPEG2000,
         TransferSyntax.JPEG2000Part2Lossless,
-        TransferSyntax.JPEG2000Part2
+        TransferSyntax.JPEG2000Part2,
+        TransferSyntax.JPEGXLLossless,
+        TransferSyntax.JPEGXLJPEGRecompression,
+        TransferSyntax.JPEGXL
     ]
     
     /**
@@ -62,6 +66,23 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
      Transfer Syntax : Explicit Value Representation, Big Endian
      */
     public static let explicitVRBigEndian = "1.2.840.10008.1.2.2"
+    public static let deflatedExplicitVRLittleEndian = "1.2.840.10008.1.2.1.99"
+
+    /// JPIP Referenced Transfer Syntaxes (PS3.5 A.6, A.7, A.11, A.12): the
+    /// Pixel Data is replaced by a Pixel Data Provider URL.
+    public static let jpipReferenced = "1.2.840.10008.1.2.4.94"
+    public static let jpipReferencedDeflate = "1.2.840.10008.1.2.4.95"
+    public static let jpipHTJ2KReferenced = "1.2.840.10008.1.2.4.204"
+    public static let jpipHTJ2KReferencedDeflate = "1.2.840.10008.1.2.4.205"
+    public static let jpipReferencedSyntaxes: Set<String> = [
+        jpipReferenced, jpipReferencedDeflate, jpipHTJ2KReferenced, jpipHTJ2KReferencedDeflate,
+    ]
+
+    /// Whether the whole data set of this Transfer Syntax is deflated after
+    /// Explicit VR Little Endian encoding (PS3.5 A.5, A.7, A.12).
+    public static func deflatesDataSet(_ uid: String) -> Bool {
+        uid == deflatedExplicitVRLittleEndian || uid == jpipReferencedDeflate || uid == jpipHTJ2KReferencedDeflate
+    }
 
     
     
@@ -184,6 +205,15 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
      Transfer Syntax : JPEG 2000 Part 2 Multicomponent Image Compression
      */
     public static let JPEG2000Part2 = "1.2.840.10008.1.2.4.93"
+
+    /// JPEG XL Lossless Image Compression.
+    public static let JPEGXLLossless = "1.2.840.10008.1.2.4.110"
+
+    /// JPEG XL JPEG Recompression.
+    public static let JPEGXLJPEGRecompression = "1.2.840.10008.1.2.4.111"
+
+    /// JPEG XL Image Compression.
+    public static let JPEGXL = "1.2.840.10008.1.2.4.112"
     
     
     public var tsUID:String         = "1.2.840.10008.1.2.1"
@@ -193,7 +223,7 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
     var byteOrder:ByteOrder         = .LittleEndian
     
     public init?(_ transferSyntax:String) {
-        if !DicomSpec.shared.isSupported(transferSyntax: transferSyntax) {
+        if !DicomSpec.shared.isKnown(transferSyntax: transferSyntax) {
             return nil
         }
         
@@ -203,7 +233,14 @@ public class TransferSyntax: CustomStringConvertible, Equatable {
         if transferSyntax == TransferSyntax.implicitVRLittleEndian {
             vrMethod    = .Implicit
             byteOrder   = .LittleEndian
+        } else if transferSyntax == TransferSyntax.explicitVRBigEndian {
+            vrMethod    = .Explicit
+            byteOrder   = .BigEndian
         }
+    }
+
+    public var capability: TransferSyntaxCapability {
+        DICOMCapabilities.transferSyntax(tsUID)
     }
     
     public static func == (lhs: TransferSyntax, rhs: TransferSyntax) -> Bool {

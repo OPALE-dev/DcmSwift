@@ -1,0 +1,21 @@
+name: Feature request
+description: Propose a DICOM capability or an API improvement.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Need
+      description: What you want to do with DcmSwift, and why the current API does not allow it.
+    validations:
+      required: true
+  - type: input
+    id: reference
+    attributes:
+      label: DICOM reference
+      description: The part and section of DICOM 2026d involved, if any.
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: The API or behavior you have in mind, and the independent implementation it could be checked against.

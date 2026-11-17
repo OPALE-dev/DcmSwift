@@ -24,11 +24,11 @@ public class DataItem: DataElement {
     
     
     
-    override public func toJSON() -> String {
-        var val = super.toJSON()
+    override public func toJSON(_ pretty: Bool? = true) -> String {
+        var val = super.toJSON(pretty)
         
         if self.elements.count > 0 {
-            val = val + ", " + elements.map { $0.toJSON() }.joined(separator: ", ")
+            val = val + ", " + elements.map { $0.toJSON(pretty) }.joined(separator: ", ")
         }
         
         return val

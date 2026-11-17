@@ -1,0 +1,47 @@
+[
+  {
+    "name": "gray8-codestream",
+    "rows": 19,
+    "columns": 27,
+    "samples": 1,
+    "bits": 8,
+    "signed": false,
+    "container": false
+  },
+  {
+    "name": "rgb8-container",
+    "rows": 17,
+    "columns": 23,
+    "samples": 3,
+    "bits": 8,
+    "signed": false,
+    "container": true
+  },
+  {
+    "name": "gray12-codestream",
+    "rows": 13,
+    "columns": 21,
+    "samples": 1,
+    "bits": 12,
+    "signed": false,
+    "container": false
+  },
+  {
+    "name": "rgb8-lossy",
+    "rows": 18,
+    "columns": 25,
+    "samples": 3,
+    "bits": 8,
+    "signed": false,
+    "container": false
+  },
+  {
+    "name": "rgb8-jpeg-recompression",
+    "rows": 18,
+    "columns": 25,
+    "samples": 3,
+    "bits": 8,
+    "signed": false,
+    "container": true
+  }
+]

@@ -1,0 +1,156 @@
+[
+ {
+  "name": "syn_b2_n0",
+  "width": 53,
+  "height": 37,
+  "comps": 1,
+  "bits": 2,
+  "near": 0,
+  "ilv": 0,
+  "restart": 0,
+  "source": "charls"
+ },
+ {
+  "name": "syn_b5_n7",
+  "width": 53,
+  "height": 37,
+  "comps": 1,
+  "bits": 5,
+  "near": 7,
+  "ilv": 0,
+  "restart": 0,
+  "source": "charls"
+ },
+ {
+  "name": "syn_b12_n1",
+  "width": 53,
+  "height": 37,
+  "comps": 1,
+  "bits": 12,
+  "near": 1,
+  "ilv": 0,
+  "restart": 0,
+  "source": "charls"
+ },
+ {
+  "name": "syn_b16_n0",
+  "width": 53,
+  "height": 37,
+  "comps": 1,
+  "bits": 16,
+  "near": 0,
+  "ilv": 0,
+  "restart": 0,
+  "source": "charls"
+ },
+ {
+  "name": "syn_rgb_b8_i1",
+  "width": 31,
+  "height": 29,
+  "comps": 3,
+  "bits": 8,
+  "near": 0,
+  "ilv": 1,
+  "restart": 0,
+  "source": "charls"
+ },
+ {
+  "name": "syn_rgb_b10_i2_n1",
+  "width": 31,
+  "height": 29,
+  "comps": 3,
+  "bits": 10,
+  "near": 1,
+  "ilv": 2,
+  "restart": 0,
+  "source": "charls"
+ },
+ {
+  "name": "syn_rgb_b16_i1",
+  "width": 31,
+  "height": 29,
+  "comps": 3,
+  "bits": 16,
+  "near": 0,
+  "ilv": 1,
+  "restart": 0,
+  "source": "charls"
+ },
+ {
+  "name": "syn_tiny_1x60",
+  "width": 60,
+  "height": 1,
+  "comps": 1,
+  "bits": 8,
+  "near": 0,
+  "ilv": 0,
+  "restart": 0,
+  "source": "charls"
+ },
+ {
+  "name": "syn_tiny_60x1",
+  "width": 1,
+  "height": 60,
+  "comps": 1,
+  "bits": 8,
+  "near": 0,
+  "ilv": 0,
+  "restart": 0,
+  "source": "charls"
+ },
+ {
+  "name": "syn_restart_rgb_i0",
+  "width": 33,
+  "height": 40,
+  "comps": 3,
+  "bits": 8,
+  "near": 0,
+  "ilv": 0,
+  "restart": 9,
+  "source": "dcmswift"
+ },
+ {
+  "name": "syn_restart_rgb_i2",
+  "width": 33,
+  "height": 40,
+  "comps": 3,
+  "bits": 8,
+  "near": 2,
+  "ilv": 2,
+  "restart": 5,
+  "source": "dcmswift"
+ },
+ {
+  "name": "syn_rgb_hp1",
+  "width": 31,
+  "height": 29,
+  "comps": 3,
+  "bits": 8,
+  "near": 0,
+  "ilv": 1,
+  "restart": 0,
+  "source": "charls-hp"
+ },
+ {
+  "name": "syn_rgb_hp2",
+  "width": 31,
+  "height": 29,
+  "comps": 3,
+  "bits": 8,
+  "near": 0,
+  "ilv": 1,
+  "restart": 0,
+  "source": "charls-hp"
+ },
+ {
+  "name": "syn_rgb_hp3",
+  "width": 31,
+  "height": 29,
+  "comps": 3,
+  "bits": 8,
+  "near": 0,
+  "ilv": 1,
+  "restart": 0,
+  "source": "charls-hp"
+ }
+]

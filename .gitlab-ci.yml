@@ -1,0 +1,183 @@
+stages:
+  - test
+  - documentation
+
+variables:
+  # Confidential interoperability corpus published in this project's Generic
+  # Package Registry. Bump both values together when the corpus changes.
+  DCM_CORPUS_VERSION: "2026.10.07"
+  DCM_CORPUS_SHA256: "58faeb873998b4ffbc8a8fea72f83d5407134c6aebd2804266a6667601410616"
+  # Fail, rather than skip, the corpus tests when the corpus is unavailable.
+  DCMSWIFT_REQUIRE_INTEROP_CORPUS: "1"
+  # Override with an empty value when GitLab Pages serves this project from a
+  # unique domain or custom domain root.
+  DOCS_BASE_PATH: "DcmSwift"
+
+.interop-corpus:
+  cache:
+    key: dcmswift-dicom-corpus-$DCM_CORPUS_VERSION
+    paths:
+      - .corpus/
+  before_script:
+    - |
+      CORPUS_ROOT="$CI_PROJECT_DIR/.corpus/dcmswift-dicom-corpus"
+      if [ ! -d "$CORPUS_ROOT" ]; then
+        test -n "$DCM_CORPUS_SHA256" || { echo "DCM_CORPUS_SHA256 is not set"; exit 1; }
+        command -v curl >/dev/null || { apt-get update -qq && apt-get install -y -qq curl; }
+        curl --fail --silent --show-error --location \
+          --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          --output corpus.tar.gz \
+          "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/dcmswift-dicom-corpus/$DCM_CORPUS_VERSION/dcmswift-dicom-corpus.tar.gz"
+        if command -v sha256sum >/dev/null; then
+          echo "$DCM_CORPUS_SHA256  corpus.tar.gz" | sha256sum -c -
+        else
+          echo "$DCM_CORPUS_SHA256  corpus.tar.gz" | shasum -a 256 -c -
+        fi
+        rm -rf .corpus && mkdir -p .corpus
+        tar -xzf corpus.tar.gz -C .corpus
+        rm corpus.tar.gz
+      fi
+      export DCMSWIFT_INTEROP_CORPUS="$CORPUS_ROOT"
+      rm -rf .reports && mkdir -p .reports
+
+# JUnit reports shown in the pipeline Tests tab, uploaded even on failure.
+.junit-reports:
+  artifacts:
+    when: always
+    expire_in: 30 days
+    reports:
+      junit: .reports/*.xml
+
+swift-package:
+  stage: test
+  extends: [.interop-corpus, .junit-reports]
+  image: swift:6.2
+  tags:
+    - deploy
+  script:
+    - swift --version
+    - swift build -c release
+    # SwiftPM writes the XCTest xUnit report only in parallel mode.
+    - swift test --parallel --xunit-output .reports/xunit.xml
+
+sqlite-adapter:
+  stage: test
+  image: swift:6.2
+  tags:
+    - deploy
+  script:
+    - apt-get update -qq && apt-get install -y -qq libsqlite3-dev
+    - cd Adapters/DcmSwiftSQLite
+    - swift build -c release
+    - swift test --parallel
+
+sqlkit-adapter:
+  stage: test
+  image: swift:6.2
+  tags:
+    - deploy
+  script:
+    - cd Adapters/DcmSwiftSQLKit
+    - swift build -c release
+    - swift test -c release --parallel
+
+sqlkit-postgres:
+  stage: test
+  image: swift:6.2
+  tags:
+    - deploy
+  services:
+    - name: postgres:16
+      alias: postgres
+  variables:
+    POSTGRES_DB: dcmswift
+    POSTGRES_USER: dcmswift
+    POSTGRES_PASSWORD: dcmswift_test
+    DCMSWIFT_SQLKIT_POSTGRES_URL: "postgres://dcmswift:dcmswift_test@postgres:5432/dcmswift?tlsmode=disable"
+  script:
+    - cd Adapters/DcmSwiftSQLKit
+    - swift test -c release --filter SQLDialectIntegrationTests.testPostgreSQL
+
+sqlkit-mysql:
+  stage: test
+  image: swift:6.2
+  tags:
+    - deploy
+  services:
+    - name: mysql:8.4
+      alias: mysql
+  variables:
+    MYSQL_DATABASE: dcmswift
+    MYSQL_USER: dcmswift
+    MYSQL_PASSWORD: dcmswift_test
+    MYSQL_ROOT_PASSWORD: dcmswift_root_test
+    DCMSWIFT_SQLKIT_MYSQL_URL: "mysql://dcmswift:dcmswift_test@mysql:3306/dcmswift?ssl-mode=DISABLED"
+  script:
+    - cd Adapters/DcmSwiftSQLKit
+    - swift test -c release --filter SQLDialectIntegrationTests.testMySQL
+
+macos-package:
+  stage: test
+  extends: [.interop-corpus, .junit-reports]
+  tags:
+    - swift
+  script:
+    - xcodebuild -version
+    - swift --version
+    # The bundled character set tables must match their generator (macOS ICU).
+    - xcrun python3 Scripts/generate-character-set-tables.py --check
+    - swift build -c release
+    # SwiftPM writes the XCTest xUnit report only in parallel mode.
+    - swift test --parallel --xunit-output .reports/xunit.xml
+
+ios-package:
+  stage: test
+  extends: [.interop-corpus, .junit-reports]
+  tags:
+    - swift
+  script:
+    - xcodebuild -version
+    # A per-job DerivedData keeps xcodebuild from reusing stale resource
+    # bundles embedded in the test bundle by earlier pipelines on the runner.
+    - xcodebuild build -scheme DcmSwift -destination 'generic/platform=iOS' -derivedDataPath .derived-data -quiet
+    # Use an iPhone simulator from the newest installed iOS runtime so the job
+    # does not depend on device names that change between Xcode releases.
+    - IOS_RUNTIME=$(xcrun simctl list runtimes available | awk '/^iOS / {version=$2} END {print version}')
+    - SIMULATOR_ID=$(xcrun simctl list devices available "iOS $IOS_RUNTIME" | grep -m1 'iPhone' | grep -oE '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}')
+    - test -n "$SIMULATOR_ID"
+    # xcodebuild forwards TEST_RUNNER_-prefixed variables to the test process.
+    - >-
+      TEST_RUNNER_DCMSWIFT_INTEROP_CORPUS="$DCMSWIFT_INTEROP_CORPUS"
+      TEST_RUNNER_DCMSWIFT_REQUIRE_INTEROP_CORPUS="$DCMSWIFT_REQUIRE_INTEROP_CORPUS"
+      xcodebuild test -scheme DcmSwift-Package -quiet
+      -destination "platform=iOS Simulator,id=$SIMULATOR_ID"
+      -derivedDataPath .derived-data
+      -resultBundlePath .reports/ios.xcresult
+  after_script:
+    # Runs even when the tests fail, so failures reach the Tests tab.
+    - test -d .reports/ios.xcresult && xcrun python3 Scripts/xcresult-junit.py .reports/ios.xcresult .reports/ios-junit.xml
+
+documentation-check:
+  stage: documentation
+  image: swift:6.2
+  tags:
+    - deploy
+  script:
+    - Scripts/documentation/build.sh .build/documentation-check "$DOCS_BASE_PATH"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
+
+pages:
+  stage: documentation
+  image: swift:6.2
+  tags:
+    - deploy
+  script:
+    - Scripts/documentation/build.sh public "$DOCS_BASE_PATH"
+  artifacts:
+    paths:
+      - public
+  pages: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

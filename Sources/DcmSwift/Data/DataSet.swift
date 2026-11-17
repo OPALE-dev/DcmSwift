@@ -8,6 +8,10 @@
 
 import Foundation
 
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
+
 /**
  `DataSet` are a collection of ordered `DataElement` as defined by the part. 05, chap. 7 of the DICOM standard.
  
@@ -22,7 +26,11 @@ public class DataSet: DicomObject {
     public var byteOrder:ByteOrder                  = .LittleEndian
     public var forceExplicit:Bool                   = false
     public var hasPreamble:Bool                     = false
+    /// The 128-byte preamble as read, kept when the file is written (e.g. a
+    /// TIFF header in a dual-format file, PS3.10 7.1).
+    public var preamble:Data?
     public var isCorrupted:Bool                     = false
+    public private(set) var characterSet:DICOMCharacterSet = .defaultRepertoire
     
     public var metaInformationHeaderElements:[DataElement]  = []
     public var datasetElements:[DataElement]                = []
@@ -68,12 +76,15 @@ public class DataSet: DicomObject {
     // MARK: - Public methods
     public override func toData(vrMethod inVrMethod:VRMethod? = .Explicit, byteOrder inByteOrder:ByteOrder? = .LittleEndian) -> Data {
         var newData     = Data()
+
+        _ = recalculateFileMetaInformationGroupLength()
         
         // be sure element are sorted properly before write
         sortElements()
 
-        // append meta header elements as binary data
-        for element in allElements {
+        // The File Meta Information first, whatever the tags of the data set
+        // (a file may hold elements of the illegal groups 0000 or 0001).
+        for element in metaInformationHeaderElements + datasetElements {
             var finalVR     = element.vrMethod
             var finalOrder  = element.byteOrder
 
@@ -84,11 +95,9 @@ public class DataSet: DicomObject {
                 finalOrder = inByteOrder!
             }
             
-            if hasPreamble {
-                if element.group == "0002" {
-                    finalVR = .Explicit
-                    finalOrder = .LittleEndian
-                }
+            if element.group == "0002" {
+                finalVR = .Explicit
+                finalOrder = .LittleEndian
             }
             
             newData.append(write(dataElement: element, vrMethod:finalVR, byteOrder:finalOrder))
@@ -100,20 +109,21 @@ public class DataSet: DicomObject {
     
     public override func toData(transferSyntax: TransferSyntax) -> Data {
         var newData     = Data()
+
+        _ = recalculateFileMetaInformationGroupLength()
         
         // be sure element are sorted properly before write
         sortElements()
 
-        // append meta header elements as binary data
-        for element in allElements {
+        // The File Meta Information first, whatever the tags of the data set
+        // (a file may hold elements of the illegal groups 0000 or 0001).
+        for element in metaInformationHeaderElements + datasetElements {
             var finalVR     = transferSyntax.vrMethod
             var finalOrder  = transferSyntax.byteOrder
             
-            if hasPreamble {
-                if element.group == "0002" {
-                    finalVR = .Explicit
-                    finalOrder = .LittleEndian
-                }
+            if element.group == "0002" {
+                finalVR = .Explicit
+                finalOrder = .LittleEndian
             }
             
             newData.append(write(dataElement: element, vrMethod:finalVR, byteOrder:finalOrder))
@@ -140,22 +150,43 @@ public class DataSet: DicomObject {
         return data
     }
 
+    /// Loads every deferred file-backed Value Field. Streaming output can use
+    /// the references directly in the future; the current serializer requires
+    /// materialization and surfaces source-file failures before writing.
+    public func materializeBulkData() throws {
+        func materialize(_ element:DataElement) throws {
+            if let sequence = element as? DataSequence {
+                for item in sequence.items {
+                    if item.bulkDataReference != nil { _ = try item.loadData() }
+                    for child in item.elements { try materialize(child) }
+                }
+            } else if element.bulkDataReference != nil {
+                _ = try element.loadData()
+            }
+        }
+        for element in allElements { try materialize(element) }
+    }
+
     
     /**
      Converts the `DataSet` into `XML`
      
      - Returns: an `XML` string of the dataset
      */
-    public override func toXML() -> String {
+    public override func toXML(_ pretty: Bool? = true) -> String {
         var xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         
         xml += "<NativeDicomModel xml:space=\"preserve\">"
         
         for element in allElements {
-            xml += element.toXML()
+            xml += element.toXML(pretty)
         }
         
         xml += "</NativeDicomModel>"
+        
+        if pretty == true {
+            return Self.prettyPrintedXML(xml) ?? xml
+        }
         
         return xml
     }
@@ -242,6 +273,16 @@ public class DataSet: DicomObject {
         }
         return nil
     }
+
+    /// Decoded Values of a character-string Data Element.
+    public func textValues(forTag tag:String) -> [String]? {
+        element(forTagName: tag)?.textValues
+    }
+
+    /// Structured Values of a Person Name Data Element.
+    public func personNames(forTag tag:String) -> [DICOMPersonName]? {
+        element(forTagName: tag)?.personNames
+    }
     
     
     public func integer32(forTag tag:String ) -> Int32? {
@@ -249,6 +290,9 @@ public class DataSet: DicomObject {
             if el.name == tag {
                 if let v = el.value as? Int32 {
                     return v
+                }
+                if let v = el.value as? UInt32 {
+                    return Int32(exactly: v)
                 }
             }
         }
@@ -262,9 +306,28 @@ public class DataSet: DicomObject {
                 if let v = el.value as? Int16 {
                     return v
                 }
+                if let v = el.value as? UInt16 {
+                    return Int16(exactly: v)
+                }
             }
         }
-        return 0
+        return nil
+    }
+
+    public func unsignedInteger32(forTag tag: String) -> UInt32? {
+        for element in allElements where element.name == tag {
+            if let value = element.value as? UInt32 { return value }
+            if let value = element.value as? Int32 { return UInt32(exactly: value) }
+        }
+        return nil
+    }
+
+    public func unsignedInteger16(forTag tag: String) -> UInt16? {
+        for element in allElements where element.name == tag {
+            if let value = element.value as? UInt16 { return value }
+            if let value = element.value as? Int16 { return UInt16(exactly: value) }
+        }
+        return nil
     }
     
     
@@ -314,6 +377,9 @@ public class DataSet: DicomObject {
         }
         
         let ret = element.setValue(value)
+        if ret && element.name == "SpecificCharacterSet" {
+            characterSet = DICOMCharacterSet(specificCharacterSet: value as? String)
+        }
         
         recalculateOffsets()
         
@@ -345,12 +411,41 @@ public class DataSet: DicomObject {
                 
                 sortElements()
                 recalculateOffsets()
+                if element.name == "SpecificCharacterSet" {
+                    characterSet = DICOMCharacterSet(specificCharacterSet: value as? String)
+                }
                 
                 return element
             }
         }
         
         return nil
+    }
+
+    /// Creates or updates a character-string Data Element from separate
+    /// Values, applying its DICOM value delimiter and Specific Character Set.
+    @discardableResult
+    public func set(textValues values:[String], forTagName name:String) -> DataElement? {
+        let element = element(forTagName: name) ?? DataElement(withTagName: name, dataset: self)
+        guard let element, element.setTextValues(values) else { return nil }
+        if !allElements.contains(where: { $0 === element }) { add(element: element) }
+        if element.name == "SpecificCharacterSet" {
+            characterSet = DICOMCharacterSet(specificCharacterSet: values.joined(separator: "\\"))
+        }
+        sortElements()
+        recalculateOffsets()
+        return element
+    }
+
+    /// Creates or updates a PN Data Element from structured names.
+    @discardableResult
+    public func set(personNames names:[DICOMPersonName], forTagName name:String) -> DataElement? {
+        let element = element(forTagName: name) ?? DataElement(withTagName: name, dataset: self)
+        guard let element, element.setPersonNames(names) else { return nil }
+        if !allElements.contains(where: { $0 === element }) { add(element: element) }
+        sortElements()
+        recalculateOffsets()
+        return element
     }
     
     
@@ -437,6 +532,7 @@ public class DataSet: DicomObject {
      - Parameter element: the data element to add
      */
     public func add(element:DataElement) {
+        element.dataset = self
         if element.group != DicomConstants.metaInformationGroup {
             datasetElements.append(element)
         }
@@ -445,6 +541,86 @@ public class DataSet: DicomObject {
         }
         
         allElements.append(element)
+        if element.name == "SpecificCharacterSet" {
+            characterSet = DICOMCharacterSet(specificCharacterSet: element.data?.toString() ?? "")
+        }
+    }
+
+    /// Updates (0002,0000) from the encoded size of the remaining File Meta
+    /// Information elements. Group 0002 is always Explicit VR Little Endian.
+    @discardableResult
+    public func recalculateFileMetaInformationGroupLength() -> UInt32? {
+        guard !metaInformationHeaderElements.isEmpty else { return nil }
+
+        let byteCount = metaInformationHeaderElements
+            .filter { $0.name != "FileMetaInformationGroupLength" }
+            .reduce(0) {
+                $0 + $1.toData(vrMethod: .Explicit, byteOrder: .LittleEndian).count
+            }
+        guard let length = UInt32(exactly: byteCount) else { return nil }
+
+        if let element = element(forTagName: "FileMetaInformationGroupLength") {
+            element.vr = .UL
+            element.vrMethod = .Explicit
+            element.byteOrder = .LittleEndian
+            _ = element.setValue(length)
+        } else {
+            _ = set(value: length, forTagName: "FileMetaInformationGroupLength")
+        }
+        fileMetaInformationGroupLength = Int(length)
+        return length
+    }
+
+    /// Validates the PS3.10 File Meta Information layer independently from
+    /// IOD/module validation. A parsed Data Set is not necessarily an IOD-valid
+    /// SOP Instance.
+    public func validateFileMetaInformation() -> [ValidationResult] {
+        guard hasPreamble || !metaInformationHeaderElements.isEmpty else { return [] }
+
+        var results: [ValidationResult] = []
+        let required = [
+            "FileMetaInformationGroupLength",
+            "FileMetaInformationVersion",
+            "MediaStorageSOPClassUID",
+            "MediaStorageSOPInstanceUID",
+            "TransferSyntaxUID",
+            "ImplementationClassUID"
+        ]
+        for keyword in required where element(forTagName: keyword) == nil {
+            results.append(ValidationResult(
+                self,
+                message: "Missing required File Meta Information element \(keyword)",
+                severity: .Error
+            ))
+        }
+
+        let pairs = [
+            (meta: "MediaStorageSOPClassUID", dataset: "SOPClassUID"),
+            (meta: "MediaStorageSOPInstanceUID", dataset: "SOPInstanceUID")
+        ]
+        for pair in pairs {
+            guard let metaValue = string(forTag: pair.meta),
+                  let datasetValue = string(forTag: pair.dataset) else { continue }
+            if metaValue != datasetValue {
+                results.append(ValidationResult(
+                    self,
+                    message: "\(pair.meta) does not match \(pair.dataset)",
+                    severity: .Error
+                ))
+            }
+        }
+
+        if let declared = string(forTag: "TransferSyntaxUID"),
+           let actual = transferSyntax?.tsUID,
+           declared != actual {
+            results.append(ValidationResult(
+                self,
+                message: "TransferSyntaxUID does not match the Data Set transfer syntax",
+                severity: .Error
+            ))
+        }
+
+        return results
     }
     
     
@@ -477,6 +653,61 @@ public class DataSet: DicomObject {
         
         // write file to FS
         return FileManager.default.createFile(atPath: path, contents: data, attributes: nil)
+    }
+
+    // MARK: - XML formatting
+
+    /// Pretty-prints XML while keeping DataSet portable across Swift platforms.
+    /// FoundationXML is available on Linux Swift toolchains; the lightweight
+    /// fallback keeps XML generation working even if XMLDocument is unavailable.
+    private static func prettyPrintedXML(_ xml: String) -> String? {
+#if canImport(FoundationXML)
+        if let document = try? XMLDocument(xmlString: xml) {
+            let data = document.xmlData(options: .nodePrettyPrint)
+            if let prettified = String(data: data, encoding: .utf8) {
+                return prettified
+            }
+        }
+#endif
+
+        return prettyPrintedXMLFallback(xml)
+    }
+
+    /// Minimal formatter for XML generated by DcmSwift itself.
+    /// This is intentionally not a general-purpose XML parser.
+    private static func prettyPrintedXMLFallback(_ xml: String) -> String? {
+        let normalized = xml.replacingOccurrences(of: "><", with: ">\n<")
+        let lines = normalized.split(separator: "\n", omittingEmptySubsequences: true)
+
+        guard !lines.isEmpty else {
+            return nil
+        }
+
+        var result: [String] = []
+        var indentation = 0
+
+        for rawLine in lines {
+            let line = String(rawLine).trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if line.hasPrefix("</") {
+                indentation = max(0, indentation - 1)
+            }
+
+            result.append(String(repeating: "    ", count: indentation) + line)
+
+            let isOpeningTag = line.hasPrefix("<")
+                && !line.hasPrefix("</")
+                && !line.hasPrefix("<?")
+                && !line.hasPrefix("<!")
+                && !line.hasSuffix("/>")
+                && !line.contains("</")
+
+            if isOpeningTag {
+                indentation += 1
+            }
+        }
+
+        return result.joined(separator: "\n")
     }
     
 }
