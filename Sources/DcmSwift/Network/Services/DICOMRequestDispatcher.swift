@@ -2,6 +2,53 @@ import Foundation
 import Logging
 import NIOConcurrencyHelpers
 
+/// Observes the duration and outcome of each DIMSE operation. Default is no-op.
+/// Implementations must be `Sendable` and must not block the event loop.
+public protocol DIMSETiming: Sendable {
+    /// - Parameters:
+    ///   - operation: one of `c-echo`, `c-store`, `c-find`, `c-move`, `c-get`, `n-action`, `n-event-report`, `n-create`, `n-set`, `n-get`, `n-delete`.
+    ///   - outcome: `success`, `refused`, or `failed`.
+    ///   - seconds: monotonic duration from request arrival to final response.
+    func record(operation: String, outcome: String, seconds: Double)
+}
+
+public struct NoopDIMSETiming: DIMSETiming {
+    public init() {}
+    public func record(operation: String, outcome: String, seconds: Double) {}
+}
+
+extension DICOMCommand.Field {
+    /// Stable, closed label for metrics. Unknown fields map to `"unknown"`.
+    var metricLabel: String {
+        switch self {
+        case .cEchoRequest, .cEchoResponse: return "c-echo"
+        case .cStoreRequest, .cStoreResponse: return "c-store"
+        case .cFindRequest, .cFindResponse: return "c-find"
+        case .cMoveRequest, .cMoveResponse: return "c-move"
+        case .cGetRequest, .cGetResponse: return "c-get"
+        case .nActionRequest, .nActionResponse: return "n-action"
+        case .nEventReportRequest, .nEventReportResponse: return "n-event-report"
+        case .nCreateRequest, .nCreateResponse: return "n-create"
+        case .nSetRequest, .nSetResponse: return "n-set"
+        case .nGetRequest, .nGetResponse: return "n-get"
+        case .nDeleteRequest, .nDeleteResponse: return "n-delete"
+        default: return "unknown"
+        }
+    }
+}
+
+extension DICOMStatus {
+    /// Closed outcome label for metrics. Pending is never final.
+    /// Warning and cancel count as success/refused respectively.
+    var metricOutcome: String {
+        switch category {
+        case .success, .warning: return "success"
+        case .cancel: return "refused"
+        case .pending, .failure: return "failed"
+        }
+    }
+}
+
 /// Performs the requests a peer sends on an association: C-ECHO, C-STORE,
 /// C-FIND, C-MOVE, C-GET, and DIMSE-N, through the configured services. A
 /// service error becomes a failure status; it never ends the association.
@@ -24,25 +71,31 @@ struct DICOMRequestDispatcher: Sendable {
     /// Opens associations to C-MOVE destinations and Storage Commitment
     /// SCUs.
     var outgoingClient: DICOMClient?
+    /// Observes duration and outcome of each DIMSE operation. Default is no-op.
+    var timing: DIMSETiming = NoopDIMSETiming()
 
     func perform(_ request: DICOMMessage, on association: DICOMAssociation) async {
         let started = DispatchTime.now().uptimeNanoseconds
+        let operation = request.command.field.metricLabel
         let context = association.negotiated.presentationContexts[request.presentationContextID]
         association.runtime.logger.debug("DIMSE service started", metadata: ["event": "service.started",
             "dimse_command": .string(String(describing: request.command.field)),
             "message_id": .string(String(request.command.messageID ?? 0)),
             "context_id": .string(String(request.presentationContextID)),
             "sop_class": .string(context?.abstractSyntax ?? ""), "transfer_syntax": .string(context?.transferSyntax ?? "")])
-        await handle(request, on: association)
+        var finalOutcome = "failed"
+        await handle(request, on: association, finalOutcome: &finalOutcome)
+        let elapsed = Double(DispatchTime.now().uptimeNanoseconds &- started) / 1e9
         association.runtime.logger.debug("DIMSE service handler finished", metadata: ["event": "service.finished",
             "dimse_command": .string(String(describing: request.command.field)),
             "message_id": .string(String(request.command.messageID ?? 0)),
             "context_id": .string(String(request.presentationContextID)),
-            "duration_ms": .string(String((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000))])
+            "duration_ms": .string(String(Int(elapsed * 1000)))])
+        timing.record(operation: operation, outcome: finalOutcome, seconds: elapsed)
         await association.runtime.finishedPerforming(request.command.messageID ?? 0)
     }
 
-    private func handle(_ request: DICOMMessage, on association: DICOMAssociation) async {
+    private func handle(_ request: DICOMMessage, on association: DICOMAssociation, finalOutcome: inout String) async {
         let runtime = association.runtime
         let command = request.command
         let id = command.messageID ?? 0
@@ -66,6 +119,7 @@ struct DICOMRequestDispatcher: Sendable {
 
         func respond(_ status: DICOMStatus, comment: String? = nil, dataSet: DICOMDataSetPayload? = nil,
                      progress: DICOMRetrieveProgress? = nil) async {
+            if !status.isPending { finalOutcome = status.metricOutcome }
             var response = DICOMCommand(field: command.field.response, hasDataSet: dataSet != nil)
             response.messageIDBeingRespondedTo = id
             response.affectedSOPClassUID = command.affectedSOPClassUID ?? command.requestedSOPClassUID
@@ -214,7 +268,7 @@ struct DICOMRequestDispatcher: Sendable {
             }
 
         case _ where DICOMNormalizedOperation(command) != nil:
-            await performNormalized(request, on: association, context: serviceContext)
+            await performNormalized(request, on: association, context: serviceContext, finalOutcome: &finalOutcome)
 
         default:
             await respond(.unrecognizedOperation)
@@ -224,7 +278,8 @@ struct DICOMRequestDispatcher: Sendable {
     // MARK: DIMSE-N
 
     private func performNormalized(
-        _ request: DICOMMessage, on association: DICOMAssociation, context: DICOMServiceContext
+        _ request: DICOMMessage, on association: DICOMAssociation, context: DICOMServiceContext,
+        finalOutcome: inout String
     ) async {
         let runtime = association.runtime
         let command = request.command
@@ -234,6 +289,7 @@ struct DICOMRequestDispatcher: Sendable {
         let syntax = context.presentationContext.transferSyntax
 
         func respond(_ response: DICOMNormalizedResponse) async {
+            finalOutcome = response.status.category == .failure ? "failed" : "success"
             var answer = DICOMCommand(field: command.field.response, hasDataSet: response.dataSet != nil)
             answer.messageIDBeingRespondedTo = command.messageID
             answer.affectedSOPClassUID = response.sopClassUID ?? sopClass

@@ -148,6 +148,7 @@ public final class DICOMServer: Sendable {
         storageCommitmentReceiver: DICOMStorageCommitmentReceiver? = nil,
         storageCommitmentOutbox: DICOMStorageCommitmentOutbox? = nil,
         normalized: [String: DICOMNormalizedService] = [:],
+        timing: DIMSETiming = NoopDIMSETiming(),
         eventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup.singleton
     ) throws {
         self.configuration = configuration
@@ -164,7 +165,7 @@ public final class DICOMServer: Sendable {
             relevantPatientInformation: relevantPatientInformation, retrieve: retrieve, normalized: normalized,
             storageCommitment: storageCommitment, commitmentReceiver: storageCommitmentReceiver,
             commitmentOutbox: storageCommitmentOutbox,
-            outgoingClient: outgoingClient)
+            outgoingClient: outgoingClient, timing: timing)
 
         let syntaxes = Self.abstractSyntaxes(
             configuration: configuration, offered: DICOMOfferedServices(
