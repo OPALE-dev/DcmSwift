@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     container: swift:6.2
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Fetch interoperability corpus
         if: env.DCM_CORPUS_URL != '' && env.DCM_CORPUS_TOKEN != ''
         run: |
@@ -50,7 +50,7 @@ jobs:
     name: macOS
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Fetch interoperability corpus
         if: env.DCM_CORPUS_URL != '' && env.DCM_CORPUS_TOKEN != ''
         run: Scripts/ci/fetch-interop-corpus.sh
@@ -71,7 +71,7 @@ jobs:
     name: iOS
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Fetch interoperability corpus
         if: env.DCM_CORPUS_URL != '' && env.DCM_CORPUS_TOKEN != ''
         run: Scripts/ci/fetch-interop-corpus.sh
