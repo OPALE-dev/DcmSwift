@@ -1,5 +1,5 @@
 {
-  "originHash" : "d214f35e45a280d83b5fafcc0ec83c561653386169e809beb92b61331a511cfb",
+  "originHash" : "a2ee4707ffbe693c2d123f7d7f67b657db2e83b3bb002ec5e7e0aee3b69f68de",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -155,6 +155,15 @@
       }
     },
     {
+      "identity" : "swift-issue-reporting",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/swift-issue-reporting",
+      "state" : {
+        "revision" : "b23bb4493c439d3e05152bc167014235ba3d47fc",
+        "version" : "2.1.2"
+      }
+    },
+    {
       "identity" : "swift-log",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-log.git",
@@ -168,8 +177,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio.git",
       "state" : {
-        "revision" : "21de5f08c1a166a6dd293d0e587ad977bf8dac5d",
-        "version" : "2.103.0"
+        "revision" : "2f58d8ef84438d6517fc78bcea2f8527e3c72936",
+        "version" : "2.105.0"
       }
     },
     {
@@ -260,15 +269,6 @@
       "state" : {
         "revision" : "869129b7bf4ecc57b97d0193ad29690ca2134750",
         "version" : "1.8.1"
-      }
-    },
-    {
-      "identity" : "xctest-dynamic-overlay",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
-      "state" : {
-        "revision" : "d9308ad679143c26a30dec52daefe82f54af2b82",
-        "version" : "1.13.1"
       }
     }
   ],
