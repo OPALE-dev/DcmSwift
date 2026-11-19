@@ -1,7 +1,9 @@
 # DcmSwift
 
 [![CI](https://github.com/OPALE-dev/DcmSwift/actions/workflows/ci.yml/badge.svg)](https://github.com/OPALE-dev/DcmSwift/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/OPALE-dev/DcmSwift/actions/workflows/codeql.yml/badge.svg)](https://github.com/OPALE-dev/DcmSwift/actions/workflows/codeql.yml)
 [![Documentation](https://github.com/OPALE-dev/DcmSwift/actions/workflows/documentation.yml/badge.svg)](https://opale-dev.github.io/DcmSwift/documentation/dcmswift/)
+[![Release](https://img.shields.io/github/v/release/OPALE-dev/DcmSwift)](https://github.com/OPALE-dev/DcmSwift/releases/latest)
 [![Swift 6.2+](https://img.shields.io/badge/Swift-6.2%2B-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20iOS%20%7C%20Linux-lightgrey)](#requirements)
 [![DICOM 2026d](https://img.shields.io/badge/DICOM-2026d-blue)](https://www.dicomstandard.org/current)
@@ -228,7 +230,7 @@ The network options and TLS settings shared by the network tools are listed in
     swift test --parallel
 
 The unit suite uses only synthetic fixtures versioned with the source. iOS
-builds, the optional interoperability corpus, CI, and the pynetdicom, pydicom,
+builds, the synthetic corpus, CI, and the pynetdicom, pydicom,
 and DCMTK cross-checks are described in
 [Testing and Qualification](Sources/DcmSwift/DcmSwift.docc/Guides/TestingAndQualification.md).
 

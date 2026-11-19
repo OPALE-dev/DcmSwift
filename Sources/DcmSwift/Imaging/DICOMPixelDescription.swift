@@ -333,10 +333,10 @@ struct DICOMAttributeScope {
         guard let data = try? element.loadData() else { return [] }
         let bytes = [UInt8](data)
         let bigEndian = element.byteOrder == .BigEndian
-        return stride(from: 0, to: bytes.count - 1, by: 2).map { index in
-            bigEndian
-                ? UInt16(bytes[index]) << 8 | UInt16(bytes[index + 1])
-                : UInt16(bytes[index]) | UInt16(bytes[index + 1]) << 8
+        return stride(from: 0, to: bytes.count - 1, by: 2).map { (index: Int) -> UInt16 in
+            let first = UInt16(bytes[index])
+            let second = UInt16(bytes[index + 1])
+            return bigEndian ? (first << 8) | second : first | (second << 8)
         }
     }
 }

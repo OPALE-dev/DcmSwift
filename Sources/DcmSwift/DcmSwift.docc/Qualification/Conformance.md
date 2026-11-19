@@ -332,7 +332,7 @@ generated with the SOP Class to IOD mapping of PS3.4 by
 | Not checked yet | <ul><li>Conditions in prose, such as "Required if contrast media was used", or that test something other than an attribute's presence or Value: the attribute is then checked only when present</li><li>"Shall not be present otherwise"</li><li>Defined Terms, Context Groups, and attributes not allowed by the IOD</li></ul> |
 | Receive policy | `DICOMIODValidationPolicy`: off, warn (B007H), or reject (A900H), for C-STORE and STOW-RS; instances of SOP Classes without an IOD are not judged |
 
-On the pydicom test files and the local corpus, DcmValidate reports nothing
+On the pydicom test files and a private corpus, DcmValidate reports nothing
 that dicom-validator 0.9.0 does not, but for one gap of that tool: 194 files,
 1,354 findings in common. dicom-validator also reports 63 findings that
 depend on conditions DcmValidate does not evaluate, mostly Patient Position
@@ -370,7 +370,7 @@ the samples as Little Endian and its values are corrected first.
 | RT Dose | Units, type, summation, grid geometry, Grid Frame Offset Vector, dose values (stored values × Dose Grid Scaling) for native and compressed Pixel Data; DVHs with their ROIs, type, units, and bins |
 | RT Plan | Label, geometry, prescription (Target Prescription Dose), fraction groups, beams with their control points (values carried over from the previous control point) and metersets |
 
-On the pydicom test files and the local corpus, ROIs, contour points, dose
+On the pydicom test files and a private corpus, ROIs, contour points, dose
 grids and values, DVHs, prescriptions, and beam metersets equal those of
 dicompyler-core. The older `DicomRT`, `Dose`, `Plan`, and `StructureSet`
 helpers remain for existing code. Making RT objects is not done.
@@ -403,7 +403,7 @@ in highdicom's (it finds the Functional Group Sequences unexpected).
 highdicom reads the TID 1500 reports DcmSwift makes, with their Measurement
 Groups and measurements; dicom-validator and DCMTK's dsrdump find no error
 in them. On a highdicom report with a planar ROI and on the SR files of
-pydicom and the local corpus (24 reports), the content trees equal pydicom's.
+pydicom and a private corpus (24 reports), the content trees equal pydicom's.
 `Scripts/crosscheck/sr_templates.py` writes the TID 2000, TID 2010 and CT
 dose documents of the builders and has DCMTK's dsrdump read them with
 relationship content constraints checked: no error, and the declared
@@ -487,7 +487,7 @@ read by `Scripts/generate-dicom-deidentification.py`.
 
 The table matches the 2026c edition of Kitware's dicom-anonymizer except for
 one attribute added in 2026d, (3004,007F). De-identified by both tools, the
-pydicom test files and the local corpus (196 files, 3,908 attribute outcomes)
+pydicom test files and a private corpus (196 files, 3,908 attribute outcomes)
 end the same, dicom-anonymizer resolving compound actions without the IOD.
 De-identification adds no IOD finding on those files.
 
@@ -523,7 +523,7 @@ Digital Signatures of the Base RSA Digital Signature Profile (C.1).
 | Profiles | Signing every Data Element that may be signed covers the minimum attributes of the Creator (C.2) and Authorization (C.3) profiles; the SR profile (C.4) is not enforced |
 | Not done | Certified timestamps; checking certificates against trusted authorities or revocation lists; signing with RIPEMD-160 or MD5 |
 
-On the pydicom test files and the local corpus (1,436 checks), signatures
+On the pydicom test files and a private corpus (1,436 checks), signatures
 are exchanged both ways with DCMTK 3.7.0's dcmsign, and both reject a changed
 file. Where they disagree, on 8 files with large Sequences or Implicit VR,
 an independent reading of the MAC rules over the raw bytes, with pydicom,

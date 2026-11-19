@@ -33,22 +33,9 @@ class DcmSwiftTestsDicomdir: XCTestCase {
         }
     }
     
-    func testIndex() {
-        let pathFolder = "/Users/home/Documents/2_skull_ct/DICOM"
-        if let dir = DicomDir.parse(atPath: pathFolder) {
-            for(a,b) in dir.studies {
-                Logger.info("a : \(a) b : \(b)")
-            }
-        }
-    }
-    
-    func testIndexForStudy() {
-        
-    }
-    
     func testAmputation() {
-        let path = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR/DICOMDIR"
-        let path_2 = "/Users/home/Desktop/DICOM Example/TEST_DICOMDIR"
+        let path = "/media/DICOM Example/TEST_DICOMDIR/DICOMDIR"
+        let path_2 = "/media/DICOM Example/TEST_DICOMDIR"
         XCTAssertEqual(DicomDir.amputation(forPath: path),path_2)
     }
     

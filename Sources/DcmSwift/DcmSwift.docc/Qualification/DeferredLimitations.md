@@ -343,11 +343,10 @@ conformance without that evidence.
   Swift 6 concurrency checking currently reports NIO pipeline `Sendable`
   diagnostics that would become errors in Swift 6 language mode; that migration
   remains a separate release gate.
-- The large interoperability corpus is intentionally not versioned in git.
-  GitLab CI downloads a pinned, checksummed archive from the private Generic
-  Package Registry and fails, rather than skips, when it is unavailable. The
-  corpus is internal to OPALE and remains no substitute for exchange with
-  independent DICOM toolkits.
+- The versioned corpus is synthetic: files written by pydicom and DCMTK, not
+  by modalities. It covers the main transfer syntaxes and pixel layouts, but
+  not vendor private attributes or the defects of real devices, and remains no
+  substitute for exchange with independent DICOM toolkits.
 
 ## Completion rule
 

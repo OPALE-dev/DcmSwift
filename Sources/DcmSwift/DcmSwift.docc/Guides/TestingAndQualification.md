@@ -1,6 +1,6 @@
 # Testing and Qualification
 
-Build and test the package, run the interoperability corpus, and check
+Build and test the package, run the synthetic corpus, and check
 DcmSwift against other DICOM toolkits.
 
 ## Build and test
@@ -22,57 +22,47 @@ xcodebuild test -scheme DcmSwift-Package \
 
 The mandatory unit suite uses only small, deterministic synthetic fixtures
 versioned with the source. It runs identically in a clean checkout on every
-platform, never depends on a private or downloaded corpus, and writes its
+platform, never depends on a private or downloaded file, and writes its
 generated files to temporary directories that it removes. Tests are listed per
 requirement in <doc:Traceability>.
 
-## Interoperability corpus
+## Synthetic corpus
 
-Large DICOM, DICOMDIR, SR, and RT collections form a separate, optional
-qualification suite. It recursively discovers `.dcm` and `.dicomdir` files:
+`Tests/DcmSwiftTests/Corpus` holds a small synthetic corpus: CR, CT, MR, NM,
+OT, US, and XA images in Implicit and Explicit VR Little Endian, Explicit VR
+Big Endian, JPEG Baseline, JPEG Lossless, and RLE Lossless, single- and
+multi-frame, monochrome, RGB, YBR, and palette color, plus an RT Dose,
+Structure Set, and Plan, a Basic Text SR, and a DICOMDIR. Every file is made
+from scratch with synthetic patients and patterns, with no clinical data.
+`Scripts/generate-synthetic-corpus.py` writes it deterministically; pydicom
+writes the uncompressed files and DCMTK encodes the compressed ones, so the
+encoded streams come from toolkits independent of DcmSwift:
+
+```sh
+uv run --with pydicom==3.0.1 --with numpy Scripts/generate-synthetic-corpus.py
+```
+
+The `testExternalDICOMCorpus` tests read, render, and round-trip every file of
+the corpus in each run. To run them over another collection of files, name it:
 
 ```sh
 DCMSWIFT_INTEROP_CORPUS=/absolute/path/to/corpus \
   swift test --filter DcmSwiftTests/testExternalDICOMCorpus
 ```
 
-Without a corpus the suite is skipped; mandatory unit coverage is unchanged.
-Set `DCMSWIFT_REQUIRE_INTEROP_CORPUS=1` to make a missing corpus fail the run.
-A successful unit run does not claim interoperability with files that were not
+A successful run does not claim interoperability with files that were not
 qualified.
 
 ## Continuous integration
 
-GitLab CI runs the package on Linux (official Swift 6.2 image), and on a macOS
-runner with Xcode for macOS and the newest installed iOS Simulator runtime.
+GitLab CI and GitHub Actions (`.github/workflows/ci.yml`, on `macos-26`
+runners for Apple platforms) run the package on Linux (official Swift 6.2
+image), on macOS, and on the newest installed iOS Simulator runtime.
 
 | Step | Behavior |
 | --- | --- |
-| Corpus | Each job downloads the confidential corpus from the project's private Generic Package Registry (`dcmswift-dicom-corpus`, version `DCM_CORPUS_VERSION`), verifies it against `DCM_CORPUS_SHA256`, and caches it per version |
-| iOS | The job forwards the variables to the simulator with the `TEST_RUNNER_` prefix |
-| Reports | SwiftPM writes JUnit reports with `swift test --parallel --xunit-output`; `Scripts/xcresult-junit.py` converts the iOS result bundle; every job publishes them to the pipeline Tests tab |
+| Reports | SwiftPM writes JUnit reports with `swift test --parallel --xunit-output`; `Scripts/xcresult-junit.py` converts the iOS result bundle; GitLab shows them in the pipeline Tests tab, GitHub keeps them as artifacts |
 | Documentation | The DocC site is built with warnings as errors; see <doc:DocumentationWorkflow> |
-
-GitHub Actions runs the same Linux, macOS, and iOS jobs in
-`.github/workflows/ci.yml`, on `macos-26` runners for Apple platforms, and
-uploads the JUnit reports as artifacts. It fetches the corpus only when the
-`DCM_CORPUS_URL` and `DCM_CORPUS_TOKEN` secrets are set, through
-`Scripts/ci/fetch-interop-corpus.sh`, with the version and checksum declared
-in `.gitlab-ci.yml`; without them, the corpus suite is skipped.
-
-To publish a new corpus version, upload the archive with a token that has the
-`api` scope, then update both variables in `.gitlab-ci.yml`:
-
-```sh
-COPYFILE_DISABLE=1 tar --no-xattrs --exclude .DS_Store \
-  -czf dcmswift-dicom-corpus.tar.gz \
-  -s ',^Tests/DcmSwiftTests/Resources,dcmswift-dicom-corpus,' \
-  Tests/DcmSwiftTests/Resources
-shasum -a 256 dcmswift-dicom-corpus.tar.gz
-curl --fail --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  --upload-file dcmswift-dicom-corpus.tar.gz \
-  "$GITLAB_URL/api/v4/projects/rw%2Fdcmswift/packages/generic/dcmswift-dicom-corpus/<version>/dcmswift-dicom-corpus.tar.gz"
-```
 
 ## File cross-checks
 

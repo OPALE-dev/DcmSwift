@@ -4,37 +4,24 @@ All notable changes to DcmSwift are listed here, newest first. This file is
 generated from the commit history with [git-cliff](https://git-cliff.org); do
 not edit it by hand.
 
-## [Unreleased]
+## [2.1.0] - 2026-11-17
 
 ### Added
 
-- Add the DICOMweb Studies Service origin server
-- Add DICOMweb media types, multipart payloads, search queries, and resources
-- Add Dependabot, CodeQL, and Swift Package Index configuration
-- Add the license, third-party notices, and community files
-- Add status badges to the README
-- Publish the DocC site to GitLab and GitHub Pages
+- Add DIMSETiming protocol for operation latency metrics
+
+## [2.0.0] - 2026-11-12
+
+### Added
+
+- Add structured association and service diagnostics
+- Implement deterministic enhanced Q/R views and extended frame extraction
+- Implement negotiated Query/Retrieve extensions and patient information service
+- Implement UPS-RS worklist origin and WebSocket notifications
+- Select stored representations after DIMSE negotiation
+- Add standalone SQLite archive adapter and Linux CI job
+- Implement UPS DIMSE core and archive-backed subscriptions
 - Add DcmConvert image conversion tool
-- Add the Native DICOM Model XML (PS3.19 A.1)
-- Add DIMSE-N services and Storage Commitment
-- Model DICOM Upper Layer PDUs and the PS3.8 state machine
-- Encode JPEG XL and rebuild recompressed JPEG
-- Encode JPEG 2000 Part 2 multi-frame images
-- Decode JPEG 2000 Part 2 multi-component images
-- Model Person Name and multi-valued text
-- Decode DICOM JPEG XL with vendored libjxl
-- Encode HTJ2K with OpenJPH, and plan the rendering phase
-- Decode JPEG 2000 and HTJ2K, and encode JPEG 2000, with OpenJPEG
-- Decode and encode JPEG-LS in Swift
-- Decode the hierarchical JPEG transfer syntaxes
-- Decode arithmetic JPEG transfer syntaxes
-- Encode JPEG Baseline and Extended frames
-- Decode JPEG Baseline and Extended bit-exactly with libjpeg-turbo
-- Encode JPEG Lossless (Process 14) in Swift
-- Decode JPEG Lossless (Process 14) in Swift
-- Decode encapsulated frames with RLE and Deflated codecs
-- Support every DICOM Specific Character Set Defined Term
-- Publish JUnit test reports from every CI job
 - Add a generic DICOMDIR record tree writer
 - Model PS3.3 directory record types
 - Add gitlab CI config
@@ -47,6 +34,8 @@ not edit it by hand.
 
 ### Fixed
 
+- Break dataset and structured report ownership cycles
+- Decode spilled datasets with deferred bulk data
 - Fix Logger to be Linux compliant
 - Fix FoundationXML import
 - Fix Image extension for Linux
@@ -54,36 +43,16 @@ not edit it by hand.
 
 ### Changed
 
-- Serve and consume DICOMweb over HTTP
-- Generate the changelog with git-cliff
-- Require Swift 6.1 tools in the Swift 5 language mode
-- Stop tracking the agent handoff notes
-- Rename DcmServer --destination-tlsca to --destination-tls-ca
-- Run the GitLab test jobs on GitHub Actions too
-- Reorganize the README around the DocC guides
-- Update the handoff for the DocC documentation
-- Move the documentation into a DocC catalog
+- Stream stored payloads and decode frames lazily
+- Define complete enhanced multi-frame Q/R view conversion contract
+- Qualify Query/Retrieve extensions and reject unsupported frame vectors
+- Define Query/Retrieve extensions contract
+- Define UPS-RS HTTP and notification integration contract
+- Complete UPS DIMSE validation, subscriptions and event lifecycle
+- Mark Phase 11 archive adapters complete
+- Complete SQLKit archive adapter with three-dialect conformance
 - Export rendered frames as JPEG TIFF and Netpbm
 - Validate DICOM values and preserve file bytes
-- Make JSON and XML decoding strict on Linux too
-- Split expressions that Swift 6.1 on Linux cannot type-check
-- Finish TLS: the PS3.15 B.12 profile, typed failures, and loopback tests
-- Move the network tools to the new stack and remove the old one
-- Serve and request associations over SwiftNIO
-- Negotiate associations and frame DIMSE messages
-- Record the green delivery pipeline
-- Refresh the Claude handoff after JPEG XL and PN
-- Track the implementation plan as a checklist
-- Present the coverage documents as themed tables
-- Prepare the JPEG decoders for hierarchical frames
-- Read the retired progressive Huffman JPEG syntaxes
-- Recompute defined Sequence and Item lengths on write
-- Render native Pixel Data portably
-- Build iOS CI jobs in a per-job DerivedData
-- Pin the 2026.10.07 interoperability corpus checksum
-- Run the interoperability corpus in CI on every platform
-- Declare iOS support and qualify Apple platforms in CI
-- Keep unknown and retired DICOMDIR records traversable
 - Expose parsed DICOMDIR record trees
 - Validate PS3.3 DICOMDIR icon images
 - Validate DICOMDIR SOP instance reference macros
@@ -121,19 +90,6 @@ not edit it by hand.
 - Define the DcmSwift 2.0 conformance target and add character sets
 - Harden DICOM core and add a 2026d capability baseline
 - The current way DICOM is parsed is not ideal for this kind of task
-
-### Removed
-
-- Remove the obsolete test.sh and docs/ ignore rule
-
-### Documentation
-
-- Document the DICOMweb Studies Service
-- Document every parameter of the public API comments
-
-### Tests
-
-- Fuzz the parser and decoders, add the DICOM JSON Model, compare with pydicom
 
 ## [1.0.0] - 2022-01-07
 
@@ -174,6 +130,8 @@ not edit it by hand.
 - Add StructureSet class for helpers
 - Add Plan for RTPlan helpers
 - Init RTDose class, with dcmtk as template : https://support.dcmtk.org/docs/classDRTDose.html#aab575ebb9e190a17ae45c1a9abb9ee68
+- Add para in dataset's string method, improve dicomdir class
+- Add values to directory record sequence
 - Add formatPath method, add 4 arrays in class properties
 - Add browse method and started to fill images array
 - Add createDirectoryRecordSequence method, and add method in dataset
@@ -225,22 +183,20 @@ not edit it by hand.
 - Experiment new PDU decoding techniques
 - RTPlan helpers done
 - Refactor RTDose to Dose
-- getDoseImages + refactor
+- GetDoseImages + refactor
 - RTDose : get dose image done
-- testGetDose pass
+- TestGetDose pass
 - Clean
 - Refactor RTDose and DicomRT
 - Refactor test for getUnscaledDose
 - Convert image to PNG
-- last changes
-- add para in dataset's string method, improve dicomdir class
-- add values to directory record sequence
-- properties structure changed from [:[]] to [:[:]]
-- refactor and add values to createDirectoryRecordSequence
-- addValue methods
+- Last changes
+- Properties structure changed from [:[]] to [:[:]]
+- Refactor and add values to createDirectoryRecordSequence
+- AddValue methods
 - 3 new testing classes + modifications DicomDir
 - Improve studies dictionnaries
-- unitary tests dicomdir and [:[]] for studies
+- Unitary tests dicomdir and [:[]] for studies
 - Modifications DICOMDIR class
 - C-STORE-SCP proof-of-work, more work needed on file meta info
 - Try to fix PDU decoding done wrong
@@ -326,6 +282,7 @@ not edit it by hand.
 - Added some documentation to Logger
 - Add Logger to replace SwiftyBeaucver
 - Add C-Store message support
+- STart supporting multiple presentation contexts
 - Add PDU support
 - Add MagiX target
 - Add gitignore (fix)
@@ -401,14 +358,14 @@ not edit it by hand.
 - Moved setPreferences to AppDelegate + UserDefault default values in AppDelegate.init()
 - Clear merge errors
 - Big pref update: Storages, Listener, Advanced + Storage model + IOD and file copy
-- MagiX: Listener pref panel
+- Listener pref panel
 - Make DICOM server works
 - Revert "dicom_server"
-- dicom_server
+- Dicom_server
 - Rename menu and close #3
 - Better management of dA,TM,DT in DataSet class
 - Some documentation for logger
-- path of file log is displayed in file field in preferences
+- Path of file log is displayed in file field in preferences
 - Default : save in Documents; added attribute filePath:URL?
 - Settings for log level, type of output done : console and file; TODO : file destination to set + make popup button working + find a solution for clearing logs (based on time, or size)
 - Logger preferences panel
@@ -428,7 +385,6 @@ not edit it by hand.
 - Better DicomDate documentation
 - Better DicomDate documentation
 - Little fix and typo
-- STart supporting multiple presentation contexts
 - Big refactor and add many constants
 - Mostly document DicomDate file and start using it in MagiX for C-FIND query date range parameters
 - Review all the MagiX design and features
@@ -450,9 +406,3 @@ not edit it by hand.
 - Tests done right
 
 <!-- generated by git-cliff -->
-
-## 2026-10-23 — STOW file-backed decoding
-
-- Decode spilled STOW Part 10 files with deferred binary values instead of calling `payload.data()` on the complete dataset.
-- Preserve UID/study checks and following metadata; retain bounded Deflated decoding (64 MiB compressed, 256 MiB inflated).
-- Add versioned synthetic tests for native, RLE, Deflated, split multipart and truncated-part cleanup.

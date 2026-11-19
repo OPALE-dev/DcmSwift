@@ -4,7 +4,7 @@ import Foundation
 /// 10001), radiopharmaceutical (TID 10021) or patient radiation dose (TID
 /// 10030). Reading keeps every numeric value with its concept and units, so
 /// that a consumer can show totals and per-event values without knowing each
-/// row of the templates; ``ct(_:)`` makes a CT dose report.
+/// row of the templates; ``ct(device:studyInstanceUID:start:end:acquisitions:softwareVersions:intent:)`` makes a CT dose report.
 public struct DICOMRadiationDoseReport: Sendable {
     public enum Kind: String, Sendable {
         case ct, projectionXRay, radiopharmaceutical, patient, other

@@ -132,6 +132,8 @@ public final class DICOMServer: Sendable {
     ///   - query: the Query SCP service.
     ///   - worklist: the Modality Worklist SCP service.
     ///   - upsQuery: the UPS Query SCP service.
+    ///   - relevantPatientInformation: the Relevant Patient Information Query
+    ///     SCP service.
     ///   - retrieve: the C-GET and C-MOVE retrieval service.
     ///   - storageCommitment: the Storage Commitment SCP.
     ///   - storageCommitmentReceiver: receives Storage Commitment results as
@@ -139,6 +141,7 @@ public final class DICOMServer: Sendable {
     ///   - storageCommitmentOutbox: keeps the Storage Commitment results
     ///     that cannot be delivered, and retries them.
     ///   - normalized: DIMSE-N services by SOP Class (or Meta SOP Class) UID.
+    ///   - timing: receives the duration of each DIMSE exchange.
     ///   - eventLoopGroup: NIO event loops used by the listener and associations.
     public init(
         configuration: DICOMServerConfiguration, storage: DICOMStorageService? = nil,

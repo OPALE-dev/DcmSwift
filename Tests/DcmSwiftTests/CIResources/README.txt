@@ -35,6 +35,6 @@ imagecodecs 2026.8.16 with libjxl 0.12.0; matching .raw files contain the
 independently decoded native pixels. The set covers lossless raw codestreams,
 a lossless container, lossy coding, and reversible JPEG recompression.
 
-Large DICOM, DICOMDIR, SR, and RT corpora are not SwiftPM resources. They are an
-optional interoperability qualification input selected with the
-DCMSWIFT_INTEROP_CORPUS environment variable.
+The synthetic DICOM corpus of ../Corpus is not a SwiftPM resource: the corpus
+tests read it by path. Scripts/generate-synthetic-corpus.py writes it; another
+collection can be named with the DCMSWIFT_INTEROP_CORPUS environment variable.

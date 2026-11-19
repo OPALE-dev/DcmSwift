@@ -280,7 +280,7 @@ let package = Package(
                 .product(name: "X509", package: "swift-certificates"),
                 .product(name: "SwiftASN1", package: "swift-asn1"),
             ],
-            exclude: ["Resources"],
+            exclude: ["Resources", "Corpus"],
             resources: [.process("CIResources")]
         )
     ],

@@ -12,9 +12,8 @@ import XCTest
 /**
  This class provides a suite of unit tests to qualify DcmSwift framework features.
  
- Mandatory regression tests use synthetic inputs. The two explicitly named
- external-corpus tests are an optional interoperability qualification run and
- read their input from `DCMSWIFT_INTEROP_CORPUS`.
+ Regression tests use synthetic inputs. The corpus tests read the synthetic
+ corpus of `Corpus/`, or the folder named by `DCMSWIFT_INTEROP_CORPUS`.
  
  */
 class DcmSwiftTests: XCTestCase {
@@ -235,16 +234,11 @@ class DcmSwiftTests: XCTestCase {
     }
 
     private func externalDICOMCorpusPaths() throws -> [String] {
+        // The synthetic corpus of the repository (Scripts/generate-synthetic-corpus.py),
+        // or another folder named by DCMSWIFT_INTEROP_CORPUS.
         let environment = ProcessInfo.processInfo.environment
-        guard let root = environment["DCMSWIFT_INTEROP_CORPUS"], !root.isEmpty else {
-            // CI sets DCMSWIFT_REQUIRE_INTEROP_CORPUS so a missing corpus fails
-            // the qualification instead of reporting a green skipped run.
-            if environment["DCMSWIFT_REQUIRE_INTEROP_CORPUS"] == "1" {
-                XCTFail("DCMSWIFT_REQUIRE_INTEROP_CORPUS is set but DCMSWIFT_INTEROP_CORPUS is not")
-                return []
-            }
-            throw XCTSkip("Set DCMSWIFT_INTEROP_CORPUS to run optional interoperability qualification")
-        }
+        let synthetic = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("Corpus").path
+        let root = environment["DCMSWIFT_INTEROP_CORPUS"].flatMap { $0.isEmpty ? nil : $0 } ?? synthetic
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: root, isDirectory: &isDirectory),
               isDirectory.boolValue else {

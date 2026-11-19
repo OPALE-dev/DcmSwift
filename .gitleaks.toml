@@ -1,0 +1,8 @@
+# gitleaks configuration: the default rules, minus the TLS test material that
+# Scripts/generate-tls-test-certificates.sh generates for the loopback tests.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Throwaway TLS keys of the test suite"
+paths = ['''Tests/DcmSwiftTests/CIResources/tls-[a-z-]+\.pem''']

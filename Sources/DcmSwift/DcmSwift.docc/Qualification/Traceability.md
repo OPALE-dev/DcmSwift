@@ -1,7 +1,7 @@
 # DcmSwift 2.0 DICOM traceability matrix
 
 Baseline: DICOM 2026d  
-Scope: implemented behavior on the `codex/dcmswift-2.0` branch
+Scope: implemented behavior of DcmSwift 2
 
 This document distinguishes registry knowledge, structural support, semantic
 interpretation, codec support, and independently tested interoperability. A
@@ -112,7 +112,7 @@ automated tests that support the claim, and what remains to be qualified.
 Qualification uses three complementary categories:
 
 1. synthetic boundary and malformed-input fixtures retained as unit tests;
-2. byte-preserving round trips over the repository's existing sample corpus;
+2. byte-preserving round trips over the synthetic corpus of `Tests/DcmSwiftTests/Corpus`;
 3. independent comparison with DCMTK and pydicom or GDCM.
 
 All three exist: comparison with pydicom covers reading, through the DICOM JSON

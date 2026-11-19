@@ -20,7 +20,7 @@ swift test --parallel
 ```
 
 Changes that touch resources, codecs, or platform code must also pass on iOS
-and Linux. The commands, the optional interoperability corpus, and the
+and Linux. The commands, the synthetic corpus, and the
 cross-checks with pydicom, pynetdicom, and DCMTK are described in
 [Testing and Qualification](Sources/DcmSwift/DcmSwift.docc/Guides/TestingAndQualification.md).
 CI runs the same jobs on GitHub Actions and GitLab CI.

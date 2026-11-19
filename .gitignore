@@ -7,8 +7,9 @@ xcuserdata/
 Tests/DcmSwiftTests/Resources/
 __MACOSX/
 .env
-.corpus/
 .reports/
 .derived-data/
-.agent-handoff/
 __pycache__/
+# Xcode creates its workspace and schemes here when it opens the package.
+/.swiftpm/xcode/
+.agent-handoff/

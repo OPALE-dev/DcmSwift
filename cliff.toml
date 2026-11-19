@@ -1,7 +1,7 @@
 # git-cliff configuration (https://git-cliff.org).
 # Regenerate the changelog with:  git cliff -o CHANGELOG.md
-# Commit summaries are imperative English sentences (see CONTRIBUTING.md), so
-# they are grouped by their leading verb rather than by Conventional Commits.
+# Conventional Commits are grouped by type; older summaries, imperative English
+# sentences, by their leading verb.
 
 [changelog]
 header = """
@@ -21,7 +21,7 @@ body = """
 {% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group | striptags | trim | upper_first }}
 {% for commit in commits %}
-- {{ commit.message | split(pat="\n") | first | trim }}\
+- {{ commit.message | split(pat="\n") | first | trim | upper_first }}\
 {% endfor %}
 {% endfor %}
 """
@@ -39,7 +39,7 @@ postprocessors = [
 ]
 
 [git]
-conventional_commits = false
+conventional_commits = true
 filter_unconventional = false
 split_commits = false
 protect_breaking_commits = false
@@ -48,10 +48,25 @@ sort_commits = "newest"
 commit_parsers = [
   { message = "^Merge", skip = true },
   { message = "^WIP", skip = true },
-  { message = "^(Add|Added|Implement|Support|Decode|Encode|Publish|Start|Init|Model)\\b", group = "<!-- 0 -->Added" },
-  { message = "^(Fix|Fixed|Correct)\\b", group = "<!-- 1 -->Fixed" },
-  { message = "^(Remove|Removed|Delete|Drop)\\b", group = "<!-- 3 -->Removed" },
-  { message = "^(Document|Comment|Comments|Documentation|Doc|Docs)\\b", group = "<!-- 4 -->Documentation" },
-  { message = "^(Test|Tests|Fuzz)\\b", group = "<!-- 5 -->Tests" },
+  # Notes of the internal workflow (agent handoffs, pipeline records) are not
+  # changes of the library.
+  { message = "(?i)handoff|\\bagents?\\b|claude|codex|delivery pipeline", skip = true },
+  { message = "^(chore|ci|build)(\\(.*\\))?!?:", skip = true },
+  { message = "^feat(\\(.*\\))?!?:", group = "<!-- 0 -->Added" },
+  { message = "^fix(\\(.*\\))?!?:", group = "<!-- 1 -->Fixed" },
+  { message = "^perf(\\(.*\\))?!?:", group = "<!-- 2 -->Changed" },
+  { message = "^refactor(\\(.*\\))?!?:", group = "<!-- 2 -->Changed" },
+  { message = "^docs(\\(.*\\))?!?:", group = "<!-- 4 -->Documentation" },
+  { message = "^test(\\(.*\\))?!?:", group = "<!-- 5 -->Tests" },
+  { message = "(?i)^(Add|Added|Implement|Support|Decode|Encode|Publish|Start|Init|Model)\\b", group = "<!-- 0 -->Added" },
+  { message = "(?i)^(Fix|Fixed|Correct)\\b", group = "<!-- 1 -->Fixed" },
+  { message = "(?i)^(Remove|Removed|Delete|Drop)\\b", group = "<!-- 3 -->Removed" },
+  { message = "(?i)^(Document|Comment|Comments|Documentation|Doc|Docs)\\b", group = "<!-- 4 -->Documentation" },
+  { message = "(?i)^(Test|Tests|Fuzz)\\b", group = "<!-- 5 -->Tests" },
   { message = ".*", group = "<!-- 2 -->Changed" },
+]
+# Conventional summaries are printed without their type prefix (git-cliff keeps
+# only the description); "[skip ci]" markers are dropped.
+commit_preprocessors = [
+  { pattern = " *\\[skip ci\\]", replace = "" },
 ]

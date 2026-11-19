@@ -144,6 +144,10 @@ public final class DICOMClient: Sendable {
     ///   - remote: the called Application Entity and network endpoint.
     ///   - presentationContexts: abstract and transfer syntaxes to propose.
     ///   - roleSelections: SCP roles to propose, for C-GET.
+    ///   - extendedNegotiations: SOP Class Extended Negotiation items to
+    ///     propose.
+    ///   - commonExtendedNegotiations: SOP Class Common Extended Negotiation
+    ///     items to propose.
     ///   - userIdentity: optional user identity negotiation item.
     ///   - storage: receives the C-STORE requests of C-GET sub-operations.
     ///   - normalized: receives DIMSE-N requests and notifications from the
