@@ -4,6 +4,12 @@ All notable changes to DcmSwift are listed here, newest first. This file is
 generated from the commit history with [git-cliff](https://git-cliff.org); do
 not edit it by hand.
 
+## [2.1.1] - 2026-11-19
+
+### Changed
+
+- Prepare the repository for public release
+
 ## [2.1.0] - 2026-11-17
 
 ### Added
@@ -14,14 +20,51 @@ not edit it by hand.
 
 ### Added
 
+- Hand the written bytes of a received instance to the caller
+- Applications announce their own implementation identity
+- Negotiate only the information models a service answers
+- Publish the acceptor's negotiation table
+- Follow calling AE titles live and stop accepting without cutting associations
+- Validate SR documents against every template of PS3.16
+- Convert diagnostic imaging reports to HL7 CDA and back
+- Validate SR documents against their templates
+- Add report templates TID 2000, 2010, dose, CAD and ultrasound
 - Add structured association and service diagnostics
+- Decode undeclared Unicode DICOM JSON as UTF-8
 - Implement deterministic enhanced Q/R views and extended frame extraction
 - Implement negotiated Query/Retrieve extensions and patient information service
 - Implement UPS-RS worklist origin and WebSocket notifications
 - Select stored representations after DIMSE negotiation
 - Add standalone SQLite archive adapter and Linux CI job
 - Implement UPS DIMSE core and archive-backed subscriptions
+- Add the PS3.16 terminology
+- Add the DICOMweb Studies Service origin server
+- Add DICOMweb media types, multipart payloads, search queries, and resources
+- Add Dependabot, CodeQL, and Swift Package Index configuration
+- Add the license, third-party notices, and community files
+- Add status badges to the README
+- Publish the DocC site to GitLab and GitHub Pages
 - Add DcmConvert image conversion tool
+- Add the Native DICOM Model XML (PS3.19 A.1)
+- Add DIMSE-N services and Storage Commitment
+- Model DICOM Upper Layer PDUs and the PS3.8 state machine
+- Encode JPEG XL and rebuild recompressed JPEG
+- Encode JPEG 2000 Part 2 multi-frame images
+- Decode JPEG 2000 Part 2 multi-component images
+- Model Person Name and multi-valued text
+- Decode DICOM JPEG XL with vendored libjxl
+- Encode HTJ2K with OpenJPH, and plan the rendering phase
+- Decode JPEG 2000 and HTJ2K, and encode JPEG 2000, with OpenJPEG
+- Decode and encode JPEG-LS in Swift
+- Decode the hierarchical JPEG transfer syntaxes
+- Decode arithmetic JPEG transfer syntaxes
+- Encode JPEG Baseline and Extended frames
+- Decode JPEG Baseline and Extended bit-exactly with libjpeg-turbo
+- Encode JPEG Lossless (Process 14) in Swift
+- Decode JPEG Lossless (Process 14) in Swift
+- Decode encapsulated frames with RLE and Deflated codecs
+- Support every DICOM Specific Character Set Defined Term
+- Publish JUnit test reports from every CI job
 - Add a generic DICOMDIR record tree writer
 - Model PS3.3 directory record types
 - Add gitlab CI config
@@ -34,8 +77,15 @@ not edit it by hand.
 
 ### Fixed
 
+- Complete missing type 2 attributes on creation
+- C-FIND returns non-ASCII values declared as UTF-8
+- A Storage Commitment result caught in a release is not held
+- Tolerate even presentation context IDs on reception
+- Bound loose matches of defined terms and name each row once
+- Read a diagnostic imaging report by title only without template
 - Break dataset and structured report ownership cycles
 - Decode spilled datasets with deferred bulk data
+- Fix two network races seen on Linux CI
 - Fix Logger to be Linux compliant
 - Fix FoundationXML import
 - Fix Image extension for Linux
@@ -43,16 +93,88 @@ not edit it by hand.
 
 ### Changed
 
+- Retrieve a study's instances together, copy chunks without vm_copy
+- Store the parts of one STOW-RS request concurrently
+- Hand the STOW data set already decoded to the store
+- Acknowledge DIMSE segments at once on Linux
+- Find multipart delimiters with memchr and memcmp
+- Look up the subscriptions of one work item instead of reading them all
 - Stream stored payloads and decode frames lazily
+- Accept the bare Transaction UID query of UPS-RS updates
+- Expose UPS operations to embedding applications
+- Record the iOS qualification of the Q/R extensions
+- Qualify enhanced Q/R views and document the conversion profile
 - Define complete enhanced multi-frame Q/R view conversion contract
 - Qualify Query/Retrieve extensions and reject unsupported frame vectors
 - Define Query/Retrieve extensions contract
 - Define UPS-RS HTTP and notification integration contract
 - Complete UPS DIMSE validation, subscriptions and event lifecycle
+- TCP_NODELAY at the TCP level: DICOM connections failed on Linux
+- DICOM server keeps accepting when a connection is reset before accept
 - Mark Phase 11 archive adapters complete
 - Complete SQLKit archive adapter with three-dialect conformance
+- Retry Storage Commitment results that cannot be delivered
+- Split C-MOVE sub-operations beyond 128 presentation contexts
+- Release the C-GET association of the pynetdicom interop script
+- Receive application events in DcmServer
+- Number the archive adapters as Phase 11, sixth in order
+- Log procedural and substance administration events
+- Send Instance Availability Notifications from DcmServer
+- Notify and receive Instance Availability
+- Record the archive protocols across the plan
+- Build the Query/Retrieve archive on an index and an instance store
+- Keep worklist items and procedure steps in an archive index
+- Define the archive index protocol and its conformance kit
+- Describe C-FIND keys as a neutral query for archive adapters
+- Plan pluggable archive storage before UPS
+- Serve MPPS from DcmServer and plan a database-backed archive
+- Perform Modality Performed Procedure Steps with their state rules
+- Query and serve Modality Worklists from the tools
+- Match C-FIND keys by meaning and serve the Modality Worklist
+- Give each planned area a relative effort
+- Plan Phases 5 to 10 and the out-of-scope topics
+- Read and write Structured Reports, with TID 1500
+- Read and make Segmentations, read Parametric Maps
+- Read RT Structure Sets, Doses, and Plans
+- Read waveforms
+- Wrap and extract encapsulated documents
+- Sign, verify, and encrypt DICOM attributes
+- Send PS3.15 audit messages over syslog TLS and UDP
+- De-identify with the PS3.15 Basic Confidentiality Profile
+- Evaluate the conditions of PS3.3 that test attributes
+- Validate data sets against the IODs of PS3.3
+- Replace stored instances with rename(2)
+- Require Swift 6.2 and quiet the iOS test log
+- Reject JPIP SIZ segments with invalid tiling
+- Rename the DcmConvert entry file so Xcode builds it
+- Retrieve JPIP Referenced Pixel Data
+- List the 1.0.0, 0.1, and 0.0.1 releases in the changelog
+- Serve and consume DICOMweb over HTTP
+- Generate the changelog with git-cliff
+- Require Swift 6.1 tools in the Swift 5 language mode
+- Rename DcmServer --destination-tlsca to --destination-tls-ca
+- Run the GitLab test jobs on GitHub Actions too
+- Reorganize the README around the DocC guides
+- Move the documentation into a DocC catalog
 - Export rendered frames as JPEG TIFF and Netpbm
 - Validate DICOM values and preserve file bytes
+- Make JSON and XML decoding strict on Linux too
+- Split expressions that Swift 6.1 on Linux cannot type-check
+- Finish TLS: the PS3.15 B.12 profile, typed failures, and loopback tests
+- Move the network tools to the new stack and remove the old one
+- Serve and request associations over SwiftNIO
+- Negotiate associations and frame DIMSE messages
+- Track the implementation plan as a checklist
+- Present the coverage documents as themed tables
+- Prepare the JPEG decoders for hierarchical frames
+- Read the retired progressive Huffman JPEG syntaxes
+- Recompute defined Sequence and Item lengths on write
+- Render native Pixel Data portably
+- Build iOS CI jobs in a per-job DerivedData
+- Pin the 2026.10.07 interoperability corpus checksum
+- Run the interoperability corpus in CI on every platform
+- Declare iOS support and qualify Apple platforms in CI
+- Keep unknown and retired DICOMDIR records traversable
 - Expose parsed DICOMDIR record trees
 - Validate PS3.3 DICOMDIR icon images
 - Validate DICOMDIR SOP instance reference macros
@@ -90,6 +212,35 @@ not edit it by hand.
 - Define the DcmSwift 2.0 conformance target and add character sets
 - Harden DICOM core and add a 2026d capability baseline
 - The current way DICOM is parsed is not ideal for this kind of task
+
+### Removed
+
+- Remove the obsolete test.sh and docs/ ignore rule
+
+### Documentation
+
+- Document the index parameter of the event logging service
+- Document pluggable archive storage
+- Document Structured Reports and close Phase 4
+- Document Segmentations and Parametric Maps
+- Document the RT objects
+- Document waveforms
+- Document encapsulated documents
+- Document signatures and encrypted attributes
+- Document the audit trail
+- Document de-identification
+- Document the evaluated IOD conditions
+- Document IOD validation
+- Document the PS3.16 terminology
+- Document JPIP Referenced Pixel Data
+- Document the DICOMweb Studies Service
+- Document every parameter of the public API comments
+
+### Tests
+
+- Distinguish conditional and optional creation attributes
+- Use the CID 4030 chest code in dose report examples
+- Fuzz the parser and decoders, add the DICOM JSON Model, compare with pydicom
 
 ## [1.0.0] - 2022-01-07
 

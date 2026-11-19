@@ -50,7 +50,7 @@ commit_parsers = [
   { message = "^WIP", skip = true },
   # Notes of the internal workflow (agent handoffs, pipeline records) are not
   # changes of the library.
-  { message = "(?i)handoff|\\bagents?\\b|claude|codex|delivery pipeline", skip = true },
+  { message = "(?i)^[^\\n]*(handoff|\\bagents?\\b|claude|codex|delivery pipeline)", skip = true },
   { message = "^(chore|ci|build)(\\(.*\\))?!?:", skip = true },
   { message = "^feat(\\(.*\\))?!?:", group = "<!-- 0 -->Added" },
   { message = "^fix(\\(.*\\))?!?:", group = "<!-- 1 -->Fixed" },
