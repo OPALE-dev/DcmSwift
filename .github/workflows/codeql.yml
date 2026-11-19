@@ -27,3 +27,17 @@ jobs:
       - uses: github/codeql-action/analyze@v4
         with:
           category: "/language:swift"
+          upload: never
+          output: sarif-results
+      # Report only this package's code: dependencies checked out under .build are analysed
+      # because they are compiled, but their findings belong to their own projects.
+      - name: Drop findings in dependencies
+        run: |
+          for f in sarif-results/*.sarif; do
+            jq '.runs |= map(.results |= map(select(all(.locations[]?; (.physicalLocation.artifactLocation.uri // "") | startswith(".build/") | not))))' "$f" > "$f.tmp"
+            mv "$f.tmp" "$f"
+          done
+      - uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: sarif-results
+          category: "/language:swift"
