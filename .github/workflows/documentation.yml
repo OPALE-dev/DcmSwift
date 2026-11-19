@@ -23,7 +23,7 @@ jobs:
         run: Scripts/documentation/build.sh .build/documentation DcmSwift
       - name: Upload Pages artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: .build/documentation
 
