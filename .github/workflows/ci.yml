@@ -39,7 +39,7 @@ jobs:
       - run: swift build -c release
       # SwiftPM writes the XCTest xUnit report only in parallel mode.
       - run: mkdir -p .reports && swift test --parallel --xunit-output .reports/xunit.xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: linux-test-report
@@ -60,7 +60,7 @@ jobs:
       - run: swift build -c release
       # SwiftPM writes the XCTest xUnit report only in parallel mode.
       - run: mkdir -p .reports && swift test --parallel --xunit-output .reports/xunit.xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: macos-test-report
@@ -95,7 +95,7 @@ jobs:
       - name: Convert the result bundle to JUnit
         if: always()
         run: test -d .reports/ios.xcresult && xcrun python3 Scripts/xcresult-junit.py .reports/ios.xcresult .reports/ios-junit.xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ios-test-report
