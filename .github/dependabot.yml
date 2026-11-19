@@ -1,11 +1,19 @@
 version: 2
 updates:
+  # One pull request a month for minor and patch updates, so that the macOS runners are not
+  # flooded; major updates still come one by one.
   - package-ecosystem: swift
     directory: /
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      swift-dependencies:
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]
