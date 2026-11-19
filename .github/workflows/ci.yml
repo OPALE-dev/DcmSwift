@@ -2,7 +2,9 @@
 name: CI
 
 on:
+  # Pull requests run once, as pull requests; pushes run on the default branch.
   push:
+    branches: [master]
   pull_request:
   workflow_dispatch:
 
