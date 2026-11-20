@@ -15,6 +15,8 @@ jobs:
   analyze:
     name: Analyze Swift
     runs-on: macos-26
+    # A Swift analysis takes well under an hour: a stuck one must not hold a macOS runner for six hours.
+    timeout-minutes: 60
     permissions:
       security-events: write
     steps:
