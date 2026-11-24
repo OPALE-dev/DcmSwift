@@ -37,8 +37,9 @@ public final class DICOMDataSetPayload: @unchecked Sendable {
         self.length = length
     }
 
-    /// Bytes of a temporary file, removed with this payload.
-    init(temporaryFile: URL, offset: UInt64 = 0, length: Int) {
+    /// Bytes of a temporary file, removed with this payload: the file lives
+    /// exactly as long as the last item or message that holds it.
+    public init(temporaryFile: URL, offset: UInt64 = 0, length: Int) {
         storage = .file(temporaryFile, offset: offset, owned: true)
         self.length = length
     }

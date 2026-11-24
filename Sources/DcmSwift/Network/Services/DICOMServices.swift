@@ -97,6 +97,17 @@ public struct DICOMRetrieveItem: Sendable {
             payload: DICOMDataSetPayload(file: url, offset: header.dataSetOffset, length: header.dataSetLength))
     }
 
+    /// The data set of a temporary Part 10 file, read when sent; the file is
+    /// removed with the last payload that holds it, for example at the end of
+    /// a C-MOVE or C-GET however long it lasts.
+    public init(temporaryFile url: URL) throws {
+        let header = try DICOMPart10Header.read(url)
+        self.init(
+            sopClassUID: header.sopClassUID, sopInstanceUID: header.sopInstanceUID,
+            transferSyntaxUID: header.transferSyntaxUID,
+            payload: DICOMDataSetPayload(temporaryFile: url, offset: header.dataSetOffset, length: header.dataSetLength))
+    }
+
     /// A data set in memory, encoded in `transferSyntaxUID`.
     public init(dataSet: DataSet, transferSyntaxUID: String = TransferSyntax.explicitVRLittleEndian) throws {
         guard let sopClass = dataSet.string(forTag: "SOPClassUID"),

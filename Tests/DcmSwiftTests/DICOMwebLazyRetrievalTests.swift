@@ -104,4 +104,31 @@ final class DICOMwebLazyRetrievalTests: XCTestCase {
         let slice = DICOMDataSetPayload(file: file, offset: header.dataSetOffset + 1, length: header.dataSetLength - 1)
         XCTAssertNil(slice.part10File(transferSyntax: item.transferSyntaxUID))
     }
+
+    func testTemporaryFileRetrieveItemOwnsItsFile() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dcmswift-owned-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let ds = DataSet()
+        _ = ds.set(value: "1.2.840.10008.5.1.4.1.1.7", forTagName: "SOPClassUID")
+        _ = ds.set(value: "1.2.3.5", forTagName: "SOPInstanceUID")
+        let file = directory.appendingPathComponent("owned.dcm")
+        var bytes = DICOMPart10Header.encodeMetaInformation(sopClassUID: "1.2.840.10008.5.1.4.1.1.7", sopInstanceUID: "1.2.3.5", transferSyntaxUID: TransferSyntax.explicitVRLittleEndian, sourceAETitle: "TEST")
+        let encoded = try DICOMDataSetCoding.encode(ds, transferSyntax: TransferSyntax.explicitVRLittleEndian)
+        bytes.append(encoded)
+        try bytes.write(to: file)
+        var item: DICOMRetrieveItem? = try DICOMRetrieveItem(temporaryFile: file)
+        var copy = item
+        XCTAssertEqual(item?.sopInstanceUID, "1.2.3.5")
+        XCTAssertEqual(try item?.payload.data(), encoded)
+        item = nil
+        XCTAssertTrue(FileManager.default.fileExists(atPath: file.path), "Kept while a holder remains")
+        XCTAssertEqual(try copy?.payload.data(), encoded)
+        copy = nil
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "Removed with the last holder")
+        // An existing file is never removed by its payload.
+        try bytes.write(to: file)
+        _ = try DICOMRetrieveItem(file: file)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: file.path))
+    }
 }
