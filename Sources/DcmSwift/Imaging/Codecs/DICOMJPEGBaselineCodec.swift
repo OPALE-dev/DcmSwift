@@ -63,6 +63,10 @@ public struct DICOMJPEGBaselineCodec: DICOMPixelDataDecoder {
         guard frame.precision == 8 || frame.precision == 12 else {
             throw DICOMCodecError.corruptedData("JPEG precision \(frame.precision)")
         }
+        // DCT coefficients take an Int32 per sample while decoding.
+        try description.checkEncodedFrame(
+            rows: frame.lines, columns: frame.samplesPerLine, components: frame.components.count,
+            bytesPerSample: MemoryLayout<Int32>.stride)
         guard frame.lines == description.rows, frame.samplesPerLine == description.columns,
               frame.components.count == description.samplesPerPixel,
               frame.components.count == 1 || frame.components.count == 3 else {

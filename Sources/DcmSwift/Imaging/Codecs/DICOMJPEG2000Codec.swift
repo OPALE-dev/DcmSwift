@@ -89,6 +89,19 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataCollectionDecoder {
         }
         let partOneTransform = Self.usesMultipleComponentTransform(bytes)
 
+        // OpenJPEG allocates an Int32 for every sample of every component
+        // that SIZ declares: check that geometry before decoding.
+        guard let start = Self.codestreamStart(bytes), let size = Self.imageSize(bytes, codestreamStart: start) else {
+            throw DICOMCodecError.corruptedData("JPEG 2000 data has no SIZ marker segment after SOC")
+        }
+        try description.checkEncodedFrame(
+            rows: size.height, columns: size.width, components: size.components,
+            bytesPerSample: MemoryLayout<Int32>.stride)
+        guard size.width == description.columns, size.height == description.rows else {
+            throw DICOMCodecError.corruptedData(
+                "JPEG 2000 image is \(size.width)x\(size.height), image is \(description.columns)x\(description.rows)")
+        }
+
         // A Part 2 codestream is decoded to its codestream components as a
         // Part 1 one, then the multiple component transformation is inverted.
         var codestream: JPEG2000Codestream?
@@ -296,6 +309,22 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataCollectionDecoder {
             position += 2 + length
         }
         return false
+    }
+
+    /// The image size and component count that the SIZ marker segment
+    /// following SOC declares (ISO/IEC 15444-1 A.5.1).
+    static func imageSize(_ bytes: [UInt8], codestreamStart start: Int) -> (width: Int, height: Int, components: Int)? {
+        let siz = start + 2
+        guard start >= 0, siz + 40 <= bytes.count, bytes[start] == 0xFF, bytes[start + 1] == 0x4F,
+              bytes[siz] == 0xFF, bytes[siz + 1] == 0x51 else {
+            return nil
+        }
+        func u32(_ at: Int) -> Int { (0..<4).reduce(0) { $0 << 8 | Int(bytes[at + $1]) } }
+        let width = u32(siz + 6) - u32(siz + 14)
+        let height = u32(siz + 10) - u32(siz + 18)
+        let components = Int(bytes[siz + 38]) << 8 | Int(bytes[siz + 39])
+        guard width > 0, height > 0, components > 0 else { return nil }
+        return (width, height, components)
     }
 
     /// The SOC marker of a raw codestream or of the JP2 contiguous

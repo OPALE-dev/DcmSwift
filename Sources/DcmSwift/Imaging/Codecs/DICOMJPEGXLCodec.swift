@@ -136,8 +136,23 @@ public struct DICOMJPEGXLCodec: DICOMPixelDataDecoder {
     }
 
     /// The original JPEG bitstream of a JPEG XL JPEG Recompression frame
-    /// (1.2.840.10008.1.2.4.111), bit for bit, from its reconstruction data.
+    /// (1.2.840.10008.1.2.4.111), bit for bit, from its reconstruction data,
+    /// within the default ``DICOMImageLimits``.
+    ///
+    /// - Parameter encodedFrame: The JPEG XL frame holding JPEG
+    ///   reconstruction data.
     public func reconstructJPEG(_ encodedFrame: Data) throws -> Data {
+        try reconstructJPEG(encodedFrame, limits: DICOMImageLimits())
+    }
+
+    /// The original JPEG bitstream of a JPEG XL JPEG Recompression frame
+    /// (1.2.840.10008.1.2.4.111), bit for bit, from its reconstruction data.
+    ///
+    /// - Parameters:
+    ///   - encodedFrame: The JPEG XL frame holding JPEG reconstruction data.
+    ///   - limits: ``DICOMImageLimits/maximumFrameBytes`` bounds the buffer
+    ///     that receives the JPEG bitstream.
+    public func reconstructJPEG(_ encodedFrame: Data, limits: DICOMImageLimits) throws -> Data {
         guard let decoder = JxlDecoderCreate(nil) else {
             throw DICOMCodecError.unsupportedImage("libjxl cannot allocate a decoder")
         }
@@ -165,6 +180,7 @@ public struct DICOMJPEGXLCodec: DICOMPixelDataDecoder {
                         throw DICOMCodecError.corruptedData("libjxl rejected the JPEG buffer")
                     }
                 case JXL_DEC_JPEG_NEED_MORE_OUTPUT:
+                    try limits.checkBuffer(count: DICOMImageLimits.product(capacity, 2), bytesPerElement: 1)
                     let used = capacity - JxlDecoderReleaseJPEGBuffer(decoder)
                     let larger = UnsafeMutablePointer<UInt8>.allocate(capacity: capacity * 2)
                     larger.update(from: buffer, count: used)
@@ -214,6 +230,8 @@ public struct DICOMJPEGXLCodec: DICOMPixelDataDecoder {
         guard info.num_extra_channels == 0 else {
             throw DICOMCodecError.unsupportedImage("JPEG XL extra channels")
         }
+        try description.checkEncodedFrame(
+            rows: Int(info.ysize), columns: Int(info.xsize), components: Int(info.num_color_channels))
         guard info.xsize == description.columns, info.ysize == description.rows else {
             throw DICOMCodecError.corruptedData(
                 "JPEG XL is \(info.xsize)x\(info.ysize), DICOM attributes are \(description.columns)x\(description.rows)")

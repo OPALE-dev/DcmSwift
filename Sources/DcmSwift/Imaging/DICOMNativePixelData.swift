@@ -48,8 +48,24 @@ public struct DICOMNativePixelData {
         case bigEndianCells
     }
 
+    /// Reads the native Pixel Data of a Data Set with the default
+    /// ``DICOMImageLimits``.
+    ///
+    /// - Parameter dataset: The Data Set holding the Image Pixel Module and
+    ///   native Pixel Data.
     public init(dataset: DataSet) throws {
-        try self.init(dataset: dataset, description: DICOMPixelDescription(dataset: dataset))
+        try self.init(dataset: dataset, limits: DICOMImageLimits())
+    }
+
+    /// Reads the native Pixel Data of a Data Set.
+    ///
+    /// - Parameters:
+    ///   - dataset: The Data Set holding the Image Pixel Module and native
+    ///     Pixel Data.
+    ///   - limits: The dimensions, buffer size, and frame count accepted
+    ///     before any pixel is decoded.
+    public init(dataset: DataSet, limits: DICOMImageLimits) throws {
+        try self.init(dataset: dataset, description: DICOMPixelDescription(dataset: dataset, limits: limits))
     }
 
     public init(dataset: DataSet, description: DICOMPixelDescription) throws {
@@ -85,7 +101,12 @@ public struct DICOMNativePixelData {
     }
 
     private init(description: DICOMPixelDescription, storage: Storage, byteLayout: ByteLayout) throws {
-        let requiredBits = description.bitsPerFrame * description.numberOfFrames
+        let requiredBits = DICOMImageLimits.product(
+            DICOMImageLimits.product(description.encodedSamplesPerFrame, description.bitsAllocated),
+            description.numberOfFrames)
+        guard requiredBits < .max else {
+            throw DICOMPixelDataError.invalidAttribute("NumberOfFrames", "the declared Pixel Data size overflows")
+        }
         let requiredBytes = (requiredBits + 7) / 8
         guard storage.count >= requiredBytes else {
             throw DICOMPixelDataError.truncatedPixelData(expectedBytes: requiredBytes, actualBytes: storage.count)
@@ -142,6 +163,7 @@ public struct DICOMNativePixelData {
             throw DICOMPixelDataError.invalidAttribute("PixelData", "floating point samples have no stored integer values")
         }
         let (range, bitOffset) = try byteRange(of: frame)
+        try checkSampleBuffer(of: Int64.self)
         let bytes = try normalizedBytes(in: range)
         let encoded = description.encodedSamplesPerFrame
         var samples = [Int64](repeating: 0, count: encoded)
@@ -187,6 +209,7 @@ public struct DICOMNativePixelData {
             return try storedValues(frame: frame).map(Double.init)
         }
         let (range, _) = try byteRange(of: frame)
+        try checkSampleBuffer(of: Double.self)
         let bytes = try normalizedBytes(in: range)
         let width = description.bitsAllocated / 8
         let bigEndian = byteLayout == .bigEndianCells
@@ -200,6 +223,14 @@ public struct DICOMNativePixelData {
             values[index] = width == 4 ? Double(Float(bitPattern: UInt32(bits))) : Double(bitPattern: bits)
         }
         return arrangeByPixel(values)
+    }
+
+    /// Checks the per-sample buffers of one frame, which hold up to
+    /// `samplesPerPixel` values per pixel, against the description's limits.
+    private func checkSampleBuffer<T>(of _: T.Type) throws {
+        try description.limits.checkBuffer(
+            count: DICOMImageLimits.product(description.pixelsPerFrame, description.samplesPerPixel),
+            bytesPerElement: MemoryLayout<T>.stride)
     }
 
     /// Reorders encoded samples into `samplesPerPixel` values per pixel.

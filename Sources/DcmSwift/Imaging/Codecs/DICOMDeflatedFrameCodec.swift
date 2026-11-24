@@ -10,6 +10,8 @@ public struct DICOMDeflatedFrameCodec: DICOMPixelDataDecoder {
     public init() {}
 
     public func decode(_ encodedFrame: Data, description: DICOMPixelDescription) throws -> DICOMDecodedFrame {
+        try description.checkEncodedFrame(
+            rows: description.rows, columns: description.columns, components: description.samplesPerPixel)
         let frameBytes = (description.bitsPerFrame + 7) / 8
         let data: Data
         do {

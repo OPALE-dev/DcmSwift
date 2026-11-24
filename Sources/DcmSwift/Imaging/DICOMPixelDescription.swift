@@ -14,6 +14,10 @@ public enum DICOMPixelDataError: Error, Equatable, CustomStringConvertible {
     case truncatedPixelData(expectedBytes: Int, actualBytes: Int)
     case frameOutOfRange(Int, numberOfFrames: Int)
     case invalidLookupTable(String, String)
+    /// A declared quantity exceeds a ``DICOMImageLimits`` value: the named
+    /// quantity, its value (`Int.max` when computing it overflows), and the
+    /// limit. Nothing proportional to the value was allocated.
+    case limitExceeded(String, value: Int, limit: Int)
 
     public var description: String {
         switch self {
@@ -33,6 +37,9 @@ public enum DICOMPixelDataError: Error, Equatable, CustomStringConvertible {
             return "Frame \(frame) is outside 0..<\(count)"
         case .invalidLookupTable(let name, let reason):
             return "Invalid \(name): \(reason)"
+        case .limitExceeded(let name, let value, let limit):
+            let amount = value == .max ? "an overflowing number of" : "\(value)"
+            return "Image declares \(amount) \(name), above the limit of \(limit)"
         }
     }
 }
@@ -85,6 +92,9 @@ public struct DICOMPixelDescription: Equatable, Sendable {
     public let planarConfiguration: Int
     public let numberOfFrames: Int
     public let sampleFormat: SampleFormat
+    /// The limits checked when this description was read and applied by the
+    /// decoders and renderers that use it.
+    public internal(set) var limits: DICOMImageLimits
 
     public var pixelsPerFrame: Int { rows * columns }
 
@@ -111,7 +121,23 @@ public struct DICOMPixelDescription: Equatable, Sendable {
     /// are not enforced.
     public let isEncapsulated: Bool
 
+    /// Reads and validates the Image Pixel Description of a Data Set with
+    /// the default ``DICOMImageLimits``.
+    ///
+    /// - Parameter dataset: The Data Set holding the Image Pixel Module.
     public init(dataset: DataSet) throws {
+        try self.init(dataset: dataset, limits: DICOMImageLimits())
+    }
+
+    /// Reads and validates the Image Pixel Description of a Data Set.
+    ///
+    /// - Parameters:
+    ///   - dataset: The Data Set holding the Image Pixel Module.
+    ///   - limits: The dimensions, buffer size, and frame count accepted
+    ///     before any pixel is decoded.
+    /// - Throws: ``DICOMPixelDataError`` when an attribute is missing or
+    ///   invalid, or when the image exceeds `limits`.
+    public init(dataset: DataSet, limits: DICOMImageLimits) throws {
         let scope = DICOMAttributeScope(dataset: dataset)
         let sampleFormat: SampleFormat
         if scope.element("PixelData") != nil {
@@ -125,7 +151,7 @@ public struct DICOMPixelDescription: Equatable, Sendable {
         }
         try self.init(
             scope: scope, sampleFormat: sampleFormat,
-            isEncapsulated: scope.element("PixelData") is DataSequence)
+            isEncapsulated: scope.element("PixelData") is DataSequence, limits: limits)
     }
 
     /// A description of decoded pixels, for codecs whose output differs from
@@ -135,7 +161,8 @@ public struct DICOMPixelDescription: Equatable, Sendable {
         photometricInterpretation: DICOMPhotometricInterpretation,
         bitsAllocated: Int, bitsStored: Int, highBit: Int, isSigned: Bool,
         planarConfiguration: Int, numberOfFrames: Int,
-        sampleFormat: SampleFormat = .integer, isEncapsulated: Bool = false
+        sampleFormat: SampleFormat = .integer, isEncapsulated: Bool = false,
+        limits: DICOMImageLimits = DICOMImageLimits()
     ) {
         self.rows = rows
         self.columns = columns
@@ -149,6 +176,7 @@ public struct DICOMPixelDescription: Equatable, Sendable {
         self.numberOfFrames = numberOfFrames
         self.sampleFormat = sampleFormat
         self.isEncapsulated = isEncapsulated
+        self.limits = limits
     }
 
     /// The same description for one native frame, optionally with another
@@ -162,11 +190,23 @@ public struct DICOMPixelDescription: Equatable, Sendable {
             photometricInterpretation: photometricInterpretation ?? self.photometricInterpretation,
             bitsAllocated: bitsAllocated, bitsStored: bitsStored, highBit: highBit, isSigned: isSigned,
             planarConfiguration: planarConfiguration ?? self.planarConfiguration, numberOfFrames: 1,
-            sampleFormat: sampleFormat, isEncapsulated: false)
+            sampleFormat: sampleFormat, isEncapsulated: false, limits: limits)
     }
 
-    init(scope: DICOMAttributeScope, sampleFormat: SampleFormat, isEncapsulated: Bool) throws {
+    /// Checks the frame that an encoded stream declares against the limits,
+    /// before a codec allocates memory for it.
+    func checkEncodedFrame(rows: Int, columns: Int, components: Int, bytesPerSample: Int? = nil) throws {
+        try limits.checkFrame(
+            rows: rows, columns: columns, samplesPerPixel: components,
+            bytesPerSample: bytesPerSample ?? max(1, bitsAllocated / 8))
+    }
+
+    init(
+        scope: DICOMAttributeScope, sampleFormat: SampleFormat, isEncapsulated: Bool,
+        limits: DICOMImageLimits = DICOMImageLimits()
+    ) throws {
         self.isEncapsulated = isEncapsulated
+        self.limits = limits
         func required(_ name: String) throws -> Int {
             guard let value = scope.integer(name) else { throw DICOMPixelDataError.missingAttribute(name) }
             return value
@@ -244,6 +284,7 @@ public struct DICOMPixelDescription: Equatable, Sendable {
         }
 
         try validatePhotometricConstraints()
+        try limits.check(self)
     }
 
     private func validatePhotometricConstraints() throws {

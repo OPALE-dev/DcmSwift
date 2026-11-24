@@ -28,6 +28,10 @@ public struct DICOMJPEGLSCodec: DICOMPixelDataDecoder {
     public func decode(_ encodedFrame: Data, description: DICOMPixelDescription) throws -> DICOMDecodedFrame {
         let stream = try JPEGLSStream([UInt8](encodedFrame))
         let frame = stream.frame
+        // Component planes hold a UInt16 per sample while decoding.
+        try description.checkEncodedFrame(
+            rows: frame.lines, columns: frame.samplesPerLine, components: frame.components.count,
+            bytesPerSample: MemoryLayout<UInt16>.stride)
         guard frame.lines == description.rows, frame.samplesPerLine == description.columns,
               frame.components.count == description.samplesPerPixel else {
             throw DICOMCodecError.corruptedData(

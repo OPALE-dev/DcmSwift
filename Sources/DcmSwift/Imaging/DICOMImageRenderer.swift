@@ -115,10 +115,25 @@ public struct DICOMImageRenderer {
     private let shared: DICOMAttributeScope?
     private let perFrame: [DICOMAttributeScope]
 
+    /// Prepares the rendering of a Data Set's native or encapsulated Pixel
+    /// Data with the default ``DICOMImageLimits``.
+    ///
+    /// - Parameter dataset: The Data Set holding the image.
     public init(dataset: DataSet) throws {
+        try self.init(dataset: dataset, limits: DICOMImageLimits())
+    }
+
+    /// Prepares the rendering of a Data Set's native or encapsulated Pixel
+    /// Data.
+    ///
+    /// - Parameters:
+    ///   - dataset: The Data Set holding the image.
+    ///   - limits: The dimensions, buffer size, and frame count accepted
+    ///     before any frame is decoded or rendered.
+    public init(dataset: DataSet, limits: DICOMImageLimits) throws {
         let scope = DICOMAttributeScope(dataset: dataset)
         if scope.element("PixelData") is DataSequence {
-            let encapsulated = try DICOMEncapsulatedPixelData(dataset: dataset)
+            let encapsulated = try DICOMEncapsulatedPixelData(dataset: dataset, limits: limits)
             guard DICOMCodecRegistry.decoder(for: encapsulated.transferSyntaxUID) != nil else {
                 throw DICOMPixelDataError.encapsulatedPixelData(transferSyntax: encapsulated.transferSyntaxUID)
             }
@@ -126,7 +141,7 @@ public struct DICOMImageRenderer {
             self.encapsulatedPixelData = encapsulated
             self.description = encapsulated.description
         } else {
-            let pixelData = try DICOMNativePixelData(dataset: dataset)
+            let pixelData = try DICOMNativePixelData(dataset: dataset, limits: limits)
             self.pixelData = pixelData
             self.encapsulatedPixelData = nil
             self.description = pixelData.description
@@ -213,7 +228,19 @@ public struct DICOMImageRenderer {
             throw DICOMPixelDataError.frameOutOfRange(frame, numberOfFrames: description.numberOfFrames)
         }
         let decoded = try encapsulatedPixelData.decodedFrame(frame)
-        return (try DICOMNativePixelData(description: decoded.description, decodedFrames: decoded.data), 0)
+        // Rendered images take their size from the Image Pixel Module; a
+        // decoder must not return a frame of another size.
+        guard decoded.description.rows == description.rows, decoded.description.columns == description.columns,
+              decoded.description.numberOfFrames == 1 else {
+            throw DICOMCodecError.corruptedData(
+                "decoded frame is \(decoded.description.columns)x\(decoded.description.rows), "
+                    + "image is \(description.columns)x\(description.rows)")
+        }
+        // The decoder's description may carry the default limits; the
+        // renderer's own limits bound the buffers computed from the frame.
+        var frameDescription = decoded.description
+        frameDescription.limits = description.limits
+        return (try DICOMNativePixelData(description: frameDescription, decodedFrames: decoded.data), 0)
     }
 
     /// Stored sample values of a frame, decoding it first when encapsulated.
@@ -318,6 +345,7 @@ public struct DICOMImageRenderer {
         }
 
         let invert = options.honorsMonochrome1 && source.pixels.description.photometricInterpretation == .monochrome1
+        try description.limits.checkBuffer(count: values.count, bytesPerElement: 1)
         let pixels = values.map { value -> UInt8 in
             let output = value.isFinite ? voi(value) : 0
             let byte = UInt8(clamping: Int(min(max(output, 0), 255).rounded()))
@@ -342,6 +370,7 @@ public struct DICOMImageRenderer {
         let toByte = { (value: Double) -> UInt8 in
             UInt8(clamping: Int((min(max(value, 0), maximum) / maximum * 255).rounded()))
         }
+        try description.limits.checkBuffer(count: description.pixelsPerFrame, bytesPerElement: 3)
         var pixels = [UInt8](repeating: 0, count: description.pixelsPerFrame * 3)
 
         if description.photometricInterpretation == .rgb {
@@ -384,6 +413,7 @@ public struct DICOMImageRenderer {
                 "PaletteColorLookupTableDescriptor", "Red, Green, and Blue descriptors differ")
         }
         let samples = try source.pixels.storedValues(frame: source.index)
+        try description.limits.checkBuffer(count: samples.count, bytesPerElement: 3)
         var pixels = [UInt8](repeating: 0, count: samples.count * 3)
         for (index, sample) in samples.enumerated() {
             for channel in 0..<3 {

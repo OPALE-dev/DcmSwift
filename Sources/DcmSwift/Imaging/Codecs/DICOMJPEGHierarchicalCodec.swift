@@ -63,6 +63,10 @@ public struct DICOMJPEGHierarchicalCodec: DICOMPixelDataDecoder {
             throw DICOMCodecError.corruptedData("JPEG stream has no DHP marker")
         }
         let precision = hierarchy.precision
+        // Planes hold one Int per sample while the levels are reconstructed.
+        try description.checkEncodedFrame(
+            rows: hierarchy.lines, columns: hierarchy.samplesPerLine, components: hierarchy.components.count,
+            bytesPerSample: MemoryLayout<Int>.stride)
         guard hierarchy.lines == description.rows, hierarchy.samplesPerLine == description.columns,
               hierarchy.components.count == description.samplesPerPixel,
               hierarchy.components.count == 1 || hierarchy.components.count == 3 else {
@@ -83,7 +87,10 @@ public struct DICOMJPEGHierarchicalCodec: DICOMPixelDataDecoder {
                   }) else {
                 throw DICOMCodecError.corruptedData("JPEG hierarchical frame does not match the DHP marker")
             }
-            guard frame.lines > 0, frame.samplesPerLine > 0 else {
+            // Every level is at most the full resolution that DHP declares
+            // (ITU-T T.81 J.1), which bounds the reference planes.
+            guard frame.lines > 0, frame.samplesPerLine > 0,
+                  frame.lines <= hierarchy.lines, frame.samplesPerLine <= hierarchy.samplesPerLine else {
                 throw DICOMCodecError.corruptedData("JPEG frame dimensions are invalid")
             }
             guard Self.isLossless(frame.process) || precision == 8 || precision == 12 else {

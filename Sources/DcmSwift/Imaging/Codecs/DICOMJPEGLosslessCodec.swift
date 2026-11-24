@@ -27,6 +27,10 @@ public struct DICOMJPEGLosslessCodec: DICOMPixelDataDecoder {
         guard (2...16).contains(frame.precision) else {
             throw DICOMCodecError.corruptedData("JPEG Lossless precision \(frame.precision)")
         }
+        // Each component plane holds one Int per pixel while decoding.
+        try description.checkEncodedFrame(
+            rows: frame.lines, columns: frame.samplesPerLine, components: frame.components.count,
+            bytesPerSample: MemoryLayout<Int>.stride)
         guard frame.lines == description.rows, frame.samplesPerLine == description.columns,
               frame.components.count == description.samplesPerPixel else {
             throw DICOMCodecError.corruptedData(

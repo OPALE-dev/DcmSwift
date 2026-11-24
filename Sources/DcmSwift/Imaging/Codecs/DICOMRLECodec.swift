@@ -15,6 +15,11 @@ public struct DICOMRLECodec: DICOMPixelDataDecoder {
 
     public func decode(_ encodedFrame: Data, description: DICOMPixelDescription) throws -> DICOMDecodedFrame {
         let bytesPerSample = try Self.bytesPerSample(description)
+        // RLE replicate runs expand two bytes to 128: check the declared
+        // frame before allocating it.
+        try description.checkEncodedFrame(
+            rows: description.rows, columns: description.columns,
+            components: description.samplesPerPixel, bytesPerSample: bytesPerSample)
         let pixels = description.pixelsPerFrame
         let samples = description.samplesPerPixel
         let expectedSegments = samples * bytesPerSample

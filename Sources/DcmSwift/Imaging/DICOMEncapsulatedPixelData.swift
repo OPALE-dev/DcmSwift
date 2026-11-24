@@ -27,8 +27,25 @@ public struct DICOMEncapsulatedPixelData {
     private let collectionFragments: [Range<Int>]?
     private let collections = CollectionCache()
 
+    /// Locates the frames of the encapsulated Pixel Data of a Data Set with
+    /// the default ``DICOMImageLimits``.
+    ///
+    /// - Parameter dataset: The Data Set holding the Image Pixel Module and
+    ///   encapsulated Pixel Data.
     public init(dataset: DataSet) throws {
-        let description = try DICOMPixelDescription(dataset: dataset)
+        try self.init(dataset: dataset, limits: DICOMImageLimits())
+    }
+
+    /// Locates the frames of the encapsulated Pixel Data of a Data Set.
+    ///
+    /// - Parameters:
+    ///   - dataset: The Data Set holding the Image Pixel Module and
+    ///     encapsulated Pixel Data.
+    ///   - limits: The dimensions, buffer size, and frame count accepted
+    ///     before any frame is decoded; decoders apply them to the dimensions
+    ///     their encoded streams declare.
+    public init(dataset: DataSet, limits: DICOMImageLimits) throws {
+        let description = try DICOMPixelDescription(dataset: dataset, limits: limits)
         let scope = DICOMAttributeScope(dataset: dataset)
         guard let sequence = scope.element("PixelData") as? DataSequence else {
             throw DICOMPixelDataError.missingPixelData
