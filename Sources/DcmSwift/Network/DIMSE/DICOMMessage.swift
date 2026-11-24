@@ -115,6 +115,12 @@ public final class DICOMDataSetPayload: @unchecked Sendable {
         }
     }
 
+    /// Reads the exact wire bytes without collecting a file-backed dataset in memory.
+    public func forEachChunk(_ body: (Data) throws -> Void) throws {
+        let read = try chunkReader(of: 1 << 20)
+        while let bytes = try read() { try body(bytes) }
+    }
+
     /// Legacy DIMSE iterator: the receiver and fragmenter enforce the declared length.
     func chunks(of chunk: Int) throws -> AnyIterator<Data> {
         let read=try chunkReader(of:chunk)
