@@ -237,16 +237,18 @@ public final class DICOMServer: Sendable {
         }
         // DIMSE-N: this side performs operations, and receives notifications
         // from requestors granted the SCP role.
-        for sopClass in offered.normalized {
+        for sopClass in offered.normalized where sopClass != DICOMSOPClass.storageCommitmentPushModel {
             syntaxes[sopClass] = DICOMAbstractSyntaxSupport(
                 transferSyntaxes: configuration.transferSyntaxes, scpRole: true, scuRole: true)
         }
-        if offered.storageCommitment || offered.storageCommitmentReceiver {
+        let commitmentReceiver = offered.storageCommitmentReceiver
+            || offered.normalized.contains(DICOMSOPClass.storageCommitmentPushModel)
+        if offered.storageCommitment || commitmentReceiver {
             // A receiver also accepts SCPs that send results without
             // proposing their role (PS3.4 J.3.3.2 requires it).
             syntaxes[DICOMSOPClass.storageCommitmentPushModel] = DICOMAbstractSyntaxSupport(
                 transferSyntaxes: configuration.transferSyntaxes, scpRole: true,
-                scuRole: offered.storageCommitmentReceiver)
+                scuRole: commitmentReceiver)
         }
         return syntaxes
     }

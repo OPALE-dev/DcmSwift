@@ -327,6 +327,10 @@ struct DICOMRequestDispatcher: Sendable {
                     await commitStorage(
                         normalizedRequest, on: association, context: context, respond: respond)
                     return
+                case .eventReport where normalized[context.presentationContext.abstractSyntax] != nil:
+                    // An explicit DIMSE-N handler validates the original command and dataset.
+                    // Do not go through the convenience result decoder, which normalizes them.
+                    break
                 case .eventReport(let type) where type == 1 || type == 2:
                     guard let dataSet = try normalizedRequest.dataSet() else {
                         await respond(DICOMNormalizedResponse(status: .missingAttribute, errorComment: "no Event Information"))
