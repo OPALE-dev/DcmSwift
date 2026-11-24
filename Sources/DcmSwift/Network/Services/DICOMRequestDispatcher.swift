@@ -284,8 +284,11 @@ struct DICOMRequestDispatcher: Sendable {
         let runtime = association.runtime
         let command = request.command
         let operation = DICOMNormalizedOperation(command)!
-        let sopClass = command.affectedSOPClassUID ?? command.requestedSOPClassUID ?? ""
-        let sopInstance = command.affectedSOPInstanceUID ?? command.requestedSOPInstanceUID
+        let rawCommitmentEvent = command.field == .nEventReportRequest
+            && context.presentationContext.abstractSyntax == DICOMSOPClass.storageCommitmentPushModel
+            && normalized[DICOMSOPClass.storageCommitmentPushModel] != nil
+        let sopClass = command.affectedSOPClassUID ?? (rawCommitmentEvent ? nil : command.requestedSOPClassUID) ?? ""
+        let sopInstance = command.affectedSOPInstanceUID ?? (rawCommitmentEvent ? nil : command.requestedSOPInstanceUID)
         let syntax = context.presentationContext.transferSyntax
 
         func respond(_ response: DICOMNormalizedResponse) async {
@@ -327,7 +330,7 @@ struct DICOMRequestDispatcher: Sendable {
                     await commitStorage(
                         normalizedRequest, on: association, context: context, respond: respond)
                     return
-                case .eventReport where normalized[context.presentationContext.abstractSyntax] != nil:
+                case .eventReport where rawCommitmentEvent:
                     // An explicit DIMSE-N handler validates the original command and dataset.
                     // Do not go through the convenience result decoder, which normalizes them.
                     break
