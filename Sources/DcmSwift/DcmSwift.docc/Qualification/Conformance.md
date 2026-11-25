@@ -270,7 +270,7 @@ DcmSwift is a user agent (`DICOMwebClient`) and a native origin server
 | Common behavior | Support |
 | --- | --- |
 | Content negotiation (8.7) | <ul><li>Accept header and <code>accept</code> Query Parameter with qvalues, wildcards, and <code>transfer-syntax</code> parameters</li><li>406 without an Accept header or acceptable type; 400 when DICOM and rendered-only media types are mixed</li><li>Default Transfer Syntax per media type (Tables 8.7.3-2, 8.7.3-4, 8.7.3-5)</li></ul> |
-| Errors (8.5, 8.6.3) | Status Reports in <code>text/html</code>; 404, 405 with Allow, 406, 413, 415, 501 |
+| Errors (8.5, 8.6.3) | <ul><li>Status Reports in <code>text/html</code>; 404, 405 with Allow, 406, 413, 415, 501</li><li>Rendered, thumbnail, frames, and Pixel Data resources of an image over the <code>DICOMImageLimits</code>, or in a Transfer Syntax without an available decoder (HTJ2K while it is disabled), are answered with 406 Not Acceptable: no requested representation can be produced (Table 8.5-1). 413 concerns the request payload and 400 a malformed request, so neither fits; the Retrieve status codes of 10.4.3 were not checked for this choice</li><li><code>DICOMwebHTTPResponse.error</code> keeps the refusal as a public <code>DICOMwebHTTPError</code>, with the <code>DICOMPixelDataError</code> behind it, so that the application can tell these refusals from a missing resource</li></ul> |
 | Transport | HTTP/1.1 with keep-alive; request payloads read as they are consumed; responses streamed with Content-Length or chunked coding; TLS with the configuration of the DIMSE profiles; a configurable public origin for Retrieve URLs behind a proxy |
 
 ### Worklist Service (UPS-RS, PS3.18 11 and 8.10)

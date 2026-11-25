@@ -45,11 +45,16 @@ public struct DICOMwebHTTPResponse: Sendable {
     public var status: Int
     public var headers: DICOMwebMultipart.Headers
     public var body: Body
+    /// The refusal behind an error status, when the server or a service
+    /// raised one; nil for successful responses and other statuses.
+    public var error: DICOMwebHTTPError?
 
-    public init(status: Int, headers: DICOMwebMultipart.Headers = .init(), body: Body = .empty) {
+    public init(status: Int, headers: DICOMwebMultipart.Headers = .init(), body: Body = .empty,
+                error: DICOMwebHTTPError? = nil) {
         self.status = status
         self.headers = headers
         self.body = body
+        self.error = error
     }
 
     /// The whole payload, collected.
@@ -162,7 +167,9 @@ public struct DICOMwebOriginServer: Sendable {
                 return Self.report(405, "\(request.method) is not supported on \(resource.path)", allow: allow)
             }
         } catch let error as DICOMwebHTTPError {
-            return Self.report(error.status, error.message)
+            return Self.report(error)
+        } catch let error as DICOMPixelDataError {
+            return Self.report(Self.refusal(error) ?? DICOMwebHTTPError(500, error.description, pixelDataError: error))
         } catch {
             return Self.report(500, String(describing: error))
         }
@@ -412,6 +419,9 @@ public struct DICOMwebOriginServer: Sendable {
             let dataSet = try await dataSet(item,context:context)
             let description: DICOMPixelDescription
             do { description = try DICOMPixelDescription(dataset: dataSet) } catch {
+                // An image over the limits is refused, not taken for one
+                // without Pixel Data.
+                if let error = error as? DICOMPixelDataError, let refusal = Self.refusal(error) { throw refusal }
                 if resource.instance != nil { throw DICOMwebHTTPError(404, "The instance has no Pixel Data") }
                 continue
             }
@@ -424,9 +434,18 @@ public struct DICOMwebOriginServer: Sendable {
             if description.isEncapsulated, let compressed = DICOMwebMediaType.compressedBulkData(for: item.transferSyntaxUID) {
                 supported.append(.multipartRelated(compressed))
             }
-            let selected = try negotiate(request, accept: accept, supported: supported, defaultType: supported.first,
+            let selected: DICOMwebMediaType
+            do {
+                selected = try negotiate(request, accept: accept, supported: supported, defaultType: supported.first,
                                          defaultTransferSyntax: description.isEncapsulated && supported.count == 1
                                              ? item.transferSyntaxUID : TransferSyntax.explicitVRLittleEndian)
+            } catch let error as DICOMwebHTTPError where error.status == 406 && description.isEncapsulated
+                        && DICOMCodecRegistry.decoder(for: item.transferSyntaxUID) == nil {
+                // Uncompressed frames were refused because no decoder is available.
+                let missing = DICOMPixelDataError.encapsulatedPixelData(transferSyntax: item.transferSyntaxUID)
+                throw DICOMwebHTTPError(406, Self.refusal(missing)!.message + ". " + error.message,
+                                        pixelDataError: missing)
+            }
             let part = selected.relatedType ?? selected
             let compressed = part != .octetStream && part.essence != "application/octet-stream"
             for number in numbers where number < 1 || number > description.numberOfFrames {
@@ -733,6 +752,35 @@ public struct DICOMwebOriginServer: Sendable {
 
     /// A Status Report (PS3.18 8.6.3) in text/html, the default media type of
     /// the Text resource category.
+    static func report(_ error: DICOMwebHTTPError) -> DICOMwebHTTPResponse {
+        var response = report(error.status, error.message)
+        response.error = error
+        return response
+    }
+
+    /// The refusal of a request whose image the server cannot decode or
+    /// render, or nil when `error` means that there is no image to render.
+    ///
+    /// Both cases are answered with 406 Not Acceptable (PS3.18 8.5, Table
+    /// 8.5-1: no representation of the resource that the request accepts can
+    /// be produced). 413 refers to the request payload and 400 to a malformed
+    /// request, neither of which applies to a stored image over the limits.
+    static func refusal(_ error: DICOMPixelDataError) -> DICOMwebHTTPError? {
+        switch error {
+        case .limitExceeded:
+            return DICOMwebHTTPError(406, "\(error.description); the server decodes and renders images within its "
+                                     + "limits only", pixelDataError: error)
+        case .encapsulatedPixelData(let transferSyntax):
+            var message = "No decoder is available for Transfer Syntax \(transferSyntax)"
+            if DICOMCapabilities.isDisabledHTJ2K(transferSyntax) {
+                message += " (HTJ2K decoding is disabled)"
+            }
+            return DICOMwebHTTPError(406, message, pixelDataError: error)
+        default:
+            return nil
+        }
+    }
+
     static func report(_ status: Int, _ message: String, allow: String? = nil) -> DICOMwebHTTPResponse {
         var headers = DICOMwebMultipart.Headers()
         headers["Content-Type"] = "text/html; charset=utf-8"
@@ -748,12 +796,26 @@ public struct DICOMwebOriginServer: Sendable {
 }
 
 /// An error answered with an HTTP status and a Status Report.
-struct DICOMwebHTTPError: Error {
-    let status: Int
-    let message: String
+///
+/// Services may throw it to choose the status of their refusal. A response
+/// keeps it in ``DICOMwebHTTPResponse/error``, so that the application can
+/// tell, for example, an image over its ``DICOMImageLimits`` or without an
+/// available decoder (``pixelDataError``) from a missing resource.
+public struct DICOMwebHTTPError: Error, Equatable, Sendable, CustomStringConvertible {
+    /// The HTTP status code.
+    public let status: Int
+    /// The text of the Status Report.
+    public let message: String
+    /// The Pixel Data error behind the refusal, such as
+    /// ``DICOMPixelDataError/limitExceeded(_:value:limit:)`` or
+    /// ``DICOMPixelDataError/encapsulatedPixelData(transferSyntax:)``.
+    public let pixelDataError: DICOMPixelDataError?
 
-    init(_ status: Int, _ message: String) {
+    public init(_ status: Int, _ message: String, pixelDataError: DICOMPixelDataError? = nil) {
         self.status = status
         self.message = message
+        self.pixelDataError = pixelDataError
     }
+
+    public var description: String { "\(status) \(message)" }
 }

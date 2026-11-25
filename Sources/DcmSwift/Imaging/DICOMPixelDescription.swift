@@ -3,7 +3,7 @@ import Foundation
 /// Errors raised while interpreting Pixel Data and the attributes describing
 /// it. Every error identifies the attribute or condition at fault so that
 /// malformed images are reported instead of rendered incorrectly.
-public enum DICOMPixelDataError: Error, Equatable, CustomStringConvertible {
+public enum DICOMPixelDataError: Error, Equatable, Sendable, CustomStringConvertible {
     case missingAttribute(String)
     case invalidAttribute(String, String)
     case unsupportedPhotometricInterpretation(String)

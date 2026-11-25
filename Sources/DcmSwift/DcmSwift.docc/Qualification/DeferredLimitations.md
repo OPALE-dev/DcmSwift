@@ -327,6 +327,10 @@ conformance without that evidence.
   - the study, series, and instance Bulk Data resources: metadata references
     only Pixel Data, through the Pixel Data resource, and keeps other binary
     values inline;
+  - a status for a frame that fails to decode while uncompressed frames are
+    streamed: the frames resource checks the limits and the decoder before
+    its 200 status, but decodes each frame as it is sent, so a corrupt frame
+    ends the response early instead of being reported;
   - rendered image/gif (required for REST origin servers), video, and the
     MPR and 3D volume resources; burned-in annotations and ICC profiles are
     answered with 299 Warnings;

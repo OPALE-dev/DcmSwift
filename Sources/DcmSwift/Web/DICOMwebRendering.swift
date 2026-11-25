@@ -194,7 +194,16 @@ extension DICOMwebOriginServer {
         var frames: [(dataSet: DataSet, frame: Int, location: String)] = []
         for item in thumbnail ? Array(items.prefix(1)) : items {
             let dataSet = try DICOMwebTranscoding.dataSet(item)
-            guard let description = try? DICOMPixelDescription(dataset: dataSet) else { continue }
+            let description: DICOMPixelDescription
+            do { description = try DICOMPixelDescription(dataset: dataSet) } catch let error as DICOMPixelDataError {
+                // An image over the limits is refused; an object without an
+                // image, such as a report in the same series, is left out.
+                if let refusal = Self.refusal(error) { throw refusal }
+                continue
+            }
+            if description.isEncapsulated, DICOMCodecRegistry.decoder(for: item.transferSyntaxUID) == nil {
+                throw Self.refusal(.encapsulatedPixelData(transferSyntax: item.transferSyntaxUID))!
+            }
             let numbers = resource.frames ?? Array(1...max(1, description.numberOfFrames))
             for number in thumbnail ? Array(numbers.prefix(1)) : numbers {
                 guard number <= description.numberOfFrames else {
@@ -212,12 +221,17 @@ extension DICOMwebOriginServer {
                                              defaultType: single ? .jpeg : .multipartRelated(.jpeg))
         let format = selected.relatedType ?? selected
         func encode(_ entry: (dataSet: DataSet, frame: Int, location: String)) throws -> Data {
-            let renderer = try DICOMImageRenderer(dataset: entry.dataSet)
-            var options = DICOMRenderingOptions()
-            if let window = parameters.window { options.voi = .window(window) }
-            var image = try renderer.render(frame: entry.frame, options: options)
-            if let viewport = parameters.viewport { image = DICOMwebRenderingParameters.apply(viewport, to: image) }
-            return format == .png ? try image.pngData() : try image.jpegData(quality: parameters.quality ?? 90)
+            do {
+                let renderer = try DICOMImageRenderer(dataset: entry.dataSet)
+                var options = DICOMRenderingOptions()
+                if let window = parameters.window { options.voi = .window(window) }
+                var image = try renderer.render(frame: entry.frame, options: options)
+                if let viewport = parameters.viewport { image = DICOMwebRenderingParameters.apply(viewport, to: image) }
+                return format == .png ? try image.pngData() : try image.jpegData(quality: parameters.quality ?? 90)
+            } catch let error as DICOMPixelDataError {
+                // A frame over the limits or without a decoder, found while rendering.
+                throw Self.refusal(error) ?? error
+            }
         }
 
         var headers = DICOMwebMultipart.Headers()
