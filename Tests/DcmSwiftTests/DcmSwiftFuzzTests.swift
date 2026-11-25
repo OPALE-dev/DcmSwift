@@ -17,13 +17,19 @@ import XCTest
 final class DcmSwiftFuzzTests: XCTestCase {
     // MARK: Harness
 
+    private var htj2kWasEnabled = false
+
     override func setUp() {
         super.setUp()
         // Corrupt inputs log parse errors; millions of them would dominate.
         Logger.setMaxLevel(.FATAL)
+        // The HTJ2K seeds exercise the HTJ2K codec, disabled by default.
+        htj2kWasEnabled = DICOMCapabilities.isHTJ2KEnabled
+        DICOMCapabilities.isHTJ2KEnabled = true
     }
 
     override func tearDown() {
+        DICOMCapabilities.isHTJ2KEnabled = htj2kWasEnabled
         Logger.setMaxLevel(.VERBOSE)
         super.tearDown()
     }

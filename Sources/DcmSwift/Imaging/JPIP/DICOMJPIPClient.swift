@@ -67,11 +67,15 @@ public final class DICOMJPIPClient: Sendable {
 
     /// A copy of the instance with its Pixel Data retrieved: the frames are
     /// encapsulated in the matching JPEG 2000 or HTJ2K Transfer Syntax, so
-    /// that it renders, converts, and stores like any other instance.
+    /// that it renders, converts, and stores like any other instance. JPIP
+    /// HTJ2K Referenced instances throw
+    /// ``DICOMCodecError/unsupportedTransferSyntax(_:)`` while
+    /// ``DICOMCapabilities/isHTJ2KEnabled`` is `false`.
     public func resolve(_ dataSet: DataSet) async throws -> DataSet {
         guard let uid = dataSet.transferSyntax?.tsUID, TransferSyntax.jpipReferencedSyntaxes.contains(uid) else {
             throw JPIPError("the data set is not in a JPIP Referenced Transfer Syntax")
         }
+        guard !DICOMCapabilities.isDisabledHTJ2K(uid) else { throw DICOMCodecError.unsupportedTransferSyntax(uid) }
         let description = try DICOMPixelDescription(dataset: dataSet)
         var codestreams: [Data] = []
         for frame in 1...description.numberOfFrames {

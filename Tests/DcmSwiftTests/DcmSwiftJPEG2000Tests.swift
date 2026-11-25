@@ -8,6 +8,20 @@ import XCTest
 /// an OpenJPEG JP2 file followed by a DICOM padding byte. Lossless `.raw`
 /// files hold the source samples, lossy ones the encoder's own decoding.
 final class DcmSwiftJPEG2000Tests: XCTestCase {
+    private var htj2kWasEnabled = false
+
+    // These tests cover the HTJ2K codec, which is disabled by default;
+    // DcmSwiftHTJ2KCapabilityTests covers the disabled state.
+    override func setUp() {
+        super.setUp()
+        htj2kWasEnabled = DICOMCapabilities.isHTJ2KEnabled
+        DICOMCapabilities.isHTJ2KEnabled = true
+    }
+
+    override func tearDown() {
+        DICOMCapabilities.isHTJ2KEnabled = htj2kWasEnabled
+        super.tearDown()
+    }
 
     private struct Fixture: Decodable {
         let name: String

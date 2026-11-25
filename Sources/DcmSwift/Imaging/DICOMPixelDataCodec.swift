@@ -49,7 +49,8 @@ public enum DICOMCodecError: Error, Equatable, CustomStringConvertible {
 
 /// The decoders available to `DICOMEncapsulatedPixelData`. Applications may
 /// register additional decoders, which take precedence over the built-in
-/// ones for the Transfer Syntaxes they declare.
+/// ones for the Transfer Syntaxes they declare. The built-in HTJ2K decoder
+/// is returned only while ``DICOMCapabilities/isHTJ2KEnabled`` is `true`.
 public enum DICOMCodecRegistry {
     private static let lock = NSLock()
     private static var registered: [any DICOMPixelDataDecoder] = []
@@ -67,6 +68,8 @@ public enum DICOMCodecRegistry {
     public static func decoder(for transferSyntaxUID: String) -> (any DICOMPixelDataDecoder)? {
         lock.lock()
         defer { lock.unlock() }
-        return (registered + builtIn).first { $0.transferSyntaxUIDs.contains(transferSyntaxUID) }
+        // HTJ2K is decoded by the built-in codec only when enabled.
+        let candidates = DICOMCapabilities.isDisabledHTJ2K(transferSyntaxUID) ? registered : registered + builtIn
+        return candidates.first { $0.transferSyntaxUIDs.contains(transferSyntaxUID) }
     }
 }

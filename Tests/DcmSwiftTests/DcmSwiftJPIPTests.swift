@@ -168,6 +168,10 @@ final class DcmSwiftJPIPTests: XCTestCase {
             throw XCTSkip("Set DCMSWIFT_JPIP_ORACLE and DCMSWIFT_JPIP_FILES to run")
         }
         let output = environment["DCMSWIFT_JPIP_OUTPUT"].map { URL(fileURLWithPath: $0) }
+        // HTJ2K files are compared too: enable the codec, disabled by default.
+        let htj2kWasEnabled = DICOMCapabilities.isHTJ2KEnabled
+        DICOMCapabilities.isHTJ2KEnabled = true
+        defer { DICOMCapabilities.isHTJ2KEnabled = htj2kWasEnabled }
         let client = DICOMJPIPClient()
         var checked = 0
         let names = try FileManager.default.contentsOfDirectory(atPath: folder).sorted()

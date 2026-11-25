@@ -14,6 +14,11 @@ import COpenJPH
 /// (ISO/IEC 15444-2 Annex J) are inverted by `JPEG2000ComponentTransform`
 /// after OpenJPEG decoded the codestream components. `encode` writes Part 1
 /// codestreams (OpenJPEG) and `encodeHTJ2K` HTJ2K codestreams (OpenJPH).
+///
+/// HTJ2K is disabled by default (``DICOMCapabilities/isHTJ2KEnabled``):
+/// `encodeHTJ2K` and the decoding of codestreams that use HT code-blocks then
+/// throw ``DICOMCodecError/unsupportedTransferSyntax(_:)`` before OpenJPEG or
+/// OpenJPH is called.
 public struct DICOMJPEG2000Codec: DICOMPixelDataCollectionDecoder {
     public static let lossless = "1.2.840.10008.1.2.4.90"
     public static let lossy = "1.2.840.10008.1.2.4.91"
@@ -123,6 +128,17 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataCollectionDecoder {
             }
             bytes.replaceSubrange(start..., with: parsed.partOneBytes)
             codestream = parsed
+        }
+
+        // OpenJPEG selects its HT block decoder from the code-block style of
+        // COD and COC segments, whatever the Transfer Syntax: look for it
+        // before OpenJPEG reads anything.
+        if !DICOMCapabilities.isHTJ2KEnabled {
+            guard let start = Self.codestreamStart(bytes),
+                  let usesHT = Self.usesHTCodeBlocks(bytes, codestreamStart: start) else {
+                throw DICOMCodecError.corruptedData("JPEG 2000 main header does not end with an SOT marker")
+            }
+            if usesHT { throw DICOMCodecError.unsupportedTransferSyntax(Self.htj2k) }
         }
 
         let decoded = try Self.openJPEGDecode(bytes, format: format)
@@ -311,6 +327,66 @@ public struct DICOMJPEG2000Codec: DICOMPixelDataCollectionDecoder {
         return false
     }
 
+    /// Whether a COD or COC segment of the main header or of any tile-part
+    /// header selects HT code-blocks (ISO/IEC 15444-15 A.4, code-block style
+    /// bit 6), or nil when the main header cannot be followed to the first
+    /// SOT marker. Tile-parts are located by their SOT marker code, which
+    /// cannot occur in packet data (ISO/IEC 15444-1 A.1.1): a stray match
+    /// can only make a codestream look like HTJ2K, never hide one.
+    static func usesHTCodeBlocks(_ bytes: [UInt8], codestreamStart start: Int) -> Bool? {
+        guard start >= 0, start + 2 <= bytes.count else { return nil }
+        let siz = start + 2
+        let components = siz + 40 <= bytes.count && bytes[siz] == 0xFF && bytes[siz + 1] == 0x51
+            ? Int(bytes[siz + 38]) << 8 | Int(bytes[siz + 39]) : 0
+        // Ccoc is two bytes when Csiz is 257 or more (A.6.2).
+        let componentIndexBytes = components < 257 ? 1 : 2
+
+        func selectsHT(_ position: Int, marker: UInt8, length: Int) -> Bool {
+            // COD: Scod, SGcod (4), then decomposition levels, xcb, ycb, and
+            // the code-block style. COC: Ccoc, Scoc, then the same fields.
+            let offset: Int
+            switch marker {
+            case 0x52: offset = 4 + 1 + 4 + 3
+            case 0x53: offset = 4 + componentIndexBytes + 1 + 3
+            default: return false
+            }
+            guard offset < 2 + length, position + offset < bytes.count else { return false }
+            return bytes[position + offset] & 0x40 != 0
+        }
+
+        // Main header, from SIZ to the first SOT.
+        var position = start + 2
+        var mainHeaderEnd: Int?
+        while position + 4 <= bytes.count, bytes[position] == 0xFF {
+            let marker = bytes[position + 1]
+            if marker == 0x90 {
+                mainHeaderEnd = position
+                break
+            }
+            let length = Int(bytes[position + 2]) << 8 | Int(bytes[position + 3])
+            guard length >= 2 else { return nil }
+            if selectsHT(position, marker: marker, length: length) { return true }
+            position += 2 + length
+        }
+        guard let mainHeaderEnd else { return nil }
+
+        // Tile-part headers, from each SOT segment to its SOD.
+        var sot = mainHeaderEnd
+        while sot + 4 <= bytes.count {
+            if bytes[sot] == 0xFF, bytes[sot + 1] == 0x90 {
+                var position = sot + 2 + (Int(bytes[sot + 2]) << 8 | Int(bytes[sot + 3]))
+                while position + 4 <= bytes.count, bytes[position] == 0xFF, bytes[position + 1] != 0x93 {
+                    let length = Int(bytes[position + 2]) << 8 | Int(bytes[position + 3])
+                    guard length >= 2 else { break }
+                    if selectsHT(position, marker: bytes[position + 1], length: length) { return true }
+                    position += 2 + length
+                }
+            }
+            sot += 1
+        }
+        return false
+    }
+
     /// The image size and component count that the SIZ marker segment
     /// following SOC declares (ISO/IEC 15444-1 A.5.1).
     static func imageSize(_ bytes: [UInt8], codestreamStart start: Int) -> (width: Int, height: Int, components: Int)? {
@@ -482,10 +558,16 @@ extension DICOMJPEG2000Codec {
     /// codestream with OpenJPH. Three-component frames use the
     /// multiple-component transform; the returned photometric interpretation
     /// is then YBR_RCT (reversible) or YBR_ICT (irreversible).
+    ///
+    /// Throws ``DICOMCodecError/unsupportedTransferSyntax(_:)``, without
+    /// calling OpenJPH, while ``DICOMCapabilities/isHTJ2KEnabled`` is `false`.
     public func encodeHTJ2K(
         _ frame: Data, description: DICOMPixelDescription, mode: HTJ2KMode = .lossless,
         multipleComponentTransform: Bool = true
     ) throws -> (data: Data, photometric: DICOMPhotometricInterpretation) {
+        guard DICOMCapabilities.isHTJ2KEnabled else {
+            throw DICOMCodecError.unsupportedTransferSyntax(mode.transferSyntaxUID)
+        }
         let precision = description.bitsStored
         let samples = description.samplesPerPixel
         guard description.sampleFormat == .integer, (1...16).contains(precision),

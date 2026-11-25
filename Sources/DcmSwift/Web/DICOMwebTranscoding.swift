@@ -6,8 +6,14 @@ enum DICOMwebTranscoding {
     /// Encapsulated Transfer Syntaxes that are always reversible, which an
     /// origin server decompresses when Explicit VR Little Endian is asked.
     /// Others may hold lossy data, which PS3.18 8.7.3.4 lets the origin
-    /// server return as stored.
-    static let losslessEncapsulated: Set<String> = [
+    /// server return as stored. HTJ2K is decompressed only while
+    /// `DICOMCapabilities.isHTJ2KEnabled` is true.
+    static var losslessEncapsulated: Set<String> {
+        DICOMCapabilities.isHTJ2KEnabled ? allLosslessEncapsulated
+            : allLosslessEncapsulated.subtracting(DICOMCapabilities.htj2kTransferSyntaxUIDs)
+    }
+
+    private static let allLosslessEncapsulated: Set<String> = [
         "1.2.840.10008.1.2.5", "1.2.840.10008.1.2.8.1", "1.2.840.10008.1.2.4.57", "1.2.840.10008.1.2.4.58",
         "1.2.840.10008.1.2.4.65", "1.2.840.10008.1.2.4.66", "1.2.840.10008.1.2.4.70", "1.2.840.10008.1.2.4.80",
         "1.2.840.10008.1.2.4.90", "1.2.840.10008.1.2.4.92", "1.2.840.10008.1.2.4.201", "1.2.840.10008.1.2.4.202",
@@ -42,6 +48,9 @@ enum DICOMwebTranscoding {
         if transferSyntax == item.transferSyntaxUID { return item.payload }
         guard transferSyntax == TransferSyntax.explicitVRLittleEndian else {
             throw DICOMCommandError("cannot transcode \(item.transferSyntaxUID) to \(transferSyntax)")
+        }
+        guard !DICOMCapabilities.isDisabledHTJ2K(item.transferSyntaxUID) else {
+            throw DICOMCodecError.unsupportedTransferSyntax(item.transferSyntaxUID)
         }
         let dataSet = try DICOMDataSetCoding.decode(item.payload.data(), transferSyntax: item.transferSyntaxUID)
         if losslessEncapsulated.contains(item.transferSyntaxUID) { try decompress(dataSet, from: item.transferSyntaxUID) }
