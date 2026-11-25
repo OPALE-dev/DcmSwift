@@ -68,6 +68,30 @@ public struct DICOMAbstractSyntaxSupport: Sendable, Equatable {
     }
 }
 
+/// An association request as the acceptor sees it before answering:
+/// the AE titles it carries and the address it comes from.
+public struct DICOMAssociationCandidate: Sendable, Equatable {
+    /// The Calling AE Title of the A-ASSOCIATE-RQ.
+    public var callingAETitle: String
+    /// The Called AE Title of the A-ASSOCIATE-RQ.
+    public var calledAETitle: String
+    /// The IP address of the requestor, without port, such as `127.0.0.1`
+    /// or `::1`; nil when the transport does not report it.
+    public var remoteAddress: String?
+
+    /// Creates a candidate.
+    ///
+    /// - Parameters:
+    ///   - callingAETitle: The Calling AE Title of the request.
+    ///   - calledAETitle: The Called AE Title of the request.
+    ///   - remoteAddress: The requestor's IP address without port, or nil.
+    public init(callingAETitle: String, calledAETitle: String, remoteAddress: String?) {
+        self.callingAETitle = callingAETitle
+        self.calledAETitle = calledAETitle
+        self.remoteAddress = remoteAddress
+    }
+}
+
 /// The acceptor's policy for A-ASSOCIATE-RQ (PS3.8 7.1, PS3.7 D.3.3).
 public struct DICOMAcceptorPolicy: Sendable {
     public var aeTitle: String
@@ -79,6 +103,13 @@ public struct DICOMAcceptorPolicy: Sendable {
     /// `allowedCallingAETitles`: lets the acceptor follow a list that changes
     /// while it serves, without being restarted.
     public var acceptsCallingAETitle: (@Sendable (String) -> Bool)?
+    /// Decides on each request from its AE titles and the requestor's
+    /// address, after `acceptsCallingAETitle`, such as to accept an AE title
+    /// only from the hosts it is declared on. Returning false rejects the
+    /// association with a permanent A-ASSOCIATE-RJ from the service-user,
+    /// reason calling-AE-title-not-recognized (PS3.8 Table 9-21). nil, the
+    /// default, accepts every request that the other checks accept.
+    public var acceptsAssociation: (@Sendable (DICOMAssociationCandidate) -> Bool)?
     /// Supported abstract syntaxes, by UID.
     public var abstractSyntaxes: [String: DICOMAbstractSyntaxSupport]
     /// The Maximum Length Received announced; 0 means no limit.
@@ -98,10 +129,12 @@ public struct DICOMAcceptorPolicy: Sendable {
         maximumLength: UInt32 = 1 << 16, implementationClassUID: String = DICOMImplementation.classUID,
         implementationVersionName: String? = DICOMImplementation.versionName, maximumOperationsPerformed: UInt16 = 1,
         authenticate: (@Sendable (DICOMUserIdentity?) -> [UInt8]?)? = nil,
-        acceptsCallingAETitle: (@Sendable (String) -> Bool)? = nil
+        acceptsCallingAETitle: (@Sendable (String) -> Bool)? = nil,
+        acceptsAssociation: (@Sendable (DICOMAssociationCandidate) -> Bool)? = nil
     ) {
         self.aeTitle = aeTitle
         self.acceptsCallingAETitle = acceptsCallingAETitle
+        self.acceptsAssociation = acceptsAssociation
         self.abstractSyntaxes = abstractSyntaxes
         self.acceptsAnyCalledAETitle = acceptsAnyCalledAETitle
         self.allowedCallingAETitles = allowedCallingAETitles
@@ -141,9 +174,24 @@ public struct DICOMImplementationIdentity: Sendable, Equatable {
 /// Association negotiation, on both sides (PS3.8 7.1, PS3.7 Annex D.3.3).
 public enum DICOMAssociationNegotiator {
     /// The acceptor's answer to a request: an A-ASSOCIATE-AC and the
-    /// negotiated association, or an A-ASSOCIATE-RJ.
+    /// negotiated association, or an A-ASSOCIATE-RJ. The requestor's address
+    /// is unknown to `DICOMAcceptorPolicy.acceptsAssociation`.
     public static func respond(
         to request: DICOMAssociateRequest, policy: DICOMAcceptorPolicy
+    ) -> Result<(DICOMAssociateAccept, DICOMNegotiatedAssociation), DICOMAssociateReject> {
+        respond(to: request, policy: policy, remoteAddress: nil)
+    }
+
+    /// The acceptor's answer to a request received from `remoteAddress`: an
+    /// A-ASSOCIATE-AC and the negotiated association, or an A-ASSOCIATE-RJ.
+    ///
+    /// - Parameters:
+    ///   - request: The A-ASSOCIATE-RQ received.
+    ///   - policy: The acceptor's policy.
+    ///   - remoteAddress: The requestor's IP address without port, handed to
+    ///     `DICOMAcceptorPolicy.acceptsAssociation`; nil when unknown.
+    public static func respond(
+        to request: DICOMAssociateRequest, policy: DICOMAcceptorPolicy, remoteAddress: String?
     ) -> Result<(DICOMAssociateAccept, DICOMNegotiatedAssociation), DICOMAssociateReject> {
         guard request.protocolVersion & 1 == 1 else {
             return .failure(DICOMAssociateReject(result: .permanent, reason: .protocolVersionNotSupported))
@@ -158,6 +206,11 @@ public enum DICOMAssociationNegotiator {
             return .failure(DICOMAssociateReject(result: .permanent, reason: .callingAETitleNotRecognized))
         }
         if let accepts = policy.acceptsCallingAETitle, !accepts(request.callingAETitle) {
+            return .failure(DICOMAssociateReject(result: .permanent, reason: .callingAETitleNotRecognized))
+        }
+        if let accepts = policy.acceptsAssociation, !accepts(DICOMAssociationCandidate(
+            callingAETitle: request.callingAETitle, calledAETitle: request.calledAETitle,
+            remoteAddress: remoteAddress)) {
             return .failure(DICOMAssociateReject(result: .permanent, reason: .callingAETitleNotRecognized))
         }
         var serverResponse: [UInt8] = []

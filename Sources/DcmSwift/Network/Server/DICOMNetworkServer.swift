@@ -19,6 +19,11 @@ public struct DICOMServerConfiguration: Sendable {
     /// `allowedCallingAETitles`; it may follow a list that changes while the
     /// server runs (see `DICOMAcceptorPolicy.acceptsCallingAETitle`).
     public var acceptsCallingAETitle: (@Sendable (String) -> Bool)?
+    /// Decides on each new association from its AE titles and the
+    /// requestor's IP address, after `acceptsCallingAETitle`; a refusal is
+    /// a permanent rejection, reason calling-AE-title-not-recognized (see
+    /// `DICOMAcceptorPolicy.acceptsAssociation`). nil accepts every request.
+    public var acceptsAssociation: (@Sendable (DICOMAssociationCandidate) -> Bool)?
     /// Associations served at once; more are rejected (transient, local
     /// limit exceeded).
     public var maximumAssociations: Int
@@ -56,10 +61,12 @@ public struct DICOMServerConfiguration: Sendable {
         authenticate: (@Sendable (DICOMUserIdentity?) -> [UInt8]?)? = nil,
         audit: DICOMAuditRecorder? = nil, auditSource: DICOMAuditSource? = nil,
         logger: Logging.Logger = Logging.Logger(label: "DcmSwift.network.server"),
-        acceptsCallingAETitle: (@Sendable (String) -> Bool)? = nil
+        acceptsCallingAETitle: (@Sendable (String) -> Bool)? = nil,
+        acceptsAssociation: (@Sendable (DICOMAssociationCandidate) -> Bool)? = nil
     ) {
         self.aeTitle = aeTitle
         self.acceptsCallingAETitle = acceptsCallingAETitle
+        self.acceptsAssociation = acceptsAssociation
         self.host = host
         self.port = port
         self.acceptsAnyCalledAETitle = acceptsAnyCalledAETitle
@@ -185,7 +192,8 @@ public final class DICOMServer: Sendable {
             implementationClassUID: configuration.implementation.classUID,
             implementationVersionName: configuration.implementation.versionName,
             maximumOperationsPerformed: configuration.maximumOperationsPerformed,
-            authenticate: configuration.authenticate, acceptsCallingAETitle: configuration.acceptsCallingAETitle)
+            authenticate: configuration.authenticate, acceptsCallingAETitle: configuration.acceptsCallingAETitle,
+            acceptsAssociation: configuration.acceptsAssociation)
     }
 
     /// The abstract syntaxes an acceptor offering these services supports, with
@@ -407,7 +415,8 @@ public final class DICOMServer: Sendable {
         logger[metadataKey: "calling_ae"] = .string(request.callingAETitle)
         logger[metadataKey: "called_ae"] = .string(request.calledAETitle)
         let answer: Result<(DICOMAssociateAccept, DICOMNegotiatedAssociation), DICOMAssociateReject> = admitted
-            ? DICOMAssociationNegotiator.respond(to: request, policy: policy)
+            ? DICOMAssociationNegotiator.respond(
+                to: request, policy: policy, remoteAddress: channel.remoteAddress?.ipAddress)
             : .failure(DICOMAssociateReject(result: .transient, reason: .localLimitExceeded))
         switch answer {
         case .failure(let reject):
