@@ -61,12 +61,13 @@ conformance without that evidence.
   built without its SIMD variants, which
   need per-file compiler flags that SwiftPM does not allow. MPEG, AVC,
   and HEVC are outside the planned scope.
-- HTJ2K is disabled by default (`DICOMCapabilities.isHTJ2KEnabled`).
-  OpenJPH up to 0.32.0 has a publicly reported heap out-of-bounds write in
-  its HTJ2K decoder and no corrected release is known. DcmSwift calls only
-  the OpenJPH encoder and decodes HTJ2K with OpenJPEG, but keeps the codec
-  out of reach of received data until a corrected OpenJPH is vendored.
-  While disabled:
+- HTJ2K is disabled by default (`DICOMCapabilities.isHTJ2KEnabled`, whose
+  initial value is `DICOMCapabilities.isHTJ2KEnabledByDefault`). HTJ2K is
+  encoded by the OpenJPH 0.32.0 encoder and decoded by the HT block decoder
+  of OpenJPEG 2.5.4 (`ht_dec.c`). DcmSwift never calls the OpenJPH decoder,
+  which has a publicly reported heap out-of-bounds write without a corrected
+  release; the switch keeps the HTJ2K code of both libraries out of reach
+  until the application opts in. While disabled:
   - `DICOMCapabilities.transferSyntax(_:)` reports neither decoding nor
     encoding for .201 to .205, and `DICOMCodecRegistry` returns no built-in
     decoder for them; decoders registered by the application still apply;

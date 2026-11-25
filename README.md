@@ -134,10 +134,10 @@ a dot abbreviate `1.2.840.10008.1.2`.
 | JPEG 2000 Part 2 multi-component | .4.92, .4.93 | ✓ | ✓ | Kakadu 8.4.1 in both directions; lossless cases bit-exact, lossy within 1 |
 | JPIP Referenced | .4.94, .4.95, .4.204, .4.205 | ✓ | | Frames retrieved from the Pixel Data Provider URL over JPIP and rebuilt as codestreams; kdu_server, every codestream identical through kdu_expand |
 
-¹ Disabled by default. OpenJPH up to 0.32.0 has a publicly reported heap
-out-of-bounds write in its HTJ2K decoder and no corrected release is known.
-DcmSwift only calls the OpenJPH encoder, but keeps the whole HTJ2K codec out
-of reach until a corrected version is vendored: HTJ2K frames are then neither
+¹ Disabled by default. HTJ2K is encoded by the OpenJPH encoder and decoded by
+the HT block decoder of OpenJPEG; DcmSwift never calls the OpenJPH decoder,
+which has a publicly reported heap out-of-bounds write without a corrected
+release. Until the application opts in, HTJ2K frames are neither
 decoded, encoded, rendered, nor transcoded, and codestreams that use HT
 code-blocks are refused before OpenJPEG reads them, whatever their Transfer
 Syntax. HTJ2K instances are still read, written, stored, and exchanged with
