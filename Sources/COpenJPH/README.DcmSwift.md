@@ -16,3 +16,12 @@ encoder, so that Swift does not need C++ interoperability.
 To update, copy `src/core` from a new release without the SIMD-suffixed files
 (`*_sse*.cpp`, `*_avx*.cpp`, `*_wasm.cpp`, `*_vsx.cpp`, `ojph_simd_vsx.h`,
 `ojph_block_encoder_avx2_apple.h`), then update this file.
+
+## Assertions
+
+`Package.swift` defines `NDEBUG` for this target in release builds only, so
+that a malformed codestream is refused with an error instead of failing an
+`assert` and aborting the whole process. DcmSwift uses only the encoder, on pixels it has already
+checked. Debug builds keep the
+assertions, so tests and the crosscheck scripts still report a violated
+invariant.

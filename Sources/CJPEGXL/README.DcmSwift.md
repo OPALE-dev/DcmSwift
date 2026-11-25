@@ -27,4 +27,18 @@ arbitrary box content decoding is disabled. skcms is built without its AVX2
 and AVX-512 paths (`SKCMS_DISABLE_HSW`, `SKCMS_DISABLE_SKX`), which need
 per-file compiler flags.
 
+## Assertions
+
+`Package.swift` defines `NDEBUG` for this target in release builds only, so
+that a malformed codestream is refused with an error instead of failing an
+`assert` and aborting the whole process. This matters most for libjxl: without `NDEBUG` it is a
+debug build (`lib/jxl/base/compiler_specific.h`), where `JXL_ENSURE`,
+`JXL_DASSERT`, `JXL_UNREACHABLE`, and `JXL_DEBUG_ABORT` call `jxl::Abort()`;
+with it, `JXL_ENSURE` returns an error and the others compile to nothing. The
+define reaches the C sources (Brotli, skcms) and the C++ sources (libjxl,
+Highway). `Scripts/crosscheck/jpegxl_fuzz.sh` checks that no release object
+refers to `jxl::Abort` and decodes mutated codestreams in both builds. Debug builds keep the
+assertions, so tests and the crosscheck scripts still report a violated
+invariant.
+
 Upstream license: BSD-3-Clause (`LICENSE`).

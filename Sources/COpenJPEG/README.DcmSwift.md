@@ -13,6 +13,19 @@ JPIP index managers, benchmarks, and table generators are not.
 To update, copy the same files from a new release, then adjust the version
 numbers in `include/opj_config.h`, `opj_config_private.h`, and this file.
 
+## Assertions
+
+`Package.swift` defines `NDEBUG` for this target in release builds only, so
+that a malformed codestream is refused with an error instead of failing an
+`assert` and aborting the whole process. The assertions of the decoder are
+redundant with header checks where they guard a buffer size (for example,
+`opj_t1_allocate_buffers` relies on `opj_j2k_read_SPCod_SPCoc` refusing
+code-block exponents above 10 or summing above 12), and
+`Scripts/crosscheck/openjpeg_fuzz.sh` decodes mutated codestreams under
+AddressSanitizer with and without `NDEBUG`. Debug builds keep the
+assertions, so tests and the crosscheck scripts still report a violated
+invariant.
+
 ## Local patches
 
 Each patch below is applied on top of 2.5.4, as published upstream, and is

@@ -61,7 +61,11 @@ let package = Package(
             cSettings: [
                 // OPJ_STATIC would give the API hidden visibility, which breaks
                 // Xcode builds that link the target separately.
-                .define("MUTEX_pthread")
+                .define("MUTEX_pthread"),
+                // Release builds leave out the library's assertions, so that a
+                // malformed codestream is refused instead of aborting the
+                // process; debug builds keep them (README.DcmSwift.md).
+                .define("NDEBUG", .when(configuration: .release))
             ],
             linkerSettings: [
                 .linkedLibrary("m", .when(platforms: [.linux])),
@@ -74,6 +78,8 @@ let package = Package(
             exclude: ["LICENSE", "README.DcmSwift.md"],
             cxxSettings: [
                 .define("OJPH_DISABLE_SIMD"),
+                // Assertions in debug builds only (README.DcmSwift.md).
+                .define("NDEBUG", .when(configuration: .release)),
                 .headerSearchPath("openjph/src/core/openjph"),
                 .headerSearchPath("openjph/src/core/codestream"),
                 .headerSearchPath("openjph/src/core/coding"),
@@ -93,9 +99,14 @@ let package = Package(
                 "third_party/skcms/LICENSE"
             ],
             cSettings: [
+                // Assertions in debug builds only (README.DcmSwift.md).
+                .define("NDEBUG", .when(configuration: .release)),
                 .headerSearchPath("third_party/brotli/c/include")
             ],
             cxxSettings: [
+                // Without NDEBUG, libjxl is a debug build: JXL_ENSURE and
+                // JXL_UNREACHABLE abort the process instead of returning an error.
+                .define("NDEBUG", .when(configuration: .release)),
                 .define("JXL_INTERNAL_LIBRARY_BUILD"),
                 .define("JXL_STATIC_DEFINE"),
                 // JPEG recompression (.111) in both directions.

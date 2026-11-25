@@ -53,7 +53,9 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 
 Built-in codecs, written in Swift except JPEG 2000, HTJ2K, and JPEG XL, which
 use the vendored OpenJPEG 2.5.4, OpenJPH 0.32.0, and libjxl 0.12.0 (UIDs
-abbreviate `1.2.840.10008.1.2.4`):
+abbreviate `1.2.840.10008.1.2.4`). Release builds compile the vendored libraries
+with `NDEBUG`, so a malformed codestream is refused with an error instead of
+aborting the process; debug builds keep their assertions:
 
 | Transfer Syntax | Decode | Encode | Details |
 | --- | :-: | :-: | --- |
