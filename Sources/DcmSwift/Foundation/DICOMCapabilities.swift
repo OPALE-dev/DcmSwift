@@ -25,19 +25,28 @@ public enum DICOMCapabilities {
         TransferSyntax.jpipHTJ2KReferenced, TransferSyntax.jpipHTJ2KReferencedDeflate,
     ]
 
-    private static let htj2kLock = NSLock()
-    private static var htj2kEnabled = false
+    /// The initial value of ``isHTJ2KEnabled``: `false`, so that the HTJ2K
+    /// codec runs only for applications that enable it. This is the only
+    /// place that sets the default.
+    public static let isHTJ2KEnabledByDefault = false
 
-    /// Whether the built-in High-Throughput JPEG 2000 codec may run. `false`
-    /// by default.
+    private static let htj2kLock = NSLock()
+    private static var htj2kEnabled = isHTJ2KEnabledByDefault
+
+    /// Whether the built-in High-Throughput JPEG 2000 codec may run; it
+    /// starts as ``isHTJ2KEnabledByDefault``.
     ///
-    /// OpenJPH up to 0.32.0, the version vendored to encode HTJ2K, has a
-    /// publicly reported heap out-of-bounds write in its HTJ2K decoder, and
-    /// no corrected release is known. DcmSwift decodes HTJ2K with the
-    /// vendored OpenJPEG and calls only the OpenJPH encoder, but until a
-    /// corrected OpenJPH is vendored the whole HTJ2K codec stays out of reach
-    /// of received data unless the application accepts that risk by setting
-    /// this property to `true`, typically once at startup.
+    /// The HTJ2K codec relies on two vendored C libraries:
+    /// - encoding uses OpenJPH 0.32.0, through its encoder only; DcmSwift
+    ///   never calls the OpenJPH decoder;
+    /// - decoding uses the HT block decoder of OpenJPEG 2.5.4, as for any
+    ///   JPEG 2000 codestream.
+    ///
+    /// OpenJPH has a publicly reported heap out-of-bounds write in its HTJ2K
+    /// decoder, without a corrected release. That decoder is not reachable
+    /// from DcmSwift; the switch keeps the HTJ2K code of both libraries out of
+    /// reach of the application's data until it opts in, typically once at
+    /// startup.
     ///
     /// While `false`, for the syntaxes of ``htj2kTransferSyntaxUIDs``:
     /// - ``transferSyntax(_:)`` reports neither decoding nor encoding;

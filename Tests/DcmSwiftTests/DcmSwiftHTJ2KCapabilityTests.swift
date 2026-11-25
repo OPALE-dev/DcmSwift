@@ -1,7 +1,7 @@
 import XCTest
 @testable import DcmSwift
 
-/// The HTJ2K capability switch: disabled by default, HTJ2K is neither
+/// The HTJ2K capability switch: while disabled, HTJ2K is neither
 /// decoded, encoded, rendered, nor transcoded, and no call reaches OpenJPEG
 /// or OpenJPH for it; Pixel Data stays preserved as encoded.
 final class DcmSwiftHTJ2KCapabilityTests: XCTestCase {
@@ -119,7 +119,8 @@ final class DcmSwiftHTJ2KCapabilityTests: XCTestCase {
     // MARK: Capabilities
 
     func testHTJ2KIsDisabledByDefaultAndPreservedOnly() throws {
-        XCTAssertFalse(htj2kWasEnabled, "HTJ2K must be disabled unless the application enables it")
+        // The switch starts at its single default.
+        XCTAssertEqual(htj2kWasEnabled, DICOMCapabilities.isHTJ2KEnabledByDefault)
         XCTAssertEqual(DICOMCapabilities.htj2kTransferSyntaxUIDs, Set(Self.htj2kImageSyntaxes + [
             TransferSyntax.jpipHTJ2KReferenced, TransferSyntax.jpipHTJ2KReferencedDeflate,
         ]))

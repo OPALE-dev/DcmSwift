@@ -15,9 +15,8 @@ import COpenJPH
 /// after OpenJPEG decoded the codestream components. `encode` writes Part 1
 /// codestreams (OpenJPEG) and `encodeHTJ2K` HTJ2K codestreams (OpenJPH).
 ///
-/// HTJ2K is disabled by default (``DICOMCapabilities/isHTJ2KEnabled``):
-/// `encodeHTJ2K` and the decoding of codestreams that use HT code-blocks then
-/// throw ``DICOMCodecError/unsupportedTransferSyntax(_:)`` before OpenJPEG or
+/// While ``DICOMCapabilities/isHTJ2KEnabled`` is `false`, `encodeHTJ2K` and
+/// the decoding of codestreams that use HT code-blocks throw ``DICOMCodecError/unsupportedTransferSyntax(_:)`` before OpenJPEG or
 /// OpenJPH is called.
 public struct DICOMJPEG2000Codec: DICOMPixelDataCollectionDecoder {
     public static let lossless = "1.2.840.10008.1.2.4.90"
