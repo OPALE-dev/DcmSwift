@@ -61,6 +61,25 @@ conformance without that evidence.
   built without its SIMD variants, which
   need per-file compiler flags that SwiftPM does not allow. MPEG, AVC,
   and HEVC are outside the planned scope.
+- HTJ2K is disabled by default (`DICOMCapabilities.isHTJ2KEnabled`).
+  OpenJPH up to 0.32.0 has a publicly reported heap out-of-bounds write in
+  its HTJ2K decoder and no corrected release is known. DcmSwift calls only
+  the OpenJPH encoder and decodes HTJ2K with OpenJPEG, but keeps the codec
+  out of reach of received data until a corrected OpenJPH is vendored.
+  While disabled:
+  - `DICOMCapabilities.transferSyntax(_:)` reports neither decoding nor
+    encoding for .201 to .205, and `DICOMCodecRegistry` returns no built-in
+    decoder for them; decoders registered by the application still apply;
+  - decoding, rendering, DICOMweb transcoding to Explicit VR Little Endian,
+    and JPIP HTJ2K resolution throw an unsupported Transfer Syntax error;
+  - `DICOMJPEG2000Codec` refuses to encode HTJ2K and to decode any
+    codestream whose COD or COC segments select HT code-blocks, whatever its
+    Transfer Syntax, before OpenJPEG or OpenJPH is called; a codestream whose
+    main header cannot be followed to its first tile-part is then rejected as
+    corrupted before OpenJPEG reads it;
+  - data sets are still read, written, negotiated over DIMSE, and returned
+    over DICOMweb as stored (`image/jphc` frames included), with their Pixel
+    Data preserved as encoded.
 - JPEG XL limits:
   - the encoder takes unsigned 8 or 16-bit cells only (no signed, 24-bit, or
     YBR input) and labels lossy color frames RGB rather than XYB;
