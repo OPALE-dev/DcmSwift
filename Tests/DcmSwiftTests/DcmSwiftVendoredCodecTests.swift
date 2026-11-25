@@ -3,8 +3,9 @@ import COpenJPEG
 @testable import DcmSwift
 
 /// Non-regression tests of the vendored C codecs, for geometries and streams
-/// that DcmSwift's own APIs do not produce. Run them under AddressSanitizer
-/// (`swift test --sanitize=address`) to see memory errors.
+/// that DcmSwift's own APIs do not produce. Without a sanitizer, a memory
+/// error shows only as an occasional crash: Scripts/crosscheck/openjpeg_asan.sh
+/// runs the same cases under AddressSanitizer.
 final class DcmSwiftVendoredCodecTests: XCTestCase {
     private var directory: URL!
 
@@ -78,6 +79,116 @@ final class DcmSwiftVendoredCodecTests: XCTestCase {
                 numberOfFrames: 1, isEncapsulated: true))
             let expected = (0..<(width * height)).map { UInt8(sample($0 % width, $0 / width)) }
             XCTAssertEqual([UInt8](decoded.data), expected, label)
+        }
+    }
+
+    // MARK: Tile-part headers (opj_j2k_read_sot, opj_j2k_read_sod)
+
+    private struct TilePart {
+        var index: UInt8
+        var count: UInt8
+        /// Psot; nil writes the actual length of the tile-part.
+        var length: Int?
+        var data: [UInt8] = [0x00]
+    }
+
+    private func u16(_ value: Int) -> [UInt8] { [UInt8(value >> 8 & 0xFF), UInt8(value & 0xFF)] }
+    private func u32(_ value: Int) -> [UInt8] { u16(value >> 16 & 0xFFFF) + u16(value & 0xFFFF) }
+
+    /// A 4x4 8-bit codestream with one tile, one resolution, and the given
+    /// tile-parts of tile 0, optionally announced by a TLM segment
+    /// (one-byte tile indices, four-byte lengths) and truncated.
+    private func codestream(_ parts: [TilePart], tlm: [Int]? = nil, keeping prefix: Int? = nil) -> Data {
+        var bytes: [UInt8] = [0xFF, 0x4F, 0xFF, 0x51]
+        bytes += u16(41)
+        bytes += u16(0)
+        for value in [4, 4, 0, 0, 4, 4, 0, 0] { bytes += u32(value) }
+        bytes += u16(1)
+        bytes += [7, 1, 1]
+        // COD: LRCP, one layer, no transform, no decomposition, 64x64 blocks, 5/3.
+        bytes += [0xFF, 0x52]
+        bytes += u16(12)
+        bytes += [0, 0, 0, 1, 0, 0, 4, 4, 0, 1]
+        // QCD: no quantization, one guard bit.
+        bytes += [0xFF, 0x5C]
+        bytes += u16(4)
+        bytes += [0x20, 0x40]
+        if let tlm {
+            bytes += [0xFF, 0x55]
+            bytes += u16(4 + 5 * tlm.count)
+            bytes += [0, 0x50]
+            for length in tlm {
+                bytes += [0]
+                bytes += u32(length)
+            }
+        }
+        for part in parts {
+            bytes += [0xFF, 0x90]
+            bytes += u16(10)
+            bytes += u16(0)
+            bytes += u32(part.length ?? 14 + part.data.count)
+            bytes += [part.index, part.count, 0xFF, 0x93]
+            bytes += part.data
+        }
+        bytes += [0xFF, 0xD9]
+        return Data(bytes.prefix(prefix ?? bytes.count))
+    }
+
+    private let tiny = DICOMPixelDescription(
+        rows: 4, columns: 4, samplesPerPixel: 1, photometricInterpretation: .monochrome2, bitsAllocated: 8,
+        bitsStored: 8, highBit: 7, isSigned: false, planarConfiguration: 0, numberOfFrames: 1, isEncapsulated: true)
+
+    func testForgedCodestreamDecodes() throws {
+        // The control: one well-formed tile-part, then the same with a TLM.
+        let decoded = try DICOMJPEG2000Codec().decode(codestream([TilePart(index: 0, count: 1)]), description: tiny)
+        XCTAssertEqual(decoded.data.count, 16)
+        XCTAssertNoThrow(try DICOMJPEG2000Codec().decode(
+            codestream([TilePart(index: 0, count: 1)], tlm: [15]), description: tiny))
+    }
+
+    /// A TLM segment announces one tile-part of tile 0, but the codestream
+    /// holds a second one whose SOT leaves the tile-part count unknown
+    /// (TNsot = 0): the index of tile-parts, sized from TLM, was written past
+    /// its end when the second SOD was read.
+    func testTileIndexBuiltFromTLMIsNotOverrun() {
+        let stream = codestream([TilePart(index: 0, count: 0), TilePart(index: 1, count: 0)], tlm: [15])
+        // The decoder may accept or refuse the stream; it must stay in bounds.
+        _ = try? DICOMJPEG2000Codec().decode(stream, description: tiny)
+        let more = codestream((0..<4).map { TilePart(index: UInt8($0), count: 0) }, tlm: [15, 15])
+        _ = try? DICOMJPEG2000Codec().decode(more, description: tiny)
+    }
+
+    /// Psot too large, too small, zero, a truncated last tile-part, repeated
+    /// or out-of-order tile-part indices, and inconsistent TLM lengths are
+    /// refused or tolerated, without reading or writing out of bounds.
+    func testMalformedTilePartLengthsStayInBounds() {
+        let cases: [(String, Data)] = [
+            ("Psot beyond the end", codestream([TilePart(index: 0, count: 1, length: 4000)])),
+            ("Psot beyond the end, last", codestream([TilePart(index: 0, count: 1, length: 0x7FFF_FFF0)])),
+            ("Psot below 14", codestream([TilePart(index: 0, count: 1, length: 13)])),
+            ("Psot of 12, empty", codestream([TilePart(index: 0, count: 1, length: 12)])),
+            ("Psot of 0", codestream([TilePart(index: 0, count: 1, length: 0)])),
+            ("Psot of 0 before another tile-part",
+             codestream([TilePart(index: 0, count: 2, length: 0), TilePart(index: 1, count: 2)])),
+            ("Psot shorter than the data", codestream([TilePart(index: 0, count: 1, length: 14, data: [0, 0, 0, 0])])),
+            ("truncated in SOT", codestream([TilePart(index: 0, count: 1)], keeping: 64)),
+            ("truncated after SOD", codestream([TilePart(index: 0, count: 1, data: [0, 0, 0, 0])], keeping: 76)),
+            ("truncated with Psot of 0", codestream([TilePart(index: 0, count: 1, length: 0, data: [0, 0, 0])],
+                                                    keeping: 75)),
+            ("repeated tile-part", codestream([TilePart(index: 0, count: 2), TilePart(index: 0, count: 2)])),
+            ("tile-part out of order", codestream([TilePart(index: 1, count: 2), TilePart(index: 0, count: 2)])),
+            ("TPsot at TNsot", codestream([TilePart(index: 0, count: 1), TilePart(index: 1, count: 1)])),
+            ("more tile-parts than TLM", codestream([TilePart(index: 0, count: 2), TilePart(index: 1, count: 2)],
+                                                    tlm: [15])),
+            ("TLM lengths beyond the end", codestream([TilePart(index: 0, count: 1)], tlm: [0x7FFF_0000])),
+            ("TLM lengths of 0", codestream([TilePart(index: 0, count: 0), TilePart(index: 1, count: 0)],
+                                            tlm: [0, 0])),
+        ]
+        for (name, stream) in cases {
+            // Refused or tolerated; never out of bounds (see openjpeg_asan.sh).
+            if let decoded = try? DICOMJPEG2000Codec().decode(stream, description: tiny) {
+                XCTAssertEqual(decoded.data.count, 16, name)
+            }
         }
     }
 }
