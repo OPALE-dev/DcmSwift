@@ -10,7 +10,7 @@ the file named in the table.
 | [OpenJPEG](https://github.com/uclouvain/openjpeg) | 2.5.4 | BSD-2-Clause | `Sources/COpenJPEG/LICENSE` |
 | [OpenJPH](https://github.com/aous72/OpenJPH) | 0.32.0 | BSD-2-Clause | `Sources/COpenJPH/LICENSE` |
 | [libjxl](https://github.com/libjxl/libjxl) | 0.12.0 | BSD-3-Clause | `Sources/CJPEGXL/LICENSE` |
-| [Brotli](https://github.com/google/brotli) | 1.2.0 | MIT | `Sources/CJPEGXL/third_party/brotli/LICENSE` |
+| [Brotli](https://github.com/google/brotli) | 1.2.1 | MIT | `Sources/CJPEGXL/third_party/brotli/LICENSE` |
 | [Highway](https://github.com/google/highway) | pinned by libjxl 0.12.0 | Apache-2.0 | `Sources/CJPEGXL/third_party/highway/LICENSE` |
 | [skcms](https://skia.googlesource.com/skcms) | pinned by libjxl 0.12.0 | BSD-3-Clause | `Sources/CJPEGXL/third_party/skcms/LICENSE` |
 

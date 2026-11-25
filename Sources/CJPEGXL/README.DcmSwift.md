@@ -5,9 +5,12 @@ commit `a7a9c787341cf703dede03c2009fa460cae5e5df`, with the third-party code
 pinned by that release:
 
 - Highway (runtime only), Apache-2.0, `third_party/highway/LICENSE`;
-- Brotli 1.2.0 (`c/common`, `c/dec`, `c/enc`, and the public headers),
-  commit `028fb5a23661f123017c060daa546b55cf4bde29`, MIT,
-  `third_party/brotli/LICENSE`;
+- Brotli 1.2.1 (`c/common`, `c/dec`, `c/enc`, and the public headers),
+  tag `v1.2.1`, commit `db24a98aed38a16de78cc05ca15cdd8dc2a0d92d`, MIT,
+  `third_party/brotli/LICENSE`. It is newer than the 1.2.0 that libjxl
+  0.12.0 pins: 1.2.1 fixes an out-of-bounds write of the decoder on
+  block-type switches (`c/dec/decode.c`) and changes nothing else in the
+  vendored files but the version and a new decoder error code;
 - skcms (`skcms.cc` and the baseline transform), commit
   `96d9171c94b937a1b5f0293de7309ac16311b722`, BSD-3-Clause,
   `third_party/skcms/LICENSE`.
