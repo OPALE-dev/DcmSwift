@@ -530,6 +530,77 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
         }
     }
 
+    /// `acceptsAssociation` sees the AE titles and the requestor's address,
+    /// over IPv4 and IPv6 loopback, and its refusal is a permanent
+    /// service-user rejection.
+    func testAssociationsCanBeRefusedByRequestorAddress() async throws {
+        var hosts = ["127.0.0.1"]
+        if (try? await ServerBootstrap(group: MultiThreadedEventLoopGroup.singleton)
+            .bind(host: "::1", port: 0).flatMap { $0.close() }.get()) != nil {
+            hosts.append("::1")
+        } else {
+            print("IPv6 loopback unavailable: only IPv4 is checked")
+        }
+        let contexts = DICOMPresentationContextProposal.proposals(abstractSyntaxes: [DICOMSOPClass.verification])
+        for host in hosts {
+            let seen = NIOLockedValueBox<[DICOMAssociationCandidate]>([])
+            let allowedAddress = NIOLockedValueBox<String>(host)
+            var guarded = configuration()
+            guarded.host = host
+            guarded.acceptsAssociation = { candidate in
+                seen.withLockedValue { $0.append(candidate) }
+                return candidate.remoteAddress == allowedAddress.withLockedValue { $0 }
+            }
+            try await withServer(try DICOMServer(configuration: guarded)) { port in
+                let node = DICOMRemoteNode(aeTitle: "SCP", host: host, port: port)
+                let status = try await client().withAssociation(to: node, presentationContexts: contexts) {
+                    try await $0.echo()
+                }
+                XCTAssertEqual(status, .success, host)
+                XCTAssertEqual(seen.withLockedValue { $0 }, [
+                    DICOMAssociationCandidate(callingAETitle: "SCU", calledAETitle: "SCP", remoteAddress: host),
+                ])
+
+                allowedAddress.withLockedValue { $0 = "192.0.2.1" }
+                do {
+                    try await client().withAssociation(to: node, presentationContexts: contexts) { _ in }
+                    XCTFail("an association from a refused address was accepted: \(host)")
+                } catch DICOMNetworkError.associationRejected(let reject) {
+                    XCTAssertEqual(reject.result, .permanent, host)
+                    XCTAssertEqual(reject.reason, .callingAETitleNotRecognized, host)
+                    XCTAssertEqual(reject.reason.source, 1, "service-user: \(host)")
+                    XCTAssertEqual(reject.reason.reason, 3, host)
+                }
+                XCTAssertEqual(seen.withLockedValue { $0.count }, 2, host)
+            }
+        }
+
+        // The hook runs after the calling AE title checks, which keep their
+        // own rejections; without it, nothing changes.
+        let called = NIOLockedValueBox(0)
+        var ordered = configuration()
+        ordered.allowedCallingAETitles = ["SCU"]
+        ordered.acceptsAssociation = { _ in called.withLockedValue { $0 += 1 }; return true }
+        try await withServer(try DICOMServer(configuration: ordered)) { port in
+            let node = DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port)
+            do {
+                try await client("STRANGER").withAssociation(to: node, presentationContexts: contexts) { _ in }
+                XCTFail("unknown calling AE title accepted")
+            } catch DICOMNetworkError.associationRejected(let reject) {
+                XCTAssertEqual(reject.reason, .callingAETitleNotRecognized)
+            }
+            XCTAssertEqual(called.withLockedValue { $0 }, 0)
+        }
+        XCTAssertNil(configuration().acceptsAssociation)
+        try await withServer(try DICOMServer(configuration: configuration())) { port in
+            let node = DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port)
+            let status = try await client("ANY").withAssociation(to: node, presentationContexts: contexts) {
+                try await $0.echo()
+            }
+            XCTAssertEqual(status, .success)
+        }
+    }
+
     func testRejectionsAndLimits() async throws {
         var limited = configuration()
         limited.maximumAssociations = 1

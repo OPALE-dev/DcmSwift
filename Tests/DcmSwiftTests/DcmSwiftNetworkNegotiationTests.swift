@@ -53,6 +53,27 @@ final class DcmSwiftNetworkNegotiationTests: XCTestCase {
         XCTAssertEqual(requestorView.contexts(for: ct).map(\.transferSyntax), [jpegLS])
     }
 
+    func testAcceptsAssociationSeesTheCandidateAndRejectsPermanently() throws {
+        let rq = request([DICOMPresentationContextProposal(id: 1, abstractSyntax: echo, transferSyntaxes: [implicit])])
+        var guarded = policy
+        guarded.acceptsAssociation = { $0.remoteAddress == "::1" && $0.callingAETitle == "SCU" && $0.calledAETitle == "SCP" }
+        XCTAssertNoThrow(try DICOMAssociationNegotiator.respond(to: rq, policy: guarded, remoteAddress: "::1").get())
+        for address in ["127.0.0.1", nil] as [String?] {
+            guard case .failure(let reject) = DICOMAssociationNegotiator.respond(
+                to: rq, policy: guarded, remoteAddress: address) else {
+                return XCTFail("accepted from \(address ?? "nil")")
+            }
+            XCTAssertEqual(reject, DICOMAssociateReject(result: .permanent, reason: .callingAETitleNotRecognized))
+        }
+        // The two-argument form reports no address.
+        guard case .failure = DICOMAssociationNegotiator.respond(to: rq, policy: guarded) else {
+            return XCTFail("accepted without an address")
+        }
+        // nil keeps the previous behavior.
+        XCTAssertNil(policy.acceptsAssociation)
+        XCTAssertNoThrow(try DICOMAssociationNegotiator.respond(to: rq, policy: policy, remoteAddress: "192.0.2.1").get())
+    }
+
     func testAssociationRejections() {
         func reason(_ rq: DICOMAssociateRequest, _ policy: DICOMAcceptorPolicy) -> DICOMAssociateReject.Reason? {
             if case .failure(let reject) = DICOMAssociationNegotiator.respond(to: rq, policy: policy) { return reject.reason }
