@@ -12,3 +12,13 @@ JPIP index managers, benchmarks, and table generators are not.
 
 To update, copy the same files from a new release, then adjust the version
 numbers in `include/opj_config.h`, `opj_config_private.h`, and this file.
+
+## Local patches
+
+Each patch below is applied on top of 2.5.4, as published upstream, and is
+removed when a release contains it. `Scripts/crosscheck/openjpeg_asan.sh`
+runs the cases they fix under AddressSanitizer.
+
+| File | Reason | Upstream reference |
+| --- | --- | --- |
+| `dwt.c`, `opj_dwt_encode_and_deinterleave_v` | Reversible encoding of a resolution level with no rows at an odd start coordinate (a short edge tile with many decomposition levels) read and wrote past the end of the scratch buffer (CVE-2026-107080). Return early when the height is 0. | Pull request uclouvain/openjpeg#1674, commit `843b78e2712edab13bbda30662465d443a062716`, not merged yet; only its `dwt.c` hunk is applied |
