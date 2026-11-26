@@ -105,6 +105,87 @@ final class DcmSwiftNetworkPDUTests: XCTestCase {
         }
     }
 
+    /// PS3.8 9.3: the layout of every PDU of pynetdicom covers its bytes,
+    /// field after field, and names each field as the standard does.
+    func testPDULayoutCoversEveryByteOfEveryPDU() throws {
+        for (name, hex) in Self.pynetdicom {
+            var bytes = buffer(hex)
+            let array = bytes.readBytes(length: bytes.readableBytes)!
+            let leaves = DICOMPDULayout.fields(of: array).flatMap(\.leaves)
+            var position = 0
+            for leaf in leaves {
+                XCTAssertEqual(leaf.range.lowerBound, position, "\(name) \(leaf.name)")
+                position = leaf.range.upperBound
+            }
+            XCTAssertEqual(position, array.count, name)
+        }
+        func values(_ name: String) -> [String: [String]] {
+            var bytes = buffer(Self.pynetdicom[name]!)
+            let fields = DICOMPDULayout.fields(of: bytes.readBytes(length: bytes.readableBytes)!).flatMap(\.leaves)
+            return Dictionary(grouping: fields, by: \.name).mapValues { $0.compactMap(\.value) }
+        }
+        let rq = values("rq")
+        XCTAssertEqual(rq["PDU-type"], ["01H A-ASSOCIATE-RQ"])
+        XCTAssertEqual(rq["Called-AE-title"], ["\"ANY-SCP\""])
+        XCTAssertEqual(rq["Calling-AE-title"], ["\"CALLING\""])
+        XCTAssertEqual(rq["Application-context-name"], [dicomApplicationContextName])
+        XCTAssertEqual(rq["Syntax-name"]?.first, "1.2.840.10008.1.1")
+        XCTAssertEqual(rq["Syntax-name"]?.count, 6)
+        XCTAssertEqual(rq["Maximum-length-received"], ["16384"])
+        XCTAssertEqual(rq["Implementation-class-uid"], [Self.implementationClassUID])
+        XCTAssertEqual(rq["Implementation-version-name"], ["\"DCMSWIFT_200\""])
+        XCTAssertEqual(rq["Maximum-number-operations-invoked"], ["3"])
+        XCTAssertEqual(rq["SOP-class-uid"], ["1.2.840.10008.5.1.4.1.1.2", "1.2.840.10008.5.1.4.1.2.1.1", "1.2.840.10008.5.1.4.1.1.88.22"])
+        XCTAssertEqual(rq["Related-general-sop-class-uid"], ["1.2.840.10008.5.1.4.1.1.88.11"])
+        XCTAssertEqual(rq["Service-class-application-information"], ["01 00 01"])
+        XCTAssertEqual(rq["Primary-field"], ["61 6C 69 63 65"])
+        // The passcode is in the bytes, not repeated as a value.
+        XCTAssertEqual(rq["Secondary-field"], ["6 bytes"])
+        let ac = values("ac")
+        XCTAssertEqual(ac["Result/Reason"], ["00H", "03H"])
+        XCTAssertEqual(ac["Server-response"], ["4F 4B 2D 54 4F 4B 45 4E"])
+        let pdata = values("pdata")
+        XCTAssertEqual(pdata["Message Control Header"], ["03H command, last fragment", "00H data set, not last"])
+        XCTAssertEqual(pdata["Command fragment"], ["3 bytes"])
+        XCTAssertEqual(pdata["Data set fragment"], ["2 bytes"])
+        XCTAssertEqual(values("rj")["Reason/Diag."], ["07H"])
+        XCTAssertEqual(values("abort")["Source"], ["02H"])
+    }
+
+    /// The first bytes of a PDU, or bytes that stop making sense: the layout
+    /// stops where they do, without reading past them.
+    func testPDULayoutOfTruncatedAndDeviantPDUs() throws {
+        var bytes = buffer(Self.pynetdicom["rq"]!)
+        let array = bytes.readBytes(length: bytes.readableBytes)!
+        for count in [0, 1, 5, 6, 40, 74, 80, 150, array.count - 1] {
+            let leaves = DICOMPDULayout.fields(of: array.prefix(count)).flatMap(\.leaves)
+            var position = 0
+            for leaf in leaves {
+                XCTAssertEqual(leaf.range.lowerBound, position, "\(count) \(leaf.name)")
+                position = leaf.range.upperBound
+            }
+            XCTAssertLessThanOrEqual(position, count)
+        }
+        // An item whose length runs past its PDU: the layout keeps its bytes and stops.
+        var deviant = array
+        deviant[74 + 2] = 0xFF
+        let fields = DICOMPDULayout.fields(of: deviant)
+        XCTAssertEqual(fields.last?.kind, .item)
+        XCTAssertEqual(fields.last?.range.upperBound, deviant.count)
+        // Random bytes after a valid header: never past the bytes, never a crash.
+        var generator = SystemRandomNumberGenerator()
+        for _ in 0..<2000 {
+            var random = array
+            for _ in 0..<8 { random[Int.random(in: 0..<random.count, using: &generator)] = UInt8.random(in: 0...255, using: &generator) }
+            let count = Int.random(in: 0...random.count, using: &generator)
+            for leaf in DICOMPDULayout.fields(of: random.prefix(count)).flatMap(\.leaves) {
+                XCTAssertTrue(leaf.range.upperBound <= count && leaf.range.lowerBound < leaf.range.upperBound)
+            }
+        }
+        // An unknown PDU type: its header alone.
+        XCTAssertEqual(DICOMPDULayout.fields(of: [0x09, 0, 0, 0, 0, 2, 1, 2]).map(\.name), ["PDU-type", "Reserved", "PDU-length"])
+    }
+
     func testFramingAcrossChunksAndConcatenatedPDUs() throws {
         var stream = ByteBufferAllocator().buffer(capacity: 1024)
         for name in ["rq", "pdata", "releaserq", "ac", "abort"] {

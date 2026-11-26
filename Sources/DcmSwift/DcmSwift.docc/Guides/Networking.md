@@ -112,6 +112,21 @@ configuration.pduTrace = { record in
 }
 ```
 
+``DICOMPDULayout`` tells where each field of a PDU lies in its bytes, as
+PS3.8 9.3 and PS3.7 D.3.3 lay them out: the header, the AE titles, each item
+and sub-item with its type, length and value, each presentation data value
+with its message control header and fragment. Each ``DICOMPDUField`` has its
+range, its kind and its value as text; the fields of an item are its
+children. The first bytes of a PDU, or bytes that deviate, are laid out as
+far as they go: the bytes after the last field are those the layout could
+not account for. The passcode of a user identity is not repeated as a value.
+
+```swift
+for field in DICOMPDULayout.fields(of: record.bytes).flatMap(\.leaves) {
+    print(field.range, field.name, field.value ?? "")
+}
+```
+
 ## TLS
 
 Give the client a ``DICOMTLSConfiguration`` and mark the node `useTLS: true`;
