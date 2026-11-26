@@ -37,6 +37,54 @@ final class DcmSwiftArchiveTests: XCTestCase {
         XCTAssertEqual(try DICOMQuery(identifier: identifier).conditions.count, 6)
     }
 
+    /// A file indexed where it is is found and served; removed, it is
+    /// found no more, its file kept or deleted as asked.
+    func testIndexAFileInPlaceThenRemoveIt() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("dcmswift-inplace-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        func file(_ uid: String) throws -> URL {
+            let dataSet = DataSet()
+            _ = dataSet.set(value: "1.2.840.10008.5.1.4.1.1.7", forTagName: "SOPClassUID")
+            _ = dataSet.set(value: uid, forTagName: "SOPInstanceUID")
+            _ = dataSet.set(value: "1.2.3", forTagName: "StudyInstanceUID")
+            _ = dataSet.set(value: "Doe^Jane", forTagName: "PatientName")
+            var bytes = DICOMPart10Header.encodeMetaInformation(sopClassUID: "1.2.840.10008.5.1.4.1.1.7", sopInstanceUID: uid,
+                                                            transferSyntaxUID: TransferSyntax.explicitVRLittleEndian, sourceAETitle: nil)
+            bytes += try DICOMDataSetCoding.encode(dataSet, transferSyntax: TransferSyntax.explicitVRLittleEndian)
+            let url = folder.appendingPathComponent("\(uid).dcm")
+            try bytes.write(to: url)
+            return url
+        }
+        // The store's own folder is elsewhere: the files stay where they are.
+        let archive = DICOMArchive(store: DICOMFileInstanceStore(directory: folder.appendingPathComponent("store")))
+        let first = try file("1.2.3.1"), second = try file("1.2.3.2")
+        let record = try await archive.index(file: first)
+        XCTAssertEqual(record.location, first.path)
+        try await archive.index(file: second)
+        let identifier = DataSet()
+        _ = identifier.set(value: "IMAGE", forTagName: "QueryRetrieveLevel")
+        _ = identifier.set(value: "1.2.3", forTagName: "StudyInstanceUID")
+        _ = identifier.set(value: "", forTagName: "SOPInstanceUID")
+        let found = try await archive.find(identifier)
+        XCTAssertEqual(found.count, 2)
+        let firstRecord = try await archive.record("1.2.3.1")
+        let item = try await archive.item(try XCTUnwrap(firstRecord))
+        XCTAssertEqual(item.sopInstanceUID, "1.2.3.1")
+
+        let removed = try await archive.remove("1.2.3.1", keepingFile: true)
+        XCTAssertTrue(removed)
+        let gone = try await archive.record("1.2.3.1")
+        XCTAssertNil(gone)
+        let left = try await archive.find(identifier)
+        XCTAssertEqual(left.count, 1)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: first.path), "kept as asked")
+        let removedAgain = try await archive.remove("1.2.3.1")
+        XCTAssertFalse(removedAgain)
+        try await archive.remove("1.2.3.2")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: second.path), "deleted with its entry")
+    }
+
     func testMemoryIndexConformance() async throws {
         try await DICOMArchiveConformance.check { DICOMMemoryArchiveIndex() }
     }

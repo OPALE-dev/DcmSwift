@@ -130,6 +130,26 @@ public actor DICOMArchive {
         return record
     }
 
+    /// Indexes a Part 10 file where it is, without copying it: an
+    /// application that keeps its own files serves them through the archive.
+    /// An entry of the same SOP Instance UID is replaced.
+    @discardableResult
+    public func index(file url: URL) async throws -> Record {
+        let record = try Self.record(of: url)
+        try await index.save(Self.document(record), in: .instances)
+        return record
+    }
+
+    /// Removes an instance from the index and, unless `keepingFile`, its
+    /// bytes from the store; returns whether it was indexed.
+    @discardableResult
+    public func remove(_ sopInstanceUID: String, keepingFile: Bool = false) async throws -> Bool {
+        guard let record = try await record(sopInstanceUID) else { return false }
+        let removed = try await index.delete(sopInstanceUID, from: .instances)
+        if !keepingFile, await store.exists(record.location) { try await store.remove(record.location) }
+        return removed
+    }
+
     /// The record of an instance.
     public func record(_ sopInstanceUID: String) async throws -> Record? {
         try await index.document(sopInstanceUID, in: .instances).map(Self.record)
