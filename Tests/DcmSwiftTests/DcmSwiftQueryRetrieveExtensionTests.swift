@@ -102,6 +102,14 @@ final class DcmSwiftQueryRetrieveExtensionTests: XCTestCase {
         XCTAssertEqual(matches.count, 1)
         XCTAssertEqual(matches.first?.string(forTag: "NumberOfStudyRelatedInstances"), "2")
         XCTAssertEqual(matches.first?.string(forTag: "Modality"), "CT")
+        // Modalities in Study is matched against the series of the study, with or without relational queries.
+        for (modalities, count) in [("CT", 1), ("OT", 0), ("OT\\MR", 1)] {
+            var found: [DataSet] = []
+            let byModality = identifier("STUDY", ["StudyInstanceUID": "", "ModalitiesInStudy": modalities])
+            for try await match in try await service.find(byModality, informationModel: DICOMSOPClass.studyRootFind, context: context(DICOMSOPClass.studyRootFind)) { found.append(match) }
+            XCTAssertEqual(found.count, count, modalities)
+            if count == 1 { XCTAssertEqual(found.first?.textValues(forTag: "ModalitiesInStudy"), ["CT", "MR"]) }
+        }
         let items = try await service.retrieve(identifier("IMAGE", ["SOPInstanceUID": "1.2.3.1"]), informationModel: DICOMSOPClass.compositeInstanceRootGet, context: context(DICOMSOPClass.compositeInstanceRootGet))
         XCTAssertEqual(items.map(\.sopInstanceUID), ["1.2.3.1"])
     }

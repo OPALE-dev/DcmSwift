@@ -204,19 +204,19 @@ public actor DICOMArchive {
     }
 
     /// The matches of a C-FIND identifier, with its return keys filled.
+    /// The studies one of whose series has one of the Modalities in Study
+    /// asked (PS3.4 C.6.2.1.2.1); other levels and an empty key keep them all.
+    static func matchingModalities(_ groups: [[Record]], _ identifier: DataSet, level: String) -> [[Record]] {
+        guard level == "STUDY", let wanted = identifier.textValues(forTag: "ModalitiesInStudy")?.filter({ !$0.isEmpty }),
+              !wanted.isEmpty else { return groups }
+        return groups.filter { group in
+            group.contains { ($0.attributes["Modality"] ?? "").components(separatedBy: "\\").contains(where: wanted.contains) }
+        }
+    }
+
     public func find(_ identifier: DataSet) async throws -> [DataSet] {
         let level = identifier.string(forTag: "QueryRetrieveLevel") ?? ""
-        var groups = try await match(identifier, level: level)
-        // Modalities in Study matches a study one of whose series has one of
-        // its values (PS3.4 C.6.2.1.2.1, Annex C.6.1.1.4).
-        if level == "STUDY", let wanted = identifier.textValues(forTag: "ModalitiesInStudy")?.filter({ !$0.isEmpty }),
-           !wanted.isEmpty {
-            groups = groups.filter { group in
-                group.contains { record in
-                    (record.attributes["Modality"] ?? "").components(separatedBy: "\\").contains(where: wanted.contains)
-                }
-            }
-        }
+        let groups = Self.matchingModalities(try await match(identifier, level: level), identifier, level: level)
         let requested = identifier.allElements.map(\.name)
         return groups.map { group in
             // Indexed values are UTF-8: declare it first, or a non-ASCII

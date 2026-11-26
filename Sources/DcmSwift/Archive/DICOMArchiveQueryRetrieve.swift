@@ -150,7 +150,8 @@ extension DICOMArchive {
     }
 
     func extendedFind(_ identifier: DataSet, level: String, options: DICOMQueryRetrieveOptions) async throws -> [DataSet] {
-        let groups = try await extendedMatches(identifier, level: level, options: options)
+        let groups = Self.matchingModalities(try await extendedMatches(identifier, level: level, options: options),
+                                             identifier, level: level)
         let requested = Set(identifier.allElements.map(\.name) + [Self.levels.first(where: { $0.level == level })!.unique])
         return groups.map { group in
             let response = DataSet()
