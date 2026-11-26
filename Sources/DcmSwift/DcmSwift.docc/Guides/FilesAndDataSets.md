@@ -72,6 +72,7 @@ Structured Report trees follow the same ownership direction: `SRNode.nodes` owns
 | --- | --- |
 | Character strings | `textValues` on the element, `textValues(forTag:)` on the data set |
 | Person Names | `personNames` and `personNames(forTag:)`: structured `DICOMPersonName` values with alphabetic, ideographic, and phonetic component groups |
+| Dates, times, and ages | `temporalValues`: `DICOMTemporalValue` for DA, TM, and DT, a `DICOMDateTime` with only the components written or an open range; `ageValues`: `DICOMAge` for AS. No time zone is implied: a DT offset from UTC is kept when written |
 | Fixed-width numbers | Typed multi-valued encoding and decoding of signed and unsigned 16, 32, and 64-bit integers, and 32 and 64-bit floating-point values |
 | Historical API | The flat `value` accessor remains available |
 

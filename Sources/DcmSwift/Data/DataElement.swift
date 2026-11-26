@@ -357,6 +357,21 @@ public class DataElement : DicomObject {
         return names.count == values.count ? names : nil
     }
 
+    /// Typed Values for a DA, TM or DT element, ranges included; nil when one
+    /// Value does not follow the VR (PS3.5 6.2).
+    public var temporalValues:[DICOMTemporalValue]? {
+        guard [.DA, .TM, .DT].contains(vr), let values = textValues else { return nil }
+        let typed = values.compactMap { DICOMTemporalValue($0.trimmingCharacters(in: .whitespaces), vr: vr) }
+        return typed.count == values.count ? typed : nil
+    }
+
+    /// Typed Values for an AS element; nil when one Value is not an age.
+    public var ageValues:[DICOMAge]? {
+        guard vr == .AS, let values = textValues else { return nil }
+        let ages = values.compactMap(DICOMAge.init(rawValue:))
+        return ages.count == values.count ? ages : nil
+    }
+
     /// Encodes character-string Values using the element's effective Specific
     /// Character Set. Individual Values must not contain the value delimiter.
     @discardableResult
