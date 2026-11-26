@@ -188,9 +188,10 @@ let package = Package(
             name: "DcmSwiftArchiveConformance",
             dependencies: ["DcmSwift"]),
         // The system SQLite: in the SDK on Apple platforms, libsqlite3-dev on Linux.
+        // No pkg-config: it would find a Homebrew SQLite built for macOS when
+        // building for iOS.
         .systemLibrary(
             name: "CSQLite",
-            pkgConfig: "sqlite3",
             providers: [
                 .brew(["sqlite"]),
                 .apt(["libsqlite3-dev"])
