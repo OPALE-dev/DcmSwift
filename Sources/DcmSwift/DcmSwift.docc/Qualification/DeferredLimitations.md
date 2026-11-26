@@ -31,6 +31,10 @@ conformance without that evidence.
 - Reads are compared with pydicom through the DICOM JSON Model
   (`Scripts/crosscheck/pydicom_json.py`); DCMTK and GDCM comparisons, and
   comparisons of written files, remain to do.
+- A partial read stops at the first unreadable element: nothing after it is
+  read, even when the following elements could be resynchronized, and the
+  unreadable element is dropped where pydicom may keep it with a truncated
+  value. `DicomFile.init(forPath:)` still rejects such files.
 - Fuzzing is in-process mutation fuzzing (`DcmSwiftFuzzTests`), not
   coverage-guided: libFuzzer is not available in the Apple toolchain.
 

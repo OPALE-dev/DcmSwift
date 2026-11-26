@@ -117,7 +117,7 @@ DICOMDIR Directory Record coverage, and PS3.12 media-profile qualification.
 | Ambiguous VRs in Implicit VR | OB/OW as OW (encapsulated Pixel Data as OB); US/SS from Pixel Representation |
 | Deflated data set | A trailing gzip CRC-32 and size that match the inflated data are accepted |
 | Trailing bytes | Fewer than a tag's four bytes end the data set; an unreadable element is an error, never a loop |
-| Truncated files | Rejected, where pydicom returns the part it could read |
+| Truncated or malformed files | Rejected by <code>DicomFile(forPath:)</code> and <code>readDataset</code>. <code>DicomFile(tolerantlyReadingPath:)</code> and <code>readPartialDataset</code> keep the elements before the first unreadable one, and the Items of a Sequence read before it, with the stop offset, tag, and cause; the unreadable element is dropped, where pydicom may keep it with a truncated value |
 
 The Basic DICOMDIR implementation uses Explicit VR Little Endian, defined
 length Directory Record Sequence Items, and offsets that reference Item Tags.

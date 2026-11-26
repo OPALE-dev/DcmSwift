@@ -111,6 +111,11 @@ from PS3.6 2026d.
 | Explicit VR Big Endian | ✓ | ✓ | Retired by DICOM; kept for interoperability |
 | Deflated Explicit VR Little Endian | ✓ | ✓ | Part 10 only; bounded inflation; not negotiated for DIMSE |
 
+A malformed or truncated file can be read as far as possible with
+`DicomFile(tolerantlyReadingPath:)` or `DicomInputStream.readPartialDataset()`,
+which keep the elements read before the failure and report its offset and
+cause (`DcmPrint --tolerant`).
+
 ### Pixel Data codecs
 
 Built-in codecs are written in Swift, except JPEG 2000, HTJ2K, and JPEG XL,

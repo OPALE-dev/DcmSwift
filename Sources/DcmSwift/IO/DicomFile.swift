@@ -50,6 +50,45 @@ public class DicomFile {
     }
     
     
+    /// Why reading stopped before the end of the file, for a file read with
+    /// ``init(tolerantlyReadingPath:)``; nil when the whole file was read.
+    public private(set) var readFailure: DicomReadFailure?
+
+    /**
+     Loads a DICOM file as far as it can be read.
+
+     A file that ``init(forPath:)`` rejects is kept with the elements read
+     before the failure, which ``readFailure`` describes; its data set is
+     marked corrupted. See
+     ``DicomInputStream/readPartialDataset(headerOnly:withoutPixelData:enforceVR:)``.
+
+     - Parameter filepath: the path of the DICOM file to load
+     - Throws: ``DicomReadFailure`` when the file does not exist or when no
+       data element could be read from it.
+     */
+    public init(tolerantlyReadingPath filepath: String) throws {
+        guard FileManager.default.fileExists(atPath: filepath) else {
+            throw DicomReadFailure(offset: 0, tag: nil, message: "No such file")
+        }
+        self.filepath = filepath
+
+        let inputStream = DicomInputStream(filePath: filepath)
+        let (dataSet, failure) = inputStream.readPartialDataset()
+        if let failure, dataSet.allElements.isEmpty {
+            throw failure
+        }
+        self.hasPreamble = inputStream.hasPreamble
+        self.dataset = dataSet
+        self.readFailure = failure
+        if let failure {
+            Logger.warning("Partially read \(filepath): \(failure)")
+        }
+        if dataSet.string(forTag: "MIMETypeOfEncapsulatedDocument")?.trimmingCharacters(in: .whitespaces) == "application/pdf" {
+            isEncapsulatedPDF = true
+        }
+    }
+
+
     public init?(withDataset dataset: DataSet, hasPreamble:Bool) {
         self.dataset = dataset
         self.hasPreamble = hasPreamble

@@ -26,6 +26,12 @@ public class DicomInputStream: OffsetInputStream {
     private var checksImplicitVR        = false
     /// Set when that detection switched the data set to Implicit VR.
     private var detectedImplicitVR      = false
+    /// Set by `readPartialDataset`: keep what precedes an unreadable element.
+    private var keepsPartialDataSet     = false
+
+    /// Why the last read stopped before the end of the stream, or nil when it
+    /// did not. Only the first failure is kept: what follows it is not read.
+    public private(set) var readFailure: DicomReadFailure?
     
     /**
      Init a DicomInputStream with a file path
@@ -70,6 +76,7 @@ public class DicomInputStream: OffsetInputStream {
                 
         self.open()
         defer { self.close() }
+        readFailure = nil
         decodedElementCount = 0
         decodedItemCount = 0
         decodedFragmentCount = 0
@@ -207,6 +214,12 @@ public class DicomInputStream: OffsetInputStream {
                     dataset.byteOrder = byteOrder
                 }
                                                             
+                // A Sequence that stopped inside one of its Items keeps the
+                // Items read before, as the rest of a partial data set does.
+                if dataset.isCorrupted, keepsPartialDataSet, newElement is DataSequence {
+                    dataset.add(element: newElement)
+                }
+
                 // append element to sub-datasets, if everything is OK
                 if !dataset.isCorrupted {
                     dataset.add(element: newElement)
@@ -237,7 +250,9 @@ public class DicomInputStream: OffsetInputStream {
                 }
             } else if offset <= elementStart {
                 // Nothing could be read: stop instead of retrying forever.
-                throw StreamError.datasetIsCorrupted(message: "Unreadable data element at offset \(elementStart)")
+                let message = "Unreadable data element at offset \(elementStart)"
+                recordFailure(DicomReadFailure(offset: elementStart, tag: nil, message: message))
+                throw StreamError.datasetIsCorrupted(message: message)
             }
         }
 
@@ -248,6 +263,66 @@ public class DicomInputStream: OffsetInputStream {
         dataset.sortElements()
         
         return dataset
+    }
+
+
+    /**
+     Reads a data set from the stream as far as it can be read.
+
+     Where ``readDataset(headerOnly:withoutPixelData:enforceVR:)`` throws, this
+     method keeps the elements read before the failure, as pydicom does with a
+     truncated file: the File Meta Information and the data set elements that
+     precede the unreadable one, and a Sequence with the Items it holds before
+     the failure. What follows the failure is not read, and the data set is
+     marked ``DataSet/isCorrupted``.
+
+     - Parameters:
+        - headerOnly: only read the header. Default is set to false
+        - withoutPixelData: avoid reading the pixel data
+        - enforceVR: reject invalid explicit Value Representation codes
+     - Returns: the data set read, possibly empty, and why reading stopped
+       early, or nil when the whole stream was read.
+     */
+    public func readPartialDataset(
+        headerOnly:Bool = false,
+        withoutPixelData:Bool = false,
+        enforceVR:Bool = true
+    ) -> (dataSet: DataSet, failure: DicomReadFailure?) {
+        keepsPartialDataSet = true
+        defer { keepsPartialDataSet = false }
+        do {
+            if let dataSet = try readDataset(headerOnly: headerOnly, withoutPixelData: withoutPixelData, enforceVR: enforceVR) {
+                return (dataSet, nil)
+            }
+        } catch {
+            if readFailure == nil {
+                recordFailure(DicomReadFailure(offset: offset, tag: nil, message: Self.message(for: error)))
+            }
+        }
+        dataset.isCorrupted = true
+        dataset.sortElements()
+        return (dataset, readFailure)
+    }
+
+
+    private func recordFailure(_ failure: DicomReadFailure) {
+        if readFailure == nil { readFailure = failure }
+    }
+
+
+    private static func message(for error: Error) -> String {
+        switch error {
+        case StreamError.notDicomFile(let message),
+             StreamError.cannotOpenStream(let message),
+             StreamError.cannotReadStream(let message),
+             StreamError.cannotWriteStream(let message),
+             StreamError.datasetIsCorrupted(let message):
+            return message
+        case StreamError.unsupportedTransferSyntax(let uid):
+            return "Unsupported Transfer Syntax \(uid)"
+        default:
+            return error.localizedDescription
+        }
     }
     
 
@@ -403,6 +478,7 @@ public class DicomInputStream: OffsetInputStream {
                 
         dataset.internalValidations.append(v)
         dataset.isCorrupted = true
+        recordFailure(DicomReadFailure(offset: offset, tag: element.tag.code, message: message))
         
         Logger.error(message)
         
