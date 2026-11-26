@@ -307,4 +307,6 @@ Synthetic mandatory tests in `DcmSwiftWebServerTests` cover deferred native Pixe
 
 ### Structured DIMSE diagnostics
 
+A client or server configuration also takes a `pduTrace`: each PDU sent or received, with its bytes as on the wire, its decoded form, time, connection and addresses (PS3.8 9.3), for a protocol debugging console. Without one, nothing is copied.
+
 The network server logger attaches an association identifier, calling/called AE titles, socket endpoints and TLS state. Acceptance records negotiated PDU sizes and asynchronous windows; separate context events preserve each accepted SOP Class, transfer syntax and SCU/SCP role, or its refusal reason. Debug service events correlate DIMSE command, Message ID, context, handler duration and final response status. These records do not dump datasets or user identity negotiation fields. Applications forwarding SDK logs should allowlist structured fields rather than parsing message text. `DcmSwiftNetworkIntegrationTests.testNegotiationAndDIMSELogsRetainNetworkContextAndCorrelateResponses` uses synthetic loopback traffic to qualify this behavior.

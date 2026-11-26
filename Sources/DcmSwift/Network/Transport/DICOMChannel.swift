@@ -10,7 +10,7 @@ enum DICOMChannel {
     /// Configures `channel`; must run on its event loop.
     static func configure(
         _ channel: Channel, tls: NIOSSLContext?, serverHostname: String?, isServer: Bool,
-        limits: DICOMNetworkLimits, timeouts: DICOMNetworkTimeouts
+        limits: DICOMNetworkLimits, timeouts: DICOMNetworkTimeouts, trace: DICOMPDUTrace? = nil
     ) throws -> Async {
         let pipeline = channel.pipeline.syncOperations
         try pipeline.addHandler(QuickAcknowledgment())
@@ -25,10 +25,15 @@ enum DICOMChannel {
             try pipeline.addHandler(IdleStateHandler(readTimeout: idle))
             try pipeline.addHandler(IdleTimeoutHandler(timeout: idle))
         }
-        try pipeline.addHandler(ByteToMessageHandler(DICOMPDUFrameDecoder(
+        let connectionTrace = trace.map { DICOMConnectionTrace($0, channel: channel) }
+        var decoder = DICOMPDUFrameDecoder(
             maximumDataLength: limits.maximumPDULength == 0 ? Int(UInt32.max) : Int(limits.maximumPDULength),
-            maximumAssociateLength: limits.maximumAssociatePDULength)))
-        try pipeline.addHandler(MessageToByteHandler(DICOMPDUFrameEncoder()))
+            maximumAssociateLength: limits.maximumAssociatePDULength)
+        decoder.trace = connectionTrace
+        var encoder = DICOMPDUFrameEncoder()
+        encoder.trace = connectionTrace
+        try pipeline.addHandler(ByteToMessageHandler(decoder))
+        try pipeline.addHandler(MessageToByteHandler(encoder))
         return try Async(
             wrappingChannelSynchronously: channel,
             configuration: Async.Configuration(backPressureStrategy: .init(lowWatermark: 2, highWatermark: 8)))

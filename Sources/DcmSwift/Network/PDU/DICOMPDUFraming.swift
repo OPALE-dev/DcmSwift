@@ -11,6 +11,8 @@ public struct DICOMPDUFrameDecoder: NIOSingleStepByteToMessageDecoder {
     public var maximumDataLength: Int
     /// The largest A-ASSOCIATE-RQ or A-ASSOCIATE-AC variable field accepted.
     public var maximumAssociateLength: Int
+    /// Given each PDU decoded, with its bytes.
+    var trace: DICOMConnectionTrace?
 
     public init(maximumDataLength: Int, maximumAssociateLength: Int = 1 << 20) {
         self.maximumDataLength = maximumDataLength
@@ -37,9 +39,12 @@ public struct DICOMPDUFrameDecoder: NIOSingleStepByteToMessageDecoder {
             throw DICOMPDUError(.invalidPDUParameterValue, "PDU type 0x\(String(type, radix: 16)) of \(length) bytes exceeds \(limit)")
         }
         guard buffer.readableBytes >= DICOMPDUCodec.headerLength + Int(length) else { return nil }
+        let bytes = trace.map { _ in buffer.getBytes(at: buffer.readerIndex, length: DICOMPDUCodec.headerLength + Int(length))! }
         buffer.moveReaderIndex(forwardBy: DICOMPDUCodec.headerLength)
         let body = buffer.readSlice(length: Int(length))!
-        return try DICOMPDUCodec.decode(type: type, body: body)
+        let pdu = try DICOMPDUCodec.decode(type: type, body: body)
+        if let trace, let bytes { trace.record(.received, bytes, pdu) }
+        return pdu
     }
 
     public mutating func decodeLast(buffer: inout ByteBuffer, seenEOF: Bool) throws -> DICOMPDU? {
@@ -51,10 +56,16 @@ public struct DICOMPDUFrameDecoder: NIOSingleStepByteToMessageDecoder {
 /// Serializes outbound PDUs.
 public struct DICOMPDUFrameEncoder: MessageToByteEncoder {
     public typealias OutboundIn = DICOMPDU
+    /// Given each PDU encoded, with its bytes.
+    var trace: DICOMConnectionTrace?
 
     public init() {}
 
     public func encode(data: DICOMPDU, out: inout ByteBuffer) throws {
+        let start = out.writerIndex
         try DICOMPDUCodec.encode(data, into: &out)
+        if let trace, let bytes = out.getBytes(at: start, length: out.writerIndex - start) {
+            trace.record(.sent, bytes, data)
+        }
     }
 }

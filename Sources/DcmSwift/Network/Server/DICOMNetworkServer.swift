@@ -49,6 +49,9 @@ public struct DICOMServerConfiguration: Sendable {
     public var logger: Logging.Logger
     /// Announced in accepted associations and in those the server opens.
     public var implementation: DICOMImplementationIdentity = .dcmSwift
+    /// Given each PDU sent and received, on accepted associations and on
+    /// those the server opens (PS3.8 9.3).
+    public var pduTrace: DICOMPDUTrace?
 
     public init(
         aeTitle: String, host: String = "0.0.0.0", port: Int = 11112, acceptsAnyCalledAETitle: Bool = false,
@@ -168,7 +171,7 @@ public final class DICOMServer: Sendable {
             configuration: DICOMClientConfiguration(
                 aeTitle: configuration.aeTitle, limits: configuration.limits, timeouts: configuration.timeouts,
                 tls: configuration.clientTLS, logger: configuration.logger,
-                implementation: configuration.implementation),
+                implementation: configuration.implementation, pduTrace: configuration.pduTrace),
             eventLoopGroup: eventLoopGroup)
         dispatcher = DICOMRequestDispatcher(
             verification: true, storage: storage, query: query, worklist: worklist, upsQuery: upsQuery,
@@ -307,7 +310,8 @@ public final class DICOMServer: Sendable {
                         try channel.syncOptions?.setOption(ChannelOptions.socketOption(.so_keepalive), value: 1)
                         return try DICOMChannel.configure(
                             channel, tls: sslContext, serverHostname: nil, isServer: true,
-                            limits: configuration.limits, timeouts: configuration.timeouts)
+                            limits: configuration.limits, timeouts: configuration.timeouts,
+                            trace: configuration.pduTrace)
                     } catch {
                         configuration.logger.debug("connection dropped during setup: \(error)")
                         channel.close(promise: nil)

@@ -77,6 +77,22 @@ try await server.run()   // until the task is cancelled
 | ``DICOMStorageCommitmentService`` | Storage Commitment Push Model SCP |
 | ``DICOMNormalizedService`` | Other DIMSE-N SOP Classes, by SOP Class UID |
 
+## Tracing PDUs
+
+A client or server configuration takes a ``DICOMPDUTrace``: it receives each
+PDU sent or received, as a ``DICOMPDUTraceRecord`` with its bytes as on the
+wire, header included, its decoded ``DICOMPDU``, the time, the connection
+and its addresses (PS3.8 9.3). DIMSE commands and data sets are the PDVs of
+the P-DATA-TF PDUs. The trace is called on the connection's event loop and
+must return quickly; without one, no PDU is copied.
+
+```swift
+var configuration = DICOMClientConfiguration(aeTitle: "DCMCLIENT")
+configuration.pduTrace = { record in
+    print(record.direction, String(record.type, radix: 16), record.bytes.count)
+}
+```
+
 ## TLS
 
 Give the client a ``DICOMTLSConfiguration`` and mark the node `useTLS: true`;

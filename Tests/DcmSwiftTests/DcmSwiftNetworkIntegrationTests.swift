@@ -212,6 +212,50 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
         XCTAssertFalse(logs.contains{$0.fields["dataset"] != nil || $0.fields["user_identity"] != nil})
     }
 
+    /// PS3.8 9.3: each PDU of an association is given to the trace of each
+    /// side, with its bytes as on the wire, in order, sent on one side and
+    /// received on the other.
+    func testPDUTraceSeesEveryPDUOnBothSides() async throws {
+        let serverRecords = NIOLockedValueBox<[DICOMPDUTraceRecord]>([])
+        let clientRecords = NIOLockedValueBox<[DICOMPDUTraceRecord]>([])
+        var settings = configuration()
+        settings.pduTrace = { record in serverRecords.withLockedValue { $0.append(record) } }
+        let scp = try DICOMServer(configuration: settings)
+        try await withServer(scp) { port in
+            let client = try DICOMClient(configuration: DICOMClientConfiguration(
+                aeTitle: "SCU", timeouts: DICOMNetworkTimeouts(connect: .seconds(5), artim: .seconds(5), idle: .seconds(20)),
+                pduTrace: { record in clientRecords.withLockedValue { $0.append(record) } }))
+            let status = try await client.withAssociation(
+                to: DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port),
+                presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.verification])
+            ) { try await $0.echo() }
+            XCTAssertEqual(status, .success)
+        }
+        // The server's last PDU may be recorded just after the client returns.
+        for _ in 0..<50 where serverRecords.withLockedValue({ $0.count }) < 6 { try await Task.sleep(nanoseconds: 20_000_000) }
+        let client: [DICOMPDUTraceRecord] = clientRecords.withLockedValue { $0 }
+        let server: [DICOMPDUTraceRecord] = serverRecords.withLockedValue { $0 }
+
+        // A-ASSOCIATE-RQ, AC; P-DATA-TF C-ECHO-RQ and RSP; A-RELEASE-RQ, RP.
+        XCTAssertEqual(client.map(\.type), [0x01, 0x02, 0x04, 0x04, 0x05, 0x06])
+        XCTAssertEqual(client.map(\.direction), [.sent, .received, .sent, .received, .sent, .received])
+        XCTAssertEqual(server.map(\.type), client.map(\.type))
+        XCTAssertEqual(server.map(\.direction), [.received, .sent, .received, .sent, .received, .sent])
+        // The same bytes on both sides, each a whole PDU that decodes to the record's PDU.
+        XCTAssertEqual(server.map(\.bytes), client.map(\.bytes))
+        for record in client {
+            let length = record.bytes[2...5].reduce(0) { $0 << 8 | Int($1) }
+            XCTAssertEqual(record.bytes.count, 6 + length)
+            var buffer = ByteBuffer(bytes: record.bytes)
+            var decoder = DICOMPDUFrameDecoder(maximumDataLength: 1 << 20)
+            XCTAssertEqual(try decoder.decode(buffer: &buffer), record.pdu)
+        }
+        XCTAssertEqual(Set(client.map(\.connection)).count, 1)
+        XCTAssertNotEqual(client.first?.connection, server.first?.connection)
+        XCTAssertEqual(client.first?.remoteAddress, server.first?.localAddress)
+        XCTAssertTrue(zip(client, client.dropFirst()).allSatisfy { $0.time <= $1.time })
+    }
+
     func testEchoAndRelease() async throws {
         let server = try DICOMServer(configuration: configuration())
         try await withServer(server) { port in

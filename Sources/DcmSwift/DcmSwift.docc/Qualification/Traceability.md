@@ -68,6 +68,7 @@ automated tests that support the claim, and what remains to be qualified.
 | Capability | Normative source | Status | Current evidence | Remaining qualification |
 | --- | --- | --- | --- | --- |
 | PDUs and framing | PS3.8 9.3, PS3.7 D.3.3 | Implemented | <ul><li><code>testPynetdicomPDUsDecodeAndReencodeByteForByte</code></li><li><code>testFramingAcrossChunksAndConcatenatedPDUs</code></li><li><code>testOversizedAndUnknownPDUsAreRefusedFromTheirHeader</code></li><li><code>testMalformedPDUsAreRejected</code></li><li><code>testRandomCorruptionNeverCrashes</code></li></ul> | DCMTK and dcm4che captures |
+| PDU trace | PS3.8 9.3 | Every PDU sent and received, with its bytes, decoded form, time, connection, and addresses, on client and server | <ul><li><code>testPDUTraceSeesEveryPDUOnBothSides</code></li></ul> | Bytes are those of the PDU framing, after TLS decryption; TCP segmentation is not shown |
 | Association state machine | PS3.8 9.2 | Implemented | <code>DcmSwiftNetworkStateMachineTests</code> (all 494 cells) | — |
 | Negotiation | PS3.8 7.1, PS3.7 D.3.3 | Implemented | <code>DcmSwiftNetworkNegotiationTests</code> | Extended negotiation semantics |
 | DIMSE commands, fragmentation | PS3.7 6, 8, E | Implemented | <ul><li><code>testCommandSetsMatchPynetdicom</code></li><li><code>testFragmentationAndReassemblyRespectTheMaximumLength</code></li><li><code>testLargeDataSetsSpillToATemporaryFileThatIsRemoved</code></li><li><code>testDataSetsRoundTripInEveryNetworkTransferSyntax</code></li></ul> | — |

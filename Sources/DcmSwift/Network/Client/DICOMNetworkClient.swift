@@ -18,13 +18,16 @@ public struct DICOMClientConfiguration: Sendable {
     public var logger: Logging.Logger
     /// Announced in the association requests.
     public var implementation: DICOMImplementationIdentity
+    /// Given each PDU sent and received, with its bytes (PS3.8 9.3).
+    public var pduTrace: DICOMPDUTrace?
 
     public init(
         aeTitle: String, limits: DICOMNetworkLimits = DICOMNetworkLimits(),
         timeouts: DICOMNetworkTimeouts = DICOMNetworkTimeouts(), tls: DICOMTLSConfiguration? = nil,
         maximumOperationsInvoked: UInt16 = 1, logger: Logging.Logger = Logging.Logger(label: "DcmSwift.network.client"),
-        implementation: DICOMImplementationIdentity = .dcmSwift
+        implementation: DICOMImplementationIdentity = .dcmSwift, pduTrace: DICOMPDUTrace? = nil
     ) {
+        self.pduTrace = pduTrace
         self.implementation = implementation
         self.aeTitle = aeTitle
         self.limits = limits
@@ -189,7 +192,8 @@ public final class DICOMClient: Sendable {
                     channel.eventLoop.makeCompletedFuture {
                         try DICOMChannel.configure(
                             channel, tls: tls, serverHostname: hostname, isServer: false,
-                            limits: configuration.limits, timeouts: configuration.timeouts)
+                            limits: configuration.limits, timeouts: configuration.timeouts,
+                            trace: configuration.pduTrace)
                     }
                 }
         } catch let error as ChannelError where error == .connectTimeout(configuration.timeouts.connect) {
