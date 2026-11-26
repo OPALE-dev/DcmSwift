@@ -546,6 +546,11 @@ public class DataSet: DicomObject {
         }
     }
 
+    /// Reads the Specific Character Set again, after it was added or removed.
+    func updateCharacterSet() {
+        characterSet = DICOMCharacterSet(specificCharacterSet: element(forTagName: "SpecificCharacterSet")?.textValues?.joined(separator: "\\"))
+    }
+
     /// Updates (0002,0000) from the encoded size of the remaining File Meta
     /// Information elements. Group 0002 is always Explicit VR Little Endian.
     @discardableResult

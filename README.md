@@ -196,6 +196,7 @@ on every platform.
 | --- | --- |
 | DICOMDIR | <ul><li>Legacy Basic hierarchy</li><li>Generic record-tree read and write, with a lossless view of every current F.4-1 type</li><li>Validation of offsets, the record graph, selected F.5 keys, File-set IDs, and referenced Part 10 identities</li></ul> |
 | PS3.12 media profiles | Not yet qualified; Basic DICOMDIR support is not a media-profile claim |
+| Data set structure (PS3.5 7.1, 7.5) | <ul><li>Elements inserted in tag order at the top level or in an Item, removed and put back; Items added, removed, and moved</li><li>Edited files read back by DCMTK <code>dcmdump</code> and pydicom, explicit and implicit VR</li></ul> |
 | DICOM JSON Model (PS3.18 F) | <ul><li><code>DICOMJSON</code> encode and decode, <code>DcmPrint -f JSON</code></li><li>Matches pydicom on 144 of its 147 readable test files and on the local corpus</li></ul> |
 | Native DICOM Model XML (PS3.19 A.1) | <ul><li><code>DICOMXML</code> encode and decode, <code>DcmPrint -f XML</code></li><li>Every output of the pydicom test files and local corpus validates against the normative schema and matches pydicom through the PS3.18 F.3 mapping</li></ul> |
 | Encoding validation (PS3.5, PS3.10) | <ul><li><code>DicomFile.validate()</code>: VR, VM, even lengths and lexical rules of each Value, padding, File Meta Information and its Group Length, unique and ascending tags, Private Creators</li></ul> |

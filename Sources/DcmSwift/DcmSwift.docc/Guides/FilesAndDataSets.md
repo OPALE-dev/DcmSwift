@@ -52,6 +52,32 @@ _ = dataset.set(value: "12345678", forTagName: "PatientID")
 print(dataset.toData().toHex())
 ```
 
+## Change the structure of a data set
+
+Elements are added in ascending tag order (PS3.5 7.1), at the top level or in
+a Sequence Item; Items are added, removed, and moved in their Sequence, whose
+order is significant (PS3.5 7.5.1). Each change returns what puts it back, for
+an undo.
+
+```swift
+let comments = try dataset.makeElement(tag: DataTag(withGroup: "0010", element: "4000"))
+try dataset.insert(comments)
+_ = dataset.set(value: "Synthetic", toElement: comments)
+
+if let sequence = dataset.sequence(forTagName: "ReferencedSeriesSequence") {
+    let item = try dataset.insertItem(into: sequence, at: 0)
+    try dataset.insert(try dataset.makeElement(tag: DataTag(withGroup: "0020", element: "000E"), in: item), into: item)
+    try dataset.moveItem(in: sequence, from: 0, to: sequence.items.count - 1)
+}
+
+let container = try dataset.removeElement(comments)   // the Item that held it, nil at the top level
+try dataset.insert(comments, into: container)          // put back
+```
+
+`DataSetStructureError` refuses File Meta Information (group 0002), Group
+Lengths, Items and delimiters as elements, a tag already present where it is
+added, and a data set not fully read.
+
 ## Ownership and retained elements
 
 A `DataSet` owns its elements; sequences own their items and items own their
