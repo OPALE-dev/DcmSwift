@@ -152,6 +152,17 @@ public class DataElement : DicomObject {
     
     public func setValue(_ val:Any) -> Bool {
         var ret = false
+        // Values typed apart from the bytes are read again from them.
+        defer { if ret && !(val is String) { dataValues = [] } }
+
+        // A string for a binary number holds its Values as text: each is
+        // parsed in the type of the VR, never written as characters
+        // (PS3.5 6.2); one that does not fit refuses the whole value.
+        if let string = val as? String, !Self.isTextVR(vr) {
+            guard let typed = Self.binaryValues(string, vr: vr) else { return false }
+            ret = setValue(typed)
+            return ret
+        }
         
         if self.vr == .AT {
             let tags: [DataTag]
@@ -464,6 +475,31 @@ public class DataElement : DicomObject {
             return true
         default:
             return false
+        }
+    }
+
+    /// The Values of a text, separated by backslashes, as the Swift type of
+    /// a binary-number VR; nil when one does not fit, or for another VR.
+    static func binaryValues(_ text: String, vr: VR.VR) -> Any? {
+        let parts = text.isEmpty ? [] : text.components(separatedBy: "\\").map { $0.trimmingCharacters(in: .whitespaces) }
+        func parse<T>(_ make: (String) -> T?) -> [T]? {
+            var values: [T] = []
+            for part in parts {
+                guard let value = make(part) else { return nil }
+                values.append(value)
+            }
+            return values
+        }
+        switch vr {
+        case .US: return parse { UInt16($0) }
+        case .SS: return parse { Int16($0) }
+        case .UL: return parse { UInt32($0) }
+        case .SL: return parse { Int32($0) }
+        case .UV: return parse { UInt64($0) }
+        case .SV: return parse { Int64($0) }
+        case .FL: return parse { Float32($0).flatMap { $0.isFinite ? $0 : nil } }
+        case .FD: return parse { Float64($0).flatMap { $0.isFinite ? $0 : nil } }
+        default: return nil
         }
     }
 

@@ -339,6 +339,40 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertThrowsError(try rejected.readDataset(enforceVR: false))
     }
 
+    func testATextForABinaryNumberIsParsedInTheTypeOfItsVR() throws {
+        // PS3.5 6.2: US, SS, FL… hold binary numbers, never characters.
+        let dataset = DataSet()
+        let rows = try XCTUnwrap(DataElement(withTagName: "Rows", dataset: dataset))
+        XCTAssertEqual(rows.vr, .US)
+        XCTAssertTrue(rows.setValue("64"))
+        XCTAssertEqual(rows.data, Data([0x40, 0x00]))
+        XCTAssertEqual(rows.length, 2)
+        XCTAssertEqual(rows.uint16Values, [64])
+
+        // A Value that does not fit the VR refuses the whole value.
+        XCTAssertFalse(rows.setValue("70000"))
+        XCTAssertFalse(rows.setValue("sixty-four"))
+        XCTAssertEqual(rows.uint16Values, [64])
+
+        let spacing = try XCTUnwrap(DataElement(withTagName: "PixelAspectRatio", dataset: dataset))
+        spacing.vr = .SS
+        spacing.byteOrder = .BigEndian
+        XCTAssertTrue(spacing.setValue("1\\-2"))
+        XCTAssertEqual(spacing.data, Data([0x00, 0x01, 0xFF, 0xFE]))
+        XCTAssertEqual(spacing.int16Values, [1, -2])
+
+        let float = try XCTUnwrap(DataElement(withTagName: "RescaleSlope", dataset: dataset))
+        float.vr = .FD
+        XCTAssertTrue(float.setValue(" 0.5 \\ 2"))
+        XCTAssertEqual(float.float64Values, [0.5, 2])
+        XCTAssertFalse(float.setValue("inf"))
+
+        // Bytes are given as Data, not as a string.
+        let bytes = try XCTUnwrap(DataElement(withTagName: "PixelData", dataset: dataset))
+        bytes.vr = .OB
+        XCTAssertFalse(bytes.setValue("00 01"))
+    }
+
     func testDefinedSequenceLengthsAreRecomputedWhenTheEncodingChanges() throws {
         // Nested SQ headers are 8 bytes in Implicit VR but 12 in Explicit
         // VR, so lengths read from one encoding cannot be reused in another.
