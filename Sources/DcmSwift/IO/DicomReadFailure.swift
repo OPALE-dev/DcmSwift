@@ -3,7 +3,7 @@ import Foundation
 /// Where and why reading a data set stopped before the end of its stream.
 ///
 /// Returned by ``DicomInputStream/readPartialDataset(headerOnly:withoutPixelData:enforceVR:)``
-/// and kept by a ``DicomFile`` read with ``DicomFile/init(tolerantlyReadingPath:)``.
+/// and kept by a ``DicomFile`` read with ``DicomFile/init(tolerantlyReadingPath:transferSyntax:bulkDataLoadingPolicy:)``.
 public struct DicomReadFailure: Error, Sendable, Equatable, CustomStringConvertible {
     /// The byte offset, from the start of the stream, at which the reader
     /// stopped: the bytes before it were consumed, those after it were not read.

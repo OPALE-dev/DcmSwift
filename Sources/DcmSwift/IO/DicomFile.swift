@@ -51,7 +51,7 @@ public class DicomFile {
     
     
     /// Why reading stopped before the end of the file, for a file read with
-    /// ``init(tolerantlyReadingPath:)``; nil when the whole file was read.
+    /// ``init(tolerantlyReadingPath:transferSyntax:bulkDataLoadingPolicy:)``; nil when the whole file was read.
     public private(set) var readFailure: DicomReadFailure?
 
     /**
