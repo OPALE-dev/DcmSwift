@@ -452,6 +452,42 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
         XCTAssertEqual(received.map(\.transferSyntaxUID), [TransferSyntax.implicitVRLittleEndian])
     }
 
+    /// C-GET contexts: within 128, compressed syntaxes alone, the SCP role
+    /// asked; an instance kept compressed arrives as it is kept.
+    func testGetProposalsReceiveInstancesAsStored() async throws {
+        let many = (0..<70).map { "1.2.840.10008.5.1.4.1.1.\($0 + 1000)" }
+        let (wide, roles) = DICOMPresentationContextProposal.getProposals(informationModel: DICOMSOPClass.studyRootGet, sopClasses: many + [many[0]])
+        XCTAssertEqual(wide.count, 128)
+        XCTAssertEqual(roles.count, 70, "each class once")
+        XCTAssertEqual(wide.first?.abstractSyntax, DICOMSOPClass.studyRootGet)
+        XCTAssertEqual(Set(wide.map(\.abstractSyntax)).count, 71, "every class keeps its uncompressed context")
+        XCTAssertEqual(wide.filter { $0.abstractSyntax == many[0] }.count, 1 + DICOMPresentationContextProposal.retrieveCompressed.count)
+        XCTAssertEqual(wide.filter { $0.abstractSyntax == many[69] }.count, 1, "the last classes lose their compressed contexts first")
+        XCTAssertEqual(Set(wide.map(\.id)).count, 128)
+
+        let explicit = try DICOMRetrieveItem(dataSet: instance(7), transferSyntaxUID: TransferSyntax.explicitVRLittleEndian)
+        let rle = DICOMRetrieveItem(sopClassUID: explicit.sopClassUID, sopInstanceUID: "1.2.3.77",
+                                    transferSyntaxUID: "1.2.840.10008.1.2.5", payload: explicit.payload)
+        let server = try DICOMServer(configuration: configuration(), retrieve: FixedRetrieve(items: [explicit, rle], destinations: [:]))
+        let storage = MemoryStorage()
+        try await withServer(server) { port in
+            let (proposals, roles) = DICOMPresentationContextProposal.getProposals(
+                informationModel: DICOMSOPClass.studyRootGet, sopClasses: [explicit.sopClassUID])
+            try await client().withAssociation(
+                to: DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port), presentationContexts: proposals,
+                roleSelections: roles, storage: storage
+            ) { association in
+                let identifier = DataSet()
+                _ = identifier.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
+                _ = identifier.set(value: "1.2.3", forTagName: "StudyInstanceUID")
+                let result = try await association.get(identifier)
+                XCTAssertEqual(result.progress.completed, 2)
+            }
+        }
+        let received = storage.received.withLockedValue { $0 }
+        XCTAssertEqual(Set(received.map(\.transferSyntaxUID)), [TransferSyntax.explicitVRLittleEndian, "1.2.840.10008.1.2.5"])
+    }
+
     func testFindStreamsMatchesAndCancels() async throws {
         let query = CountingQuery(count: 500)
         let server = try DICOMServer(configuration: configuration(), query: query)

@@ -65,6 +65,46 @@ extension DICOMPresentationContextProposal {
         Array(contexts(for: items, uncompressed: uncompressed).prefix(128))
     }
 
+    /// Compressed syntaxes a C-GET accepts besides the uncompressed ones, most
+    /// used first: an SCP that does not transcode sends an instance only in
+    /// the syntax it keeps it in.
+    public static let retrieveCompressed = [
+        "1.2.840.10008.1.2.4.50", "1.2.840.10008.1.2.4.70", "1.2.840.10008.1.2.4.90", "1.2.840.10008.1.2.4.91",
+        "1.2.840.10008.1.2.5", "1.2.840.10008.1.2.4.80", "1.2.840.10008.1.2.4.51", "1.2.840.10008.1.2.4.81",
+        "1.2.840.10008.1.2.4.57", "1.2.840.10008.1.2.1.99",
+    ]
+
+    /// The contexts of a C-GET (PS3.4 C.4.3): the retrieve model first; then,
+    /// for each storage SOP class, one context for the uncompressed syntaxes
+    /// and one per compressed syntax, alone, so that the SCP may send each
+    /// instance as it keeps it. Within 128 contexts (PS3.8 9.3.2.2), the
+    /// first classes keep every compressed syntax and the last ones lose
+    /// them first; the classes beyond 127 are left out. The role selections
+    /// ask the SCP role for each class proposed (PS3.7 D.3.3.4).
+    public static func getProposals(
+        informationModel: String, sopClasses: [String], uncompressed: [String] = DICOMTransferSyntaxes.uncompressed,
+        compressed: [String] = retrieveCompressed
+    ) -> (proposals: [DICOMPresentationContextProposal], roles: [DICOMRoleSelection]) {
+        var classes: [String] = []
+        for uid in sopClasses where !classes.contains(uid) { classes.append(uid) }
+        classes = Array(classes.prefix(127))
+        var budget = 127 - classes.count
+        var contexts = [DICOMPresentationContextProposal(id: 0, abstractSyntax: informationModel, transferSyntaxes: uncompressed)]
+        for sopClass in classes {
+            contexts.append(DICOMPresentationContextProposal(id: 0, abstractSyntax: sopClass, transferSyntaxes: uncompressed))
+            for syntax in compressed where budget > 0 {
+                contexts.append(DICOMPresentationContextProposal(id: 0, abstractSyntax: sopClass, transferSyntaxes: [syntax]))
+                budget -= 1
+            }
+        }
+        let proposals = contexts.enumerated().map { index, proposal in
+            var proposal = proposal
+            proposal.id = UInt8(truncatingIfNeeded: 2 * index + 1)
+            return proposal
+        }
+        return (proposals, classes.map { DICOMRoleSelection(sopClassUID: $0, scuRole: false, scpRole: true) })
+    }
+
     /// The items in consecutive batches whose contexts fit in one
     /// association (128 presentation contexts, PS3.8 9.3.2.2).
     public static func batches(for items: [DICOMRetrieveItem], limit: Int = 128) -> [[DICOMRetrieveItem]] {

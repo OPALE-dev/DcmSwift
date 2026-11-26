@@ -55,7 +55,23 @@ try await client.withAssociation(
 ```
 
 `move(_:destination:)` and `get(_:)` retrieve in the same way; C-GET stores
-the instances through the `storage` service given to `withAssociation`.
+the instances through the `storage` service given to `withAssociation`, on
+contexts of the storage SOP classes that ask the SCP role:
+
+```swift
+let (contexts, roles) = DICOMPresentationContextProposal.getProposals(
+    informationModel: DICOMSOPClass.studyRootGet, sopClasses: [ctImageStorage])
+try await client.withAssociation(to: remote, presentationContexts: contexts,
+                                 roleSelections: roles, storage: archive) { association in
+    let result = try await association.get(identifier)
+    print(result.progress.completed)
+}
+```
+
+`getProposals` proposes each class with the uncompressed syntaxes, and with
+each common compressed syntax alone, so that an SCP that does not transcode
+sends an instance as it keeps it; within 128 contexts, the last classes lose
+their compressed contexts first.
 
 ## Server
 
