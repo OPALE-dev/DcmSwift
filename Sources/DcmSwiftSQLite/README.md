@@ -1,8 +1,8 @@
 # DcmSwiftSQLite
 
-A standalone SQLite implementation of `DICOMArchiveIndex`, packaged apart
-from DcmSwift so applications that do not use SQLite do not depend on it.
-It works with a file database or `:memory:` and creates its schema on open.
+A SQLite implementation of `DICOMArchiveIndex`, in its own `DcmSwiftSQLite`
+product: only the applications that add this product link SQLite. It works
+with a file database or `:memory:` and creates its schema on open.
 
 ```swift
 import DcmSwift
@@ -18,6 +18,7 @@ SQLite transactions; `replace` updates only the version it read and throws
 Top-level UID equality conditions use an index. All other query conditions
 return candidate rows for DcmSwift's exact `DICOMQueryMatcher`.
 
-Run its conformance and cross-connection tests with `swift test` in this
-directory. SQLite must be available to the compiler (`libsqlite3-dev` on
-Linux). DcmSwift itself remains free of a database dependency.
+Its conformance and cross-connection tests are `DcmSwiftSQLiteTests`
+(`swift test --filter DcmSwiftSQLiteTests`). SQLite must be available to the
+compiler: it is in the SDK on Apple platforms, and `libsqlite3-dev` on Linux.
+The `DcmSwift` product itself has no database dependency.

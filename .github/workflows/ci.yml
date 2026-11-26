@@ -24,6 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: swift --version
+      # The DcmSwiftSQLite product builds on the system SQLite.
+      - run: apt-get update -qq && apt-get install -y -qq libsqlite3-dev
       - run: swift build -c release
       # SwiftPM writes the XCTest xUnit report only in parallel mode.
       - run: mkdir -p .reports && swift test --parallel --xunit-output .reports/xunit.xml

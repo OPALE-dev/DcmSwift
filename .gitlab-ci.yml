@@ -27,6 +27,8 @@ swift-package:
     - deploy
   script:
     - swift --version
+    # The DcmSwiftSQLite product builds on the system SQLite.
+    - apt-get update -qq && apt-get install -y -qq libsqlite3-dev
     - swift build -c release
     # SwiftPM writes the XCTest xUnit report only in parallel mode.
     - swift test --parallel --xunit-output .reports/xunit.xml
@@ -38,9 +40,8 @@ sqlite-adapter:
     - deploy
   script:
     - apt-get update -qq && apt-get install -y -qq libsqlite3-dev
-    - cd Adapters/DcmSwiftSQLite
-    - swift build -c release
-    - swift test --parallel
+    - swift build -c release --product DcmSwiftSQLite
+    - swift test --parallel --filter DcmSwiftSQLiteTests
 
 sqlkit-adapter:
   stage: test

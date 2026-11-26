@@ -15,6 +15,8 @@ let package = Package(
             name: "DcmSwift",
             targets: ["DcmSwift"]),
         .library(name: "DcmSwiftArchiveConformance", targets: ["DcmSwiftArchiveConformance"]),
+        // A SQLite archive index; only the applications that use it link SQLite.
+        .library(name: "DcmSwiftSQLite", targets: ["DcmSwiftSQLite"]),
         .executable(name: "DcmAnonymize", targets: ["DcmAnonymize"]),
         .executable(name: "DcmPrint", targets: ["DcmPrint"]),
         .executable(name: "DcmServer", targets: ["DcmServer"]),
@@ -185,6 +187,18 @@ let package = Package(
         .target(
             name: "DcmSwiftArchiveConformance",
             dependencies: ["DcmSwift"]),
+        // The system SQLite: in the SDK on Apple platforms, libsqlite3-dev on Linux.
+        .systemLibrary(
+            name: "CSQLite",
+            pkgConfig: "sqlite3",
+            providers: [
+                .brew(["sqlite"]),
+                .apt(["libsqlite3-dev"])
+            ]),
+        .target(
+            name: "DcmSwiftSQLite",
+            dependencies: ["CSQLite", "DcmSwift"],
+            exclude: ["README.md"]),
         .target(
             name: "DcmNetworkCommand",
             dependencies: [
@@ -293,6 +307,10 @@ let package = Package(
             ],
             exclude: ["Resources", "Corpus"],
             resources: [.process("CIResources")]
+        ),
+        .testTarget(
+            name: "DcmSwiftSQLiteTests",
+            dependencies: ["DcmSwiftSQLite", "DcmSwiftArchiveConformance"]
         )
     ],
     swiftLanguageModes: [.v5],

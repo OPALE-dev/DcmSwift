@@ -19,7 +19,8 @@ implements ``DICOMArchiveIndex``; an object-storage adapter implements
 ``DICOMInstanceStore``. Applications choose them, for example an adapter on
 the SQLKit database a Vapor application already has.
 
-`Adapters/DcmSwiftSQLite` provides a standalone SQLite adapter. It uses
+The `DcmSwiftSQLite` product provides a SQLite adapter on the system SQLite;
+only the applications that add it link SQLite. It uses
 transactions and a document-version comparison for updates from multiple
 connections, and indexes top-level UID equality keys.
 
