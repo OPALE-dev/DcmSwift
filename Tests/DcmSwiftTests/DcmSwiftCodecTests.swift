@@ -99,6 +99,13 @@ final class DcmSwiftCodecTests: XCTestCase {
         let spanning = encapsulatedImage(frames: 2, fragments: parts, offsetTable: [0, 20])
         XCTAssertEqual(try DICOMEncapsulatedPixelData(dataset: spanning).encodedFrame(0), Data([1, 2, 3, 4]))
         XCTAssertEqual(try DICOMEncapsulatedPixelData(dataset: spanning).encodedFrame(1), Data([5, 6]))
+        // The attribution of each Fragment is readable (PS3.5 A.4).
+        let located = try DICOMEncapsulatedPixelData(dataset: spanning)
+        XCTAssertEqual(located.frameFragments, [0..<2, 2..<3])
+        XCTAssertEqual(located.fragmentCount, 3)
+        XCTAssertEqual((0..<4).map(located.frame(ofFragment:)), [0, 0, 1, nil])
+        XCTAssertNil(located.collectionFragments)
+        XCTAssertNil(located.collection(ofFragment: 0))
 
         // Without an offset table a single frame uses every Fragment.
         let single = encapsulatedImage(frames: 1, fragments: parts, offsetTable: [])
@@ -119,6 +126,8 @@ final class DcmSwiftCodecTests: XCTestCase {
         addOV("ExtendedOffsetTable", [0, 12], to: dataset)
         addOV("ExtendedOffsetTableLengths", [3, 2], to: dataset)
         let pixels = try DICOMEncapsulatedPixelData(dataset: dataset)
+        XCTAssertEqual(pixels.frameFragments, [0..<1, 1..<2])
+        XCTAssertEqual(pixels.frame(ofFragment: 1), 1)
         XCTAssertEqual(try pixels.encodedFrame(0), Data([1, 2, 3]))
         XCTAssertEqual(try pixels.encodedFrame(1), Data([4, 5]))
 

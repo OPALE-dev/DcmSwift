@@ -17,14 +17,16 @@ public struct DICOMEncapsulatedPixelData {
     public let description: DICOMPixelDescription
     public let transferSyntaxUID: String
     private let fragments: [DataItem]
-    /// The Fragment indices of each frame.
-    private let frameFragments: [Range<Int>]
+    /// The Fragment indices of each frame, as located by the Extended or
+    /// Basic Offset Table, one Fragment per frame, or the codestream starts
+    /// (PS3.5 A.4); empty under a component collection.
+    public let frameFragments: [Range<Int>]
     /// Byte length of each frame's single Fragment, from Extended Offset
     /// Table Lengths (7FE0,0002); the Fragment may carry trailing padding.
     private let frameLengths: [Int]?
     /// The Fragment indices of each component collection, for a multi-frame
-    /// image under a collection Transfer Syntax.
-    private let collectionFragments: [Range<Int>]?
+    /// image under a collection Transfer Syntax; nil otherwise.
+    public let collectionFragments: [Range<Int>]?
     private let collections = CollectionCache()
 
     /// Locates the frames of the encapsulated Pixel Data of a Data Set with
@@ -149,6 +151,21 @@ public struct DICOMEncapsulatedPixelData {
         self.frameFragments = frameFragments
         self.frameLengths = frameLengths
         self.collectionFragments = collectionFragments
+    }
+
+    /// The number of Fragments, the Basic Offset Table item excluded.
+    public var fragmentCount: Int { fragments.count }
+
+    /// The frame a Fragment belongs to, by the Fragment's index after the
+    /// Basic Offset Table item; nil under a component collection.
+    public func frame(ofFragment fragment: Int) -> Int? {
+        frameFragments.firstIndex { $0.contains(fragment) }
+    }
+
+    /// The component collection a Fragment belongs to, under a collection
+    /// Transfer Syntax.
+    public func collection(ofFragment fragment: Int) -> Int? {
+        collectionFragments?.firstIndex { $0.contains(fragment) }
     }
 
     /// The encoded bytes of a frame: its Fragments concatenated.

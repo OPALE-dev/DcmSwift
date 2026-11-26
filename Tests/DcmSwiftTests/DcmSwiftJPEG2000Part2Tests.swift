@@ -145,6 +145,10 @@ final class DcmSwiftJPEG2000Part2Tests: XCTestCase {
             }
             XCTAssertThrowsError(try pixels.decodedFrame(8))
             XCTAssertThrowsError(try pixels.encodedFrame(0))
+            XCTAssertEqual(pixels.collectionFragments, [0..<3, 3..<4])
+            XCTAssertEqual(pixels.frameFragments, [])
+            XCTAssertEqual((0..<4).map(pixels.collection(ofFragment:)), [0, 0, 0, 1])
+            XCTAssertNil(pixels.frame(ofFragment: 0))
 
             let image = try DICOMImageRenderer(dataset: dataset)
             XCTAssertEqual(try image.storedValues(frame: 6).map(Int.init), expected[6])

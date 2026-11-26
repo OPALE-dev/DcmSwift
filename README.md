@@ -116,6 +116,10 @@ A malformed or truncated file can be read as far as possible with
 which keep the elements read before the failure and report its offset and
 cause (`DcmPrint --tolerant`).
 
+Values are read typed: binary numbers by VR, Person Names by component group,
+and dates, times, date-times and ages (`temporalValues`, `ageValues`) with the
+precision written and no implied time zone (PS3.5 6.2).
+
 ### Pixel Data codecs
 
 Built-in codecs are written in Swift, except JPEG 2000, HTJ2K, and JPEG XL,
@@ -155,7 +159,8 @@ DICOMCapabilities.isHTJ2KEnabled = true
 
 Encapsulated frames are located through the Extended or Basic Offset Table, or
 from the Fragment layout; under JPEG 2000 Part 2, the frames of a multi-frame
-image are decoded by component collection.
+image are decoded by component collection. The Fragments of each frame or
+collection are readable (`frameFragments`, `frame(ofFragment:)`).
 
 ### Rendering
 
