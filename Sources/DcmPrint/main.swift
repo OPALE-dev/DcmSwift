@@ -17,13 +17,35 @@ struct DcmPrint: ParsableCommand {
     @Flag(name: .shortAndLong, help: "Prettify the output string (apply to XML and JSON only)")
     var pretty: Bool = false
     
+    @Flag(name: .shortAndLong, help: "Print what precedes an unreadable element, and why reading stopped on standard error (exit code 2)")
+    var tolerant: Bool = false
+
     @Argument(help: "Path of DICOM file to print")
     var sourcePath: String
 
     mutating func run() throws {
-        guard let dicomFile = DicomFile(forPath: sourcePath), dicomFile.dataset != nil else {
+        var readFailure: DicomReadFailure?
+        let file: DicomFile?
+        if tolerant {
+            do {
+                file = try DicomFile(tolerantlyReadingPath: sourcePath)
+                readFailure = file?.readFailure
+            } catch {
+                FileHandle.standardError.write(Data("\(sourcePath): \(error)\n".utf8))
+                throw ExitCode.failure
+            }
+        } else {
+            file = DicomFile(forPath: sourcePath)
+        }
+        guard let dicomFile = file, dicomFile.dataset != nil else {
             Logger.error("Cannot read \(sourcePath) as DICOM")
             throw ExitCode.failure
+        }
+        defer {
+            if let readFailure {
+                FileHandle.standardError.write(Data("\(sourcePath): \(readFailure)\n".utf8))
+                DcmPrint.exit(withError: ExitCode(2))
+            }
         }
         do {
             if let dataset = dicomFile.dataset {

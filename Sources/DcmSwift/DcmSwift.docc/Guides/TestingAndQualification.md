@@ -71,6 +71,7 @@ image), on macOS, and on the newest installed iOS Simulator runtime.
 | Script | Check |
 | --- | --- |
 | `pydicom_json.py DCMPRINT [--pydicom-testdata] [PATH...]` | `DcmPrint -f JSON` against pydicom's `to_json_dict`, after normalization |
+| `pydicom_partial.py DCMPRINT PATH...` | `DcmPrint --tolerant` on malformed files: the elements kept are a prefix of those pydicom reads |
 | `native_xml.py DCMPRINT [--pydicom-testdata] [PATH...]` | `DcmPrint -f XML` against the normative PS3.19 schema, and against pydicom through the PS3.18 F.3 mapping; needs `rnc2rng` and `lxml` |
 | `dicomweb_client.py BASE_URL [--pydicom-testdata] [PATH...]` | The DICOMweb origin server of `DcmServer --http-port` against dicomweb-client: STOW-RS, QIDO-RS, then instances, metadata, frames, and rendered images compared with pydicom |
 
