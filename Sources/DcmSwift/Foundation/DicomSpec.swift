@@ -663,8 +663,74 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         }
         
         results.append(contentsOf: validate(dataSet: file.dataset))
+        results.append(contentsOf: validateEncoding(of: file.dataset))
         
         return results
+    }
+
+    /// Checks of the encoding as read, beyond each element's value: the File
+    /// Meta Information Group Length against the group (PS3.10 7.1), tags
+    /// unique and ascending in each data set and item (PS3.5 7.1), and each
+    /// private element after its Private Creator (PS3.5 7.8.1).
+    public func validateEncoding(of dataset: DataSet) -> [ValidationResult] {
+        var results: [ValidationResult] = []
+
+        // (0002,0000): the bytes of the group after it.
+        let meta = dataset.metaInformationHeaderElements
+        if let groupLength = meta.first(where: { $0.element == "0000" }),
+           let declared = (groupLength.value as? UInt32).map(Int.init),
+           let last = meta.filter({ $0 !== groupLength }).map(\.endOffset).max(), last > groupLength.endOffset {
+            let actual = last - groupLength.endOffset
+            if declared != actual {
+                results.append(ValidationResult(
+                    groupLength,
+                    message: "File Meta Information Group Length is \(declared) but the group holds \(actual) bytes (PS3.10 7.1)",
+                    severity: .Error))
+            }
+        }
+
+        func check(_ elements: [DataElement]) {
+            // In the order read: tags ascending and unique.
+            let read = elements.filter { !($0 is DataItem) }.sorted { $0.startOffset < $1.startOffset }
+            var seen = Set<String>()
+            var reported = false
+            var previous: DataElement?
+            for element in read {
+                let code = element.tagCode()
+                if !seen.insert(code).inserted {
+                    results.append(ValidationResult(
+                        element, message: "Data Element \(element.tag) appears more than once (PS3.5 7.1)", severity: .Error))
+                } else if let previous, !reported, Self.tagOrder(previous) > Self.tagOrder(element) {
+                    results.append(ValidationResult(
+                        element,
+                        message: "Data Element \(element.tag) follows \(previous.tag): tags are not in ascending order (PS3.5 7.1)",
+                        severity: .Error))
+                    reported = true
+                }
+                previous = element
+
+                // A private Data Element after its Private Creator.
+                if let group = Int(element.group, radix: 16), let number = Int(element.element, radix: 16),
+                   group % 2 == 1, group > 8, number >= 0x1000 {
+                    let block = String(format: "%04x00%02x", group, number >> 8)
+                    if !elements.contains(where: { $0.tagCode() == block }) {
+                        results.append(ValidationResult(
+                            element,
+                            message: "Private Data Element \(element.tag) has no Private Creator (\(element.group),00\(String(format: "%02x", number >> 8))) (PS3.5 7.8.1)",
+                            severity: .Error))
+                    }
+                }
+                if let sequence = element as? DataSequence {
+                    for item in sequence.items { check(item.elements) }
+                }
+            }
+        }
+        check(dataset.allElements)
+        return results
+    }
+
+    private static func tagOrder(_ element: DataElement) -> Int {
+        (Int(element.group, radix: 16) ?? 0) << 16 | (Int(element.element, radix: 16) ?? 0)
     }
     
     public func validate(dataSet dataset:DataSet) -> [ValidationResult] {
@@ -736,13 +802,23 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             }
         }
 
+        // Padding of the Value Field: NUL for UI, space for the other text
+        // VRs (PS3.5 6.2); a UI padded with a space is a common error.
+        if element.length > 0, element.length.isMultiple(of: 2), let last = element.data?.last {
+            if element.vr == .UI, last == 0x20 {
+                results.append(ValidationResult(element, message: "\(element.name) is padded with a space; UI is padded with NUL (PS3.5 6.2)", severity: .Error))
+            } else if last == 0x00, [.AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UR, .UT].contains(element.vr) {
+                results.append(ValidationResult(element, message: "\(element.name) is padded with NUL; \(element.vr) is padded with a space (PS3.5 6.2)", severity: .Warning))
+            }
+        }
+
         // check if tag is retired
         if self.isRetired(tag: element.tag) {
             results.append(ValidationResult(element, message: "Tag \(element.tag) \(element.name) is retired", severity: .Notice))
         }
         
-        // check if tag is known
-        if element.name == "Unknow" {
+        // check if tag is known; a private tag is unknown by nature
+        if element.name == "Unknow", !(Int(element.group, radix: 16).map { $0 % 2 == 1 } ?? false) {
             results.append(ValidationResult(element, message: "Unknow tag, may be private", severity: .Notice))
         }
         
