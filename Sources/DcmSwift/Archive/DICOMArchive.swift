@@ -206,7 +206,17 @@ public actor DICOMArchive {
     /// The matches of a C-FIND identifier, with its return keys filled.
     public func find(_ identifier: DataSet) async throws -> [DataSet] {
         let level = identifier.string(forTag: "QueryRetrieveLevel") ?? ""
-        let groups = try await match(identifier, level: level)
+        var groups = try await match(identifier, level: level)
+        // Modalities in Study matches a study one of whose series has one of
+        // its values (PS3.4 C.6.2.1.2.1, Annex C.6.1.1.4).
+        if level == "STUDY", let wanted = identifier.textValues(forTag: "ModalitiesInStudy")?.filter({ !$0.isEmpty }),
+           !wanted.isEmpty {
+            groups = groups.filter { group in
+                group.contains { record in
+                    (record.attributes["Modality"] ?? "").components(separatedBy: "\\").contains(where: wanted.contains)
+                }
+            }
+        }
         let requested = identifier.allElements.map(\.name)
         return groups.map { group in
             // Indexed values are UTF-8: declare it first, or a non-ASCII

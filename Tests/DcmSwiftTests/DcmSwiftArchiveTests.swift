@@ -49,6 +49,8 @@ final class DcmSwiftArchiveTests: XCTestCase {
             _ = dataSet.set(value: uid, forTagName: "SOPInstanceUID")
             _ = dataSet.set(value: "1.2.3", forTagName: "StudyInstanceUID")
             _ = dataSet.set(value: "Doe^Jane", forTagName: "PatientName")
+            _ = dataSet.set(value: "1.2.3.9", forTagName: "SeriesInstanceUID")
+            _ = dataSet.set(value: "OT", forTagName: "Modality")
             var bytes = DICOMPart10Header.encodeMetaInformation(sopClassUID: "1.2.840.10008.5.1.4.1.1.7", sopInstanceUID: uid,
                                                             transferSyntaxUID: TransferSyntax.explicitVRLittleEndian, sourceAETitle: nil)
             bytes += try DICOMDataSetCoding.encode(dataSet, transferSyntax: TransferSyntax.explicitVRLittleEndian)
@@ -71,6 +73,17 @@ final class DcmSwiftArchiveTests: XCTestCase {
         let firstRecord = try await archive.record("1.2.3.1")
         let item = try await archive.item(try XCTUnwrap(firstRecord))
         XCTAssertEqual(item.sopInstanceUID, "1.2.3.1")
+
+        // Modalities in Study: matched against the series of the study.
+        let byModality = DataSet()
+        _ = byModality.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
+        _ = byModality.set(value: "", forTagName: "StudyInstanceUID")
+        _ = byModality.set(value: "MR\\OT", forTagName: "ModalitiesInStudy")
+        let otStudies = try await archive.find(byModality)
+        XCTAssertEqual(otStudies.count, 1)
+        _ = byModality.set(value: "CT", forTagName: "ModalitiesInStudy")
+        let ctStudies = try await archive.find(byModality)
+        XCTAssertEqual(ctStudies.count, 0)
 
         let removed = try await archive.remove("1.2.3.1", keepingFile: true)
         XCTAssertTrue(removed)
