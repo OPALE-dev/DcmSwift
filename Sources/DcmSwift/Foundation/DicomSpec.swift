@@ -804,7 +804,9 @@ public class DicomSpec: NSObject, XMLParserDelegate {
 
         // Padding of the Value Field: NUL for UI, space for the other text
         // VRs (PS3.5 6.2); a UI padded with a space is a common error.
-        if element.length > 0, element.length.isMultiple(of: 2), let last = element.data?.last {
+        // Text VRs only: a large binary Value read lazily stays in the file.
+        let textVRs: Set<VR.VR> = [.AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UI, .UR, .UT]
+        if element.length > 0, element.length.isMultiple(of: 2), textVRs.contains(element.vr), let last = element.data?.last {
             if element.vr == .UI, last == 0x20 {
                 results.append(ValidationResult(element, message: "\(element.name) is padded with a space; UI is padded with NUL (PS3.5 6.2)", severity: .Error))
             } else if last == 0x00, [.AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UR, .UT].contains(element.vr) {

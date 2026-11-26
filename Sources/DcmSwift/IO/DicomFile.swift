@@ -68,10 +68,17 @@ public class DicomFile {
           place of the declared one, for a file whose declaration is wrong;
           the File Meta Information is kept as written. See
           ``DicomInputStream/imposedTransferSyntax``.
+        - bulkDataLoadingPolicy: whether large binary Values (Pixel Data,
+          its Fragments, OB or OW Values) are read now, or kept as their
+          offset and length and read from the file when first used.
      - Throws: ``DicomReadFailure`` when the file does not exist or when no
        data element could be read from it.
      */
-    public init(tolerantlyReadingPath filepath: String, transferSyntax: TransferSyntax? = nil) throws {
+    public init(
+        tolerantlyReadingPath filepath: String,
+        transferSyntax: TransferSyntax? = nil,
+        bulkDataLoadingPolicy: DICOMBulkDataLoadingPolicy = .eager
+    ) throws {
         guard FileManager.default.fileExists(atPath: filepath) else {
             throw DicomReadFailure(offset: 0, tag: nil, message: "No such file")
         }
@@ -79,6 +86,7 @@ public class DicomFile {
 
         let inputStream = DicomInputStream(filePath: filepath)
         inputStream.imposedTransferSyntax = transferSyntax
+        inputStream.bulkDataLoadingPolicy = bulkDataLoadingPolicy
         let (dataSet, failure) = inputStream.readPartialDataset()
         if let failure, dataSet.allElements.isEmpty {
             throw failure

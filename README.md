@@ -117,6 +117,9 @@ which keep the elements read before the failure and report its offset and
 cause (`DcmPrint --tolerant`). A file whose declared Transfer Syntax is wrong
 can be read with another one (`DicomFile(tolerantlyReadingPath:transferSyntax:)`),
 the File Meta Information kept as written.
+Large binary Values can stay in the file until used
+(`bulkDataLoadingPolicy: .lazy(minimumLength:)`): a file of several gigabytes
+opens with its whole structure and little memory.
 
 Values are read typed: binary numbers by VR, Person Names by component group,
 and dates, times, date-times and ages (`temporalValues`, `ageValues`) with the

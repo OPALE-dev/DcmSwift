@@ -710,6 +710,40 @@ final class DcmSwiftCoreSafetyTests: XCTestCase {
         XCTAssertFalse(parsedFragment.isDataLoaded)
     }
 
+    /// A tolerant read keeps large Fragments in the file: the structure is
+    /// complete, validation reads none of them, and each loads when used.
+    func testTolerantReadCanLeaveLargeValuesInTheFile() throws {
+        var writer = DcmSwiftFuzzTests.Writer()
+        writer.text(0x0008, 0x0016, "UI", "1.2.840.10008.5.1.4.1.1.7")
+        writer.us(0x0028, 0x0010, [1])
+        writer.header(0x7FE0, 0x0010, "OB", 0xFFFF_FFFF)
+        writer.header(0xFFFE, 0xE000, "", 0)
+        for byte: UInt8 in [0x11, 0x22, 0x33] {
+            writer.header(0xFFFE, 0xE000, "", 65_536)
+            writer.bytes += [UInt8](repeating: byte, count: 65_536)
+        }
+        writer.header(0xFFFE, 0xE0DD, "", 0)
+        let bytes = DcmSwiftFuzzTests.part10(transferSyntax: "1.2.840.10008.1.2.5", dataSet: writer.bytes)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("dcmswift-lazy-\(UUID().uuidString).dcm")
+        try Data(bytes).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let file = try DicomFile(tolerantlyReadingPath: url.path, bulkDataLoadingPolicy: .lazy(minimumLength: 4096))
+        XCTAssertNil(file.readFailure)
+        let pixels = try XCTUnwrap(file.dataset.element(forTagName: "PixelData") as? DataSequence)
+        let fragments = Array(pixels.items.dropFirst())
+        XCTAssertEqual(fragments.map(\.length), [65_536, 65_536, 65_536])
+        XCTAssertTrue(fragments.allSatisfy { !$0.isDataLoaded && $0.bulkDataReference != nil })
+
+        _ = file.validate()
+        XCTAssertTrue(fragments.allSatisfy { !$0.isDataLoaded }, "validation reads no Fragment")
+
+        XCTAssertEqual(try fragments[1].loadData(range: 0..<4), Data([0x22, 0x22, 0x22, 0x22]))
+        XCTAssertEqual(fragments[2].data.first, 0x33)
+        XCTAssertTrue(fragments[2].isDataLoaded)
+        XCTAssertFalse(fragments[0].isDataLoaded)
+    }
+
     func testDeflatedExplicitVRLittleEndianPart10RoundTrip() throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("dcmswift-deflated-\(UUID().uuidString).dcm")
