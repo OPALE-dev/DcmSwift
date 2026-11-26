@@ -61,7 +61,11 @@ public actor DICOMArchive {
 
     static func record(of url: URL) throws -> Record {
         let header = try DICOMPart10Header.read(url)
-        guard let file = DicomFile(forPath: url.path), let dataSet = file.dataset else {
+        // Read as far as possible: a deviant file (truncated Pixel Data, an
+        // unknown VR) is indexed with the attributes before the deviation,
+        // its large Values left in the file.
+        let file = try DicomFile(tolerantlyReadingPath: url.path, bulkDataLoadingPolicy: .lazy(minimumLength: 64 * 1024))
+        guard let dataSet = file.dataset else {
             throw DICOMCommandError("cannot read \(url.lastPathComponent)")
         }
         return record(location: url.path, header: header, dataSet: dataSet)

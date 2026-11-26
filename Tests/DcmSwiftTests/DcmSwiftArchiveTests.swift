@@ -85,6 +85,17 @@ final class DcmSwiftArchiveTests: XCTestCase {
         let ctStudies = try await archive.find(byModality)
         XCTAssertEqual(ctStudies.count, 0)
 
+        // A deviant file, its Pixel Data cut short, is indexed with what precedes.
+        let truncated = folder.appendingPathComponent("truncated.dcm")
+        var bytes = try Data(contentsOf: try file("1.2.3.3"))
+        bytes += Data([0xE0, 0x7F, 0x10, 0x00]) + Data("OW".utf8) + Data([0, 0]) + withUnsafeBytes(of: UInt32(1000).littleEndian) { Data($0) }
+        bytes += Data(repeating: 7, count: 10)
+        try bytes.write(to: truncated)
+        let deviant = try await archive.index(file: truncated)
+        XCTAssertEqual(deviant.attributes["PatientName"], "Doe^Jane")
+        XCTAssertEqual(deviant.attributes["SOPInstanceUID"], "1.2.3.3")
+        try await archive.remove("1.2.3.3")
+
         let removed = try await archive.remove("1.2.3.1", keepingFile: true)
         XCTAssertTrue(removed)
         let gone = try await archive.record("1.2.3.1")
