@@ -423,6 +423,35 @@ final class DcmSwiftNetworkIntegrationTests: XCTestCase {
         XCTAssertEqual(try received.first?.dataSet().string(forTag: "PatientName"), "Doe^Jane")
     }
 
+    /// Proposing one uncompressed syntax sends every uncompressed instance
+    /// in it; a compressed one keeps its own context.
+    func testStoreProposalsInTheUncompressedSyntaxChosen() async throws {
+        let explicit = try DICOMRetrieveItem(dataSet: instance(6), transferSyntaxUID: TransferSyntax.explicitVRLittleEndian)
+        let compressed = DICOMRetrieveItem(sopClassUID: explicit.sopClassUID, sopInstanceUID: "1.2.3.9",
+                                           transferSyntaxUID: "1.2.840.10008.1.2.5", payload: explicit.payload)
+        let proposals = DICOMPresentationContextProposal.proposals(
+            for: [explicit, compressed], uncompressed: [TransferSyntax.implicitVRLittleEndian])
+        XCTAssertEqual(proposals.map(\.transferSyntaxes), [["1.2.840.10008.1.2.5"], [TransferSyntax.implicitVRLittleEndian]])
+        XCTAssertEqual(proposals.map(\.id), [1, 3])
+        XCTAssertEqual(DICOMPresentationContextProposal.proposals(for: [explicit]).first?.transferSyntaxes,
+                       DICOMTransferSyntaxes.uncompressed)
+
+        let storage = MemoryStorage()
+        let server = try DICOMServer(configuration: configuration(), storage: storage)
+        try await withServer(server) { port in
+            try await client().withAssociation(
+                to: DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port),
+                presentationContexts: DICOMPresentationContextProposal.proposals(
+                    for: [explicit], uncompressed: [TransferSyntax.implicitVRLittleEndian])
+            ) { association in
+                let status = try await association.store(explicit)
+                XCTAssertEqual(status, .success)
+            }
+        }
+        let received = storage.received.withLockedValue { $0 }
+        XCTAssertEqual(received.map(\.transferSyntaxUID), [TransferSyntax.implicitVRLittleEndian])
+    }
+
     func testFindStreamsMatchesAndCancels() async throws {
         let query = CountingQuery(count: 500)
         let server = try DICOMServer(configuration: configuration(), query: query)

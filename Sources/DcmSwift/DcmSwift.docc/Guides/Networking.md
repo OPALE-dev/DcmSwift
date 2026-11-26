@@ -33,6 +33,9 @@ try await client.withAssociation(
 `proposals(for:)` proposes, for each SOP Class, its compressed Transfer
 Syntaxes one per context and the uncompressed ones together, so the file is
 sent as encoded or converted between uncompressed syntaxes.
+`proposals(for:uncompressed:)` narrows the uncompressed ones: given
+`[TransferSyntax.implicitVRLittleEndian]` alone, every uncompressed instance
+is sent in Implicit VR Little Endian.
 
 ## Query and retrieve
 

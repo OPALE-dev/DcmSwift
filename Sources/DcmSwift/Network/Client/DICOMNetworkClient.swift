@@ -55,8 +55,14 @@ extension DICOMPresentationContextProposal {
     /// per compressed transfer syntax among them, alone so that the
     /// acceptor cannot choose another, and one for the uncompressed
     /// syntaxes, to which uncompressed instances convert. At most 128.
-    public static func proposals(for items: [DICOMRetrieveItem]) -> [DICOMPresentationContextProposal] {
-        Array(contexts(for: items).prefix(128))
+    ///
+    /// - Parameter uncompressed: the uncompressed transfer syntaxes proposed,
+    ///   in order of preference; one alone sends every uncompressed instance
+    ///   in it, converted if need be.
+    public static func proposals(
+        for items: [DICOMRetrieveItem], uncompressed: [String] = DICOMTransferSyntaxes.uncompressed
+    ) -> [DICOMPresentationContextProposal] {
+        Array(contexts(for: items, uncompressed: uncompressed).prefix(128))
     }
 
     /// The items in consecutive batches whose contexts fit in one
@@ -86,7 +92,9 @@ extension DICOMPresentationContextProposal {
     }
 
     /// Every context the items need, with odd IDs.
-    static func contexts(for items: [DICOMRetrieveItem]) -> [DICOMPresentationContextProposal] {
+    static func contexts(
+        for items: [DICOMRetrieveItem], uncompressed: [String] = DICOMTransferSyntaxes.uncompressed
+    ) -> [DICOMPresentationContextProposal] {
         var order: [String] = []
         var compressed: [String: [String]] = [:]
         for item in items {
@@ -105,7 +113,7 @@ extension DICOMPresentationContextProposal {
                 proposals.append(DICOMPresentationContextProposal(id: 0, abstractSyntax: sopClass, transferSyntaxes: [syntax]))
             }
             proposals.append(DICOMPresentationContextProposal(
-                id: 0, abstractSyntax: sopClass, transferSyntaxes: DICOMTransferSyntaxes.uncompressed))
+                id: 0, abstractSyntax: sopClass, transferSyntaxes: uncompressed))
         }
         return proposals.enumerated().map { index, proposal in
             var proposal = proposal
