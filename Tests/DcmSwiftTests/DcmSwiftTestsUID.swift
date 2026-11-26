@@ -33,4 +33,14 @@ class DcmSwiftTestsUID: XCTestCase {
         XCTAssertTrue(generated.allSatisfy { UID.validate(uid: $0) && $0.utf8.count <= 64 })
     }
 
+    /// PS3.5 B.2: the example of the standard, and random UUIDs.
+    public func testUUIDDerivedUID() throws {
+        let uuid = try XCTUnwrap(UUID(uuidString: "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"))
+        XCTAssertEqual(UID.derived(from: uuid), "2.25.329800735698586629295641978511506172918")
+        XCTAssertEqual(UID.derived(from: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))), "2.25.0")
+        let generated = (0..<200).map { _ in UID.derived() }
+        XCTAssertEqual(Set(generated).count, generated.count)
+        XCTAssertTrue(generated.allSatisfy { $0.hasPrefix("2.25.") && UID.validate(uid: $0) && $0.utf8.count <= 44 })
+    }
+
 }

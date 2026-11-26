@@ -74,6 +74,9 @@ let container = try dataset.removeElement(comments)   // the Item that held it, 
 try dataset.insert(comments, into: container)          // put back
 ```
 
+A new UID for an instance derived from another is made with
+`UID.derived()`: `2.25.` and a random UUID as a decimal integer (PS3.5 B.2).
+
 `DataSetStructureError` refuses File Meta Information (group 0002), Group
 Lengths, Items and delimiters as elements, a tag already present where it is
 added, and a data set not fully read.

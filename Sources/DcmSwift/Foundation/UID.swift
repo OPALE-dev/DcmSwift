@@ -28,6 +28,16 @@ public class UID {
         return uid.generate()
     }
     
+    /// A UID derived from a UUID (PS3.5 B.2): `2.25.` and the UUID as an
+    /// unsigned decimal integer, at most 44 characters.
+    ///
+    /// - Parameter uuid: the UUID; a random one (version 4) by default.
+    /// - Returns: the UID.
+    public class func derived(from uuid: UUID = UUID()) -> String {
+        let digits = DICOMDeidentifier.decimal(withUnsafeBytes(of: uuid.uuid) { Array($0) })
+        return "2.25." + (digits.isEmpty ? "0" : digits)
+    }
+
     /**
      DICOM UID Validation
     
