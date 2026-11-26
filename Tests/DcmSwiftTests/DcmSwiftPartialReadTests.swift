@@ -110,6 +110,37 @@ final class DcmSwiftPartialReadTests: XCTestCase {
         }
     }
 
+    /// PS3.10 7.1: a file declaring Implicit VR but encoded in Explicit VR
+    /// stops early; read with the syntax imposed, every element is there,
+    /// and the File Meta Information keeps the declared one.
+    func testAnImposedTransferSyntaxReadsAWronglyDeclaredFile() throws {
+        var writer = Writer()
+        basic(&writer)
+        writer.text(0x0010, 0x0020, "LO", "ID-0001")
+        let bytes = DcmSwiftFuzzTests.part10(transferSyntax: TransferSyntax.implicitVRLittleEndian, dataSet: writer.bytes)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("wrong-ts-\(UUID().uuidString).dcm")
+        try Data(bytes).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let declared = try DicomFile(tolerantlyReadingPath: url.path)
+        XCTAssertNil(declared.dataset.string(forTag: "PatientID"))
+
+        let explicit = try XCTUnwrap(TransferSyntax(TransferSyntax.explicitVRLittleEndian))
+        let file = try DicomFile(tolerantlyReadingPath: url.path, transferSyntax: explicit)
+        XCTAssertNil(file.readFailure)
+        XCTAssertEqual(file.dataset.string(forTag: "PatientName"), "Doe^Jane")
+        XCTAssertEqual(file.dataset.string(forTag: "PatientID"), "ID-0001")
+        XCTAssertEqual(file.dataset.transferSyntax.tsUID, TransferSyntax.explicitVRLittleEndian)
+        XCTAssertEqual(file.dataset.string(forTag: "TransferSyntaxUID"), TransferSyntax.implicitVRLittleEndian)
+
+        // Without File Meta Information, the imposed syntax replaces the detection.
+        let raw = DicomInputStream(data: Data(writer.bytes))
+        raw.imposedTransferSyntax = try XCTUnwrap(TransferSyntax(TransferSyntax.implicitVRLittleEndian))
+        let (dataSet, failure) = raw.readPartialDataset()
+        XCTAssertNotNil(failure)
+        XCTAssertNil(dataSet.string(forTag: "PatientID"))
+    }
+
     func testFailureDescriptionGivesTheStopOffset() {
         let failure = DicomReadFailure(offset: 864, tag: "312E3631", message: "Fatal, invalid header")
         XCTAssertEqual(failure.tag, "312e3631")

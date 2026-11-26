@@ -114,7 +114,9 @@ from PS3.6 2026d.
 A malformed or truncated file can be read as far as possible with
 `DicomFile(tolerantlyReadingPath:)` or `DicomInputStream.readPartialDataset()`,
 which keep the elements read before the failure and report its offset and
-cause (`DcmPrint --tolerant`).
+cause (`DcmPrint --tolerant`). A file whose declared Transfer Syntax is wrong
+can be read with another one (`DicomFile(tolerantlyReadingPath:transferSyntax:)`),
+the File Meta Information kept as written.
 
 Values are read typed: binary numbers by VR, Person Names by component group,
 and dates, times, date-times and ages (`temporalValues`, `ageValues`) with the

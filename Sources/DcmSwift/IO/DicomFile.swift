@@ -62,17 +62,23 @@ public class DicomFile {
      marked corrupted. See
      ``DicomInputStream/readPartialDataset(headerOnly:withoutPixelData:enforceVR:)``.
 
-     - Parameter filepath: the path of the DICOM file to load
+     - Parameters:
+        - filepath: the path of the DICOM file to load
+        - transferSyntax: the Transfer Syntax to read the data set with, in
+          place of the declared one, for a file whose declaration is wrong;
+          the File Meta Information is kept as written. See
+          ``DicomInputStream/imposedTransferSyntax``.
      - Throws: ``DicomReadFailure`` when the file does not exist or when no
        data element could be read from it.
      */
-    public init(tolerantlyReadingPath filepath: String) throws {
+    public init(tolerantlyReadingPath filepath: String, transferSyntax: TransferSyntax? = nil) throws {
         guard FileManager.default.fileExists(atPath: filepath) else {
             throw DicomReadFailure(offset: 0, tag: nil, message: "No such file")
         }
         self.filepath = filepath
 
         let inputStream = DicomInputStream(filePath: filepath)
+        inputStream.imposedTransferSyntax = transferSyntax
         let (dataSet, failure) = inputStream.readPartialDataset()
         if let failure, dataSet.allElements.isEmpty {
             throw failure

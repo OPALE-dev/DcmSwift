@@ -16,6 +16,13 @@ public class DicomInputStream: OffsetInputStream {
     public var byteOrder:ByteOrder      = .LittleEndian
     public var limits                   = DicomReadLimits()
     public var bulkDataLoadingPolicy    = DICOMBulkDataLoadingPolicy.eager
+    /// The Transfer Syntax to read the data set with, in place of the one
+    /// the File Meta Information declares or the one detected without it:
+    /// for a file whose declaration is wrong (PS3.10 7.1). The File Meta
+    /// Information is read as written, its Transfer Syntax UID included;
+    /// the data set's ``DataSet/transferSyntax`` is the one used, and must
+    /// be one whose data set DcmSwift reads (``TransferSyntax/capability``).
+    public var imposedTransferSyntax: TransferSyntax?
 
     private var decodedElementCount     = 0
     private var decodedItemCount        = 0
@@ -113,7 +120,11 @@ public class DicomInputStream: OffsetInputStream {
             // we will parse the DICOM meta Info header as Explicit VR
             vrMethod = .Explicit
         } else {
-            if enforceVR == true {
+            if let imposed = imposedTransferSyntax {
+                dataset.transferSyntax = imposed
+                vrMethod = imposed.vrMethod
+                byteOrder = imposed.byteOrder
+            } else if enforceVR == true {
                 // A data set without File Meta Information: Implicit VR
                 // Little Endian (the default, and old ACR-NEMA files) unless
                 // the first element carries a VR code, and Big Endian when
@@ -157,7 +168,7 @@ public class DicomInputStream: OffsetInputStream {
             let elementStart = offset
             var order = byteOrder
             checksImplicitVR = hasPreamble && vrMethod == .Explicit && !shouldInflateDataSet
-                && fileMetaEndOffset == offset
+                && fileMetaEndOffset == offset && imposedTransferSyntax == nil
             
             // The group length excludes the 12-byte (0002,0000) element itself.
             // Until it is known, the first Part 10 element is always Little Endian.
@@ -198,12 +209,13 @@ public class DicomInputStream: OffsetInputStream {
                     vrMethod  = .Explicit
                     byteOrder = .LittleEndian
                     
-                    guard let uid = newElement.value as? String,
-                          let syntax = TransferSyntax(uid),
+                    guard let syntax = imposedTransferSyntax
+                            ?? (newElement.value as? String).flatMap({ TransferSyntax($0) }),
                           syntax.capability.canReadDataset else {
                         let uid = (newElement.value as? String) ?? ""
                         throw StreamError.unsupportedTransferSyntax(uid: uid)
                     }
+                    let uid = syntax.tsUID
                     dataset.transferSyntax = syntax
                     vrMethod = syntax.vrMethod
                     byteOrder = syntax.byteOrder
