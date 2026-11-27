@@ -56,6 +56,7 @@ final class DcmSwiftVolumeTests: XCTestCase {
             for index in 0..<volume.count(along: axis) {
                 let section = volume.section(axis, at: index)
                 XCTAssertFalse(section.isInterpolated)
+                XCTAssertEqual(volume.geometry(of: axis, at: index), section.geometry)
                 for r in 0..<section.height {
                     for c in 0..<section.width {
                         let point = section.geometry.patientPosition(of: .init(column: Double(c), row: Double(r)))
@@ -91,6 +92,9 @@ final class DcmSwiftVolumeTests: XCTestCase {
         XCTAssertEqual(section.values[section.width * 9], 0)
         // Rows 2 mm apart: interpolated every 2 mm, 9 mm give 5 rows.
         XCTAssertEqual(volume.section(.column, at: 0, isotropic: true).height, 5)
+        // Rows 3 mm apart, as the slices: nothing to interpolate.
+        let even = DICOMVolume(first: geometry(z: 0), depth: 2, sliceSpacing: 2, values: [Float](repeating: 1, count: 70))
+        XCTAssertFalse(even.section(.column, at: 0, isotropic: true).isInterpolated)
     }
 
     func testStacksThatAreNotRegularAreRefusedWithTheirReason() throws {

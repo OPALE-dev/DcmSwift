@@ -173,6 +173,35 @@ public struct DICOMVolume: Sendable {
         values[(slice * rows + row) * columns + column]
     }
 
+    /// The geometry of a section, without its values: see `section(_:at:isotropic:)`.
+    public func geometry(of axis: Axis, at index: Int, isotropic: Bool = false) -> DICOMImageGeometry {
+        let plane = first.plane
+        let normal = plane.normal
+        func moved(_ point: [Double], _ direction: [Double], _ distance: Double) -> [Double] {
+            zip(point, direction).map { $0 + $1 * distance }
+        }
+        switch axis {
+        case .slice:
+            return DICOMImageGeometry(
+                plane: DICOMImagePlane(position: moved(plane.position, normal, Double(index) * sliceSpacing),
+                                       orientation: plane.row + plane.column)!,
+                columns: columns, rows: rows, rowSpacing: first.rowSpacing, columnSpacing: first.columnSpacing,
+                frameOfReferenceUID: first.frameOfReferenceUID)!
+        case .row, .column:
+            let across = axis == .row ? first.columnSpacing : first.rowSpacing
+            let direction = axis == .row ? plane.row : plane.column
+            let height = isotropic ? Int(((Double(depth - 1) * sliceSpacing) / across + 1e-9).rounded(.down)) + 1 : depth
+            // The first pixel: the row or column through the last slice.
+            let offset = axis == .row ? Double(index) * first.rowSpacing : Double(index) * first.columnSpacing
+            let sideways = axis == .row ? plane.column : plane.row
+            let position = moved(moved(plane.position, sideways, offset), normal, Double(depth - 1) * sliceSpacing)
+            return DICOMImageGeometry(
+                plane: DICOMImagePlane(position: position, orientation: direction + normal.map { -$0 })!,
+                columns: axis == .row ? columns : rows, rows: height, rowSpacing: isotropic ? across : sliceSpacing,
+                columnSpacing: across, frameOfReferenceUID: first.frameOfReferenceUID)!
+        }
+    }
+
     /// A section of the volume. The sections across the slices go from the
     /// last slice down to the first, along the normal reversed: for an axial
     /// stack, the head at the top.
@@ -184,50 +213,37 @@ public struct DICOMVolume: Sendable {
     ///     them, as far apart as the pixels of the section; otherwise one row
     ///     a slice, exactly as stored.
     public func section(_ axis: Axis, at index: Int, isotropic: Bool = false) -> Section {
-        let plane = first.plane
-        let normal = plane.normal
-        func moved(_ point: [Double], _ direction: [Double], _ distance: Double) -> [Double] {
-            zip(point, direction).map { $0 + $1 * distance }
-        }
+        let geometry = geometry(of: axis, at: index, isotropic: isotropic)
         switch axis {
         case .slice:
             let start = index * rows * columns
-            let position = moved(plane.position, normal, Double(index) * sliceSpacing)
-            let geometry = DICOMImageGeometry(
-                plane: DICOMImagePlane(position: position, orientation: plane.row + plane.column)!,
-                columns: columns, rows: rows, rowSpacing: first.rowSpacing, columnSpacing: first.columnSpacing,
-                frameOfReferenceUID: first.frameOfReferenceUID)!
             return Section(width: columns, height: rows, values: Array(values[start..<(start + rows * columns)]),
                            geometry: geometry, isInterpolated: false)
         case .row, .column:
-            let width = axis == .row ? columns : rows
-            let across = axis == .row ? first.columnSpacing : first.rowSpacing
-            let direction = axis == .row ? plane.row : plane.column
-            let height = isotropic ? Int(((Double(depth - 1) * sliceSpacing) / across).rounded(.down)) + 1 : depth
-            let rowSpacing = isotropic ? across : sliceSpacing
+            let width = geometry.columns, height = geometry.rows
+            let step = geometry.rowSpacing / sliceSpacing
             var section = [Float](repeating: 0, count: width * height)
             let top = Double(depth - 1)
-            for r in 0..<height {
-                // The place of the row among the slices, from the last.
-                let place = isotropic ? top - Double(r) * across / sliceSpacing : top - Double(r)
-                let lower = max(0, min(depth - 1, Int(place.rounded(.down))))
-                let upper = min(depth - 1, lower + 1)
-                let weight = Float(place - Double(lower))
-                for c in 0..<width {
-                    let (column, row) = axis == .row ? (c, index) : (index, c)
-                    let a = value(column: column, row: row, slice: lower)
-                    section[r * width + c] = weight > 0 ? a + (value(column: column, row: row, slice: upper) - a) * weight : a
+            var interpolated = false
+            section.withUnsafeMutableBufferPointer { output in
+                values.withUnsafeBufferPointer { voxels in
+                    for r in 0..<height {
+                        // The place of the row among the slices, from the last.
+                        let place = max(0, top - Double(r) * step)
+                        var lower = Int(place.rounded(.down))
+                        var weight = Float(place - Double(lower))
+                        if weight < 1e-6 { weight = 0 } else if weight > 1 - 1e-6 { lower += 1; weight = 0 }
+                        if weight > 0 { interpolated = true }
+                        let upper = min(depth - 1, lower + 1)
+                        for c in 0..<width {
+                            let (column, row) = axis == .row ? (c, index) : (index, c)
+                            let a = voxels[(lower * rows + row) * columns + column]
+                            output[r * width + c] = weight > 0
+                                ? a + (voxels[(upper * rows + row) * columns + column] - a) * weight : a
+                        }
+                    }
                 }
             }
-            // The first pixel: the row or column through the last slice.
-            let offset = axis == .row ? Double(index) * first.rowSpacing : Double(index) * first.columnSpacing
-            let sideways = axis == .row ? plane.column : plane.row
-            let position = moved(moved(plane.position, sideways, offset), normal, top * sliceSpacing)
-            let geometry = DICOMImageGeometry(
-                plane: DICOMImagePlane(position: position, orientation: direction + normal.map { -$0 })!,
-                columns: width, rows: height, rowSpacing: rowSpacing, columnSpacing: across,
-                frameOfReferenceUID: first.frameOfReferenceUID)!
-            let interpolated = isotropic && abs(across - sliceSpacing) > 1e-9
             return Section(width: width, height: height, values: section, geometry: geometry, isInterpolated: interpolated)
         }
     }
