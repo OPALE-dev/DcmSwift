@@ -79,6 +79,57 @@ final class DcmSwiftImagingTests: XCTestCase {
         }
     }
 
+    // MARK: Locating a pixel
+
+    func testPixelRangesFollowFramesAndCells() throws {
+        // Two 2x2 frames of 16 bits: pixel 3 of frame 1 is the 8th cell.
+        let values: [UInt16] = [0, 1, 2, 3, 10, 11, 12, 13]
+        let image = makeImage(rows: 2, columns: 2, bitsAllocated: 16, bitsStored: 16, frames: 2, pixelData: words(values))
+        let pixels = try DICOMNativePixelData(dataset: image)
+        XCTAssertEqual(try pixels.valueFieldRanges(ofPixel: 3, frame: 1), [14..<16])
+        XCTAssertEqual(try pixels.valueFieldRanges(ofPixel: 0, frame: 0), [0..<2])
+        XCTAssertThrowsError(try pixels.valueFieldRanges(ofPixel: 4, frame: 0))
+        XCTAssertThrowsError(try pixels.valueFieldRanges(ofPixel: 0, frame: 2))
+    }
+
+    func testPixelRangesFollowPlanarConfigurationAndChromaPairs() throws {
+        let planar = makeImage(columns: 2, samples: 3, photometric: "RGB", planar: 1, pixelData: Data([10, 11, 20, 21, 30, 31]))
+        XCTAssertEqual(try DICOMNativePixelData(dataset: planar).valueFieldRanges(ofPixel: 1, frame: 0), [1..<2, 3..<4, 5..<6])
+        let interleaved = makeImage(columns: 2, samples: 3, photometric: "RGB", pixelData: Data([10, 20, 30, 11, 21, 31]))
+        XCTAssertEqual(try DICOMNativePixelData(dataset: interleaved).valueFieldRanges(ofPixel: 1, frame: 0), [3..<4, 4..<5, 5..<6])
+        let ybr = makeImage(columns: 2, samples: 3, photometric: "YBR_FULL_422", pixelData: Data([10, 20, 30, 40]))
+        XCTAssertEqual(try DICOMNativePixelData(dataset: ybr).valueFieldRanges(ofPixel: 1, frame: 0), [1..<2, 2..<3, 3..<4])
+    }
+
+    func testPixelRangeOfABitIsItsByte() throws {
+        // 3x3 frames of one bit: pixel 4 of frame 1 is bit 13, in byte 1.
+        let image = makeImage(rows: 3, columns: 3, bitsAllocated: 1, bitsStored: 1, frames: 2, pixelData: Data([0, 0, 0, 0]))
+        XCTAssertEqual(try DICOMNativePixelData(dataset: image).valueFieldRanges(ofPixel: 4, frame: 1), [1..<2])
+    }
+
+    func testPixelRangesPointAtTheBytesAsStoredInBigEndian() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("dcmswift-\(UUID().uuidString).dcm")
+        defer { try? FileManager.default.removeItem(at: url) }
+        for (bitsAllocated, pixelData) in [(16, words([0x0102, 0xFFFE])), (8, Data([1, 2, 3, 4]))] {
+            let source = makeImage(columns: pixelData.count * 8 / bitsAllocated, bitsAllocated: bitsAllocated,
+                                   bitsStored: bitsAllocated, pixelData: pixelData)
+            source.hasPreamble = true
+            source.transferSyntax = try XCTUnwrap(TransferSyntax(TransferSyntax.explicitVRBigEndian))
+            _ = source.set(value: "1.2.826.0.1.3680043.10.999", forTagName: "ImplementationClassUID")
+            XCTAssertTrue(try DicomOutputStream(url: url).write(dataset: source))
+            let decoded = try XCTUnwrap(try DicomInputStream(url: url).readDataset())
+            let element = try XCTUnwrap(decoded.element(forTagName: "PixelData"))
+            let file = try Data(contentsOf: url)
+            let pixels = try DICOMNativePixelData(dataset: decoded)
+            let stored = try pixels.storedValues(frame: 0)
+            for pixel in stored.indices {
+                let range = try XCTUnwrap(pixels.valueFieldRanges(ofPixel: pixel, frame: 0).first)
+                let bytes = file[(element.dataOffset + range.lowerBound)..<(element.dataOffset + range.upperBound)]
+                XCTAssertEqual(bytes.reduce(Int64(0)) { $0 << 8 | Int64($1) }, stored[pixel], "\(bitsAllocated) bits, pixel \(pixel)")
+            }
+        }
+    }
+
     // MARK: Window functions (PS3.3 C.11.2.1.2 and C.11.2.1.3)
 
     func testLinearWindowMatchesTheNormativeExamples() {

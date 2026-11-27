@@ -136,6 +136,47 @@ public struct DICOMNativePixelData {
         return (lower..<upper, firstBit % 8)
     }
 
+    // MARK: Locating a pixel
+
+    /// Where the samples of one pixel lie in the Value Field of the Pixel
+    /// Data, as encoded: one range of bytes a sample, in the order of
+    /// `storedValues(frame:)`. The range of a 1-bit cell is the byte that
+    /// holds it; in a Big Endian OW of 8-bit or 1-bit cells, the byte as
+    /// stored, each 16-bit word being swapped. The two pixels of a
+    /// YBR_FULL_422 pair share their CB and CR (PS3.3 C.7.6.3.1.2). For
+    /// frames decoded by a codec, the ranges are in the decoded frames.
+    ///
+    /// - Parameters:
+    ///   - pixel: The pixel, row by row from the top left: `row × Columns + column`.
+    ///   - frame: The frame, from 0.
+    public func valueFieldRanges(ofPixel pixel: Int, frame: Int) throws -> [Range<Int>] {
+        guard (0..<description.pixelsPerFrame).contains(pixel) else {
+            throw DICOMPixelDataError.invalidAttribute("pixel", "\(pixel) is outside the \(description.pixelsPerFrame) pixels of a frame")
+        }
+        _ = try byteRange(of: frame)
+        let firstBit = frame * description.bitsPerFrame
+        let width = max(1, description.bitsAllocated / 8)
+        return encodedCells(ofPixel: pixel).map { cell in
+            var lower = (firstBit + cell * description.bitsAllocated) / 8
+            if byteLayout == .bigEndianWords { lower ^= 1 }
+            return lower..<(lower + width)
+        }
+    }
+
+    /// The cells of a pixel among the encoded samples of a frame.
+    private func encodedCells(ofPixel pixel: Int) -> [Int] {
+        let pixels = description.pixelsPerFrame
+        let samplesPerPixel = description.samplesPerPixel
+        if description.photometricInterpretation == .ybrFull422 {
+            let pair = (pixel / 2) * 4
+            return [pair + pixel % 2, pair + 2, pair + 3]
+        }
+        if samplesPerPixel > 1, description.planarConfiguration == 1 {
+            return (0..<samplesPerPixel).map { $0 * pixels + pixel }
+        }
+        return (0..<samplesPerPixel).map { pixel * samplesPerPixel + $0 }
+    }
+
     /// Reads a byte range, undoing the Big Endian word swap when needed.
     private func normalizedBytes(in range: Range<Int>) throws -> [UInt8] {
         guard byteLayout == .bigEndianWords else {
