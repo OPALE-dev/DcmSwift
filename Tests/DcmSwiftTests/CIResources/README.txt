@@ -44,3 +44,8 @@ a lossless container, lossy coding, and reversible JPEG recompression.
 The synthetic DICOM corpus of ../Corpus is not a SwiftPM resource: the corpus
 tests read it by path. Scripts/generate-synthetic-corpus.py writes it; another
 collection can be named with the DCMSWIFT_INTEROP_CORPUS environment variable.
+
+palettes-pydicom.json gives the 256 red, green and blue entries of each
+well-known color palette of PS3.6 annex B, by SOP Instance UID, as pydicom
+3.0.2 expands the palette files it distributes
+(pydicom.pixels.apply_color_lut on the inputs 0 to 255).

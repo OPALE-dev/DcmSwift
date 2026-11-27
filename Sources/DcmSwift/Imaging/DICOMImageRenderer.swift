@@ -92,10 +92,20 @@ public struct DICOMRenderingOptions: Equatable, Sendable {
     public var voi: DICOMVOISelection
     /// Displays MONOCHROME1 images with their minimum value as white.
     public var honorsMonochrome1: Bool
+    /// Inverts the output of the VOI of a grayscale image, after the
+    /// polarity of MONOCHROME1: an inverted MONOCHROME1 image shows its
+    /// minimum value as black.
+    public var inverts: Bool
+    /// Colors a grayscale image after its VOI and its inversion; color
+    /// images are not changed.
+    public var palette: DICOMColorPalette?
 
-    public init(voi: DICOMVOISelection = .automatic, honorsMonochrome1: Bool = true) {
+    public init(voi: DICOMVOISelection = .automatic, honorsMonochrome1: Bool = true, inverts: Bool = false,
+                palette: DICOMColorPalette? = nil) {
         self.voi = voi
         self.honorsMonochrome1 = honorsMonochrome1
+        self.inverts = inverts
+        self.palette = palette
     }
 }
 
@@ -344,14 +354,15 @@ public struct DICOMImageRenderer {
             voi = Self.linearMap(range)
         }
 
-        let invert = options.honorsMonochrome1 && source.pixels.description.photometricInterpretation == .monochrome1
+        let invert = (options.honorsMonochrome1 && source.pixels.description.photometricInterpretation == .monochrome1) != options.inverts
         try description.limits.checkBuffer(count: values.count, bytesPerElement: 1)
         let pixels = values.map { value -> UInt8 in
             let output = value.isFinite ? voi(value) : 0
             let byte = UInt8(clamping: Int(min(max(output, 0), 255).rounded()))
             return invert ? 255 - byte : byte
         }
-        return DICOMRenderedImage(width: description.columns, height: description.rows, format: .gray8, pixels: pixels)
+        let gray = DICOMRenderedImage(width: description.columns, height: description.rows, format: .gray8, pixels: pixels)
+        return options.palette?.apply(to: gray) ?? gray
     }
 
     private static func linearMap(_ range: ClosedRange<Double>) -> (Double) -> Double {
