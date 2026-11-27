@@ -2,6 +2,7 @@ import AsyncHTTPClient
 import Foundation
 import NIOCore
 import NIOHTTP1
+import NIOPosix
 
 /// An error answered by a DICOMweb origin server, or a malformed response.
 public struct DICOMwebClientError: Error, Equatable, CustomStringConvertible {
@@ -319,5 +320,35 @@ public final class DICOMwebClient: Sendable {
             message = String(message[start.upperBound..<end.lowerBound])
         }
         throw DICOMwebClientError(status: code, message: message.isEmpty ? response.status.reasonPhrase : message)
+    }
+}
+
+
+extension DICOMwebClient {
+    /// Runs `body` with a client whose connections use `tls`: the
+    /// authorities it trusts, its verification, the certificate it presents
+    /// (`DICOMTLSConfiguration.client(...)`). Its HTTP client is shut down
+    /// when `body` returns, so streams must be read within it.
+    public static func withTLS<Result>(
+        _ tls: DICOMTLSConfiguration, baseURI: String, headers: [(name: String, value: String)] = [],
+        timeout: TimeAmount = .seconds(60), _ body: (DICOMwebClient) async throws -> Result
+    ) async throws -> Result {
+        var configuration = HTTPClient.Configuration()
+        configuration.tlsConfiguration = tls.configuration
+        // POSIX event loops: BoringSSL checks the chain against these
+        // authorities, as for DIMSE. Network.framework, which the shared
+        // client uses on Apple platforms, would add the rules of the system
+        // for public servers, such as at most 825 days of validity.
+        let httpClient = HTTPClient(eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup.singleton),
+                                    configuration: configuration)
+        let result: Result
+        do {
+            result = try await body(DICOMwebClient(baseURI: baseURI, headers: headers, timeout: timeout, httpClient: httpClient))
+        } catch {
+            try? await httpClient.shutdown()
+            throw error
+        }
+        try await httpClient.shutdown()
+        return result
     }
 }

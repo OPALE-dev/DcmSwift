@@ -89,4 +89,31 @@ final class DcmSwiftWebIntegrationTests: XCTestCase {
             XCTAssertTrue(error.message.contains("does not exist"), error.message)
         }
     }
+
+    func testAClientWithItsOwnTLSConfiguration() async throws {
+        func pem(_ name: String) throws -> String {
+            try XCTUnwrap(Bundle.module.url(forResource: name, withExtension: "pem")).path
+        }
+        let services = DICOMArchiveServices(archive: DICOMArchive(directory: directory))
+        let server = try DICOMwebServer(
+            origin: DICOMwebOriginServer(configuration: .init(basePath: "/dicomweb"), search: services),
+            network: .init(host: "127.0.0.1", port: 0, tls: try DICOMTLSConfiguration.server(
+                pemCertificateChainFile: pem("tls-server"), pemPrivateKeyFile: pem("tls-server-key"))))
+        let (ports, continuation) = AsyncStream<Int>.makeStream()
+        let task = Task { try await server.run { continuation.yield($0) } }
+        defer { task.cancel() }
+        var iterator = ports.makeAsyncIterator()
+        let bound = await iterator.next()
+        let base = "https://127.0.0.1:\(try XCTUnwrap(bound))/dicomweb"
+        // Trusting the test authority, by its address.
+        let trusted = try DICOMTLSConfiguration.client(pemTrustRootsFile: pem("tls-ca"))
+        let studies = try await DICOMwebClient.withTLS(trusted, baseURI: base) { try await $0.search(.study) }
+        XCTAssertTrue(studies.matches.isEmpty)
+        // Another authority: refused.
+        let other = try DICOMTLSConfiguration.client(pemTrustRootsFile: pem("tls-other-ca"))
+        do {
+            _ = try await DICOMwebClient.withTLS(other, baseURI: base) { try await $0.search(.study) }
+            XCTFail("untrusted server accepted")
+        } catch {}
+    }
 }

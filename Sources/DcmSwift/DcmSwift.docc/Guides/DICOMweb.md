@@ -31,6 +31,17 @@ let response = try await client.store(files: urls)
 print(response.stored.count, response.failed.count)
 ```
 
+A client that trusts its own authorities, or presents a client certificate,
+runs within `withTLS`, which shuts its HTTP client down after; its chain is
+checked by BoringSSL, as for DIMSE:
+
+```swift
+let tls = try DICOMTLSConfiguration.client(pemTrustRootsFile: "/etc/dicom/ca.pem")
+let found = try await DICOMwebClient.withTLS(tls, baseURI: "https://pacs.example.org/dicom-web") { client in
+    try await client.search(.study)
+}
+```
+
 Search results report further pages in `remaining`; metadata keeps Bulk Data
 URIs in `DataElement.bulkDataURI` instead of loading them.
 
