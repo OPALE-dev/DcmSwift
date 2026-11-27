@@ -84,6 +84,16 @@ final class DcmSwiftArchiveTests: XCTestCase {
         _ = byModality.set(value: "CT", forTagName: "ModalitiesInStudy")
         let ctStudies = try await archive.find(byModality)
         XCTAssertEqual(ctStudies.count, 0)
+        // A lone * is universal matching (PS3.4 C.2.2.2.4): every study; other wildcards match each value.
+        let allStudies = try await archive.find({ let all = DataSet(); _ = all.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
+            _ = all.set(value: "", forTagName: "StudyInstanceUID"); return all }())
+        _ = byModality.set(value: "*", forTagName: "ModalitiesInStudy")
+        let universal = try await archive.find(byModality)
+        XCTAssertEqual(universal.count, allStudies.count)
+        XCTAssertGreaterThan(allStudies.count, 0)
+        _ = byModality.set(value: "O?", forTagName: "ModalitiesInStudy")
+        let wildcard = try await archive.find(byModality)
+        XCTAssertEqual(wildcard.count, otStudies.count)
 
         // A deviant file, its Pixel Data cut short, is indexed with what precedes.
         let truncated = folder.appendingPathComponent("truncated.dcm")

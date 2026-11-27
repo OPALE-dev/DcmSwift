@@ -209,12 +209,18 @@ public actor DICOMArchive {
 
     /// The matches of a C-FIND identifier, with its return keys filled.
     /// The studies one of whose series has one of the Modalities in Study
-    /// asked (PS3.4 C.6.2.1.2.1); other levels and an empty key keep them all.
+    /// asked (PS3.4 C.6.2.1.2.1), each value matched with its wildcards
+    /// (C.2.2.2.4); other levels, an empty key and a lone `*` (universal
+    /// matching) keep them all.
     static func matchingModalities(_ groups: [[Record]], _ identifier: DataSet, level: String) -> [[Record]] {
-        guard level == "STUDY", let wanted = identifier.textValues(forTag: "ModalitiesInStudy")?.filter({ !$0.isEmpty }),
-              !wanted.isEmpty else { return groups }
+        guard level == "STUDY", let values = identifier.textValues(forTag: "ModalitiesInStudy")?.filter({ !$0.isEmpty }),
+              !values.isEmpty, !values.contains("*") else { return groups }
         return groups.filter { group in
-            group.contains { ($0.attributes["Modality"] ?? "").components(separatedBy: "\\").contains(where: wanted.contains) }
+            group.contains { record in
+                (record.attributes["Modality"] ?? "").components(separatedBy: "\\").contains { modality in
+                    values.contains { DICOMQueryMatching.matches(modality, key: $0, keyword: "Modality") }
+                }
+            }
         }
     }
 
