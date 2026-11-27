@@ -175,6 +175,7 @@ collection are readable (`frameFragments`, `frame(ofFragment:)`).
 | Color | RGB, YBR_FULL, YBR_FULL_422, Palette Color (including segmented) |
 | Samples | 1 to 32 bits, float and double, Big Endian |
 | Frames | Multi-frame images and functional groups |
+| Series | Slices ordered along the normal of their plane, with the gaps and mixed orientations reported |
 | Export | 8-bit PNG, quality-controlled JPEG, uncompressed TIFF, and PGM/PPM on every platform |
 
 ### Character sets
