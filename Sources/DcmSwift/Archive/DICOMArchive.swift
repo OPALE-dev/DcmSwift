@@ -390,7 +390,8 @@ public struct DICOMArchiveServices: DICOMStorageService, DICOMQueryService, DICO
                 if let record = try await archive.record(uid), !records.contains(where: { $0.attributes["SOPInstanceUID"] == uid }) { records.append(record) }
             }
         } else {
-            records = Array(try await archive.extendedMatches(identifier, level: level, options: context.queryRetrieveOptions).joined())
+            let keys = DICOMArchiveQueryRetrieve.retrievalKeys(identifier, model: informationModel, level: level)
+            records = Array(try await archive.extendedMatches(keys, level: level, options: context.queryRetrieveOptions).joined())
         }
         if let audit, !records.isEmpty {
             // C-MOVE sends to the Move Destination, C-GET to the requestor.

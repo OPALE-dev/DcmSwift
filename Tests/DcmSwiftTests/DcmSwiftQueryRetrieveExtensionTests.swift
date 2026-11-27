@@ -81,6 +81,32 @@ final class DcmSwiftQueryRetrieveExtensionTests: XCTestCase {
         XCTAssertThrowsError(try DICOMArchiveQueryRetrieve.validate(composite, model: DICOMSOPClass.compositeInstanceRootGet, options: [], retrieve: true))
     }
 
+    /// Many SCUs add Patient ID or other keys to a C-MOVE or a C-GET: they
+    /// are ignored, neither refused nor matched.
+    func testRetrievalIgnoresOtherKeys() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let archive = DICOMArchive(directory: root)
+        for i in 0..<2 {
+            let dataSet = try W.dataSet(["00080016": ("UI", [sc]), "00080018": ("UI", ["1.2.3.\(i)"]), "00100020": ("LO", ["PID"]),
+                "00100010": ("PN", ["Doe^Jane"]), "0020000D": ("UI", ["1.2.3"]), "0020000E": ("UI", ["1.2.3.4"]), "00080060": ("CS", ["CT"])])
+            let item = try DICOMRetrieveItem(dataSet: dataSet)
+            try await archive.store(.init(sopClassUID: sc, sopInstanceUID: item.sopInstanceUID, transferSyntaxUID: explicit,
+                payload: item.payload, moveOriginatorAETitle: nil, moveOriginatorMessageID: nil, sourceAETitle: "SCU"))
+        }
+        let service = DICOMArchiveServices(archive: archive)
+        for model in [DICOMSOPClass.studyRootMove, DICOMSOPClass.patientRootMove, DICOMSOPClass.studyRootGet] {
+            let request = identifier("STUDY", ["StudyInstanceUID": "1.2.3", "PatientID": "PID", "PatientName": "Other^Name", "Modality": "MR"])
+            let items = try await service.retrieve(request, informationModel: model, context: context(model))
+            XCTAssertEqual(items.count, 2, model)
+        }
+        // The unique key of the level is still required.
+        let missing = identifier("STUDY", ["PatientID": "PID"])
+        do { _ = try await service.retrieve(missing, informationModel: DICOMSOPClass.studyRootMove, context: context(DICOMSOPClass.studyRootMove)); XCTFail("retrieved without Study Instance UID") }
+        catch let error as DICOMServiceError { XCTAssertEqual(error.status, .identifierDoesNotMatchSOPClass) }
+    }
+
     func testRelationalArchivePreservesWholeEntityCounts() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

@@ -38,9 +38,7 @@ enum DICOMArchiveQueryRetrieve {
             }
             return level
         }
-        let patientStudy = [DICOMSOPClass.patientStudyOnlyFind, DICOMSOPClass.patientStudyOnlyGet, DICOMSOPClass.patientStudyOnlyMove].contains(model)
-        let studyRoot = [DICOMSOPClass.studyRootFind, DICOMSOPClass.studyRootGet, DICOMSOPClass.studyRootMove].contains(model)
-        let hierarchy = Array(DICOMArchive.levels.dropFirst(studyRoot ? 1 : 0).prefix(patientStudy ? 2 : 4))
+        let hierarchy = hierarchy(model)
         guard let depth = hierarchy.firstIndex(where: { $0.level == level }) else { try invalid("invalid Query/Retrieve Level") }
         if !options.contains(.relational) {
             for ancestor in hierarchy.prefix(depth) {
@@ -66,10 +64,34 @@ enum DICOMArchiveQueryRetrieve {
                 guard let value = identifier.string(forTag: "PatientID"), !value.isEmpty,
                       !value.contains("*"), !value.contains("?"), !value.contains("\\") else { try invalid("Patient ID is required") }
             } else { try requireUID(identifier, keyword: hierarchy[depth].unique, list: true) }
-            let uniqueKeys = Set(hierarchy.prefix(depth + 1).map(\.unique) + ["QueryRetrieveLevel", "SpecificCharacterSet", "IssuerOfPatientID", "QueryRetrieveView"])
-            guard identifier.allElements.allSatisfy({ uniqueKeys.contains($0.name) }) else { try invalid("retrieval accepts unique keys only") }
+            // Other keys (Patient ID in Study Root, Patient's Name…) are
+            // ignored rather than refused, as most archives do: many SCUs
+            // send them with a C-MOVE or a C-GET (PS3.4 C.4.2.2.1 asks for
+            // unique keys only). `retrievalKeys` leaves them out of matching.
         }
         return level
+    }
+
+    /// The levels of an information model, from its root.
+    static func hierarchy(_ model: String) -> [(level: String, unique: String, keys: [String])] {
+        let patientStudy = [DICOMSOPClass.patientStudyOnlyFind, DICOMSOPClass.patientStudyOnlyGet, DICOMSOPClass.patientStudyOnlyMove].contains(model)
+        let studyRoot = [DICOMSOPClass.studyRootFind, DICOMSOPClass.studyRootGet, DICOMSOPClass.studyRootMove].contains(model)
+        return Array(DICOMArchive.levels.dropFirst(studyRoot ? 1 : 0).prefix(patientStudy ? 2 : 4))
+    }
+
+    /// A retrieval identifier with its unique keys only, those of `level`
+    /// and the levels above it in `model`: the others do not take part in
+    /// matching.
+    static func retrievalKeys(_ identifier: DataSet, model: String, level: String) -> DataSet {
+        let hierarchy = hierarchy(model)
+        let depth = hierarchy.firstIndex(where: { $0.level == level }) ?? hierarchy.count - 1
+        let kept = Set(hierarchy.prefix(depth + 1).map(\.unique) + ["QueryRetrieveLevel", "SpecificCharacterSet", "IssuerOfPatientID", "QueryRetrieveView"])
+        let keys = DataSet()
+        for keyword in kept {
+            guard let values = identifier.textValues(forTag: keyword) else { continue }
+            _ = keys.set(value: values.joined(separator: "\\"), forTagName: keyword)
+        }
+        return keys
     }
 
     static func requireUID(_ identifier: DataSet, keyword: String, list: Bool) throws {
