@@ -178,6 +178,7 @@ collection are readable (`frameFragments`, `frame(ofFragment:)`).
 | Series | Slices ordered along the normal of their plane, with the gaps and mixed orientations reported |
 | Calibration | Pixel size in millimeters and its source: Pixel Spacing, Imager Pixel Spacing and magnification, scanned spacing, ultrasound regions |
 | Color palettes | The well-known palettes of PS3.6 annex B and the Supplemental Palette Color Lookup Table, applied after the VOI, with an optional inversion |
+| Image geometry | Position in the patient of each pixel and back, reference lines between images of a Frame of Reference, patient directions of the edges |
 | Codestream structure | Markers of a JPEG 2000, JPEG or JPEG-LS frame with their offsets and parameters, tiles and tile-parts, deviations described |
 | Export | 8-bit PNG, quality-controlled JPEG, uncompressed TIFF, and PGM/PPM on every platform |
 
