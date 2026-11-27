@@ -101,6 +101,30 @@ final class DcmSwiftImagingTests: XCTestCase {
         XCTAssertEqual(try DICOMNativePixelData(dataset: ybr).valueFieldRanges(ofPixel: 1, frame: 0), [1..<2, 2..<3, 3..<4])
     }
 
+    func testABytePointsBackAtItsPixel() throws {
+        let images = [
+            makeImage(rows: 2, columns: 2, bitsAllocated: 16, bitsStored: 16, frames: 2, pixelData: words([0, 1, 2, 3, 10, 11, 12, 13])),
+            makeImage(columns: 2, samples: 3, photometric: "RGB", planar: 1, pixelData: Data([10, 11, 20, 21, 30, 31])),
+            makeImage(columns: 2, samples: 3, photometric: "RGB", pixelData: Data([10, 20, 30, 11, 21, 31])),
+            makeImage(columns: 2, samples: 3, photometric: "YBR_FULL_422", pixelData: Data([10, 20, 30, 40])),
+        ]
+        for image in images {
+            let pixels = try DICOMNativePixelData(dataset: image)
+            for frame in 0..<pixels.description.numberOfFrames {
+                for pixel in 0..<pixels.description.pixelsPerFrame {
+                    // The first byte of each sample of a pixel points back at it, chroma pairs aside.
+                    let first = try XCTUnwrap(pixels.valueFieldRanges(ofPixel: pixel, frame: frame).first)
+                    let found = try XCTUnwrap(pixels.pixel(atValueFieldOffset: first.lowerBound))
+                    XCTAssertEqual(found.frame, frame)
+                    XCTAssertEqual(found.pixel, pixel)
+                }
+            }
+        }
+        let image = makeImage(rows: 2, columns: 2, bitsAllocated: 16, bitsStored: 16, pixelData: words([0, 1, 2, 3]))
+        XCTAssertNil(try DICOMNativePixelData(dataset: image).pixel(atValueFieldOffset: 8), "past the last frame")
+        XCTAssertEqual(try DICOMNativePixelData(dataset: image).pixel(atValueFieldOffset: 5)?.pixel, 2, "second byte of a cell")
+    }
+
     func testPixelRangeOfABitIsItsByte() throws {
         // 3x3 frames of one bit: pixel 4 of frame 1 is bit 13, in byte 1.
         let image = makeImage(rows: 3, columns: 3, bitsAllocated: 1, bitsStored: 1, frames: 2, pixelData: Data([0, 0, 0, 0]))

@@ -163,6 +163,33 @@ public struct DICOMNativePixelData {
         }
     }
 
+    /// The pixel a byte of the Value Field belongs to, and its frame: the
+    /// inverse of `valueFieldRanges(ofPixel:frame:)`. A chroma byte of a
+    /// YBR_FULL_422 pair gives the first pixel of the pair; a byte of 1-bit
+    /// cells, the first pixel it holds. Nil past the last frame.
+    ///
+    /// - Parameter offset: The byte, from the start of the Value Field.
+    public func pixel(atValueFieldOffset offset: Int) -> (frame: Int, pixel: Int)? {
+        guard offset >= 0, description.bitsPerFrame > 0 else { return nil }
+        let byte = byteLayout == .bigEndianWords ? offset ^ 1 : offset
+        let bit = byte * 8
+        let frame = bit / description.bitsPerFrame
+        guard frame < description.numberOfFrames else { return nil }
+        let cell = (bit % description.bitsPerFrame) / description.bitsAllocated
+        let pixels = description.pixelsPerFrame
+        let samplesPerPixel = description.samplesPerPixel
+        let pixel: Int
+        if description.photometricInterpretation == .ybrFull422 {
+            let rank = cell % 4
+            pixel = (cell / 4) * 2 + (rank < 2 ? rank : 0)
+        } else if samplesPerPixel > 1, description.planarConfiguration == 1 {
+            pixel = cell % pixels
+        } else {
+            pixel = cell / samplesPerPixel
+        }
+        return pixel < pixels ? (frame, pixel) : nil
+    }
+
     /// The cells of a pixel among the encoded samples of a frame.
     private func encodedCells(ofPixel pixel: Int) -> [Int] {
         let pixels = description.pixelsPerFrame
