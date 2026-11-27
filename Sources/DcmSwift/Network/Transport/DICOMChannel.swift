@@ -13,6 +13,7 @@ enum DICOMChannel {
         limits: DICOMNetworkLimits, timeouts: DICOMNetworkTimeouts, trace: DICOMPDUTrace? = nil
     ) throws -> Async {
         let pipeline = channel.pipeline.syncOperations
+        let connectionTrace = trace.map { DICOMConnectionTrace($0, channel: channel) }
         try pipeline.addHandler(QuickAcknowledgment())
         if let tls {
             if isServer {
@@ -20,12 +21,12 @@ enum DICOMChannel {
             } else {
                 try pipeline.addHandler(try NIOSSLClientHandler(context: tls, serverHostname: serverHostname))
             }
+            if let connectionTrace { try pipeline.addHandler(DICOMTLSSessionRecorder(connectionTrace)) }
         }
         if let idle = timeouts.idle {
             try pipeline.addHandler(IdleStateHandler(readTimeout: idle))
             try pipeline.addHandler(IdleTimeoutHandler(timeout: idle))
         }
-        let connectionTrace = trace.map { DICOMConnectionTrace($0, channel: channel) }
         var decoder = DICOMPDUFrameDecoder(
             maximumDataLength: limits.maximumPDULength == 0 ? Int(UInt32.max) : Int(limits.maximumPDULength),
             maximumAssociateLength: limits.maximumAssociatePDULength)

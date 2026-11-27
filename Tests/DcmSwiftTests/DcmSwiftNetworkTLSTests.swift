@@ -198,6 +198,50 @@ final class DcmSwiftNetworkTLSTests: XCTestCase {
         XCTAssertEqual(recorder.certificates.withLockedValue { $0 }, [expected])
     }
 
+    func testTheTraceRecordsTheTLSSession() async throws {
+        let records = NIOLockedValueBox<[DICOMPDUTraceRecord]>([])
+        let trace: DICOMPDUTrace = { record in records.withLockedValue { $0.append(record) } }
+        var configuration = DICOMServerConfiguration(
+            aeTitle: "SCP", host: "127.0.0.1", port: 0, timeouts: timeouts,
+            tls: try DICOMTLSConfiguration.server(pemCertificateChainFile: pem("tls-server"), pemPrivateKeyFile: pem("tls-server-key")))
+        configuration.pduTrace = trace
+        try await withServer(try DICOMServer(configuration: configuration)) { port in
+            var client = DICOMClientConfiguration(aeTitle: "SCU", timeouts: timeouts, tls: try clientTLS())
+            client.pduTrace = trace
+            try await DICOMClient(configuration: client).withAssociation(
+                to: DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port, useTLS: true),
+                presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.verification])
+            ) { association in _ = try await association.echo() }
+        }
+        let server = try XCTUnwrap(try NIOSSLCertificate.fromPEMFile(try pem("tls-server")).first).toDERBytes()
+        let all = records.withLockedValue { $0 }
+        // Two connections' views of one: the client's, then the server's.
+        XCTAssertEqual(Set(all.map(\.connection)).count, 2)
+        let sessions = all.compactMap(\.tls)
+        XCTAssertFalse(sessions.isEmpty)
+        XCTAssertTrue(sessions.allSatisfy { $0.version == .tls13 })
+        // The client saw the server's certificate; the server, none from the client.
+        XCTAssertTrue(sessions.contains { $0.peerCertificate == server })
+        XCTAssertTrue(sessions.contains { $0.peerCertificate == nil })
+        // Once known, every later PDU of the connection carries it.
+        for connection in Set(all.map(\.connection)) {
+            let ofConnection = all.filter { $0.connection == connection }
+            let first = try XCTUnwrap(ofConnection.firstIndex { $0.tls != nil })
+            XCTAssertTrue(ofConnection[first...].allSatisfy { $0.tls != nil })
+            XCTAssertNotNil(ofConnection.last?.tls)
+        }
+
+        // A plain connection has none.
+        records.withLockedValue { $0 = [] }
+        var plain = DICOMServerConfiguration(aeTitle: "SCP", host: "127.0.0.1", port: 0, timeouts: timeouts)
+        plain.pduTrace = trace
+        try await withServer(try DICOMServer(configuration: plain)) { port in
+            try await echo(port: port, tls: nil, useTLS: false)
+        }
+        XCTAssertFalse(records.withLockedValue { $0 }.isEmpty)
+        XCTAssertTrue(records.withLockedValue { $0 }.allSatisfy { $0.tls == nil })
+    }
+
     func testPlainPeersAndTLSServersDoNotMix() async throws {
         try await withServer(try server()) { port in
             // A plain TCP requestor gets no association from a TLS server,

@@ -471,6 +471,7 @@ offered.
 | TLS 1.3 cipher suites | TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256, TLS_AES_128_GCM_SHA256 |
 | Authentication | <ul><li>Clients verify the server chain and host name (DNS or IP subject alternative name); relaxing either is explicit</li><li>Servers support mutual authentication with <code>pemClientTrustRootsFile</code>; the verified client certificate reaches services as <code>DICOMServiceContext.peerCertificate</code></li></ul> |
 | Key management | PEM certificate chains, private keys, and trust roots from files, or any NIOSSL source through <code>DICOMTLSConfiguration(configuration:)</code>, which applies no profile |
+| Session | Each PDU trace record of a TLS connection carries the version negotiated and the peer certificate, once the handshake is done (<code>DICOMTLSSession</code>); the cipher suite is not reported |
 | Ports | Configured per server and remote node; 2762 (dicom-tls) is recommended. A TLS server accepts only TLS |
 | Provider reasons | A handshake or integrity failure drops the connection and ends the association with <code>DICOMNetworkError.tls</code>, carrying the TLS error; TLS data received on a plain connection is reported the same way |
 

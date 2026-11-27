@@ -102,8 +102,11 @@ A client or server configuration takes a ``DICOMPDUTrace``: it receives each
 PDU sent or received, as a ``DICOMPDUTraceRecord`` with its bytes as on the
 wire, header included, its decoded ``DICOMPDU``, the time, the connection
 and its addresses (PS3.8 9.3). DIMSE commands and data sets are the PDVs of
-the P-DATA-TF PDUs. The trace is called on the connection's event loop and
-must return quickly; without one, no PDU is copied.
+the P-DATA-TF PDUs. On a TLS connection, each record also carries the
+``DICOMTLSSession`` once the handshake is done: the protocol version
+negotiated and the certificate the peer presented. The trace is called on
+the connection's event loop and must return quickly; without one, no PDU is
+copied.
 
 ```swift
 var configuration = DICOMClientConfiguration(aeTitle: "DCMCLIENT")
