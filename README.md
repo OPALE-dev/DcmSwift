@@ -176,6 +176,7 @@ collection are readable (`frameFragments`, `frame(ofFragment:)`).
 | Samples | 1 to 32 bits, float and double, Big Endian |
 | Frames | Multi-frame images and functional groups |
 | Series | Slices ordered along the normal of their plane, with the gaps and mixed orientations reported |
+| Calibration | Pixel size in millimeters and its source: Pixel Spacing, Imager Pixel Spacing and magnification, scanned spacing, ultrasound regions |
 | Export | 8-bit PNG, quality-controlled JPEG, uncompressed TIFF, and PGM/PPM on every platform |
 
 ### Character sets
