@@ -476,7 +476,8 @@ offered.
 | Provider reasons | A handshake or integrity failure drops the connection and ends the association with <code>DICOMNetworkError.tls</code>, carrying the TLS error; TLS data received on a plain connection is reported the same way |
 
 C-MOVE destinations and Storage Commitment SCUs are reached with
-`DICOMServerConfiguration.clientTLS` when their node uses TLS.
+`DICOMServerConfiguration.clientTLS` when their node uses TLS, or with the
+node's own configuration (`DICOMRemoteNode.tls`) when it has one.
 
 ### De-identification (PS3.15 Annex E)
 

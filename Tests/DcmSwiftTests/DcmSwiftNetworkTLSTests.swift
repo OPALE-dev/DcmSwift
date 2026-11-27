@@ -289,27 +289,61 @@ final class DcmSwiftNetworkTLSTests: XCTestCase {
         let item = try DICOMRetrieveItem(dataSet: dataSet)
         let received = Count()
         // The destination requires client certificates; the archive presents
-        // its own when it opens the C-MOVE association.
-        try await withServer(try server(clientCA: "tls-ca", storage: received, aeTitle: "DEST")) { destinationPort in
-            let archive = try server(
-                retrieve: Fixed(items: [item], destination: DICOMRemoteNode(
-                    aeTitle: "DEST", host: "127.0.0.1", port: destinationPort, useTLS: true)),
-                clientTLS: try clientTLS(certificate: "tls-client"))
-            try await withServer(archive) { port in
-                let client = try DICOMClient(configuration: DICOMClientConfiguration(
-                    aeTitle: "SCU", timeouts: timeouts, tls: try clientTLS()))
-                let result = try await client.withAssociation(
-                    to: DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port, useTLS: true),
-                    presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.studyRootMove])
-                ) { association in
-                    let identifier = DataSet()
-                    _ = identifier.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
-                    return try await association.move(identifier, destination: "DEST")
+        // one when it opens the C-MOVE association: that of its client
+        // configuration, or that of the destination's own configuration.
+        for ownConfiguration in [false, true] {
+            try await withServer(try server(clientCA: "tls-ca", storage: received, aeTitle: "DEST")) { destinationPort in
+                let tls = try clientTLS(certificate: "tls-client")
+                let archive = try server(
+                    retrieve: Fixed(items: [item], destination: DICOMRemoteNode(
+                        aeTitle: "DEST", host: "127.0.0.1", port: destinationPort, useTLS: true, tls: ownConfiguration ? tls : nil)),
+                    clientTLS: ownConfiguration ? nil : tls)
+                try await withServer(archive) { port in
+                    let client = try DICOMClient(configuration: DICOMClientConfiguration(
+                        aeTitle: "SCU", timeouts: timeouts, tls: try clientTLS()))
+                    let result = try await client.withAssociation(
+                        to: DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port, useTLS: true),
+                        presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.studyRootMove])
+                    ) { association in
+                        let identifier = DataSet()
+                        _ = identifier.set(value: "STUDY", forTagName: "QueryRetrieveLevel")
+                        return try await association.move(identifier, destination: "DEST")
+                    }
+                    XCTAssertEqual(result.status, .success)
+                    XCTAssertEqual(result.progress.completed, 1)
                 }
-                XCTAssertEqual(result.status, .success)
-                XCTAssertEqual(result.progress.completed, 1)
             }
         }
-        XCTAssertEqual(received.count.withLockedValue { $0 }, 1)
+        XCTAssertEqual(received.count.withLockedValue { $0 }, 2)
+    }
+
+    func testARemoteNodeWithItsOwnTLSConfiguration() async throws {
+        try await withServer(try server()) { port in
+            // A client without TLS reaches a node that brings its own.
+            let node = DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port, tls: try clientTLS())
+            XCTAssertTrue(node.useTLS)
+            let client = try DICOMClient(configuration: DICOMClientConfiguration(aeTitle: "SCU", timeouts: timeouts))
+            let status = try await client.withAssociation(
+                to: node, presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.verification])
+            ) { try await $0.echo() }
+            XCTAssertEqual(status, .success)
+            // The node's configuration wins over the client's: here, one that trusts another CA.
+            let other = try DICOMClient(configuration: DICOMClientConfiguration(
+                aeTitle: "SCU", timeouts: timeouts, tls: try clientTLS(ca: "tls-other-ca")))
+            await assertTLSFailure {
+                _ = try await other.withAssociation(
+                    to: DICOMRemoteNode(aeTitle: "SCP", host: "127.0.0.1", port: port, useTLS: true),
+                    presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.verification])) { try await $0.echo() }
+            }
+            let reached = try await other.withAssociation(
+                to: node, presentationContexts: .proposals(abstractSyntaxes: [DICOMSOPClass.verification])
+            ) { try await $0.echo() }
+            XCTAssertEqual(reached, .success)
+        }
+        // Equal nodes: same endpoint, same TLS, configurations alike.
+        let first = DICOMRemoteNode(aeTitle: "A", host: "h", port: 1, tls: try clientTLS())
+        XCTAssertEqual(first, DICOMRemoteNode(aeTitle: "A", host: "h", port: 1, tls: try clientTLS()))
+        XCTAssertNotEqual(first, DICOMRemoteNode(aeTitle: "A", host: "h", port: 1, useTLS: true))
+        XCTAssertNotEqual(first, DICOMRemoteNode(aeTitle: "A", host: "h", port: 1, tls: try clientTLS(ca: "tls-other-ca")))
     }
 }

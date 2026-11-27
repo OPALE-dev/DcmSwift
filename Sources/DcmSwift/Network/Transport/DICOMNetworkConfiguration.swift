@@ -213,11 +213,36 @@ public struct DICOMRemoteNode: Hashable, Sendable {
     public var port: Int
     /// TLS to use, or nil for a plain TCP connection.
     public var useTLS: Bool
+    /// A TLS configuration of this node's own (its trusted authorities, the
+    /// identity presented to it), used instead of the client's: a server
+    /// reaching C-MOVE destinations that each trust differently. Setting it
+    /// implies TLS.
+    public var tls: DICOMTLSConfiguration? {
+        didSet { if tls != nil { useTLS = true } }
+    }
 
-    public init(aeTitle: String, host: String, port: Int, useTLS: Bool = false) {
+    public init(aeTitle: String, host: String, port: Int, useTLS: Bool = false, tls: DICOMTLSConfiguration? = nil) {
         self.aeTitle = aeTitle
         self.host = host
         self.port = port
-        self.useTLS = useTLS
+        self.useTLS = useTLS || tls != nil
+        self.tls = tls
+    }
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        guard lhs.aeTitle == rhs.aeTitle, lhs.host == rhs.host, lhs.port == rhs.port, lhs.useTLS == rhs.useTLS else { return false }
+        switch (lhs.tls, rhs.tls) {
+        case (nil, nil): return true
+        case let (left?, right?): return left.configuration.bestEffortEquals(right.configuration)
+        default: return false
+        }
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(aeTitle)
+        hasher.combine(host)
+        hasher.combine(port)
+        hasher.combine(useTLS)
+        hasher.combine(tls != nil)
     }
 }

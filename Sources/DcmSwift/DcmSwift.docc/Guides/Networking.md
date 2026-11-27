@@ -143,6 +143,15 @@ let secureClient = try DICOMClient(configuration: DICOMClientConfiguration(aeTit
 let secureRemote = DICOMRemoteNode(aeTitle: "PACS", host: "pacs.example.org", port: 2762, useTLS: true)
 ```
 
+A node can bring its own configuration, which replaces the client's for it: a
+server whose C-MOVE destinations each trust their own authority, or expect
+their own client certificate, returns them from `destination(for:)` this way.
+
+```swift
+let destination = DICOMRemoteNode(aeTitle: "VIEWER", host: "viewer.example.org", port: 2762,
+                                  tls: try DICOMTLSConfiguration.client(pemTrustRootsFile: "/etc/dicom/viewer-ca.pem"))
+```
+
 ## Storage Commitment
 
 ```swift

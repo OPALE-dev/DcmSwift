@@ -211,7 +211,7 @@ public final class DICOMClient: Sendable {
         storage: DICOMStorageService? = nil, normalized: [String: DICOMNormalizedService] = [:],
         _ body: (DICOMAssociation) async throws -> Result
     ) async throws -> Result {
-        if remote.useTLS, sslContext == nil {
+        if remote.useTLS, remote.tls == nil, sslContext == nil {
             throw DICOMNetworkError.invalidState("\(remote.aeTitle) uses TLS but the client has no TLS configuration")
         }
         let configuration = self.configuration
@@ -229,7 +229,8 @@ public final class DICOMClient: Sendable {
         // Invalid AE titles or UIDs fail before connecting.
         _ = try DICOMPDUCodec.encode(.associateRequest(request))
 
-        let tls = remote.useTLS ? sslContext : nil
+        // The node's own configuration first, else the client's.
+        let tls = try remote.tls.map { try NIOSSLContext(configuration: $0.configuration) } ?? (remote.useTLS ? sslContext : nil)
         let hostname = (try? SocketAddress(ipAddress: remote.host, port: remote.port)) == nil ? remote.host : nil
         let asyncChannel: DICOMChannel.Async
         do {
