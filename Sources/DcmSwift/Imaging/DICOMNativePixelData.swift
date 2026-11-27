@@ -230,29 +230,40 @@ public struct DICOMNativePixelData {
         guard description.sampleFormat == .integer else {
             throw DICOMPixelDataError.invalidAttribute("PixelData", "floating point samples have no stored integer values")
         }
-        let (range, bitOffset) = try byteRange(of: frame)
-        try checkSampleBuffer(of: Int64.self)
-        let bytes = try normalizedBytes(in: range)
-        let encoded = description.encodedSamplesPerFrame
-        var samples = [Int64](repeating: 0, count: encoded)
-
         let shift = description.highBit - description.bitsStored + 1
         let mask: UInt64 = description.bitsStored == 64 ? .max : (UInt64(1) << description.bitsStored) - 1
         let signBit = UInt64(1) << (description.bitsStored - 1)
-
-        func value(of cell: UInt64) -> Int64 {
+        return try cells(frame: frame).map { cell in
             let raw = (cell >> UInt64(shift)) & mask
             if description.isSigned && raw & signBit != 0 {
                 return Int64(bitPattern: raw | ~mask)
             }
             return Int64(raw)
         }
+    }
+
+    /// The whole cells of one frame, each of Bits Allocated bits, unmasked:
+    /// the bits outside `DICOMPixelDescription.storedBits` as stored, which
+    /// shows unused bits that are not zero and retired overlays in the high
+    /// bits (PS3.5 8.1.1, PS3.3 C.9.2). In the same order as
+    /// `storedValues(frame:)`.
+    ///
+    /// - Parameter frame: The frame, from 0.
+    public func cells(frame: Int) throws -> [UInt64] {
+        guard description.sampleFormat == .integer else {
+            throw DICOMPixelDataError.invalidAttribute("PixelData", "floating point samples have no integer cells")
+        }
+        let (range, bitOffset) = try byteRange(of: frame)
+        try checkSampleBuffer(of: Int64.self)
+        let bytes = try normalizedBytes(in: range)
+        let encoded = description.encodedSamplesPerFrame
+        var cells = [UInt64](repeating: 0, count: encoded)
 
         if description.bitsAllocated == 1 {
             // Bits are packed from the least significant bit of each byte.
             for index in 0..<encoded {
                 let bit = bitOffset + index
-                samples[index] = value(of: UInt64((bytes[bit >> 3] >> UInt8(bit & 7)) & 1))
+                cells[index] = UInt64((bytes[bit >> 3] >> UInt8(bit & 7)) & 1)
             }
         } else {
             let width = description.bitsAllocated / 8
@@ -264,10 +275,10 @@ public struct DICOMNativePixelData {
                     let source = bigEndianCells ? bytes[base + byte] : bytes[base + width - 1 - byte]
                     cell = cell << 8 | UInt64(source)
                 }
-                samples[index] = value(of: cell)
+                cells[index] = cell
             }
         }
-        return arrangeByPixel(samples)
+        return arrangeByPixel(cells)
     }
 
     /// Floating point sample values of one frame (Float or Double Float Pixel

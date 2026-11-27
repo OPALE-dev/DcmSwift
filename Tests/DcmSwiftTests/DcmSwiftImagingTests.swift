@@ -22,6 +22,19 @@ final class DcmSwiftImagingTests: XCTestCase {
         XCTAssertEqual(try DICOMNativePixelData(dataset: signed).storedValues(frame: 0), [-2048, 2047, -1])
     }
 
+    func testCellsKeepTheBitsOutsideBitsStored() throws {
+        // A retired overlay in bit 15, noise in bit 12, the value in bits 0 to 11.
+        let image = makeImage(columns: 3, bitsAllocated: 16, bitsStored: 12, pixelData: words([0x8123, 0x1FFF, 0x0001]))
+        let pixels = try DICOMNativePixelData(dataset: image)
+        XCTAssertEqual(try pixels.cells(frame: 0), [0x8123, 0x1FFF, 0x0001])
+        XCTAssertEqual(try pixels.storedValues(frame: 0), [0x123, 0xFFF, 0x001])
+        XCTAssertEqual(pixels.description.storedBits, 0...11)
+        let legacy = makeImage(columns: 1, bitsAllocated: 16, bitsStored: 12, highBit: 15, pixelData: words([0xABC5]))
+        let legacyPixels = try DICOMNativePixelData(dataset: legacy)
+        XCTAssertEqual(legacyPixels.description.storedBits, 4...15)
+        XCTAssertEqual(try legacyPixels.cells(frame: 0), [0xABC5])
+    }
+
     func testLegacyHighBitAboveBitsStored() throws {
         // Earlier editions allowed the stored bits anywhere below High Bit.
         let image = makeImage(columns: 2, bitsAllocated: 16, bitsStored: 12, highBit: 15,

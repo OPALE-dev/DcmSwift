@@ -110,6 +110,11 @@ public struct DICOMPixelDescription: Equatable, Sendable {
 
     /// The smallest and largest stored value Bits Stored and Pixel
     /// Representation allow.
+    /// The bits of a cell that hold the stored value, from bit 0 the least
+    /// significant: High Bit and the Bits Stored below it (PS3.5 8.1.1).
+    /// The others are unused, or hold a retired overlay (PS3.3 C.9.2).
+    public var storedBits: ClosedRange<Int> { (highBit - bitsStored + 1)...highBit }
+
     public var storedValueRange: ClosedRange<Int64> {
         isSigned
             ? -(Int64(1) << (bitsStored - 1))...((Int64(1) << (bitsStored - 1)) - 1)
