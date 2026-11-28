@@ -43,6 +43,7 @@ defined by PS3.7 rather than the PS3.6 data-element registry.
 | Text and Person Name values | <ul><li>Typed multi-valued character-string read/write</li><li>PN alphabetic, ideographic, and phonetic groups with five named components</li><li>Interior empty Values, groups, and components preserved</li></ul> |
 | Fixed-width numeric VR values | Scalar and multi-valued signed/unsigned integer and floating-point read/write with dictionary VM validation |
 | Lazy Bulk Data | Opt-in file-backed references and bounded reads for defined-length binary VRs and encapsulated Pixel Data Items |
+| Data Set comparison | <ul><li><code>DICOMDataSetComparison</code>: attributes paired by tag at each level, File Meta Information included or not; Sequence Items paired by position</li><li>Added and removed attributes and Items; VR and Value changes, character strings as decoded with the Specific Character Set, other Values as Little Endian bytes</li><li>An attribute repeated at one level paired by occurrence; encapsulated Pixel Data compared as its fragments</li></ul> |
 
 ### Pixel Data
 

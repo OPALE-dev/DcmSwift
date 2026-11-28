@@ -37,6 +37,10 @@ conformance without that evidence.
   value. `DicomFile.init(forPath:)` still rejects such files.
 - Fuzzing is in-process mutation fuzzing (`DcmSwiftFuzzTests`), not
   coverage-guided: libFuzzer is not available in the Apple toolchain.
+- `DICOMDataSetComparison` pairs Sequence Items by position: an Item inserted
+  at the head of a Sequence shows as every following Item changed. Private
+  attributes are paired by tag, so a Private Creator block reassigned to
+  another element number shows as removed and added attributes.
 
 ## Bulk Data and Pixel Data
 

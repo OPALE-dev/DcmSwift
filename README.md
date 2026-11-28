@@ -125,6 +125,11 @@ Values are read typed: binary numbers by VR, Person Names by component group,
 and dates, times, date-times and ages (`temporalValues`, `ageValues`) with the
 precision written and no implied time zone (PS3.5 6.2).
 
+Two Data Sets compare attribute by attribute, Sequence Items included
+(`DICOMDataSetComparison`): attributes added or removed, and those whose VR or
+Value differs, character strings as decoded and other Values whatever their
+byte order.
+
 ### Pixel Data codecs
 
 Built-in codecs are written in Swift, except JPEG 2000, HTJ2K, and JPEG XL,
