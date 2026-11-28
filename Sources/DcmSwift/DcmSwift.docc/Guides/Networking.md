@@ -54,6 +54,17 @@ try await client.withAssociation(
 }
 ```
 
+An identifier can also be written as keys, the way `DcmFind -k` takes them:
+keywords or `gggg,eeee` tags with an optional value, and keys inside sequence
+Items written `Sequence[0].Keyword` (PS3.4 C.2.2.1). ``DICOMQueryKey`` reads
+them and builds the identifier, the Items created on the way:
+
+```swift
+let keys = try ["PatientName=DOE*", "StudyInstanceUID", "0008,0020=20240101-20241231",
+                "ReferencedStudySequence"].map { try DICOMQueryKey($0) }
+let identifier = try DICOMQueryKey.identifier(keys, level: "STUDY")
+```
+
 `move(_:destination:)` and `get(_:)` retrieve in the same way; C-GET stores
 the instances through the `storage` service given to `withAssociation`, on
 contexts of the storage SOP classes that ask the SCP role:

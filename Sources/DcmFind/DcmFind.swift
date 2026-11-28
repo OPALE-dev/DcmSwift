@@ -86,78 +86,13 @@ struct DcmFind: AsyncParsableCommand {
          "ScheduledStationName"].map { "ScheduledProcedureStepSequence[0].\($0)" }
 
     func identifier() throws -> DataSet {
-        var object: [String: Any] = [:]
         let worklist = model == .worklist
-        if !worklist { object["00080052"] = ["vr": "CS", "Value": [level.rawValue]] }
-        for key in key.isEmpty ? (worklist ? Self.worklistKeys : Self.defaultKeys(level)) : key {
-            let parts = key.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
-            let path = try String(parts[0]).split(separator: ".").map { try Self.pathComponent(String($0)) }
-            try Self.insert(parts.count > 1 ? String(parts[1]) : "", at: path[...], into: &object)
-        }
         do {
-            return try DICOMJSON.dataSet(object)
+            let keys = try (key.isEmpty ? (worklist ? Self.worklistKeys : Self.defaultKeys(level)) : key).map { try DICOMQueryKey($0) }
+            return try DICOMQueryKey.identifier(keys, level: worklist ? nil : level.rawValue)
         } catch {
             throw ValidationError("invalid keys: \(error)")
         }
-    }
-
-    /// A key path component: a tag (8 hexadecimal digits) and, for a
-    /// sequence, the index of an Item.
-    static func pathComponent(_ text: String) throws -> (tag: String, item: Int?) {
-        var name = text
-        var item: Int?
-        if let open = text.firstIndex(of: "["), text.hasSuffix("]") {
-            guard let index = Int(text[text.index(after: open)..<text.index(before: text.endIndex)]), index >= 0 else {
-                throw ValidationError("invalid Item index in \(text)")
-            }
-            item = index
-            name = String(text[..<open])
-        }
-        let keyword = try Self.keyword(name)
-        guard let tag = DicomSpec.shared.dataTag(forName: keyword) else { throw ValidationError("unknown keyword \(name)") }
-        return (tag.code.uppercased(), item)
-    }
-
-    /// Sets a key in a DICOM JSON object, creating the Items on its path.
-    static func insert(_ value: String, at path: ArraySlice<(tag: String, item: Int?)>, into object: inout [String: Any]) throws {
-        guard let component = path.first else { return }
-        let vr = DicomSpec.shared.vrForTag(withCode: component.tag.lowercased()).map { "\($0)" } ?? "UN"
-        if let index = component.item {
-            guard vr == "SQ" else { throw ValidationError("\(component.tag) is not a sequence") }
-            var attribute = object[component.tag] as? [String: Any] ?? ["vr": "SQ"]
-            var items = attribute["Value"] as? [[String: Any]] ?? []
-            while items.count <= index { items.append([:]) }
-            try insert(value, at: path.dropFirst(), into: &items[index])
-            attribute["Value"] = items
-            object[component.tag] = attribute
-            return
-        }
-        guard path.count == 1 else { throw ValidationError("\(component.tag) needs an Item index") }
-        var attribute: [String: Any] = ["vr": vr]
-        if !value.isEmpty, vr != "SQ" {
-            switch vr {
-            case "PN": attribute["Value"] = [["Alphabetic": value]]
-            case "US", "SS", "UL", "SL", "UV", "SV", "FL", "FD":
-                guard let number = Double(value) else { throw ValidationError("\(component.tag) expects a number") }
-                attribute["Value"] = [number]
-            default: attribute["Value"] = value.components(separatedBy: "\\")
-            }
-        }
-        object[component.tag] = attribute
-    }
-
-    /// A keyword, from a keyword or a gggg,eeee tag.
-    static func keyword(_ key: String) throws -> String {
-        let hex = key.replacingOccurrences(of: ",", with: "").replacingOccurrences(of: "(", with: "")
-            .replacingOccurrences(of: ")", with: "")
-        if hex.count == 8, hex.allSatisfy(\.isHexDigit) {
-            guard let name = DicomSpec.shared.nameForTag(withCode: hex.lowercased()) else {
-                throw ValidationError("unknown tag \(key)")
-            }
-            return name
-        }
-        guard DicomSpec.shared.dataTag(forName: key) != nil else { throw ValidationError("unknown keyword \(key)") }
-        return key
     }
 
     func run() async throws {
