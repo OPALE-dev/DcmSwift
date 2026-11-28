@@ -80,7 +80,7 @@ public class DicomFile {
         bulkDataLoadingPolicy: DICOMBulkDataLoadingPolicy = .eager
     ) throws {
         guard FileManager.default.fileExists(atPath: filepath) else {
-            throw DicomReadFailure(offset: 0, tag: nil, message: "No such file")
+            throw DicomReadFailure(offset: 0, tag: nil, diagnostic: DICOMDiagnostic(.noSuchFile))
         }
         self.filepath = filepath
 

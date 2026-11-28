@@ -594,7 +594,7 @@ public class DataSet: DicomObject {
         for keyword in required where element(forTagName: keyword) == nil {
             results.append(ValidationResult(
                 self,
-                message: "Missing required File Meta Information element \(keyword)",
+                diagnostic: DICOMDiagnostic(.missingMetaElement, keyword),
                 severity: .Error
             ))
         }
@@ -609,7 +609,7 @@ public class DataSet: DicomObject {
             if metaValue != datasetValue {
                 results.append(ValidationResult(
                     self,
-                    message: "\(pair.meta) does not match \(pair.dataset)",
+                    diagnostic: DICOMDiagnostic(.metaMismatch, pair.meta, pair.dataset),
                     severity: .Error
                 ))
             }
@@ -620,7 +620,7 @@ public class DataSet: DicomObject {
            declared != actual {
             results.append(ValidationResult(
                 self,
-                message: "TransferSyntaxUID does not match the Data Set transfer syntax",
+                diagnostic: DICOMDiagnostic(.transferSyntaxMismatch),
                 severity: .Error
             ))
         }

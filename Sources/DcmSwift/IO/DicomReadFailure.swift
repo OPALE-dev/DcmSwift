@@ -11,8 +11,10 @@ public struct DicomReadFailure: Error, Sendable, Equatable, CustomStringConverti
     /// The tag of the element being read, as eight lowercase hexadecimal
     /// digits, or nil when no tag could be read.
     public let tag: String?
-    /// What could not be read.
+    /// What could not be read, in English.
     public let message: String
+    /// What could not be read, to translate.
+    public let diagnostic: DICOMDiagnostic
 
     /// Creates a read failure.
     ///
@@ -21,9 +23,15 @@ public struct DicomReadFailure: Error, Sendable, Equatable, CustomStringConverti
     ///   - tag: the tag of the element being read, as eight hexadecimal digits.
     ///   - message: what could not be read.
     public init(offset: Int, tag: String?, message: String) {
+        self.init(offset: offset, tag: tag, diagnostic: .parsing(message))
+    }
+
+    /// Creates a read failure from its diagnostic.
+    public init(offset: Int, tag: String?, diagnostic: DICOMDiagnostic) {
         self.offset = offset
         self.tag = tag?.lowercased()
-        self.message = message
+        self.diagnostic = diagnostic
+        self.message = diagnostic.description
     }
 
     public var description: String {

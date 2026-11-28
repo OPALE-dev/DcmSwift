@@ -334,6 +334,8 @@ the first is the group's meaning, as in NEMA's value sets.
 `DICOMIODValidator` validates data sets against the IODs of PS3.3 2026d,
 generated with the SOP Class to IOD mapping of PS3.4 by
 `Scripts/generate-dicom-iods.py`. It is a layer separate from parsing.
+Its findings, the encoding checks and the read failures carry a
+`DICOMDiagnostic`, template and arguments, for an application to translate.
 
 | Content | Support |
 | --- | --- |

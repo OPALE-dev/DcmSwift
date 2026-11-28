@@ -221,6 +221,25 @@ attribute, the module, and the PS3.3 table. <doc:DcmValidate> does the same
 from the command line; ``DICOMIODValidationPolicy`` applies it to received
 instances.
 
+## Translating the messages
+
+Read failures (``DicomReadFailure``), encoding checks (``ValidationResult``)
+and IOD findings carry a ``DICOMDiagnostic`` beside their English message:
+a ``DICOMDiagnosticTemplate``, whose raw value is the English template with
+`%1$@`, `%2$@`… for its arguments, and the arguments, text or another
+diagnostic. An application keeps a translation of each template, such as a
+string catalog keyed by the raw values, and renders the message with it:
+
+```swift
+let text = finding.diagnostic.formatted { template in
+    Bundle.main.localizedString(forKey: template.rawValue, value: template.rawValue, table: "DcmSwift")
+}
+```
+
+`DICOMDiagnosticTemplate.allCases` lists every template, for a test that
+none is left untranslated. The messages of DICOMDIR validation are not
+templates yet: they are ``DICOMDiagnosticTemplate/verbatim``.
+
 ## De-identification
 
 ``DICOMDeidentifier`` applies the Basic Application Level Confidentiality

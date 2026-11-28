@@ -262,9 +262,9 @@ public class DicomInputStream: OffsetInputStream {
                 }
             } else if offset <= elementStart {
                 // Nothing could be read: stop instead of retrying forever.
-                let message = "Unreadable data element at offset \(elementStart)"
-                recordFailure(DicomReadFailure(offset: elementStart, tag: nil, message: message))
-                throw StreamError.datasetIsCorrupted(message: message)
+                let diagnostic = DICOMDiagnostic(.unreadableElement, "\(elementStart)")
+                recordFailure(DicomReadFailure(offset: elementStart, tag: nil, diagnostic: diagnostic))
+                throw StreamError.datasetIsCorrupted(message: diagnostic.description)
             }
         }
 
@@ -308,7 +308,7 @@ public class DicomInputStream: OffsetInputStream {
             }
         } catch {
             if readFailure == nil {
-                recordFailure(DicomReadFailure(offset: offset, tag: nil, message: Self.message(for: error)))
+                recordFailure(DicomReadFailure(offset: offset, tag: nil, diagnostic: Self.diagnostic(for: error)))
             }
         }
         dataset.isCorrupted = true
@@ -322,18 +322,18 @@ public class DicomInputStream: OffsetInputStream {
     }
 
 
-    private static func message(for error: Error) -> String {
+    private static func diagnostic(for error: Error) -> DICOMDiagnostic {
         switch error {
         case StreamError.notDicomFile(let message),
              StreamError.cannotOpenStream(let message),
              StreamError.cannotReadStream(let message),
              StreamError.cannotWriteStream(let message),
              StreamError.datasetIsCorrupted(let message):
-            return message
+            return .parsing(message)
         case StreamError.unsupportedTransferSyntax(let uid):
-            return "Unsupported Transfer Syntax \(uid)"
+            return DICOMDiagnostic(.unsupportedTransferSyntax, uid)
         default:
-            return error.localizedDescription
+            return .verbatim(error.localizedDescription)
         }
     }
     
@@ -485,14 +485,14 @@ public class DicomInputStream: OffsetInputStream {
     
     
     
-    private func readError(forLength length:Int, element: DataElement, message:String) -> DataElement {
-        let v = ValidationResult(element, message: message, severity: .Fatal)
+    private func readError(forLength length:Int, element: DataElement, diagnostic: DICOMDiagnostic) -> DataElement {
+        let v = ValidationResult(element, diagnostic: diagnostic, severity: .Fatal)
                 
         dataset.internalValidations.append(v)
         dataset.isCorrupted = true
-        recordFailure(DicomReadFailure(offset: offset, tag: element.tag.code, message: message))
+        recordFailure(DicomReadFailure(offset: offset, tag: element.tag.code, diagnostic: diagnostic))
         
-        Logger.error(message)
+        Logger.error(diagnostic.description)
         
         return element
     }
@@ -539,7 +539,7 @@ public class DicomInputStream: OffsetInputStream {
             return readError(
                 forLength: 0,
                 element: element,
-                message: "Fatal, maximum Data Element count exceeded (\(limits.maximumElementCount))"
+                diagnostic: DICOMDiagnostic(.elementCountExceeded, "\(limits.maximumElementCount)")
             )
         }
         
@@ -560,13 +560,13 @@ public class DicomInputStream: OffsetInputStream {
         var headerRead = false
         if checksImplicitVR, element.group != "0002", element.vrMethod == .Explicit {
             guard let vrBytes = read(length: 2) else {
-                return readError(forLength: 0, element: element, message: "Fatal, truncated header for \(tag)")
+                return readError(forLength: 0, element: element, diagnostic: DICOMDiagnostic(.truncatedHeader, "\(tag)"))
             }
             if vrBytes.allSatisfy({ (0x41...0x5A).contains($0) }), DicomSpec.vr(for: vrBytes.toString()) != nil {
                 prefetchedVR = vrBytes
             } else {
                 guard let rest = read(length: 2) else {
-                    return readError(forLength: 0, element: element, message: "Fatal, truncated header for \(tag)")
+                    return readError(forLength: 0, element: element, diagnostic: DICOMDiagnostic(.truncatedHeader, "\(tag)"))
                 }
                 let bytes = [UInt8](vrBytes + rest)
                 let length = UInt32(bytes[0]) | UInt32(bytes[1]) << 8 | UInt32(bytes[2]) << 16 | UInt32(bytes[3]) << 24
@@ -583,14 +583,14 @@ public class DicomInputStream: OffsetInputStream {
 
         if !headerRead {
             guard let vr = readVR(element:element, vrMethod: element.vrMethod, prefetched: prefetchedVR) else {
-                let message = "Fatal, invalid or truncated Explicit VR header for \(tag) at offset \(element.vrOffset)"
-                return readError(forLength: 0, element: element, message: message)
+                let message = DICOMDiagnostic(.invalidExplicitVRHeader, "\(tag)", "\(element.vrOffset)")
+                return readError(forLength: 0, element: element, diagnostic: message)
             }
             element.vr              = vr
             element.lengthOffset    = offset
             guard let decodedLength = readLength(vrMethod: element.vrMethod, vr: element.vr, order: element.byteOrder) else {
-                let message = "Fatal, truncated value length for \(tag) at offset \(offset)"
-                return readError(forLength: 0, element: element, message: message)
+                let message = DICOMDiagnostic(.truncatedValueLength, "\(tag)", "\(offset)")
+                return readError(forLength: 0, element: element, diagnostic: message)
             }
             element.length          = decodedLength
         }
@@ -604,16 +604,16 @@ public class DicomInputStream: OffsetInputStream {
         
         // check for invalid length
         if element.length < -1 {
-            let message = "Fatal, invalid negative length for \(tag) at offset \(element.lengthOffset)"
-            return readError(forLength: element.length, element: element, message: message)
+            let message = DICOMDiagnostic(.negativeLength, "\(tag)", "\(element.lengthOffset)")
+            return readError(forLength: element.length, element: element, diagnostic: message)
         }
         if element.length > limits.maximumElementValueLength {
-            let message = "Fatal, value length for \(tag) exceeds configured maximum (\(element.length) > \(limits.maximumElementValueLength))"
-            return readError(forLength: element.length, element: element, message: message)
+            let message = DICOMDiagnostic(.lengthExceedsMaximum, "\(tag)", "\(element.length)", "\(limits.maximumElementValueLength)")
+            return readError(forLength: element.length, element: element, diagnostic: message)
         }
         if element.length > readableBytes {
-            let message = "Fatal, cannot read length properly, decoded \(tag) length at offset(\(offset-4)) overflows (\(element.length))"
-            return readError(forLength: element.length, element: element, message: message)
+            let message = DICOMDiagnostic(.lengthOverflows, "\(tag)", "\(offset-4)", "\(element.length)")
+            return readError(forLength: element.length, element: element, diagnostic: message)
         }
         
         // read value data
@@ -760,41 +760,41 @@ public class DicomInputStream: OffsetInputStream {
     ) -> DataSequence? {
         let sequence:DataSequence = DataSequence(withTag:tag, parent: parent)
         guard sequenceDepth < limits.maximumSequenceDepth else {
-            let message = "Fatal, maximum Sequence nesting depth exceeded (\(limits.maximumSequenceDepth))"
-            return readError(forLength: length, element: sequence, message: message) as? DataSequence
+            let message = DICOMDiagnostic(.sequenceDepthExceeded, "\(limits.maximumSequenceDepth)")
+            return readError(forLength: length, element: sequence, diagnostic: message) as? DataSequence
         }
         sequenceDepth += 1
         defer { sequenceDepth -= 1 }
 
-        func fail(_ message: String, length: Int = 0) -> Bool {
-            _ = readError(forLength: length, element: sequence, message: message)
+        func fail(_ message: DICOMDiagnostic, length: Int = 0) -> Bool {
+            _ = readError(forLength: length, element: sequence, diagnostic: message)
             return false
         }
 
         func consumeDelimiter(_ name: String) -> Bool {
             guard let delimiterLength = read32BitLength(byteOrder: byteOrder) else {
-                return fail("Fatal, truncated \(name) length")
+                return fail(DICOMDiagnostic(.truncatedDelimiterLength, name))
             }
             guard delimiterLength == 0 else {
-                return fail("Fatal, \(name) length must be zero (\(delimiterLength))", length: delimiterLength)
+                return fail(DICOMDiagnostic(.delimiterLengthNotZero, name, "\(delimiterLength)"), length: delimiterLength)
             }
             return true
         }
 
         func readItem(_ itemTag: DataTag, itemLength: Int, enclosingEnd: Int?) -> Bool {
             guard itemTag.code == "fffee000" else {
-                return fail("Fatal, expected Item tag in Sequence but found \(itemTag)")
+                return fail(DICOMDiagnostic(.expectedItemTag, "\(itemTag)"))
             }
             guard itemLength >= -1 else {
-                return fail("Fatal, invalid negative Item length (\(itemLength))", length: itemLength)
+                return fail(DICOMDiagnostic(.negativeItemLength, "\(itemLength)"), length: itemLength)
             }
             guard itemLength == -1 || itemLength <= limits.maximumElementValueLength else {
-                return fail("Fatal, Item length exceeds configured maximum (\(itemLength) > \(limits.maximumElementValueLength))", length: itemLength)
+                return fail(DICOMDiagnostic(.itemLengthExceedsMaximum, "\(itemLength)", "\(limits.maximumElementValueLength)"), length: itemLength)
             }
 
             decodedItemCount += 1
             guard decodedItemCount <= limits.maximumItemCount else {
-                return fail("Fatal, maximum Sequence Item count exceeded (\(limits.maximumItemCount))", length: itemLength)
+                return fail(DICOMDiagnostic(.itemCountExceeded, "\(limits.maximumItemCount)"), length: itemLength)
             }
 
             let item = DataItem(withTag: itemTag, parent: sequence)
@@ -809,7 +809,7 @@ public class DicomInputStream: OffsetInputStream {
             if itemLength == -1 {
                 while true {
                     guard let tagData = read(length: 4) else {
-                        return fail("Fatal, truncated undefined-length Item")
+                        return fail(DICOMDiagnostic(.truncatedUndefinedLengthItem))
                     }
                     let nestedTag = DataTag(withData: tagData, byteOrder: byteOrder)
                     if nestedTag.code == "fffee00d" {
@@ -817,7 +817,7 @@ public class DicomInputStream: OffsetInputStream {
                         break
                     }
                     if nestedTag.code == "fffee0dd" {
-                        return fail("Fatal, Sequence Delimitation Item found before Item Delimitation Item")
+                        return fail(DICOMDiagnostic(.sequenceDelimiterBeforeItemDelimiter))
                     }
                     guard let element = readDataElement(
                         dataset: self.dataset,
@@ -826,17 +826,17 @@ public class DicomInputStream: OffsetInputStream {
                         order: byteOrder,
                         inTag: nestedTag
                     ) else {
-                        return fail("Fatal, cannot read Data Element in undefined-length Item")
+                        return fail(DICOMDiagnostic(.unreadableElementInUndefinedLengthItem))
                     }
                     item.elements.append(element)
                 }
             } else {
                 guard itemLength <= readableBytes else {
-                    return fail("Fatal, Item length overflows the remaining stream", length: itemLength)
+                    return fail(DICOMDiagnostic(.itemLengthOverflowsStream), length: itemLength)
                 }
                 let itemEnd = offset + itemLength
                 if let enclosingEnd, itemEnd > enclosingEnd {
-                    return fail("Fatal, Item length exceeds its enclosing Sequence", length: itemLength)
+                    return fail(DICOMDiagnostic(.itemLengthExceedsSequence), length: itemLength)
                 }
                 while offset < itemEnd {
                     let previousOffset = offset
@@ -846,10 +846,10 @@ public class DicomInputStream: OffsetInputStream {
                         vrMethod: vrMethod,
                         order: byteOrder
                     ) else {
-                        return fail("Fatal, cannot read Data Element in defined-length Item")
+                        return fail(DICOMDiagnostic(.unreadableElementInDefinedLengthItem))
                     }
                     guard offset > previousOffset, offset <= itemEnd else {
-                        return fail("Fatal, Data Element crosses the defined Item boundary")
+                        return fail(DICOMDiagnostic(.elementCrossesItem))
                     }
                     item.elements.append(element)
                 }
@@ -861,27 +861,27 @@ public class DicomInputStream: OffsetInputStream {
 
         if length >= 0 {
             guard length <= readableBytes else {
-                return readError(forLength: length, element: sequence, message: "Fatal, Sequence length overflows the remaining stream") as? DataSequence
+                return readError(forLength: length, element: sequence, diagnostic: DICOMDiagnostic(.sequenceLengthOverflowsStream)) as? DataSequence
             }
             let sequenceEnd = offset + length
             while offset < sequenceEnd {
                 guard sequenceEnd - offset >= 8,
                       let itemTagData = read(length: 4),
                       let itemLength = read32BitLength(byteOrder: byteOrder) else {
-                    _ = fail("Fatal, truncated Item header in defined-length Sequence")
+                    _ = fail(DICOMDiagnostic(.truncatedItemHeader))
                     return sequence
                 }
                 let itemTag = DataTag(withData: itemTagData, byteOrder: byteOrder)
                 guard readItem(itemTag, itemLength: itemLength, enclosingEnd: sequenceEnd) else { return sequence }
             }
             if offset != sequenceEnd {
-                _ = fail("Fatal, Sequence content does not match its defined length")
+                _ = fail(DICOMDiagnostic(.sequenceLengthMismatch))
             }
         } else if length == -1 {
             sequence.vrMethod = .Implicit
             while true {
                 guard let itemTagData = read(length: 4) else {
-                    _ = fail("Fatal, missing Sequence Delimitation Item")
+                    _ = fail(DICOMDiagnostic(.missingSequenceDelimiter))
                     return sequence
                 }
                 let itemTag = DataTag(withData: itemTagData, byteOrder: byteOrder)
@@ -890,7 +890,7 @@ public class DicomInputStream: OffsetInputStream {
                     break
                 }
                 guard let itemLength = read32BitLength(byteOrder: byteOrder) else {
-                    _ = fail("Fatal, truncated Item length in undefined-length Sequence")
+                    _ = fail(DICOMDiagnostic(.truncatedItemLength))
                     return sequence
                 }
                 guard readItem(itemTag, itemLength: itemLength, enclosingEnd: nil) else { return sequence }
@@ -936,20 +936,20 @@ public class DicomInputStream: OffsetInputStream {
             if itemTag.code == "fffee0dd" {
                 guard let delimiterLength = read32BitLength(byteOrder: byteOrder),
                       delimiterLength == 0 else {
-                    let message = "Fatal, invalid Pixel Data Sequence Delimitation Item"
-                    return readError(forLength: 0, element: pixelSequence, message: message) as? PixelSequence
+                    let message = DICOMDiagnostic(.invalidPixelDelimiter)
+                    return readError(forLength: 0, element: pixelSequence, diagnostic: message) as? PixelSequence
                 }
                 break
             }
             guard itemTag.code == "fffee000" else {
-                let message = "Fatal, unexpected tag \(itemTag) in encapsulated Pixel Data"
-                return readError(forLength: 0, element: pixelSequence, message: message) as? PixelSequence
+                let message = DICOMDiagnostic(.unexpectedPixelTag, "\(itemTag)")
+                return readError(forLength: 0, element: pixelSequence, diagnostic: message) as? PixelSequence
             }
             if !isOffsetTable {
                 decodedFragmentCount += 1
                 if decodedFragmentCount > limits.maximumPixelFragmentCount {
-                    let message = "Fatal, maximum Pixel Data fragment count exceeded (\(limits.maximumPixelFragmentCount))"
-                    return readError(forLength: 0, element: pixelSequence, message: message) as? PixelSequence
+                    let message = DICOMDiagnostic(.fragmentCountExceeded, "\(limits.maximumPixelFragmentCount)")
+                    return readError(forLength: 0, element: pixelSequence, diagnostic: message) as? PixelSequence
                 }
             }
             // create item
@@ -960,16 +960,16 @@ public class DicomInputStream: OffsetInputStream {
             // read item length
             guard let itemLength = read32BitLength(byteOrder: byteOrder) else { return nil }
             if itemLength < 0 {
-                let message = "Fatal, encapsulated Pixel Data items require defined lengths"
-                return readError(forLength: itemLength, element: pixelSequence, message: message) as? PixelSequence
+                let message = DICOMDiagnostic(.undefinedFragmentLength)
+                return readError(forLength: itemLength, element: pixelSequence, diagnostic: message) as? PixelSequence
             }
 
             item.dataOffset = offset
                                     
             // check for invalid lengths
             if itemLength > readableBytes {
-                let message = "Fatal, cannot read PixelSequence item length properly, decoded length at offset(\(offset-4)) overflows (\(itemLength))"
-                return readError(forLength: itemLength, element: pixelSequence, message: message) as? PixelSequence
+                let message = DICOMDiagnostic(.fragmentLengthOverflows, "\(offset-4)", "\(itemLength)")
+                return readError(forLength: itemLength, element: pixelSequence, diagnostic: message) as? PixelSequence
             }
             
             item.length = itemLength

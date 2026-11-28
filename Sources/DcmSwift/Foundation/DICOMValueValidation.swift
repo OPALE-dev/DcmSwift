@@ -8,6 +8,11 @@ public enum DICOMValueValidation {
     /// is one decoded Value, without the delimiter; padding allowed by the
     /// VR is accepted.
     public static func problem(with value: String, vr: VR.VR) -> String? {
+        diagnostic(with: value, vr: vr)?.description
+    }
+
+    /// Why a Value does not conform to its VR, to translate; nil when it does.
+    public static func diagnostic(with value: String, vr: VR.VR) -> DICOMDiagnostic? {
         if value.isEmpty { return nil }
         let bytes = Array(value.utf8)
         let characters = value.count
@@ -18,78 +23,78 @@ public enum DICOMValueValidation {
 
         switch vr {
         case .AE:
-            if bytes.count > 16 { return "longer than 16 bytes" }
-            if outside({ $0 >= 0x20 && $0 < 0x7F && $0 != 0x5C }) { return "outside the Default Character Repertoire" }
-            if trimmed.isEmpty { return "only spaces" }
+            if bytes.count > 16 { return DICOMDiagnostic(.longerThanBytes, "16") }
+            if outside({ $0 >= 0x20 && $0 < 0x7F && $0 != 0x5C }) { return DICOMDiagnostic(.outsideDefaultRepertoire) }
+            if trimmed.isEmpty { return DICOMDiagnostic(.onlySpaces) }
         case .AS:
             guard bytes.count == 4, digits(Substring(value.prefix(3))), "DWMY".contains(value.last!) else {
-                return "not nnnD, nnnW, nnnM, or nnnY"
+                return DICOMDiagnostic(.notAge)
             }
         case .CS:
-            if bytes.count > 16 { return "longer than 16 bytes" }
+            if bytes.count > 16 { return DICOMDiagnostic(.longerThanBytes, "16") }
             if outside({ (0x41...0x5A).contains($0) || (0x30...0x39).contains($0) || $0 == 0x20 || $0 == 0x5F }) {
-                return "not uppercase letters, digits, space, or underscore"
+                return DICOMDiagnostic(.notCodeString)
             }
         case .DA:
             if value.count == 10, value.dropFirst(4).first == ".", value.dropFirst(7).first == "." {
-                return "ACR-NEMA YYYY.MM.DD format, not compliant"
+                return DICOMDiagnostic(.acrNemaDate)
             }
             guard trailingTrimmed.count == 8, digits(Substring(trailingTrimmed)), isDate(trailingTrimmed) else {
-                return "not a YYYYMMDD date"
+                return DICOMDiagnostic(.notDate)
             }
         case .DS:
-            if bytes.count > 16 { return "longer than 16 bytes" }
-            guard isDecimal(trimmed) else { return "not a decimal number" }
+            if bytes.count > 16 { return DICOMDiagnostic(.longerThanBytes, "16") }
+            guard isDecimal(trimmed) else { return DICOMDiagnostic(.notDecimal) }
         case .DT:
-            if bytes.count > 26 { return "longer than 26 bytes" }
-            guard isDateTime(trailingTrimmed) else { return "not a YYYYMMDDHHMMSS.FFFFFF&ZZXX date and time" }
+            if bytes.count > 26 { return DICOMDiagnostic(.longerThanBytes, "26") }
+            guard isDateTime(trailingTrimmed) else { return DICOMDiagnostic(.notDateTime) }
         case .IS:
-            if bytes.count > 12 { return "longer than 12 bytes" }
+            if bytes.count > 12 { return DICOMDiagnostic(.longerThanBytes, "12") }
             guard let number = Int64(trimmed.hasPrefix("+") ? trimmed.dropFirst() : trimmed),
                   !trimmed.contains(" "), (-2_147_483_648...2_147_483_647).contains(number) else {
-                return "not an integer between -2^31 and 2^31-1"
+                return DICOMDiagnostic(.notInteger)
             }
         case .TM:
-            if trailingTrimmed.contains(":") { return "HH:MM:SS format of ACR-NEMA, not compliant" }
-            if trailingTrimmed.utf8.count > 14 { return "longer than 14 bytes" }
-            guard isTime(trailingTrimmed) else { return "not an HHMMSS.FFFFFF time" }
+            if trailingTrimmed.contains(":") { return DICOMDiagnostic(.acrNemaTime) }
+            if trailingTrimmed.utf8.count > 14 { return DICOMDiagnostic(.longerThanBytes, "14") }
+            guard isTime(trailingTrimmed) else { return DICOMDiagnostic(.notTime) }
         case .UI:
-            if bytes.count > 64 { return "longer than 64 bytes" }
+            if bytes.count > 64 { return DICOMDiagnostic(.longerThanBytes, "64") }
             // PS3.5 9.1: digits in dot-separated components, without a
             // leading zero unless the component is "0".
             let components = value.split(separator: ".", omittingEmptySubsequences: false)
             guard DICOMUniqueIdentifier.isValid(value),
                   components.allSatisfy({ !$0.isEmpty && ($0 == "0" || $0.first != "0") }) else {
-                return "not digits in dot-separated components without leading zeros"
+                return DICOMDiagnostic(.notUID)
             }
         case .UR:
-            if value.first == " " { return "leading space" }
+            if value.first == " " { return DICOMDiagnostic(.leadingSpace) }
             if trailingTrimmed.contains(" ") || outside({ $0 >= 0x20 && $0 < 0x7F }) {
-                return "not a URI of the Default Character Repertoire"
+                return DICOMDiagnostic(.notURI)
             }
         case .SH, .LO, .UC:
             let limit = vr == .SH ? 16 : vr == .LO ? 64 : Int.max
-            if characters > limit { return "longer than \(limit) characters" }
+            if characters > limit { return DICOMDiagnostic(.longerThanCharacters, "\(limit)") }
             if value.unicodeScalars.contains(where: { $0.value < 0x20 && $0 != "\u{1B}" || $0 == "\\" }) {
-                return "control character or backslash"
+                return DICOMDiagnostic(.controlOrBackslash)
             }
         case .ST, .LT, .UT:
             let limit = vr == .ST ? 1024 : vr == .LT ? 10240 : Int.max
-            if characters > limit { return "longer than \(limit) characters" }
+            if characters > limit { return DICOMDiagnostic(.longerThanCharacters, "\(limit)") }
             if value.unicodeScalars.contains(where: {
                 $0.value < 0x20 && !["\t", "\n", "\u{0C}", "\r", "\u{1B}"].contains($0)
             }) {
-                return "control character other than TAB, LF, FF, CR, or ESC"
+                return DICOMDiagnostic(.controlCharacter)
             }
         case .PN:
             let groups = value.split(separator: "=", omittingEmptySubsequences: false)
-            if groups.count > 3 { return "more than three component groups" }
+            if groups.count > 3 { return DICOMDiagnostic(.tooManyComponentGroups) }
             for group in groups {
-                if group.count > 64 { return "a component group longer than 64 characters" }
-                if group.filter({ $0 == "^" }).count > 4 { return "more than five components" }
+                if group.count > 64 { return DICOMDiagnostic(.longComponentGroup) }
+                if group.filter({ $0 == "^" }).count > 4 { return DICOMDiagnostic(.tooManyComponents) }
             }
             if value.unicodeScalars.contains(where: { $0.value < 0x20 && $0 != "\u{1B}" || $0 == "\\" }) {
-                return "control character or backslash"
+                return DICOMDiagnostic(.controlOrBackslash)
             }
         default:
             break

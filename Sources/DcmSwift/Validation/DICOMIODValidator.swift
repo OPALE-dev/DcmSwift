@@ -246,7 +246,20 @@ public struct DICOMIODFinding: Equatable, Sendable, CustomStringConvertible {
     public let module: String
     /// The PS3.3 table that defines the attribute, such as C.7-1.
     public let table: String
+    /// What was found, in English, after the attribute: « is missing (Type 1) ».
     public let message: String
+    /// What was found, to translate; its arguments are the attribute Type,
+    /// the value, the Enumerated Values.
+    public let diagnostic: DICOMDiagnostic
+
+    public init(kind: Kind, path: [String], module: String, table: String, diagnostic: DICOMDiagnostic) {
+        self.kind = kind
+        self.path = path
+        self.module = module
+        self.table = table
+        self.diagnostic = diagnostic
+        message = diagnostic.description
+    }
 
     public var description: String {
         let location = path.map { "(\($0.prefix(4)),\($0.suffix(4)))" }.joined(separator: " > ")
@@ -290,13 +303,13 @@ public struct DICOMIODValidator: Sendable {
         guard let sopClass = root.string("00080016") else {
             return DICOMIODValidationReport(sopClassUID: nil, iod: nil, checkedModules: [], findings: [
                 DICOMIODFinding(kind: .unknownIOD, path: ["00080016"], module: "SOP Common", table: "C.12-1",
-                                message: "SOP Class UID is missing, so the IOD is unknown"),
+                                diagnostic: DICOMDiagnostic(.noSOPClass)),
             ])
         }
         guard let iod = specification.iod(forSOPClass: sopClass) else {
             return DICOMIODValidationReport(sopClassUID: sopClass, iod: nil, checkedModules: [], findings: [
                 DICOMIODFinding(kind: .unknownIOD, path: ["00080016"], module: "SOP Common", table: "C.12-1",
-                                message: "SOP Class \(sopClass) has no IOD in PS3.3 \(specification.edition)"),
+                                diagnostic: DICOMDiagnostic(.noIOD, sopClass, specification.edition)),
             ])
         }
         var findings: [DICOMIODFinding] = []
@@ -348,15 +361,15 @@ public struct DICOMIODValidator: Sendable {
             default: required = false
             }
             if required && element == nil {
-                let reason = node.type.hasSuffix("C") ? ", required by its condition" : ""
+                let template: DICOMDiagnosticTemplate = node.type.hasSuffix("C") ? .missingByCondition : .missing
                 findings.append(DICOMIODFinding(kind: .missing, path: location, module: module, table: node.table,
-                                                message: "is missing (Type \(node.type)\(reason))"))
+                                                diagnostic: DICOMDiagnostic(template, node.type)))
                 continue
             }
             guard let element else { continue }
             if (node.type == "1" || node.type == "1C") && Container.isEmpty(element) {
                 findings.append(DICOMIODFinding(kind: .empty, path: location, module: module, table: node.table,
-                                                message: "is empty (Type \(node.type))"))
+                                                diagnostic: DICOMDiagnostic(.empty, node.type)))
                 continue
             }
             if let enumerated = node.enumeratedValues, !Container.isEmpty(element),
@@ -364,7 +377,7 @@ public struct DICOMIODValidator: Sendable {
                let value = Container.strings(element).first, !Container.matches(value, enumerated) {
                 findings.append(DICOMIODFinding(
                     kind: .unexpectedValue, path: location, module: module, table: node.table,
-                    message: "has the value \"\(value)\", not one of the Enumerated Values \(enumerated.joined(separator: ", "))"))
+                    diagnostic: DICOMDiagnostic(.notEnumerated, value, enumerated.joined(separator: ", "))))
             }
             if let sequence = element as? DataSequence, !node.children.isEmpty {
                 for item in sequence.items {
@@ -405,7 +418,7 @@ public struct DICOMIODValidator: Sendable {
             } else if required {
                 findings.append(DICOMIODFinding(
                     kind: .missing, path: [group.tag], module: macro.name, table: table,
-                    message: "is in neither the Shared nor every Per-Frame Functional Groups Sequence Item"))
+                    diagnostic: DICOMDiagnostic(.missingFunctionalGroup)))
             }
         }
     }

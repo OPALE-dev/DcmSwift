@@ -659,7 +659,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         
         // TODO: more file/dataset level validation
         if !file.hasPreamble {
-            results.append(ValidationResult(file, message: "No prefix header was found", severity: .Notice))
+            results.append(ValidationResult(file, diagnostic: DICOMDiagnostic(.noPreamble), severity: .Notice))
         }
         
         results.append(contentsOf: validate(dataSet: file.dataset))
@@ -684,7 +684,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             if declared != actual {
                 results.append(ValidationResult(
                     groupLength,
-                    message: "File Meta Information Group Length is \(declared) but the group holds \(actual) bytes (PS3.10 7.1)",
+                    diagnostic: DICOMDiagnostic(.groupLengthMismatch, "\(declared)", "\(actual)"),
                     severity: .Error))
             }
         }
@@ -699,11 +699,11 @@ public class DicomSpec: NSObject, XMLParserDelegate {
                 let code = element.tagCode()
                 if !seen.insert(code).inserted {
                     results.append(ValidationResult(
-                        element, message: "Data Element \(element.tag) appears more than once (PS3.5 7.1)", severity: .Error))
+                        element, diagnostic: DICOMDiagnostic(.duplicateElement, "\(element.tag)"), severity: .Error))
                 } else if let previous, !reported, Self.tagOrder(previous) > Self.tagOrder(element) {
                     results.append(ValidationResult(
                         element,
-                        message: "Data Element \(element.tag) follows \(previous.tag): tags are not in ascending order (PS3.5 7.1)",
+                        diagnostic: DICOMDiagnostic(.tagsNotAscending, "\(element.tag)", "\(previous.tag)"),
                         severity: .Error))
                     reported = true
                 }
@@ -716,7 +716,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
                     if !elements.contains(where: { $0.tagCode() == block }) {
                         results.append(ValidationResult(
                             element,
-                            message: "Private Data Element \(element.tag) has no Private Creator (\(element.group),00\(String(format: "%02x", number >> 8))) (PS3.5 7.8.1)",
+                            diagnostic: DICOMDiagnostic(.noPrivateCreator, "\(element.tag)", "(\(element.group),00\(String(format: "%02x", number >> 8)))"),
                             severity: .Error))
                     }
                 }
@@ -751,20 +751,20 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         var results:[ValidationResult] = []
 
         if element.length >= 0 && !element.length.isMultiple(of: 2) {
-            results.append(ValidationResult(element, message: "Value Field length must be even (\(element.length))", severity: .Error))
+            results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.oddLength, "\(element.length)"), severity: .Error))
         }
         
         // check individual tags
         if element.name == "TransferSyntaxUID" {
             if let uid = element.value as? String,
                !self.isSupported(transferSyntax: uid) {
-                results.append(ValidationResult(element, message: "Transfer Syntax is not supported by this implementation [\(uid)]", severity: .Warning))
+                results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.unsupportedTransferSyntaxElement, uid), severity: .Warning))
             }
         }
         else if element.name == "SOPClassUID" {
             if let uid = element.value as? String,
                !self.isSupported(sopClass: uid) {
-                results.append(ValidationResult(element, message: "SOP Class is not supported by this implementation [\(uid)]", severity: .Warning))
+                results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.unsupportedSOPClass, uid), severity: .Warning))
             }
         }
 
@@ -777,7 +777,7 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         default: fixedWidth = 0
         }
         if fixedWidth > 0 && !element.length.isMultiple(of: fixedWidth) {
-            results.append(ValidationResult(element, message: "Invalid VR length of \(element.vr) element [\(element.name)] (\(element.length) is not a multiple of \(fixedWidth))", severity: .Error))
+            results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.fixedWidthLength, "\(element.vr)", element.name, "\(element.length)", "\(fixedWidth)"), severity: .Error))
         }
         
         // Lexical rules of each Value (PS3.5 Table 6.2-1).
@@ -786,16 +786,17 @@ public class DicomSpec: NSObject, XMLParserDelegate {
             case .AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UI, .UR, .UT:
                 if let values = element.textValues {
                     for (index, value) in values.enumerated() {
-                        guard let problem = DICOMValueValidation.problem(with: value, vr: element.vr) else { continue }
+                        guard let problem = DICOMValueValidation.diagnostic(with: value, vr: element.vr) else { continue }
                         // ACR-NEMA formats stay readable: a warning.
-                        let severity: ValidationResult.Severity = problem.hasSuffix("not compliant") ? .Warning : .Error
+                        let severity: ValidationResult.Severity = problem.template.isACRNEMAFormat ? .Warning : .Error
                         results.append(ValidationResult(
-                            element, message: "Value \(index + 1) of \(element.name) is invalid for \(element.vr): \(problem)",
+                            element, diagnostic: DICOMDiagnostic(.invalidValue, [.text("\(index + 1)"), .text(element.name),
+                                                                               .text("\(element.vr)"), .diagnostic(problem)]),
                             severity: severity))
                     }
                 } else {
                     results.append(ValidationResult(
-                        element, message: "\(element.name) cannot be decoded in its Specific Character Set", severity: .Error))
+                        element, diagnostic: DICOMDiagnostic(.undecodableText, element.name), severity: .Error))
                 }
             default:
                 break
@@ -808,32 +809,32 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         let textVRs: Set<VR.VR> = [.AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UI, .UR, .UT]
         if element.length > 0, element.length.isMultiple(of: 2), textVRs.contains(element.vr), let last = element.data?.last {
             if element.vr == .UI, last == 0x20 {
-                results.append(ValidationResult(element, message: "\(element.name) is padded with a space; UI is padded with NUL (PS3.5 6.2)", severity: .Error))
+                results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.uiPaddedWithSpace, element.name), severity: .Error))
             } else if last == 0x00, [.AE, .AS, .CS, .DA, .DS, .DT, .IS, .LO, .LT, .PN, .SH, .ST, .TM, .UC, .UR, .UT].contains(element.vr) {
-                results.append(ValidationResult(element, message: "\(element.name) is padded with NUL; \(element.vr) is padded with a space (PS3.5 6.2)", severity: .Warning))
+                results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.paddedWithNUL, element.name, "\(element.vr)"), severity: .Warning))
             }
         }
 
         // check if tag is retired
         if self.isRetired(tag: element.tag) {
-            results.append(ValidationResult(element, message: "Tag \(element.tag) \(element.name) is retired", severity: .Notice))
+            results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.retiredTag, "\(element.tag)", element.name), severity: .Notice))
         }
         
         // check if tag is known; a private tag is unknown by nature
         if element.name == "Unknow", !(Int(element.group, radix: 16).map { $0 % 2 == 1 } ?? false) {
-            results.append(ValidationResult(element, message: "Unknow tag, may be private", severity: .Notice))
+            results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.unknownTag), severity: .Notice))
         }
         
         // check if VR is respected
         let permittedVRs = vrsForTag(withCode: element.tagCode())
         if element.name != "Unknow" && !permittedVRs.contains(element.vr) {
-            results.append(ValidationResult(element, message: "Value Representation mismatch, \(element.tagCode()) permits \(permittedVRs)", severity: .Error))
+            results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.vrMismatch, element.tagCode(), "\(permittedVRs)"), severity: .Error))
         }
 
         if element.length > 0,
            let vm = vmForTag(withCode: element.tagCode()),
            !valueMultiplicity(element.valueMultiplicity, isAllowedBy: vm) {
-            results.append(ValidationResult(element, message: "Value Multiplicity mismatch, \(element.tagCode()) requires VM \(vm) but contains \(element.valueMultiplicity)", severity: .Error))
+            results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.vmMismatch, element.tagCode(), vm, "\(element.valueMultiplicity)"), severity: .Error))
         }
         
         return results
@@ -857,13 +858,25 @@ public class ValidationResult : CustomStringConvertible, Comparable {
     
     public var object:Any?
     public var severity:Severity = .Notice
-    public var message:String = ""
+    /// What was found, to translate.
+    public var diagnostic: DICOMDiagnostic
+    /// What was found, in English.
+    public var message: String {
+        get { diagnostic.description }
+        set { diagnostic = .parsing(newValue) }
+    }
     
     
     public init(_ object:Any, message:String, severity:Severity = .Notice) {
         self.object         = object
-        self.message        = message
+        self.diagnostic     = .parsing(message)
         self.severity       = severity
+    }
+
+    public init(_ object: Any, diagnostic: DICOMDiagnostic, severity: Severity = .Notice) {
+        self.object = object
+        self.diagnostic = diagnostic
+        self.severity = severity
     }
     
     public static func ==(lhs: ValidationResult, rhs: ValidationResult) -> Bool {
