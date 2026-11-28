@@ -56,9 +56,11 @@ extension DICOMPresentationContextProposal {
     /// acceptor cannot choose another, and one for the uncompressed
     /// syntaxes, to which uncompressed instances convert. At most 128.
     ///
-    /// - Parameter uncompressed: the uncompressed transfer syntaxes proposed,
-    ///   in order of preference; one alone sends every uncompressed instance
-    ///   in it, converted if need be.
+    /// - Parameters:
+    ///   - items: the instances to send.
+    ///   - uncompressed: the uncompressed transfer syntaxes proposed, in
+    ///     order of preference; one alone sends every uncompressed instance
+    ///     in it, converted if need be.
     public static func proposals(
         for items: [DICOMRetrieveItem], uncompressed: [String] = DICOMTransferSyntaxes.uncompressed
     ) -> [DICOMPresentationContextProposal] {
