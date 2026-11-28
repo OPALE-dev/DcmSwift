@@ -828,13 +828,13 @@ public class DicomSpec: NSObject, XMLParserDelegate {
         // check if VR is respected
         let permittedVRs = vrsForTag(withCode: element.tagCode())
         if element.name != "Unknow" && !permittedVRs.contains(element.vr) {
-            results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.vrMismatch, element.tagCode(), "\(permittedVRs)"), severity: .Error))
+            results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.vrMismatch, "\(element.tag)", permittedVRs.map { "\($0)" }.joined(separator: ", ")), severity: .Error))
         }
 
         if element.length > 0,
            let vm = vmForTag(withCode: element.tagCode()),
            !valueMultiplicity(element.valueMultiplicity, isAllowedBy: vm) {
-            results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.vmMismatch, element.tagCode(), vm, "\(element.valueMultiplicity)"), severity: .Error))
+            results.append(ValidationResult(element, diagnostic: DICOMDiagnostic(.vmMismatch, "\(element.tag)", vm, "\(element.valueMultiplicity)"), severity: .Error))
         }
         
         return results

@@ -55,6 +55,12 @@ final class DcmSwiftDiagnosticTests: XCTestCase {
         XCTAssertEqual(DICOMValueValidation.diagnostic(with: String(repeating: "1", count: 20), vr: .DS),
                        DICOMDiagnostic(.longerThanBytes, "16"))
 
+        // The VRs a tag permits, as an expert reads them.
+        let name = try XCTUnwrap(DataElement(withTagName: "PatientName", dataset: DataSet()))
+        name.vr = .US
+        let mismatch = try XCTUnwrap(DicomSpec.shared.validate(dataElement: name).first { $0.diagnostic.template == .vrMismatch })
+        XCTAssertEqual(mismatch.message, "Value Representation mismatch, (0010,0010) permits PN")
+
         let report = DICOMIODValidator().validate(DataSet())
         XCTAssertEqual(report.findings.first?.diagnostic, DICOMDiagnostic(.noSOPClass))
         XCTAssertEqual(report.findings.first?.message, "SOP Class UID is missing, so the IOD is unknown")
