@@ -346,7 +346,10 @@ conformance without that evidence.
     empty-value, and multiple-value matching, Prior Record Key paging, HTTP
     Range, HTTP/2, and authentication or access control;
   - the search matches only the attributes the archive indexes; others are
-    returned empty.
+    returned empty;
+  - the HTTP trace of the user agent lacks the Host and framing header
+    fields AsyncHTTPClient adds, and the end of a response stream its caller
+    stops reading; UPS event notifications over WebSocket are not traced.
 - TLS: BoringSSL has no CCM suites, so a server does not offer every suite B.13
   lists (TLS_ECDHE_ECDSA_WITH_AES_*_CCM*, TLS_AES_128_CCM*_SHA256), nor the
   optional Camellia and DHE ones. Certificate key sizes and signature hashes

@@ -21,15 +21,20 @@ public struct DICOMwebServerNetworkConfiguration: Sendable {
     /// from each request's Host header field.
     public var publicOrigin: String?
     public var logger: Logging.Logger
+    /// Receives each request and response, payloads included, for a
+    /// debugging console. UPS event notifications over WebSocket are not traced.
+    public var httpTrace: DICOMwebHTTPTrace?
 
     public init(host: String = "0.0.0.0", port: Int = 8080, tls: DICOMTLSConfiguration? = nil, idleTimeout: Int64 = 120,
-                publicOrigin: String? = nil, logger: Logging.Logger = Logging.Logger(label: "dcmswift.dicomweb")) {
+                publicOrigin: String? = nil, logger: Logging.Logger = Logging.Logger(label: "dcmswift.dicomweb"),
+                httpTrace: DICOMwebHTTPTrace? = nil) {
         self.host = host
         self.port = port
         self.tls = tls
         self.idleTimeout = idleTimeout
         self.publicOrigin = publicOrigin.map { $0.hasSuffix("/") ? String($0.dropLast()) : $0 }
         self.logger = logger
+        self.httpTrace = httpTrace
     }
 }
 
@@ -215,6 +220,7 @@ public final class DICOMwebServer: Sendable {
         let channel = connection.channel
         let peer = channel.remoteAddress?.description
         let scheme = sslContext == nil ? "http" : "https"
+        let connectionID = UUID()
         do {
             try await connection.executeThenClose { inbound, outbound in
                 let reader = RequestReader(inbound.makeAsyncIterator())
@@ -224,17 +230,45 @@ public final class DICOMwebServer: Sendable {
                     var headers = DICOMwebMultipart.Headers()
                     for (name, value) in head.headers { headers[name] = value }
                     let parts = head.uri.split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)
+                    let answeredOrigin = network.publicOrigin ?? "\(scheme)://\(host)"
+                    let trace = network.httpTrace.map {
+                        DICOMwebExchangeTrace(trace: $0, connection: connectionID, origin: answeredOrigin, remoteAddress: peer)
+                    }
+                    trace?(.request(method: head.method.rawValue, target: head.uri, headers: DICOMwebExchangeTrace.fields(head.headers)))
+                    var body = reader.body()
+                    if let trace {
+                        let untraced = body
+                        body = AsyncThrowingStream { continuation in
+                            let task = Task {
+                                do {
+                                    for try await chunk in untraced {
+                                        trace(.requestBody(chunk))
+                                        continuation.yield(chunk)
+                                    }
+                                    continuation.finish()
+                                } catch {
+                                    continuation.finish(throwing: error)
+                                }
+                            }
+                            continuation.onTermination = { _ in task.cancel() }
+                        }
+                    }
                     let request = DICOMwebHTTPRequest(
                         method: head.method.rawValue, path: String(parts[0]), query: parts.count > 1 ? String(parts[1]) : "",
-                        headers: headers, body: reader.body())
+                        headers: headers, body: body)
                     let certificate = try? await peerCertificate(channel)
                     let response = await origin.respond(
-                        to: request, origin: network.publicOrigin ?? "\(scheme)://\(host)", remoteAddress: peer,
-                        peerCertificate: certificate)
+                        to: request, origin: answeredOrigin, remoteAddress: peer, peerCertificate: certificate)
                     // Unread payload bytes are discarded before the response.
                     try await reader.drainBody()
-                    try await write(response, method: head.method, keepAlive: head.isKeepAlive, version: head.version,
-                                    to: outbound)
+                    do {
+                        try await write(response, method: head.method, keepAlive: head.isKeepAlive, version: head.version,
+                                        to: outbound, trace: trace)
+                        trace?(.end(error: nil))
+                    } catch {
+                        trace?(.end(error: String(describing: error)))
+                        throw error
+                    }
                     network.logger.debug("\(head.method) \(head.uri) \(response.status)")
                     if !head.isKeepAlive { break }
                 }
@@ -254,7 +288,7 @@ public final class DICOMwebServer: Sendable {
 
     private func write(
         _ response: DICOMwebHTTPResponse, method: HTTPMethod, keepAlive: Bool, version: HTTPVersion,
-        to outbound: NIOAsyncChannelOutboundWriter<HTTPServerResponsePart>
+        to outbound: NIOAsyncChannelOutboundWriter<HTTPServerResponsePart>, trace: DICOMwebExchangeTrace? = nil
     ) async throws {
         var headers = HTTPHeaders()
         for field in response.headers { headers.add(name: field.name, value: field.value) }
@@ -265,17 +299,32 @@ public final class DICOMwebServer: Sendable {
             return HTTPResponseHead(version: version, status: HTTPResponseStatus(statusCode: response.status),
                                     headers: headers)
         }
+        let writeHead = { (head: HTTPResponseHead) in
+            var fields = DICOMwebExchangeTrace.fields(head.headers)
+            // As NIO frames it: chunked, without a length.
+            if head.headers["Content-Length"].isEmpty && head.headers["Transfer-Encoding"].isEmpty {
+                fields.append((name: "Transfer-Encoding", value: "chunked"))
+            }
+            trace?(.response(status: Int(head.status.code), reason: head.status.reasonPhrase, headers: fields))
+            try await outbound.write(.head(head))
+        }
         switch response.body {
         case .empty:
-            try await outbound.write(.head(head(0)))
+            try await writeHead(head(0))
         case .data(let data):
-            try await outbound.write(.head(head(data.count)))
-            if method != .HEAD && !data.isEmpty { try await outbound.write(.body(.byteBuffer(ByteBuffer(bytes: data)))) }
+            try await writeHead(head(data.count))
+            if method != .HEAD && !data.isEmpty {
+                trace?(.responseBody(data))
+                try await outbound.write(.body(.byteBuffer(ByteBuffer(bytes: data))))
+            }
         case .stream(let stream, let length):
             // Without a known length, HTTP/1.1 chunked transfer coding applies.
-            try await outbound.write(.head(head(length)))
+            try await writeHead(head(length))
             if method != .HEAD {
-                for try await chunk in stream { try await outbound.write(.body(.byteBuffer(ByteBuffer(bytes: chunk)))) }
+                for try await chunk in stream {
+                    trace?(.responseBody(chunk))
+                    try await outbound.write(.body(.byteBuffer(ByteBuffer(bytes: chunk))))
+                }
             }
         }
         try await outbound.write(.end(nil))

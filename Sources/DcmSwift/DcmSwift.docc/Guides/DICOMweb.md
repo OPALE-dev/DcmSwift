@@ -45,6 +45,25 @@ let found = try await DICOMwebClient.withTLS(tls, baseURI: "https://pacs.example
 Search results report further pages in `remaining`; metadata keeps Bulk Data
 URIs in `DataElement.bulkDataURI` instead of loading them.
 
+### Tracing the exchanges
+
+An `httpTrace`, given to a client or to the network configuration of a
+server, receives each moment of every exchange as a
+``DICOMwebHTTPTraceRecord``: the request head, the response head, each piece
+of either payload as it passes, then the end, or the error that stopped it.
+A debugging console rebuilds an exchange from the records of one `exchange`
+identifier. Without a trace, no payload is copied.
+
+```swift
+let client = DICOMwebClient(baseURI: "https://pacs.example.org/dicom-web",
+                            httpTrace: { record in console.append(record) })
+```
+
+A client traces the header fields it gives AsyncHTTPClient, which adds Host
+and the framing fields; a server traces those it received and sent. A client
+traces the end once the response payload has been read; a stream left
+unfinished has none. WebSocket UPS event notifications are not traced.
+
 ## Server
 
 ``DICOMwebOriginServer`` answers requests independently of the transport, from

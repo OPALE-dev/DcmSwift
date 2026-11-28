@@ -57,16 +57,26 @@ public final class DICOMwebClient: Sendable {
     /// Header fields added to every request, such as Authorization.
     public let headers: [(name: String, value: String)]
     public let timeout: TimeAmount
+    /// Receives each request and response, payloads included, for a
+    /// debugging console.
+    public let httpTrace: DICOMwebHTTPTrace?
     private let httpClient: HTTPClient
 
     public init(baseURI: String, headers: [(name: String, value: String)] = [], timeout: TimeAmount = .seconds(60),
-                httpClient: HTTPClient = .shared) {
+                httpClient: HTTPClient = .shared, httpTrace: DICOMwebHTTPTrace? = nil) {
         var baseURI = baseURI
         while baseURI.hasSuffix("/") { baseURI.removeLast() }
         self.baseURI = baseURI
         self.headers = headers
         self.timeout = timeout
         self.httpClient = httpClient
+        self.httpTrace = httpTrace
+    }
+
+    /// The scheme and authority of the Base URI.
+    var origin: String {
+        guard let url = URLComponents(string: baseURI), let scheme = url.scheme, let host = url.host else { return baseURI }
+        return "\(scheme)://\(host)" + (url.port.map { ":\($0)" } ?? "")
     }
 
     // MARK: Search (QIDO-RS, PS3.18 10.6)
@@ -188,7 +198,7 @@ public final class DICOMwebClient: Sendable {
                 continuation.finish(throwing: error)
             }
         }
-        return try await store(.stream(chunks, length: .known(Int64(total))), boundary: writer.boundary, study: study)
+        return try await store(.stream(chunks, length: Int64(total)), boundary: writer.boundary, study: study)
     }
 
     /// Stores data sets, encoded in Explicit VR Little Endian unless they
@@ -206,10 +216,10 @@ public final class DICOMwebClient: Sendable {
                 sourceAETitle: nil) + (try item.payload.data()))
         }
         body += writer.close()
-        return try await store(.bytes(ByteBuffer(bytes: body)), boundary: writer.boundary, study: study)
+        return try await store(.bytes(body), boundary: writer.boundary, study: study)
     }
 
-    private func store(_ body: HTTPClientRequest.Body, boundary: String, study: String?) async throws -> DICOMwebStoreResponse {
+    private func store(_ body: RequestBody, boundary: String, study: String?) async throws -> DICOMwebStoreResponse {
         let path = study.map { "/studies/\($0)" } ?? "/studies"
         let contentType = DICOMwebMediaType.multipartRelated(.dicom, boundary: boundary).description
         let response = try await execute(.POST, path, accept: DICOMwebMediaType.dicomJSON.description,
@@ -237,17 +247,47 @@ public final class DICOMwebClient: Sendable {
 
     // MARK: Transport
 
+    /// The payload of a request.
+    private enum RequestBody {
+        case bytes(Data)
+        case stream(AsyncThrowingStream<ByteBuffer, Error>, length: Int64)
+    }
+
     private func execute(
         _ method: HTTPMethod, _ target: String, accept: String, contentType: String? = nil,
-        body: HTTPClientRequest.Body? = nil
+        body: RequestBody? = nil
     ) async throws -> HTTPClientResponse {
         var request = HTTPClientRequest(url: baseURI + target)
         request.method = method
         for header in headers { request.headers.add(name: header.name, value: header.value) }
         request.headers.replaceOrAdd(name: "Accept", value: accept)
         if let contentType { request.headers.replaceOrAdd(name: "Content-Type", value: contentType) }
-        if let body { request.body = body }
-        return try await httpClient.execute(request, timeout: timeout)
+        let trace = httpTrace.map { DICOMwebExchangeTrace(trace: $0, connection: nil, origin: origin, remoteAddress: nil) }
+        trace?(.request(method: method.rawValue, target: baseURI + target, headers: DICOMwebExchangeTrace.fields(request.headers)))
+        switch body {
+        case .bytes(let data)?:
+            trace?(.requestBody(data))
+            request.body = .bytes(ByteBuffer(bytes: data))
+        case .stream(let chunks, let length)?:
+            if let trace {
+                request.body = .stream(trace.tracing(chunks, { .requestBody($0) }, endsExchange: false), length: .known(length))
+            } else {
+                request.body = .stream(chunks, length: .known(length))
+            }
+        case nil: break
+        }
+        guard let trace else { return try await httpClient.execute(request, timeout: timeout) }
+        var response: HTTPClientResponse
+        do {
+            response = try await httpClient.execute(request, timeout: timeout)
+        } catch {
+            trace(.end(error: String(describing: error)))
+            throw error
+        }
+        trace(.response(status: Int(response.status.code), reason: response.status.reasonPhrase,
+                        headers: DICOMwebExchangeTrace.fields(response.headers)))
+        response.body = .stream(trace.tracing(response.body, { .responseBody($0) }, endsExchange: true))
+        return response
     }
 
     private func parts<T: Sendable>(
@@ -331,7 +371,8 @@ extension DICOMwebClient {
     /// when `body` returns, so streams must be read within it.
     public static func withTLS<Result>(
         _ tls: DICOMTLSConfiguration, baseURI: String, headers: [(name: String, value: String)] = [],
-        timeout: TimeAmount = .seconds(60), _ body: (DICOMwebClient) async throws -> Result
+        timeout: TimeAmount = .seconds(60), httpTrace: DICOMwebHTTPTrace? = nil,
+        _ body: (DICOMwebClient) async throws -> Result
     ) async throws -> Result {
         var configuration = HTTPClient.Configuration()
         configuration.tlsConfiguration = tls.configuration
@@ -343,7 +384,8 @@ extension DICOMwebClient {
                                     configuration: configuration)
         let result: Result
         do {
-            result = try await body(DICOMwebClient(baseURI: baseURI, headers: headers, timeout: timeout, httpClient: httpClient))
+            result = try await body(DICOMwebClient(baseURI: baseURI, headers: headers, timeout: timeout, httpClient: httpClient,
+                                                httpTrace: httpTrace))
         } catch {
             try? await httpClient.shutdown()
             throw error
