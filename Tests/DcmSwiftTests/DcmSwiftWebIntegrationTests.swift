@@ -234,4 +234,41 @@ final class DcmSwiftWebIntegrationTests: XCTestCase {
         XCTAssertTrue(records.allSatisfy { $0.origin == "http://127.0.0.1:\(port)" && $0.remoteAddress != nil && $0.connection != nil })
         XCTAssertTrue(clientTrace.exchanges.flatMap(\.events).allSatisfy { $0.origin == "http://127.0.0.1:\(port)" && $0.connection == nil })
     }
+
+    /// A traced server whose service answers without reading the payload
+    /// (#178): the trace reads the rest, the connection serves the next
+    /// request, and the inbound stream never has two readers.
+    func testATracedRequestAnsweredBeforeItsPayloadIsRead() async throws {
+        let services = DICOMArchiveServices(archive: DICOMArchive(directory: directory))
+        let serverTrace = Recorder()
+        let server = try DICOMwebServer(
+            origin: DICOMwebOriginServer(configuration: .init(basePath: "/dicomweb"),
+                                         search: services, retrieve: services, store: services),
+            network: .init(host: "127.0.0.1", port: 0, httpTrace: serverTrace.trace))
+        let (ports, continuation) = AsyncStream<Int>.makeStream()
+        let task = Task { try await server.run { continuation.yield($0) } }
+        defer { task.cancel() }
+        var iterator = ports.makeAsyncIterator()
+        let bound = await iterator.next()
+        let port = try XCTUnwrap(bound)
+        let session = URLSession(configuration: .ephemeral)
+        defer { session.invalidateAndCancel() }
+        let payload = Data(repeating: 0x41, count: 4 << 20)
+        for _ in 0..<12 {
+            var refused = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/dicomweb/studies")!)
+            refused.httpMethod = "POST"
+            refused.setValue("text/plain", forHTTPHeaderField: "Content-Type")
+            let (_, response) = try await session.upload(for: refused, from: payload)
+            XCTAssertEqual((response as? HTTPURLResponse).map(\.statusCode).map { $0 >= 400 }, true)
+            let (_, search) = try await session.data(from: URL(string: "http://127.0.0.1:\(port)/dicomweb/studies")!)
+            XCTAssertEqual((search as? HTTPURLResponse)?.statusCode, 200)
+        }
+        for _ in 0..<100 where !serverTrace.exchanges.allSatisfy({ Self.exchange($0.events).ended }) {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        let posts = serverTrace.exchanges.map { Self.exchange($0.events) }.filter { $0.method == "POST" }
+        XCTAssertEqual(posts.count, 12)
+        // The trace has the whole payload, though the service read none of it.
+        XCTAssertTrue(posts.allSatisfy { $0.request.count == payload.count })
+    }
 }

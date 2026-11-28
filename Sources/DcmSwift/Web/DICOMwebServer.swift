@@ -236,22 +236,28 @@ public final class DICOMwebServer: Sendable {
                     }
                     trace?(.request(method: head.method.rawValue, target: head.uri, headers: DICOMwebExchangeTrace.fields(head.headers)))
                     var body = reader.body()
+                    // Traced, the payload is read by a task of its own, to its
+                    // end even when the service stops reading it: the trace
+                    // sees all of it. That task is then the only reader of the
+                    // connection until it ends; it is never cancelled, which
+                    // would close the persistent connection.
+                    var traced: (task: Task<Void, Never>, continuation: AsyncThrowingStream<Data, Error>.Continuation)?
                     if let trace {
                         let untraced = body
-                        body = AsyncThrowingStream { continuation in
-                            let task = Task {
-                                do {
-                                    for try await chunk in untraced {
-                                        trace(.requestBody(chunk))
-                                        continuation.yield(chunk)
-                                    }
-                                    continuation.finish()
-                                } catch {
-                                    continuation.finish(throwing: error)
+                        let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
+                        let task = Task {
+                            do {
+                                for try await chunk in untraced {
+                                    trace(.requestBody(chunk))
+                                    continuation.yield(chunk)
                                 }
+                                continuation.finish()
+                            } catch {
+                                continuation.finish(throwing: error)
                             }
-                            continuation.onTermination = { _ in task.cancel() }
                         }
+                        traced = (task, continuation)
+                        body = stream
                     }
                     let request = DICOMwebHTTPRequest(
                         method: head.method.rawValue, path: String(parts[0]), query: parts.count > 1 ? String(parts[1]) : "",
@@ -259,7 +265,13 @@ public final class DICOMwebServer: Sendable {
                     let certificate = try? await peerCertificate(channel)
                     let response = await origin.respond(
                         to: request, origin: answeredOrigin, remoteAddress: peer, peerCertificate: certificate)
-                    // Unread payload bytes are discarded before the response.
+                    // Unread payload bytes are discarded before the response,
+                    // by the trace task when there is one: the inbound stream
+                    // of a connection allows one reader at a time.
+                    if let traced {
+                        traced.continuation.finish()
+                        await traced.task.value
+                    }
                     try await reader.drainBody()
                     do {
                         try await write(response, method: head.method, keepAlive: head.isKeepAlive, version: head.version,
