@@ -31,6 +31,7 @@ struct DcmRT: ParsableCommand {
                         [
                             "number": roi.number, "name": roi.name, "type": nullable(roi.interpretedType),
                             "color": nullable(roi.color.map { [$0.red, $0.green, $0.blue] }),
+                            "volume": nullable(roi.volume),
                             "contours": roi.contours.map { contour in
                                 ["type": contour.geometricType, "points": contour.points.map { [$0.x, $0.y, $0.z] }]
                             },
@@ -41,7 +42,8 @@ struct DcmRT: ParsableCommand {
             }
             print("RT Structure Set \(structures.label): \(structures.rois.count) ROIs")
             for roi in structures.rois {
-                print("  \(roi.number). \(roi.name) \(roi.interpretedType ?? ""): \(roi.contours.count) contours")
+                let volume = roi.volume.map { String(format: ", %.3f cm³", $0) } ?? ""
+                print("  \(roi.number). \(roi.name) \(roi.interpretedType ?? ""): \(roi.contours.count) contours\(volume)")
             }
         } else if let dose = DICOMRTDose(dataSet: dataSet) {
             if json {

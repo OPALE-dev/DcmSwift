@@ -186,6 +186,7 @@ for group in try DICOMWaveform.groups(in: dataSet) {
 
 ```swift
 let rois = DICOMRTStructureSet(dataSet: dataSet)?.rois          // names, colors, contours
+let volume = rois?.first?.volume                                 // cm³, as dicompyler-core
 let dose = try DICOMRTDose(dataSet: dataSet)?.dose(frame: 0)     // Gy, row by row
 let beams = DICOMRTPlan(dataSet: dataSet)?.beams                // control points, metersets
 ```

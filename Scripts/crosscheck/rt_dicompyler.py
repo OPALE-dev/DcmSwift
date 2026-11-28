@@ -6,8 +6,12 @@ Run with a Python that has dicompyler-core and pydicom 2 (dicompyler-core
 does not run with pydicom 3). BUILD_DIR holds DcmRT. For each RT Structure
 Set, RT Dose, and RT Plan, DcmRT --json is compared with dicompyler-core's
 DicomParser:
-- Structure Sets: each ROI's name, color, and interpreted type, and every
-  contour point (GetStructures, GetStructureCoordinates);
+- Structure Sets: each ROI's name, color, and interpreted type, every
+  contour point (GetStructures, GetStructureCoordinates), and the volume of
+  its CLOSED_PLANAR contours (CalculatePlaneThickness,
+  CalculateStructureVolume, which needs shapely), within 0.01 cm³: its
+  planes are given with numeric positions, since dicompyler-core sorts them
+  as text, and it floors the half area of the end planes;
 - Doses: grid, units, type, summation, scaling (GetDoseData), every dose
   value (pydicom's pixel_array times Dose Grid Scaling), and the DVHs
   (GetDVHs: volumes and bin edges);
@@ -53,6 +57,12 @@ def check_structures(path, ours, failures):
         found = sorted(tuple(round(v, 4) for v in point) for contour in roi["contours"] for point in contour["points"])
         if expected != found:
             failures.append(f"ROI {number}: {len(found)} contour points, dicompyler-core {len(expected)}, or different")
+        closed = {float(z): planes for z, planes in coordinates.items()
+                  if planes and all(plane["type"] == "CLOSED_PLANAR" and len(plane["data"]) >= 3 for plane in planes)}
+        if closed and len(closed) == len(coordinates):
+            volume = parser.CalculateStructureVolume(closed, parser.CalculatePlaneThickness(closed))
+            if roi.get("volume") is None or abs(roi["volume"] - volume) > 0.01:
+                failures.append(f"ROI {number} volume {roi.get('volume')} != {volume}")
 
 
 def check_dose(path, ours, failures):

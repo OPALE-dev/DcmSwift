@@ -100,6 +100,99 @@ public struct DICOMRTStructureSet: Sendable {
     }
 }
 
+extension DICOMRTStructureSet.Contour {
+    /// The area a CLOSED_PLANAR contour encloses, in mm², from the normal of
+    /// its plane (Newell's method); nil for other geometric types or fewer
+    /// than three points.
+    public var area: Double? {
+        guard geometricType == "CLOSED_PLANAR", points.count >= 3 else { return nil }
+        let normal = Self.normal(points)
+        return (normal.x * normal.x + normal.y * normal.y + normal.z * normal.z).squareRoot() / 2
+    }
+
+    /// Whether the contour lies in an axial plane: its normal along z.
+    var isAxial: Bool {
+        let n = Self.normal(points)
+        let length = (n.x * n.x + n.y * n.y + n.z * n.z).squareRoot()
+        return length > 0 && abs(n.z) / length > 0.999
+    }
+
+    /// Whether a point of the same axial plane is inside the contour (even-odd rule).
+    func contains(x: Double, y: Double) -> Bool {
+        var inside = false
+        var j = points.count - 1
+        for i in points.indices {
+            let a = points[i], b = points[j]
+            if (a.y > y) != (b.y > y), x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x { inside.toggle() }
+            j = i
+        }
+        return inside
+    }
+
+    private static func normal(_ points: [(x: Double, y: Double, z: Double)]) -> (x: Double, y: Double, z: Double) {
+        var n = (x: 0.0, y: 0.0, z: 0.0)
+        for i in points.indices {
+            let a = points[i], b = points[(i + 1) % points.count]
+            n.x += (a.y - b.y) * (a.z + b.z)
+            n.y += (a.z - b.z) * (a.x + b.x)
+            n.z += (a.x - b.x) * (a.y + b.y)
+        }
+        return n
+    }
+}
+
+extension DICOMRTStructureSet.ROI {
+    /// The number of points of all its contours.
+    public var pointCount: Int { contours.reduce(0) { $0 + $1.points.count } }
+
+    /// The smallest box holding its contours, in mm in the patient
+    /// coordinate system; nil without points.
+    public var bounds: (minimum: (x: Double, y: Double, z: Double), maximum: (x: Double, y: Double, z: Double))? {
+        let all = contours.flatMap(\.points)
+        guard let first = all.first else { return nil }
+        var low = first, high = first
+        for p in all {
+            low = (min(low.x, p.x), min(low.y, p.y), min(low.z, p.z))
+            high = (max(high.x, p.x), max(high.y, p.y), max(high.z, p.z))
+        }
+        return (low, high)
+    }
+
+    /// The positions of its axial contour planes along z, in mm, in order.
+    public var planes: [Double] {
+        Array(Set(contours.filter { $0.isAxial && !$0.points.isEmpty }.map { Self.plane($0.points[0].z) })).sorted()
+    }
+
+    /// The volume its CLOSED_PLANAR axial contours enclose, in cm³, as
+    /// dicompyler-core computes it: each plane is as thick as the smallest
+    /// gap between two planes, the first and last planes count for half, and
+    /// a contour inside another of its plane is a hole; the planes are in
+    /// the order of their positions. Nil when the ROI has
+    /// no such contour, or contours that are not axial.
+    public var volume: Double? {
+        let closed = contours.filter { $0.geometricType == "CLOSED_PLANAR" && $0.points.count >= 3 }
+        guard !closed.isEmpty, closed.allSatisfy(\.isAxial) else { return nil }
+        let byPlane = Dictionary(grouping: closed) { Self.plane($0.points[0].z) }
+        let positions = byPlane.keys.sorted()
+        let thickness = zip(positions, positions.dropFirst()).map { $1 - $0 }.min() ?? 0
+        var total = 0.0
+        for (index, position) in positions.enumerated() {
+            let shapes = byPlane[position]!.sorted { ($0.area ?? 0) > ($1.area ?? 0) }
+            let weight = positions.count > 1 && (index == 0 || index == positions.count - 1) ? 0.5 : 1
+            for (rank, shape) in shapes.enumerated() {
+                let area = (shape.area ?? 0) * weight
+                // A hole: inside the largest contour of its plane.
+                let isHole = rank > 0 && shapes[0].contains(x: shape.points[0].x, y: shape.points[0].y)
+                total += isHole ? -area : area
+            }
+        }
+        return total * thickness / 1000
+    }
+
+    /// A plane position, rounded to a hundredth of a millimeter.
+    private static func plane(_ z: Double) -> Double { (z * 100).rounded() / 100 }
+}
+
 /// An RT Dose (PS3.3 A.18): the dose grid, and its dose-volume histograms.
 public struct DICOMRTDose: Sendable {
     public struct DVH: Sendable {

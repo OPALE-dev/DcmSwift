@@ -177,4 +177,51 @@ final class DcmSwiftRTTests: XCTestCase {
         XCTAssertEqual(beam.controlPoints.last?.isocenter, [0, -10, 5])
         XCTAssertEqual(beam.controlPoints.last?.cumulativeMetersetWeight, 1)
     }
+
+    /// ROI volumes equal to those of dicompyler-core 0.5.6
+    /// (`DicomParser.CalculateStructureVolume`, pydicom 2.4, shapely) on the
+    /// synthetic corpus and the pydicom RT Structure Set. dicompyler-core
+    /// floors the half area of the end planes: the gap stays below 0.01 cm³.
+    /// It also sorts the planes by their position as text, so that its end
+    /// planes of External are -10.0 and 7.5 (5868.2876 cm³): the reference
+    /// below is its result with the positions as numbers.
+    func testROIVolumesMatchDicompylerCore() throws {
+        func rois(_ path: String) throws -> [String: DICOMRTStructureSet.ROI] {
+            let url = Bundle.module.url(forResource: path, withExtension: nil)
+                ?? URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent(path)
+            let file = try XCTUnwrap(DicomFile(forPath: url.path))
+            let set = try XCTUnwrap(DICOMRTStructureSet(dataSet: try XCTUnwrap(file.dataset)))
+            return Dictionary(set.rois.map { ($0.name, $0) }) { a, _ in a }
+        }
+        let synthetic = try rois("Corpus/RT_StructureSet.dcm")
+        XCTAssertEqual(try XCTUnwrap(synthetic["EXTERNAL"]?.volume), 54.000247, accuracy: 0.01)
+        XCTAssertEqual(try XCTUnwrap(synthetic["PTV"]?.volume), 6.000085, accuracy: 0.01)
+        XCTAssertEqual(synthetic["PTV"]?.planes.count, 3)
+        let pydicom = try rois("Resources/RT/rt_RTSTRUCT.2.16.840.1.113669.2.931128.509887832.20120106104805.776010.dcm")
+        XCTAssertEqual(try XCTUnwrap(pydicom["External"]?.volume), 5868.9570, accuracy: 0.01)
+        XCTAssertEqual(try XCTUnwrap(pydicom["GTV"]?.volume), 40.4452, accuracy: 0.01)
+        XCTAssertEqual(try XCTUnwrap(pydicom["OAR"]?.volume), 26.3642, accuracy: 0.01)
+        XCTAssertEqual(pydicom["GTV"]?.planes.count, 12)
+        // POINT contours enclose nothing.
+        XCTAssertNil(pydicom["Isocentre"]?.volume)
+        XCTAssertEqual(pydicom["Isocentre"]?.pointCount, 1)
+        let bounds = try XCTUnwrap(pydicom["GTV"]?.bounds)
+        XCTAssertLessThan(bounds.minimum.z, bounds.maximum.z)
+    }
+
+    /// A square of 10 mm with a hole of 4 mm on three planes 2 mm apart.
+    func testAHoleIsSubtractedAndEndPlanesCountForHalf() {
+        func square(_ side: Double, z: Double) -> DICOMRTStructureSet.Contour {
+            let h = side / 2
+            return DICOMRTStructureSet.Contour(geometricType: "CLOSED_PLANAR",
+                                               points: [(-h, -h, z), (h, -h, z), (h, h, z), (-h, h, z)], referencedSOPInstanceUIDs: [])
+        }
+        XCTAssertEqual(square(10, z: 0).area, 100)
+        let contours = [0.0, 2, 4].flatMap { [square(4, z: $0), square(10, z: $0)] }
+        let roi = DICOMRTStructureSet.ROI(number: 1, name: "RING", description: nil, frameOfReferenceUID: nil,
+                                          generationAlgorithm: nil, color: nil, interpretedType: nil, contours: contours)
+        // (0.5 + 1 + 0.5) × (100 − 16) mm² × 2 mm = 336 mm³.
+        XCTAssertEqual(try XCTUnwrap(roi.volume), 0.336, accuracy: 1e-9)
+        XCTAssertEqual(roi.planes, [0, 2, 4])
+    }
 }
